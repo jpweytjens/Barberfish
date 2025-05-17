@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name">KDouble</string>
-    <string name="extension_name">Karoo Double Field</string>
-    <string name="custom_double1">KDouble One</string>
+    <string name="app_name">Barberfish</string>
+    <string name="extension_name">Barberfish</string>
+    <string name="custom_double1">Double Datafield 1</string>
     <string name="custom_double_description1">Karoo DualType One</string>
     <string name="custom_double_description2">Karoo DualType Two</string>
-    <string name="custom_double2">KDouble Two</string>
-    <string name="custom_double3">KDouble Three</string>
+    <string name="custom_double2">Double Datafield 2</string>
+    <string name="custom_double3">Double Datafield 3</string>
     <string name="custom_double_description3">Karoo DualType Three</string>
     <string name="custom_vertical_double1">KDouble Four</string>
     <string name="custom_vertical_double3">KDouble Six</string>

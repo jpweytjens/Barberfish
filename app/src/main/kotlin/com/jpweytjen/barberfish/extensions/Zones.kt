@@ -1,10 +1,9 @@
-package com.enderthor.kCustomField.extensions
+package com.jpweytjen.barberfish.extensions
 
 import io.hammerhead.karooext.models.UserProfile
-import com.enderthor.kCustomField.R
+import com.jpweytjen.barberfish.R
 import kotlinx.serialization.Serializable
 import kotlin.math.absoluteValue
-import kotlin.math.floor
 
 @Serializable
 data class zoneslope(val min: Double, val max: Double)

@@ -34,7 +34,7 @@
         <!-- Provide Karoo System with information about delivery of your app -->
         <meta-data
             android:name="io.hammerhead.karooext.MANIFEST_URL"
-            android:value="https://github.com/lockevod/Karoo-KDoubleType/releases/latest/download/manifest.json" />
+            android:value="https://github.com/jpweytjens/Barberfish/releases/latest/download/manifest.json" />
     </application>
 
 

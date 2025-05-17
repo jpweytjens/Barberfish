@@ -1,11 +1,10 @@
-package com.enderthor.kCustomField.screens
+package com.jpweytjen.barberfish.screens
 
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
@@ -17,14 +16,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 import kotlinx.coroutines.launch
 
-import com.enderthor.kCustomField.datatype.*
-import com.enderthor.kCustomField.extensions.*
+import com.jpweytjen.barberfish.datatype.*
+import com.jpweytjen.barberfish.extensions.*
 
 
 val alignmentOptions = listOf(FieldPosition.LEFT, FieldPosition.CENTER, FieldPosition.RIGHT)

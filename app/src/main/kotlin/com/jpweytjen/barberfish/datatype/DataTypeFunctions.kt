@@ -1,4 +1,4 @@
-package com.enderthor.kCustomField.datatype
+package com.jpweytjen.barberfish.datatype
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
@@ -18,11 +18,11 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.FlowPreview
-import com.enderthor.kCustomField.R
-import com.enderthor.kCustomField.extensions.getZone
-import com.enderthor.kCustomField.extensions.slopeZones
-import com.enderthor.kCustomField.extensions.streamDataFlow
-import com.enderthor.kCustomField.extensions.streamUserProfile
+import com.jpweytjen.barberfish.R
+import com.jpweytjen.barberfish.extensions.getZone
+import com.jpweytjen.barberfish.extensions.slopeZones
+import com.jpweytjen.barberfish.extensions.streamDataFlow
+import com.jpweytjen.barberfish.extensions.streamUserProfile
 import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.currentCoroutineContext

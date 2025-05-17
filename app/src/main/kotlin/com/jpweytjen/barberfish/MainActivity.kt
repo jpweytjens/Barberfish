@@ -1,11 +1,11 @@
-package com.enderthor.kCustomField
+package com.jpweytjen.barberfish
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 
-import com.enderthor.kCustomField.screens.TabLayout
-import com.enderthor.kCustomField.theme.AppTheme
+import com.jpweytjen.barberfish.screens.TabLayout
+import com.jpweytjen.barberfish.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

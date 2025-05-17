@@ -1,4 +1,4 @@
-package com.enderthor.kCustomField.screens
+package com.jpweytjen.barberfish.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -32,9 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.enderthor.kCustomField.datatype.DoubleFieldType
-import com.enderthor.kCustomField.datatype.KarooAction
-import com.enderthor.kCustomField.datatype.OneFieldType
+import com.jpweytjen.barberfish.datatype.DoubleFieldType
+import com.jpweytjen.barberfish.datatype.KarooAction
+import com.jpweytjen.barberfish.datatype.OneFieldType
 import java.util.Locale
 
 

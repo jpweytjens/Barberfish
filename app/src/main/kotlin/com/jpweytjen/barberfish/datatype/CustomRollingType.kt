@@ -1,13 +1,12 @@
-package com.enderthor.kCustomField.datatype
+package com.jpweytjen.barberfish.datatype
 
 import io.hammerhead.karooext.KarooSystemService
 
 
 
-class CustomClimbType(
+class CustomRollingType(
     karooSystem: KarooSystemService,
+
     datatype: String,
     value: Int
-) : CustomClimbTypeBase(karooSystem,  datatype, value)
-
-
+) : CustomRollingTypeBase(karooSystem,  datatype,value)

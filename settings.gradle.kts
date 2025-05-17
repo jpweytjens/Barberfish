@@ -34,5 +34,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Karoo Double Type"
+rootProject.name = "Barberfish"
 include(":app")

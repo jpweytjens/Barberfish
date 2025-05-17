@@ -1,4 +1,4 @@
-package com.enderthor.kCustomField.datatype
+package com.jpweytjen.barberfish.datatype
 
 import io.hammerhead.karooext.KarooSystemService
 

@@ -1,4 +1,4 @@
-package com.enderthor.kCustomField.datatype
+package com.jpweytjen.barberfish.datatype
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable

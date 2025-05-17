@@ -1,4 +1,4 @@
-package com.enderthor.kCustomField.theme
+package com.jpweytjen.barberfish.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable

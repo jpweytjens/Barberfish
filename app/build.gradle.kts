@@ -8,15 +8,15 @@ plugins {
 }
 
 android {
-    namespace = "com.enderthor.kCustomField"
+    namespace = "com.jpweytjens.barberfish"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.enderthor.kCustomField"
+        applicationId = "com.jpweytjens.barberfish"
         minSdk = 23
         targetSdk = 34
         versionCode = 202504011
-        versionName = "3.2.0"
+        versionName = "0.1"
     }
 
     buildTypes {

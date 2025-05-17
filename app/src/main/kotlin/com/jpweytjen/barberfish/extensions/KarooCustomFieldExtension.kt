@@ -1,4 +1,4 @@
-package com.enderthor.kCustomField.extensions
+package com.jpweytjen.barberfish.extensions
 
 import android.content.Context
 
@@ -9,10 +9,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 
-import com.enderthor.kCustomField.BuildConfig
-import com.enderthor.kCustomField.datatype.CustomClimbType
-import com.enderthor.kCustomField.datatype.CustomDoubleType
-import com.enderthor.kCustomField.datatype.CustomRollingType
+import com.jpweytjen.barberfish.BuildConfig
+import com.jpweytjen.barberfish.datatype.CustomClimbType
+import com.jpweytjen.barberfish.datatype.CustomDoubleType
+import com.jpweytjen.barberfish.datatype.CustomRollingType
 
 
 import timber.log.Timber
