@@ -77,8 +77,13 @@ fun formatNumber(number: Double, isInt: Boolean, isTime: Boolean = false, isCivi
         } else if (isTime) {
             append(formatTimeRemaining(number))
         } else {
-            if (isInt) append(number.roundToInt().toString().take(5))
-            else append(((number * 10.0).roundToInt() / 10.0).toString().take(5))
+            if (isInt) {
+                // For power values, ensure we can show up to 4 digits
+                append(number.roundToInt().toString().take(5))
+            } else {
+                // For speed values, format with one decimal
+                append(String.format("%.1f", number).take(6))
+            }
         }
 
     }
@@ -142,7 +147,8 @@ private fun NumberRow(
     val padding = if (fieldSize == FieldSize.LARGE) 8.dp else 2.dp
     val fontSize = when {
         onlyOne -> 42.sp
-        number.length > 3 -> 32.sp
+        number.length > 4 -> 30.sp
+        number.length > 3 -> 34.sp
         else -> 38.sp
     }
 
@@ -261,7 +267,16 @@ private fun OneNumberRow(
         if (!ispower) {
         number
     } else {
-        "${number.take(3)}-${secondValue.take(3)}"
+        // If power value is 4 digits, don't truncate
+        val formattedFirst = if (number.length <= 4) number else number.take(4)
+        val formattedSecond = if (secondValue.length <= 4) secondValue else secondValue.take(4)
+        "$formattedFirst-$formattedSecond"
+    }
+
+    val dynamicTextSize = when {
+        displayNumber.length > 8 -> (textSize * 0.8).toInt()
+        displayNumber.length > 6 -> (textSize * 0.9).toInt()
+        else -> textSize
     }
 
     Row(
@@ -281,7 +296,7 @@ private fun OneNumberRow(
             text = displayNumber,
             style = TextStyle(
                 fontWeight = FontWeight.Bold,
-                fontSize = textSize.sp,
+                fontSize = dynamicTextSize.sp,
                 fontFamily = FontFamily.Monospace,
                 color = if (iszone) textColor else ColorProvider(Color.Black, Color.White)
             ),
@@ -294,6 +309,13 @@ private fun OneNumberRow(
 @Composable
 private fun HorizontalScreenContent(number: String, icon: Int, colorFilter: ColorProvider, layout: FieldPosition, iszone: Boolean) {
    val colorIcon= ColorFilter.tint(colorFilter)
+
+    val fontSize = when {
+        number.length > 5 -> 32.sp
+        number.length > 4 -> 34.sp
+        else -> 38.sp
+    }
+
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -316,7 +338,7 @@ private fun HorizontalScreenContent(number: String, icon: Int, colorFilter: Colo
             text = number,
             style = TextStyle(
                 fontWeight = FontWeight.Bold,
-                fontSize = 38.sp,
+                fontSize = fontSize,
                 fontFamily = FontFamily.Monospace,
                 color = if (iszone) colorFilter else ColorProvider(Color.Black, Color.White),
                 textAlign = when (layout.name) {
@@ -354,8 +376,10 @@ private fun SingleHorizontalField(icon: Int, iconColor: ColorProvider, layout: F
     Spacer(modifier = GlanceModifier.height(height))
     IconRow(icon, ColorFilter.tint(iconColor), layout)
     Spacer(modifier = GlanceModifier.height(5.dp))
-    if (isheadwind && fieldSize == FieldSize.MEDIUM) NumberRow(number.take(4), zoneColor, layout, fieldSize, false,true,iszone,iconColor)
-    else NumberRow(number.take(4), zoneColor, layout, fieldSize, false,false,iszone,iconColor)
+    if (isheadwind && fieldSize == FieldSize.MEDIUM)
+        NumberRow(number, zoneColor, layout, fieldSize, false, true, iszone, iconColor)
+    else
+        NumberRow(number, zoneColor, layout, fieldSize, false, false, iszone, iconColor)
 
 }
 
@@ -385,92 +409,6 @@ fun NotSupported(overlayText: String, fontSize: Int)
 
 }
 
-
-@OptIn(ExperimentalGlancePreviewApi::class)
-@Preview(widthDp = 200, heightDp = 150)
-@Composable
-fun RollingFieldScreen(
-    dNumber: Double,
-    isInt: Boolean,
-    action: KarooAction,
-    iconColor: ColorProvider,
-    zonecolor: ColorProvider,
-    fieldsize: FieldSize,
-    iskaroo3: Boolean,
-    clayout: FieldPosition,
-    windtext: String,
-    winddiff: Int,
-    baseBitmap: Bitmap,
-    selector: Boolean,
-    textSize: Int,
-    iszone: Boolean,
-    ispreview: Boolean,
-    secondValue: Double,
-    isClimb: Boolean = false
-) {
-
-    val icon = action.icon
-    val label = action.label
-    val ispower = action.powerField
-    val isTime = action.action == KarooAction.TIMETODEST.action
-    val isCivil =
-        action.action == KarooAction.CIVIL_DUSK.action || action.action == KarooAction.CIVIL_DAWN.action
-
-    val isRealZone =
-        if( (action.name =="AVERAGE_PEDAL_BALANCE" || action.name =="PEDAL_BALANCE") && iszone && action.powerField) {
-            if (dNumber > secondValue * 0.85 && dNumber < secondValue * 1.07) {
-                Timber.d("isRealZone: $dNumber")
-                false
-            } else true
-        }
-        else iszone
-
-
-
-    if (selector) {
-        val newInt = if (isClimb) true else isInt
-
-        val number = formatNumber(dNumber, newInt, isTime, isCivil, isClimb)
-        val numberSecond = formatNumber(secondValue, isInt, isTime, isCivil, isClimb)
-
-
-        Box(modifier = GlanceModifier.fillMaxSize()) {
-            Row(
-                modifier = if (iskaroo3) GlanceModifier.fillMaxSize()
-                    .cornerRadius(6.dp) else GlanceModifier.fillMaxSize()
-            )
-            {
-                Column(modifier = GlanceModifier.defaultWeight().background(zonecolor)) {
-                    when (fieldsize) {
-
-                        FieldSize.SMALL -> Spacer(modifier = GlanceModifier.height(2.dp))
-                        FieldSize.MEDIUM -> Spacer(modifier = GlanceModifier.height(4.dp))
-                        else -> Spacer(modifier = GlanceModifier.height(1.dp))
-
-                    }
-                    if (fieldsize == FieldSize.LARGE || fieldsize == FieldSize.EXTRA_LARGE) NotSupported(
-                        "Size Not Supported",
-                        24
-                    )
-                    else {
-                        OneIconRow(icon, iconColor, label.uppercase(), isRealZone, fieldsize, isClimb)
-                        OneNumberRow(
-                            if (isClimb) number.take(4) else number.take(6),
-                            clayout,
-                            fieldsize,
-                            (textSize * (if (ispreview) 0.8 else if (isClimb) 1.1 else 1.0)).roundToInt(),
-                            isRealZone,
-                            iconColor,
-                            ispower,
-                            numberSecond.take(3),
-                            isClimb
-                        )
-                    }
-                }
-            }
-        }
-    } else HeadwindDirection(baseBitmap, winddiff, textSize, windtext)
-}
 
 fun checkRealZone(action: KarooAction, iszone: Boolean, dNumber: Double, secondValue: Double): Boolean {
 

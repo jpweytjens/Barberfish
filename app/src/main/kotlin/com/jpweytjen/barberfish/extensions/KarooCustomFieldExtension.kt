@@ -10,9 +10,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 
 import com.jpweytjen.barberfish.BuildConfig
-import com.jpweytjen.barberfish.datatype.CustomClimbType
 import com.jpweytjen.barberfish.datatype.CustomDoubleType
-import com.jpweytjen.barberfish.datatype.CustomRollingType
 
 
 import timber.log.Timber
