@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish.extensions
+package com.jpweytjens.barberfish.extensions
 
 import android.content.Context
 
@@ -9,8 +9,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 
-import com.jpweytjen.barberfish.BuildConfig
-import com.jpweytjen.barberfish.datatype.CustomDoubleType
+import com.jpweytjens.barberfish.BuildConfig
+import com.jpweytjens.barberfish.datatype.CustomDoubleType
 
 
 import timber.log.Timber

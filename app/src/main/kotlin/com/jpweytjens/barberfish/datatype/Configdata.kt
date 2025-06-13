@@ -1,10 +1,10 @@
-package com.jpweytjen.barberfish.datatype
+package com.jpweytjens.barberfish.datatype
 
 import io.hammerhead.karooext.models.DataType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import com.jpweytjen.barberfish.R
+import com.jpweytjens.barberfish.R
 import io.hammerhead.karooext.models.DataType.Field
 import io.hammerhead.karooext.models.UserProfile
 

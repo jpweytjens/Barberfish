@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish.datatype
+package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import androidx.compose.ui.graphics.Color
@@ -18,11 +18,11 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.FlowPreview
-import com.jpweytjen.barberfish.R
-import com.jpweytjen.barberfish.extensions.getZone
-import com.jpweytjen.barberfish.extensions.slopeZones
-import com.jpweytjen.barberfish.extensions.streamDataFlow
-import com.jpweytjen.barberfish.extensions.streamUserProfile
+import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.extensions.getZone
+import com.jpweytjens.barberfish.extensions.slopeZones
+import com.jpweytjens.barberfish.extensions.streamDataFlow
+import com.jpweytjens.barberfish.extensions.streamUserProfile
 import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.currentCoroutineContext

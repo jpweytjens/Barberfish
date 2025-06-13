@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish
+package com.jpweytjens.barberfish
 
 import android.app.Application
 import android.util.Log

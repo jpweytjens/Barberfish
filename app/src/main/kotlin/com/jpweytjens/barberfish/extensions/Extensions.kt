@@ -1,26 +1,26 @@
-package com.jpweytjen.barberfish.extensions
+package com.jpweytjens.barberfish.extensions
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.jpweytjen.barberfish.datatype.ClimbFieldSettings
+import com.jpweytjens.barberfish.datatype.ClimbFieldSettings
 
-import com.jpweytjen.barberfish.datatype.DoubleFieldSettings
-import com.jpweytjen.barberfish.datatype.GeneralSettings
-import com.jpweytjen.barberfish.datatype.OneFieldSettings
-import com.jpweytjen.barberfish.datatype.RETRY_CHECK_STREAMS
-import com.jpweytjen.barberfish.datatype.STREAM_TIMEOUT
-import com.jpweytjen.barberfish.datatype.SmartFieldSettings
-import com.jpweytjen.barberfish.datatype.WAIT_STREAMS_LONG
-import com.jpweytjen.barberfish.datatype.WAIT_STREAMS_MEDIUM
-import com.jpweytjen.barberfish.datatype.WAIT_STREAMS_SHORT
-import com.jpweytjen.barberfish.datatype.defaultClimbFieldSettings
-import com.jpweytjen.barberfish.datatype.defaultDoubleFieldSettings
-import com.jpweytjen.barberfish.datatype.defaultGeneralSettings
-import com.jpweytjen.barberfish.datatype.defaultOneFieldSettings
-import com.jpweytjen.barberfish.datatype.defaultSmartFieldSettings
-import com.jpweytjen.barberfish.datatype.defaultPowerSettings
-import com.jpweytjen.barberfish.datatype.powerSettings
+import com.jpweytjens.barberfish.datatype.DoubleFieldSettings
+import com.jpweytjens.barberfish.datatype.GeneralSettings
+import com.jpweytjens.barberfish.datatype.OneFieldSettings
+import com.jpweytjens.barberfish.datatype.RETRY_CHECK_STREAMS
+import com.jpweytjens.barberfish.datatype.STREAM_TIMEOUT
+import com.jpweytjens.barberfish.datatype.SmartFieldSettings
+import com.jpweytjens.barberfish.datatype.WAIT_STREAMS_LONG
+import com.jpweytjens.barberfish.datatype.WAIT_STREAMS_MEDIUM
+import com.jpweytjens.barberfish.datatype.WAIT_STREAMS_SHORT
+import com.jpweytjens.barberfish.datatype.defaultClimbFieldSettings
+import com.jpweytjens.barberfish.datatype.defaultDoubleFieldSettings
+import com.jpweytjens.barberfish.datatype.defaultGeneralSettings
+import com.jpweytjens.barberfish.datatype.defaultOneFieldSettings
+import com.jpweytjens.barberfish.datatype.defaultSmartFieldSettings
+import com.jpweytjens.barberfish.datatype.defaultPowerSettings
+import com.jpweytjens.barberfish.datatype.powerSettings
 
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataPoint

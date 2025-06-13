@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish.datatype
+package com.jpweytjens.barberfish.datatype
 
 import io.hammerhead.karooext.KarooSystemService
 

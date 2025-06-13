@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish.screens
+package com.jpweytjens.barberfish.screens
 
 import android.content.Context
 import androidx.compose.foundation.background
@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.sp
 
 import kotlinx.coroutines.launch
 
-import com.jpweytjen.barberfish.datatype.*
-import com.jpweytjen.barberfish.extensions.*
+import com.jpweytjens.barberfish.datatype.*
+import com.jpweytjens.barberfish.extensions.*
 
 
 val alignmentOptions = listOf(FieldPosition.LEFT, FieldPosition.CENTER, FieldPosition.RIGHT)

@@ -26,11 +26,11 @@
 
 
 # Mantener las clases de tu aplicación
--keep class com.jpweytjen.barberfish.** { *; }
--keep class com.jpweytjen.barberfish.datatype.** { *; }
--keep class com.jpweytjen.barberfish.extensions.** { *; }
--keep class com.jpweytjen.barberfish.screens.** { *; }
--keep class com.jpweytjen.barberfish.theme.** { *; }
+-keep class com.jpweytjens.barberfish.** { *; }
+-keep class com.jpweytjens.barberfish.datatype.** { *; }
+-keep class com.jpweytjens.barberfish.extensions.** { *; }
+-keep class com.jpweytjens.barberfish.screens.** { *; }
+-keep class com.jpweytjens.barberfish.theme.** { *; }
 
 # Reglas para Timber
 -dontwarn org.jetbrains.annotations.**
@@ -110,12 +110,12 @@
 }
 
 # Mantener las clases específicas de tu aplicación que usas en Glance
--keep class com.jpweytjen.barberfish.** {
+-keep class com.jpweytjens.barberfish.** {
     <init>(...);
 }
 
 # Mantener las clases de datos utilizadas en Glance
--keep class com.jpweytjen.barberfish.model.** {
+-keep class com.jpweytjens.barberfish.model.** {
     <init>(...);
 }
 

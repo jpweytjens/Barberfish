@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish.datatype
+package com.jpweytjens.barberfish.datatype
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
@@ -15,7 +15,6 @@ import androidx.glance.preview.ExperimentalGlancePreviewApi
 import androidx.glance.preview.Preview
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
-import timber.log.Timber
 import java.text.DateFormat
 import java.util.Calendar
 import kotlin.math.roundToInt

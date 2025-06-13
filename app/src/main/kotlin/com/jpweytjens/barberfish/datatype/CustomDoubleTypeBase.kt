@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish.datatype
+package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import android.graphics.BitmapFactory
@@ -28,11 +28,11 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
 
-import com.jpweytjen.barberfish.extensions.streamDoubleFieldSettings
-import com.jpweytjen.barberfish.extensions.streamGeneralSettings
-import com.jpweytjen.barberfish.R
+import com.jpweytjens.barberfish.extensions.streamDoubleFieldSettings
+import com.jpweytjens.barberfish.extensions.streamGeneralSettings
+import com.jpweytjens.barberfish.R
 
-import com.jpweytjen.barberfish.extensions.streamUserProfile
+import com.jpweytjens.barberfish.extensions.streamUserProfile
 import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.HardwareType
 import io.hammerhead.karooext.models.ShowCustomStreamState

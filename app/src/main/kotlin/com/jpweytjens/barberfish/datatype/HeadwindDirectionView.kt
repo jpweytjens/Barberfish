@@ -1,4 +1,4 @@
-package com.jpweytjen.barberfish.datatype
+package com.jpweytjens.barberfish.datatype
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

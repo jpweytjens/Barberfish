@@ -1,7 +1,7 @@
-package com.jpweytjen.barberfish.extensions
+package com.jpweytjens.barberfish.extensions
 
 import io.hammerhead.karooext.models.UserProfile
-import com.jpweytjen.barberfish.R
+import com.jpweytjens.barberfish.R
 import kotlinx.serialization.Serializable
 import kotlin.math.absoluteValue
 
