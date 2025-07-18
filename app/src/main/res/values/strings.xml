@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">template</string>
+    <string name="hello_karoo">Hello Karoo!</string>
+    <string name="extension_name">template</string>
+</resources>
