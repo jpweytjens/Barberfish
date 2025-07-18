@@ -2,7 +2,7 @@
 <ExtensionInfo
     displayName="@string/extension_name"
     icon="@drawable/ic_launcher_foreground"
-    id="template-id"
+    id="dev.jpweytjens.barberfish"
     scansDevices="false">
     <!-- DataType ... -->
 </ExtensionInfo>

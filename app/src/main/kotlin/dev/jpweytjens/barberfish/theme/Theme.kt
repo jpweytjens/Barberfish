@@ -1,4 +1,4 @@
-package io.hammerhead.karooexttemplate.theme
+package dev.jpweytjens.barberfish.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable

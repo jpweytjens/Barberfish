@@ -19,7 +19,7 @@
         </activity>
 
         <service
-            android:name=".extension.TemplateExtension"
+            android:name=".extension.BarberfishExtension"
             android:exported="true"
             tools:ignore="ExportedService">
             <intent-filter>

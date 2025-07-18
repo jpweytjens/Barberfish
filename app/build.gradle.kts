@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "io.hammerhead.karooexttemplate"
+    namespace = "dev.jpweytjens.barberfish"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "io.hammerhead.karooexttemplate"
+        applicationId = "dev.jpweytjens.barberfish"
         minSdk = 23
         targetSdk = 34
         versionCode = 1
