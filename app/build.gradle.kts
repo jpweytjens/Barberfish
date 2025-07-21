@@ -1,7 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.hilt.android)
-    alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
 }
@@ -43,9 +41,4 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.bundles.compose.ui)
     implementation(libs.timber)
-    
-    // Hilt
-    ksp(libs.hilt.android.compiler)
-    implementation(libs.hilt.android)
-    implementation(libs.androidx.hilt.navigation.compose)
 }

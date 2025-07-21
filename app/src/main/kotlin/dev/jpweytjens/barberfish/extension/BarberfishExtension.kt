@@ -1,26 +1,29 @@
 package dev.jpweytjens.barberfish.extension
 
-import dagger.hilt.android.AndroidEntryPoint
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
-import javax.inject.Inject
+import timber.log.Timber
 
-@AndroidEntryPoint
 class BarberfishExtension : KarooExtension("barberfish", "0.1") {
-    @Inject lateinit var karooSystem: KarooSystemService
 
-    override val types by lazy {
-        listOf(
-                AverageSpeedIncludingDataType(karooSystem, extension),
-                AverageSpeedExcludingDataType(karooSystem, extension)
-        )
-    }
+    lateinit var karooSystem: KarooSystemService
+
+    override val types by lazy { listOf(AverageSpeedIncludingDataType(karooSystem, extension)) }
 
     override fun onCreate() {
+        super.onCreate()
+        karooSystem = KarooSystemService(applicationContext)
+
+        Timber.d("Service Barberfish created")
         karooSystem.connect { connected ->
             if (connected) {
-                // Extension connected successfully
+                Timber.d("Connected to Karoo system")
             }
         }
+    }
+
+    override fun onDestroy() {
+        karooSystem.disconnect()
+        super.onDestroy()
     }
 }

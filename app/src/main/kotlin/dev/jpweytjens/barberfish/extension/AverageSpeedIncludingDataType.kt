@@ -13,15 +13,12 @@
  */
 package dev.jpweytjens.barberfish.extension
 
-import android.content.Context
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.Emitter
-import io.hammerhead.karooext.internal.ViewEmitter
+import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.UpdateNumericConfig
-import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -37,9 +34,11 @@ class AverageSpeedIncludingDataType(
         Timber.d("start average speed (inc) stream")
         val job =
                 CoroutineScope(Dispatchers.IO).launch {
+                    val distanceFlow = karooSystem.streamDataFlow(DataType.Type.DISTANCE)
+                    val rideTimeFlow = karooSystem.streamDataFlow(DataType.Type.RIDE_TIME)
                     combine(
-                                    karooSystem.streamDataFlow(DataType.Type.DISTANCE),
-                                    karooSystem.streamDataFlow(DataType.Type.RIDE_TIME)
+                                    distanceFlow,
+                                    rideTimeFlow,
                             ) { distanceState, totalTimeState ->
                         when {
                             distanceState is StreamState.Streaming &&
@@ -58,15 +57,14 @@ class AverageSpeedIncludingDataType(
                                         }
 
                                 StreamState.Streaming(
-                                        dataPoint =
-                                                distanceState.dataPoint.copy(
-                                                        dataTypeId = dataTypeId,
-                                                        values =
-                                                                mapOf(
-                                                                        DataType.Field.SINGLE to
-                                                                                averageSpeed
-                                                                ),
-                                                )
+                                        DataPoint(
+                                                dataTypeId,
+                                                values =
+                                                        mapOf(
+                                                                DataType.Field.SINGLE to
+                                                                        averageSpeed
+                                                        ),
+                                        )
                                 )
                             }
                             else -> StreamState.NotAvailable
@@ -74,13 +72,6 @@ class AverageSpeedIncludingDataType(
                     }
                             .collect { emitter.onNext(it) }
                 }
-        emitter.setCancellable {
-            job.cancel()
-        }
-    }
-
-    override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        Timber.d("Starting average speed (inc) view")
-        emitter.onNext(UpdateNumericConfig(formatDataTypeId = DataType.Type.SPEED))
+        emitter.setCancellable { job.cancel() }
     }
 }

@@ -29,8 +29,8 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class AverageSpeedExcludingDataType(
-        private val karooSystem: KarooSystemService,
         extension: String,
+        private val karooSystem: KarooSystemService,
 ) : DataTypeImpl(extension, "avg-speed-exc") {
 
     override fun startStream(emitter: Emitter<StreamState>) {
