@@ -4,5 +4,15 @@
     icon="@drawable/ic_launcher_foreground"
     id="dev.jpweytjens.barberfish"
     scansDevices="false">
-    <!-- DataType ... -->
+    
+    <DataType
+        displayName="Avg Speed (Inc)"
+        icon="@drawable/ic_launcher_foreground"
+        typeId="avg-speed-inc" />
+    
+    <DataType
+        displayName="Avg Speed (Exc)"
+        icon="@drawable/ic_launcher_foreground"
+        typeId="avg-speed-exc" />
+        
 </ExtensionInfo>
