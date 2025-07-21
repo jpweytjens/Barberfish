@@ -13,15 +13,12 @@
  */
 package dev.jpweytjens.barberfish.extension
 
-import android.content.Context
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.Emitter
-import io.hammerhead.karooext.internal.ViewEmitter
+import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.UpdateNumericConfig
-import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
@@ -29,18 +26,17 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class AverageSpeedExcludingDataType(
-        extension: String,
         private val karooSystem: KarooSystemService,
+        extension: String,
 ) : DataTypeImpl(extension, "avg-speed-exc") {
 
     override fun startStream(emitter: Emitter<StreamState>) {
         Timber.d("start average speed (exc) stream")
         val job =
                 CoroutineScope(Dispatchers.IO).launch {
-                    combine(
-                                    karooSystem.streamDataFlow(DataType.Type.DISTANCE),
-                                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME)
-                            ) { distanceState, elapsedTimeState ->
+                    val distanceFlow = karooSystem.streamDataFlow(DataType.Type.DISTANCE)
+                    val elapsedTimeFlow = karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME)
+                    combine(distanceFlow, elapsedTimeFlow) { distanceState, elapsedTimeState ->
                         when {
                             distanceState is StreamState.Streaming &&
                                     elapsedTimeState is StreamState.Streaming -> {
@@ -58,15 +54,14 @@ class AverageSpeedExcludingDataType(
                                         }
 
                                 StreamState.Streaming(
-                                        dataPoint =
-                                                distanceState.dataPoint.copy(
-                                                        dataTypeId = dataTypeId,
-                                                        values =
-                                                                mapOf(
-                                                                        DataType.Field.SINGLE to
-                                                                                averageSpeed
-                                                                ),
-                                                )
+                                        DataPoint(
+                                                dataTypeId,
+                                                values =
+                                                        mapOf(
+                                                                DataType.Field.SINGLE to
+                                                                        averageSpeed
+                                                        ),
+                                        )
                                 )
                             }
                             else -> StreamState.NotAvailable
@@ -78,10 +73,5 @@ class AverageSpeedExcludingDataType(
             Timber.d("stop average speed (exc) stream")
             job.cancel()
         }
-    }
-
-    override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        Timber.d("Starting average speed (exc) view")
-        emitter.onNext(UpdateNumericConfig(formatDataTypeId = DataType.Type.SPEED))
     }
 }

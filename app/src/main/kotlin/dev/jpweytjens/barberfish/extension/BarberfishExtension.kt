@@ -6,9 +6,14 @@ import timber.log.Timber
 
 class BarberfishExtension : KarooExtension("barberfish", "0.1") {
 
-    lateinit var karooSystem: KarooSystemService
+    private lateinit var karooSystem: KarooSystemService
 
-    override val types by lazy { listOf(AverageSpeedIncludingDataType(karooSystem, extension)) }
+    override val types by lazy {
+        listOf(
+                AverageSpeedIncludingDataType(karooSystem, extension),
+                AverageSpeedExcludingDataType(karooSystem, extension)
+        )
+    }
 
     override fun onCreate() {
         super.onCreate()
