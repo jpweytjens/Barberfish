@@ -1,7 +1,7 @@
-package dev.jpweytjens.barberfish.extension
+package io.hammerhead.karooexttemplate.extension
 
 import io.hammerhead.karooext.extension.KarooExtension
 
-class BarberfishExtension : KarooExtension("dev.jpweytjens.barberfish", "1.0") {
-    // Barberfish implementation here
+class TemplateExtension : KarooExtension("template-id", "1.0") {
+    // Template implementation here
 }
