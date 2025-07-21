@@ -20,12 +20,6 @@ The Barberfish lives in a symbiotic relationship with Hammerhead sharks, cleanin
 ### Time Management
 - **ETA (Estimated Time of Arrival)** - Custom ddHddMdds formatting (e.g., 12H34M56S)
 - **Paused Time** - Precise tracking with enhanced formatting
-- **Smart Calculations** - Intelligent estimation based on current ride metrics
-
-### Customizable Layout
-- **Multi-Column Display** - 1-4 configurable columns
-- **Flexible Content** - Include any default Karoo datafields
-- **Custom Styling** - Maintains native Karoo UI consistency
 
 ## Installation
 
@@ -43,7 +37,6 @@ The Barberfish lives in a symbiotic relationship with Hammerhead sharks, cleanin
 
 ### Display Options
 - **Time Format**: ddHddMdds (hours, minutes, seconds)
-- **Column Layout**: Choose 1-4 columns
 - **Color Themes**: Match your Karoo display preferences
 
 ## Support
