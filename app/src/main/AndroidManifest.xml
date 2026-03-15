@@ -1,47 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-
-    <application
-        android:name="io.hammerhead.sampleext.SampleApplication"
-        android:icon="@drawable/ic_sample"
-        android:label="@string/app_name"
-        android:theme="@style/AppTheme">
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="singleTop">
-            <intent-filter>
-                <action android:name="io.hammerhead.sampleext.MAIN" />
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-
-        <service
-            android:name=".extension.SampleExtension"
-            android:exported="true"
-            tools:ignore="ExportedService">
-            <!-- Required for this extension to be discovered by the Karoo System -->
-            <intent-filter>
-                <action android:name="io.hammerhead.karooext.KAROO_EXTENSION" />
-            </intent-filter>
-            <!-- Required for this extension to define resources and definitions -->
-            <meta-data
-                android:name="io.hammerhead.karooext.EXTENSION_INFO"
-                android:resource="@xml/extension_info" />
-        </service>
-
-        <!-- Provide Karoo System with information about delivery of your app -->
-        <meta-data
-            android:name="io.hammerhead.karooext.MANIFEST_URL"
-            android:value="https://github.com/hammerheadnav/karoo-ext/releases/latest/download/manifest.json" />
-
-    </application>
-
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Barberfish — populated in Step 10 (PLAN.MD) -->
 </manifest>
