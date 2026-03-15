@@ -1,3 +1,38 @@
+# Barberfish
+
+A minimal Hammerhead Karoo extension providing three custom data fields:
+a three-column power/HR/metric view with zone coloring, two average-speed
+variants (total and moving time), and three time fields (elapsed, moving, paused).
+
+## Source structure
+
+```
+app/src/main/
+├── kotlin/com/jpweytjens/barberfish/
+│   ├── BarberfishApplication.kt        Application subclass; plants Timber logger
+│   ├── datatype/
+│   │   ├── shared/
+│   │   │   ├── FieldValue.kt           Data class passed from field logic to composable views
+│   │   │   ├── ZoneColoring.kt         Pure functions: power (7-zone) and HR (5-zone) coloring
+│   │   │   └── ConvertType.kt          Unit conversion (speed/distance/elevation, metric↔imperial)
+│   │   ├── ThreeColumnField.kt         DataTypeImpl: streams power + HR + configurable third column
+│   │   ├── ThreeColumnView.kt          Glance composable: three equal columns with zone-colored text
+│   │   ├── AvgSpeedField.kt            DataTypeImpl: average speed (total or moving time variant)
+│   │   └── TimeField.kt                DataTypeImpl: elapsed / moving / paused time with xxh xxm format
+│   ├── extension/
+│   │   ├── BarberfishExtension.kt      KarooExtension service; registers all data types with Karoo OS
+│   │   ├── Settings.kt                 DataStore reads/writes for per-field configuration
+│   │   └── Extensions.kt              Flow adapters for KarooSystemService (streamDataFlow, consumerFlow)
+│   └── screens/
+│       └── MainActivity.kt             Settings UI: third-column picker and avg-speed thresholds
+└── res/
+    └── values/
+        ├── strings.xml                 App and field display names
+        └── colors.xml                  Zone palette and threshold colors
+```
+
+---
+
 # Karoo Extensions
 
 Karoo Extensions (karoo-ext library) is an [Android library](https://developer.android.com/studio/projects/android-library) for use on [Hammerhead](https://www.hammerhead.io/)
