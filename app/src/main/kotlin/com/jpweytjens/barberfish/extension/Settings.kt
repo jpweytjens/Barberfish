@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -24,19 +25,18 @@ private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_con
 // --- ThreeColumnConfig ---
 
 @Serializable
-data class ThreeColumnConfig(
-    val thirdColumn: ThirdColumnMetric = ThirdColumnMetric.SPEED,
-)
+enum class PowerStream(val label: String, val typeId: String, val fieldId: String) {
+    INSTANT("1s",  DataType.Type.POWER,                     DataType.Field.POWER),
+    S3(     "3s",  DataType.Type.SMOOTHED_3S_AVERAGE_POWER,  DataType.Field.SMOOTHED_3S_AVERAGE_POWER),
+    S5(     "5s",  DataType.Type.SMOOTHED_5S_AVERAGE_POWER,  DataType.Field.SMOOTHED_5S_AVERAGE_POWER),
+    S10(    "10s", DataType.Type.SMOOTHED_10S_AVERAGE_POWER, DataType.Field.SMOOTHED_10S_AVERAGE_POWER),
+    S30(    "30s", DataType.Type.SMOOTHED_30S_AVERAGE_POWER, DataType.Field.SMOOTHED_30S_AVERAGE_POWER),
+}
 
 @Serializable
-enum class ThirdColumnMetric(val label: String) {
-    SPEED("Speed"),
-    CADENCE("Cadence"),
-    DISTANCE("Distance"),
-    ELEVATION_GAIN("Ascent"),
-    GRADE("Grade"),
-    TEMPERATURE("Temp"),
-}
+data class ThreeColumnConfig(
+    val powerStream: PowerStream = PowerStream.S3,
+)
 
 fun Context.streamThreeColumnConfig(): Flow<ThreeColumnConfig> =
     dataStore.data
