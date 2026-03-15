@@ -1,3 +1,11 @@
 package com.jpweytjens.barberfish
 
-// TODO: implement — Step 10
+import android.app.Application
+import timber.log.Timber
+
+class BarberfishApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
+    }
+}
