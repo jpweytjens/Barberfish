@@ -16,7 +16,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
+import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
@@ -31,6 +33,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamThreeColumnConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 
+@OptIn(ExperimentalGlanceRemoteViewsApi::class, ExperimentalCoroutinesApi::class)
 class ThreeColumnField(private val karooSystem: KarooSystemService) :
     DataTypeImpl("barberfish", "three-column") {
 
