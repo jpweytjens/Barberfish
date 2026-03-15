@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ExtensionInfo
+    id="barberfish"
+    displayName="@string/extension_name"
+    icon="@drawable/ic_extension"
+    scansDevices="false">
+    <DataType
+        typeId="three-column"
+        displayName="@string/three_column_name"
+        description="@string/three_column_description"
+        graphical="true" />
+</ExtensionInfo>

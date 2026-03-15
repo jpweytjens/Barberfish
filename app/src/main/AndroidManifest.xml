@@ -1,4 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Barberfish — populated in Step 10 (PLAN.MD) -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:name=".BarberfishApplication"
+        android:icon="@drawable/ic_extension"
+        android:label="@string/extension_name">
+
+        <service
+            android:name=".extension.BarberfishExtension"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="io.hammerhead.karooext.KAROO_EXTENSION" />
+            </intent-filter>
+            <meta-data
+                android:name="io.hammerhead.karooext.EXTENSION_INFO"
+                android:resource="@xml/extension_info" />
+        </service>
+
+    </application>
 </manifest>

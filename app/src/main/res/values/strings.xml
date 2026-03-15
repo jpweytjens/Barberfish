@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- TODO: populate — Step 12 -->
+    <string name="extension_name">Barberfish</string>
+    <string name="three_column_name">Speed · HR · Power</string>
+    <string name="three_column_description">Speed, HR, and power in three columns with zone coloring</string>
 </resources>
