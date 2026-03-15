@@ -15,11 +15,9 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        // For local publishes of karoo-ext
-        mavenLocal()
         google()
         mavenCentral()
-        // karoo-ext
+        // karoo-ext from GitHub Packages (public but always requires authentication)
         maven {
             url = uri("https://maven.pkg.github.com/hammerheadnav/karoo-ext")
             credentials {
@@ -27,13 +25,8 @@ dependencyResolutionManagement {
                 password = providers.gradleProperty("gpr.key").getOrElse(System.getenv("TOKEN"))
             }
         }
-        // mapbox
-        maven {
-            url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
-        }
     }
 }
 
-rootProject.name = "karoo-ext"
-include(":lib", ":app")
- 
+rootProject.name = "barberfish"
+include(":app")
