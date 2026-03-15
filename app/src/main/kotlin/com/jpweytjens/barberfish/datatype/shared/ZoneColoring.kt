@@ -3,8 +3,6 @@ package com.jpweytjens.barberfish.datatype.shared
 import androidx.compose.ui.graphics.Color
 import io.hammerhead.karooext.models.UserProfile
 
-enum class ZonePalette { KAROO, WAHOO }
-
 // Karoo power zones (7 zones, low to high)
 private val karooPowerColors = listOf(
     Color(0xFF1A8C3A),  // Zone 1 – Active Recovery   (dark green)
