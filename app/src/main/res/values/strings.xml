@@ -3,4 +3,14 @@
     <string name="extension_name">Barberfish</string>
     <string name="three_column_name">Speed · HR · Power</string>
     <string name="three_column_description">Speed, HR, and power in three columns with zone coloring</string>
+    <string name="avg_speed_total_name">Avg Speed (total)</string>
+    <string name="avg_speed_total_description">Average speed including paused time, with optional threshold coloring</string>
+    <string name="avg_speed_moving_name">Avg Speed (moving)</string>
+    <string name="avg_speed_moving_description">Average speed excluding paused time, with optional threshold coloring</string>
+    <string name="time_elapsed_name">Elapsed Time</string>
+    <string name="time_elapsed_description">Total elapsed time</string>
+    <string name="time_moving_name">Moving Time</string>
+    <string name="time_moving_description">Time spent moving (elapsed minus paused)</string>
+    <string name="time_paused_name">Paused Time</string>
+    <string name="time_paused_description">Total paused time</string>
 </resources>

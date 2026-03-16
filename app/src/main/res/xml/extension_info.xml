@@ -9,4 +9,29 @@
         displayName="@string/three_column_name"
         description="@string/three_column_description"
         graphical="true" />
+    <DataType
+        typeId="avg-speed-total"
+        displayName="@string/avg_speed_total_name"
+        description="@string/avg_speed_total_description"
+        graphical="true" />
+    <DataType
+        typeId="avg-speed-moving"
+        displayName="@string/avg_speed_moving_name"
+        description="@string/avg_speed_moving_description"
+        graphical="true" />
+    <DataType
+        typeId="time-elapsed"
+        displayName="@string/time_elapsed_name"
+        description="@string/time_elapsed_description"
+        graphical="true" />
+    <DataType
+        typeId="time-moving"
+        displayName="@string/time_moving_name"
+        description="@string/time_moving_description"
+        graphical="true" />
+    <DataType
+        typeId="time-paused"
+        displayName="@string/time_paused_name"
+        description="@string/time_paused_description"
+        graphical="true" />
 </ExtensionInfo>

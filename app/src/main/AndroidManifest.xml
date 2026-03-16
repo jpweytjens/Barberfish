@@ -19,5 +19,15 @@
                 android:resource="@xml/extension_info" />
         </service>
 
+        <activity
+            android:name=".screens.MainActivity"
+            android:exported="true"
+            android:label="@string/extension_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
     </application>
 </manifest>
