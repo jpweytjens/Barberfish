@@ -16,9 +16,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
@@ -42,14 +45,22 @@ class AvgSpeedField(
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         if (config.preview) {
-            val preview = FieldValue("28.3", "km/h", label, FieldColor.Default)
             val scope = CoroutineScope(Dispatchers.IO + Job())
             emitter.setCancellable { scope.cancel() }
             scope.launch {
-                val composition = glance.compose(context, DpSize.Unspecified) {
-                    SingleValueView(preview, config.alignment)
-                }
-                emitter.updateView(composition.remoteViews)
+                combine(
+                    context.streamAvgSpeedConfig(includePaused),
+                    karooSystem.streamUserProfile(),
+                ) { cfg, profile -> cfg to profile }
+                    .flatMapLatest { (cfg, profile) ->
+                        previewSpeedFlow().map { rawMs -> toFieldValue(rawMs, cfg, profile) }
+                    }
+                    .collect { fieldValue ->
+                        val composition = glance.compose(context, DpSize.Unspecified) {
+                            SingleValueView(fieldValue, config.alignment)
+                        }
+                        emitter.updateView(composition.remoteViews)
+                    }
             }
             return
         }
@@ -110,6 +121,16 @@ class AvgSpeedField(
             }
         }
     }
+
+    private fun previewSpeedFlow() = flow {
+        // values in m/s — toFieldValue converts to user unit and applies threshold
+        val steps = listOf(4.17, 6.11, 7.22, 7.78, 8.89, 11.11) // 15, 22, 26, 28, 32, 40 km/h
+        var i = 0
+        while (true) {
+            emit(steps[i++ % steps.size])
+            delay(Delay.PREVIEW.time)
+        }
+    }.flowOn(Dispatchers.IO)
 
     private fun toFieldValue(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile): FieldValue {
         val converted = ConvertType.SPEED.apply(rawMs, profile)

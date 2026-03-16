@@ -29,8 +29,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
@@ -48,16 +51,38 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
             val scope = CoroutineScope(Dispatchers.IO + Job())
             emitter.setCancellable { scope.cancel() }
             scope.launch {
-                val composition = glance.compose(context, DpSize.Unspecified) {
-                    ThreeColumnView(
-                        left   = FieldValue("42.1", "km/h", "Speed", FieldColor.Default, iconRes = R.drawable.ic_col_speed),
-                        center = FieldValue("187",  "bpm",  "HR",    FieldColor.Zone(5, 5, ZonePalette.KAROO, isHr = true),  iconRes = R.drawable.ic_col_hr),
-                        right  = FieldValue("1247", "W",    "Power", FieldColor.Zone(7, 7, ZonePalette.KAROO, isHr = false), iconRes = R.drawable.ic_col_power),
-                        alignment = config.alignment,
-                        colorMode = ZoneColorMode.TEXT,
-                    )
-                }
-                emitter.updateView(composition.remoteViews)
+                combine(
+                    context.streamThreeColumnConfig(),
+                    karooSystem.streamUserProfile(),
+                ) { cfg, profile -> cfg to profile }
+                    .flatMapLatest { (cfg, profile) ->
+                        previewTripleFlow().map { (speedKph, hrBpm, powerW) ->
+                            val hrZoneIdx  = hrZone(hrBpm.toDouble(), profile.heartRateZones)
+                            val pwrZoneIdx = powerZone(powerW.toDouble(), profile.powerZones)
+                            val speed = FieldValue(
+                                "%.1f".format(speedKph), "km/h", "Speed",
+                                FieldColor.Default, R.drawable.ic_col_speed,
+                            )
+                            val hr = FieldValue(
+                                hrBpm.toString(), "bpm", "HR",
+                                FieldColor.Zone(hrZoneIdx, profile.heartRateZones.size.coerceAtLeast(1), ZonePalette.KAROO, isHr = true),
+                                R.drawable.ic_col_hr,
+                            )
+                            val power = FieldValue(
+                                powerW.toString(), "W", cfg.powerStream.label,
+                                FieldColor.Zone(pwrZoneIdx, profile.powerZones.size.coerceAtLeast(1), ZonePalette.KAROO, isHr = false),
+                                R.drawable.ic_col_power,
+                            )
+                            Triple(speed, hr, power) to cfg.colorMode
+                        }
+                    }
+                    .collect { (triple, colorMode) ->
+                        val (speed, hr, power) = triple
+                        val composition = glance.compose(context, DpSize.Unspecified) {
+                            ThreeColumnView(speed, hr, power, config.alignment, colorMode)
+                        }
+                        emitter.updateView(composition.remoteViews)
+                    }
             }
             return
         }
@@ -129,4 +154,19 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
             iconRes = R.drawable.ic_col_power,
         )
     }
+
+    private fun previewTripleFlow() = flow {
+        val steps = listOf(
+            Triple(28.5, 130, 180),
+            Triple(35.2, 152, 240),
+            Triple(42.1, 168, 320),
+            Triple(58.7, 187, 1247),
+            Triple(31.0, 145, 200),
+        )
+        var i = 0
+        while (true) {
+            emit(steps[i++ % steps.size])
+            delay(Delay.PREVIEW.time)
+        }
+    }.flowOn(Dispatchers.IO)
 }

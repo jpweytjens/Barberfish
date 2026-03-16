@@ -12,9 +12,15 @@ import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
@@ -42,7 +48,7 @@ enum class TimeKind(val label: String) {
     PAUSED("Paused"),
 }
 
-@OptIn(ExperimentalGlanceRemoteViewsApi::class)
+@OptIn(ExperimentalGlanceRemoteViewsApi::class, ExperimentalCoroutinesApi::class, FlowPreview::class)
 class TimeField(
     private val karooSystem: KarooSystemService,
     private val kind: TimeKind,
@@ -52,19 +58,26 @@ class TimeField(
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         if (config.preview) {
-            val preview = FieldValue(
-                primary = formatTime(5025L, TimeFormat.COMPACT),
-                unit = "",
-                label = kind.label,
-                color = FieldColor.Default,
-            )
             val scope = CoroutineScope(Dispatchers.IO + Job())
             emitter.setCancellable { scope.cancel() }
             scope.launch {
-                val composition = glance.compose(context, DpSize.Unspecified) {
-                    SingleValueView(preview, config.alignment)
-                }
-                emitter.updateView(composition.remoteViews)
+                context.streamTimeConfig()
+                    .flatMapLatest { cfg ->
+                        previewTimeFlow().map { seconds ->
+                            FieldValue(
+                                primary = formatTime(seconds, cfg.format),
+                                unit = "",
+                                label = kind.label,
+                                color = FieldColor.Default,
+                            )
+                        }
+                    }
+                    .collect { fieldValue ->
+                        val composition = glance.compose(context, DpSize.Unspecified) {
+                            SingleValueView(fieldValue, config.alignment)
+                        }
+                        emitter.updateView(composition.remoteViews)
+                    }
             }
             return
         }
@@ -108,4 +121,13 @@ class TimeField(
         (state as? StreamState.Streaming)
             ?.dataPoint?.values?.get(fieldKey)?.toLong()
             ?: 0L
+
+    private fun previewTimeFlow() = flow {
+        val steps = listOf(0L, 45L, 150L, 1665L, 5025L, 7384L) // 0s, 45s, 2'30", 27'45", 1h23'45", 2h03'04"
+        var i = 0
+        while (true) {
+            emit(steps[i++ % steps.size])
+            delay(Delay.PREVIEW.time)
+        }
+    }.flowOn(Dispatchers.IO)
 }
