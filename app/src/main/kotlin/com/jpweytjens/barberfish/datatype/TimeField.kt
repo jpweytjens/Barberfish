@@ -23,6 +23,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamTimeConfig
 import kotlin.math.max
 
 internal fun formatTime(seconds: Long, format: TimeFormat): String {
@@ -69,18 +70,18 @@ class TimeField(
                 ) { elapsed, paused -> max(0L, elapsed - paused) }
             }
 
-            secondsFlow
+            combine(secondsFlow, context.streamTimeConfig()) { seconds, config ->
+                FieldValue(
+                    primary = formatTime(seconds, config.format),
+                    unit = "",
+                    label = kind.label,
+                    color = FieldColor.Default,
+                )
+            }
                 .sample(1000L)
-                .collect { seconds ->
+                .collect { fieldValue ->
                     val composition = glance.compose(context, DpSize.Unspecified) {
-                        SingleValueView(
-                            FieldValue(
-                                primary = formatTime(seconds),
-                                unit = "",
-                                label = kind.label,
-                                color = FieldColor.Default,
-                            )
-                        )
+                        SingleValueView(fieldValue)
                     }
                     emitter.updateView(composition.remoteViews)
                 }
@@ -92,9 +93,4 @@ class TimeField(
             ?.dataPoint?.values?.get(fieldKey)?.toLong()
             ?: 0L
 
-    private fun formatTime(seconds: Long): String = when {
-        seconds < 60   -> "${seconds}s"
-        seconds < 3600 -> "${seconds / 60}m"
-        else           -> "${seconds / 3600}h ${(seconds % 3600) / 60}m"
-    }
 }
