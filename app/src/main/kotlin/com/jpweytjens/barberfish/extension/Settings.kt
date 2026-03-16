@@ -34,8 +34,15 @@ enum class PowerStream(val label: String, val typeId: String, val fieldId: Strin
 }
 
 @Serializable
+enum class ZoneColorMode(val label: String) {
+    TEXT("Colored text"),
+    BACKGROUND("Colored background"),
+}
+
+@Serializable
 data class ThreeColumnConfig(
     val powerStream: PowerStream = PowerStream.S3,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
 fun Context.streamThreeColumnConfig(): Flow<ThreeColumnConfig> =
