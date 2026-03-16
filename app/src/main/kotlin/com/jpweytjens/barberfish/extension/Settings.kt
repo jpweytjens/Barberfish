@@ -74,3 +74,26 @@ suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedC
     val key = if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey
     dataStore.edit { it[key] = json.encodeToString(config) }
 }
+
+// --- TimeConfig ---
+
+@Serializable
+enum class TimeFormat(val label: String) { COMPACT("Racing"), CLOCK("Clock") }
+
+@Serializable
+data class TimeConfig(val format: TimeFormat = TimeFormat.COMPACT)
+
+private val timeConfigKey = stringPreferencesKey("time_config")
+
+fun Context.streamTimeConfig(): Flow<TimeConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[timeConfigKey]
+                ?.let { runCatching { json.decodeFromString<TimeConfig>(it) }.getOrNull() }
+                ?: TimeConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveTimeConfig(config: TimeConfig) {
+    dataStore.edit { it[timeConfigKey] = json.encodeToString(config) }
+}
