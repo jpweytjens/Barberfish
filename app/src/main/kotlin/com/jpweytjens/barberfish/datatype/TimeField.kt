@@ -9,7 +9,6 @@ import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.UpdateGraphicConfig
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +25,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import kotlin.math.max
 
-internal fun formatTime(seconds: Long, format: TimeFormat): String {
+fun formatTime(seconds: Long, format: TimeFormat): String {
     val t = maxOf(0L, seconds)
     val h = t / 3600
     val m = (t % 3600) / 60
@@ -52,7 +51,24 @@ class TimeField(
     private val glance = GlanceRemoteViews()
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        emitter.onNext(UpdateGraphicConfig(showHeader = false))
+        if (config.preview) {
+            val preview = FieldValue(
+                primary = formatTime(5025L, TimeFormat.COMPACT),
+                unit = "",
+                label = kind.label,
+                color = FieldColor.Default,
+            )
+            val scope = CoroutineScope(Dispatchers.IO + Job())
+            emitter.setCancellable { scope.cancel() }
+            scope.launch {
+                val composition = glance.compose(context, DpSize.Unspecified) {
+                    SingleValueView(preview, config.alignment)
+                }
+                emitter.updateView(composition.remoteViews)
+            }
+            return
+        }
+
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
 
@@ -70,9 +86,9 @@ class TimeField(
                 ) { elapsed, paused -> max(0L, elapsed - paused) }
             }
 
-            combine(secondsFlow, context.streamTimeConfig()) { seconds, config ->
+            combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->
                 FieldValue(
-                    primary = formatTime(seconds, config.format),
+                    primary = formatTime(seconds, cfg.format),
                     unit = "",
                     label = kind.label,
                     color = FieldColor.Default,
@@ -81,7 +97,7 @@ class TimeField(
                 .sample(1000L)
                 .collect { fieldValue ->
                     val composition = glance.compose(context, DpSize.Unspecified) {
-                        SingleValueView(fieldValue)
+                        SingleValueView(fieldValue, config.alignment)
                     }
                     emitter.updateView(composition.remoteViews)
                 }
@@ -92,5 +108,4 @@ class TimeField(
         (state as? StreamState.Streaming)
             ?.dataPoint?.values?.get(fieldKey)?.toLong()
             ?: 0L
-
 }
