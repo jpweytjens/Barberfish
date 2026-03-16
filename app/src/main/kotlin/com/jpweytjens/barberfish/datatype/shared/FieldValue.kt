@@ -5,6 +5,7 @@ data class FieldValue(
     val unit: String,
     val label: String,
     val color: FieldColor,
+    val iconRes: Int? = null,
 ) {
     companion object {
         fun unavailable(label: String) = FieldValue("---", "", label, FieldColor.Default)
