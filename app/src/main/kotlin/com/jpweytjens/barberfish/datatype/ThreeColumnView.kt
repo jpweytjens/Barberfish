@@ -93,8 +93,7 @@ private fun ColumnCell(
                 style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFFAAAAAA)), textAlign = textAlign),
             )
         }
-        // Value — scale down for 4+ character strings
-        val valueSp = if (field.primary.length >= 4) 22.sp else 26.sp
+        val valueSp = primaryFontSp(field.primary.length, narrow = true)
         Text(
             text = field.primary,
             style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Bold, color = textColor, textAlign = textAlign),

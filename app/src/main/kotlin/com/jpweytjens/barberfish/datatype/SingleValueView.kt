@@ -28,9 +28,10 @@ fun SingleValueView(
         horizontalAlignment = horizontalAlign,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val valueSp = primaryFontSp(field.primary.length)
         Text(
             text = field.primary,
-            style = TextStyle(fontSize = 36.sp, fontWeight = FontWeight.Bold, color = color),
+            style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Bold, color = color),
         )
         if (field.unit.isNotEmpty()) {
             Text(
