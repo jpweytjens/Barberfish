@@ -22,3 +22,10 @@ internal fun FieldColor.toBackgroundColorProvider(): ColorProvider? =
         is FieldColor.Zone ->
             ColorProvider(if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette))
     }
+
+internal fun FieldColor.toColor(): Color? =
+    when (this) {
+        is FieldColor.Default -> null
+        is FieldColor.Threshold -> if (above) Color(0xFF81C784) else Color(0xFFE57373)
+        is FieldColor.Zone -> if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette)
+    }
