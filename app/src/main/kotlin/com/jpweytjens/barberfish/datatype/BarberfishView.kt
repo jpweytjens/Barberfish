@@ -45,8 +45,6 @@ fun BarberfishView(
 ) {
     if (showLabel) {
         val textAlign = alignment.toTextAlign()
-        val horizontalAlign = alignment.toHorizontal()
-        val showIcon = field.iconRes != null && alignment != ViewConfig.Alignment.CENTER
 
         val textColor: ColorProvider
         val cellModifier: GlanceModifier
@@ -55,46 +53,62 @@ fun BarberfishView(
                 textColor = whiteText
                 val bg = field.color.toBackgroundColorProvider()
                 cellModifier =
-                    if (bg != null) modifier.fillMaxHeight().background(bg)
-                    else modifier.fillMaxHeight()
+                    if (bg != null)
+                        modifier
+                            .fillMaxHeight()
+                            .padding(start = 2.dp, end = 2.dp, top = 4.dp)
+                            .background(bg)
+                    else modifier.fillMaxHeight().padding(start = 2.dp, end = 2.dp, top = 4.dp)
             }
             ZoneColorMode.TEXT -> {
                 textColor = field.color.toColorProvider()
-                cellModifier = modifier.fillMaxHeight()
+                cellModifier =
+                    modifier.fillMaxHeight().padding(start = 2.dp, end = 2.dp, top = 4.dp)
             }
         }
 
         Column(
             modifier = cellModifier,
-            horizontalAlignment = horizontalAlign,
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalAlignment = Alignment.Start,
+            verticalAlignment = Alignment.Top,
         ) {
-            // Label row: icon + CAPS label
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Label row: icon pinned left, label fills remaining width aligned per textAlign
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 val iconRes = field.iconRes
-                if (showIcon && iconRes != null) {
-                    Image(
-                        provider = ImageProvider(iconRes),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(ColorProvider(Color(0xFFAAAAAA))),
+                if (iconRes != null) {
+                    Box(
                         modifier = GlanceModifier.width(12.dp).height(12.dp),
-                    )
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            provider = ImageProvider(iconRes),
+                            contentDescription = null,
+                            colorFilter = ColorFilter.tint(ColorProvider(Color(0xFFAAAAAA))),
+                            modifier = GlanceModifier.width(12.dp).height(12.dp),
+                        )
+                    }
                     Spacer(GlanceModifier.width(2.dp))
                 }
                 Text(
                     text = field.label.uppercase(),
+                    modifier = GlanceModifier.defaultWeight(),
                     style =
                         TextStyle(
-                            fontSize = 10.sp,
+                            fontSize = 16.sp,
                             color = ColorProvider(Color(0xFFAAAAAA)),
                             textAlign = textAlign,
                             fontFamily = FontFamily.Monospace,
                         ),
                 )
             }
+            Spacer(GlanceModifier.defaultWeight())
             val valueSp = dynamicFontSp(field.primary.length, narrow = narrow)
             Text(
                 text = field.primary,
+                modifier = GlanceModifier.fillMaxWidth(),
                 style =
                     TextStyle(
                         fontSize = valueSp,
