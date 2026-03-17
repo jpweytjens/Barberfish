@@ -17,6 +17,8 @@ import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamThreeColumnConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
+import com.jpweytjens.barberfish.extension.streamZoneConfig
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
@@ -54,9 +56,10 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
             scope.launch {
                 combine(
                     context.streamThreeColumnConfig(),
+                    context.streamZoneConfig(),
                     karooSystem.streamUserProfile(),
-                ) { cfg, profile -> cfg to profile }
-                    .flatMapLatest { (cfg, profile) ->
+                ) { cfg, zones, profile -> Triple(cfg, zones, profile) }
+                    .flatMapLatest { (cfg, zones, profile) ->
                         previewTripleFlow().map { (speedKph, hrBpm, powerW) ->
                             val hrZoneIdx  = hrZone(hrBpm.toDouble(), profile.heartRateZones)
                             val pwrZoneIdx = powerZone(powerW.toDouble(), profile.powerZones)
@@ -66,12 +69,12 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
                             )
                             val hr = FieldValue(
                                 hrBpm.toString(), "bpm", "HR",
-                                FieldColor.Zone(hrZoneIdx, profile.heartRateZones.size.coerceAtLeast(1), ZonePalette.KAROO, isHr = true),
+                                FieldColor.Zone(hrZoneIdx, profile.heartRateZones.size.coerceAtLeast(1), zones.hrPalette, isHr = true),
                                 R.drawable.ic_col_hr,
                             )
                             val power = FieldValue(
                                 powerW.toString(), "W", cfg.powerStream.label,
-                                FieldColor.Zone(pwrZoneIdx, profile.powerZones.size.coerceAtLeast(1), ZonePalette.KAROO, isHr = false),
+                                FieldColor.Zone(pwrZoneIdx, profile.powerZones.size.coerceAtLeast(1), zones.powerPalette, isHr = false),
                                 R.drawable.ic_col_power,
                             )
                             Triple(speed, hr, power) to cfg.colorMode
@@ -94,13 +97,14 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
         scope.launch {
             combine(
                 context.streamThreeColumnConfig(),
+                context.streamZoneConfig(),
                 karooSystem.streamUserProfile(),
-            ) { cfg, profile -> cfg to profile }
-                .flatMapLatest { (cfg, profile) ->
+            ) { cfg, zones, profile -> Triple(cfg, zones, profile) }
+                .flatMapLatest { (cfg, zones, profile) ->
                     combine(
                         karooSystem.streamDataFlow(DataType.Type.SPEED).map { toSpeed(it, profile) },
-                        karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map { toHr(it, profile) },
-                        karooSystem.streamDataFlow(cfg.powerStream.typeId).map { toPower(it, cfg.powerStream, profile) },
+                        karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map { toHr(it, profile, zones) },
+                        karooSystem.streamDataFlow(cfg.powerStream.typeId).map { toPower(it, cfg.powerStream, profile, zones) },
                     ) { s, h, p -> Triple(s, h, p) }.map { it to cfg.colorMode }
                 }
                 .sample(400L)
@@ -128,7 +132,7 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
         )
     }
 
-    private fun toHr(state: StreamState, profile: UserProfile): FieldValue {
+    private fun toHr(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldValue {
         val raw = (state as? StreamState.Streaming)
             ?.dataPoint?.values?.get(DataType.Field.HEART_RATE)
             ?: return FieldValue.unavailable("HR")
@@ -137,12 +141,12 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
             primary = raw.toInt().toString(),
             unit = "bpm",
             label = "HR",
-            color = FieldColor.Zone(zone, profile.heartRateZones.size.coerceAtLeast(1), ZonePalette.KAROO, isHr = true),
+            color = FieldColor.Zone(zone, profile.heartRateZones.size.coerceAtLeast(1), zones.hrPalette, isHr = true),
             iconRes = R.drawable.ic_col_hr,
         )
     }
 
-    private fun toPower(state: StreamState, stream: PowerStream, profile: UserProfile): FieldValue {
+    private fun toPower(state: StreamState, stream: PowerStream, profile: UserProfile, zones: ZoneConfig): FieldValue {
         val raw = (state as? StreamState.Streaming)
             ?.dataPoint?.values?.get(stream.fieldId)
             ?: return FieldValue.unavailable("Power")
@@ -151,7 +155,7 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
             primary = raw.toInt().toString(),
             unit = "W",
             label = stream.label,
-            color = FieldColor.Zone(zone, profile.powerZones.size.coerceAtLeast(1), ZonePalette.KAROO, isHr = false),
+            color = FieldColor.Zone(zone, profile.powerZones.size.coerceAtLeast(1), zones.powerPalette, isHr = false),
             iconRes = R.drawable.ic_col_power,
         )
     }

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -21,6 +22,7 @@ private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 private val threeColumnConfigKey = stringPreferencesKey("three_column_config")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
+private val zoneConfigKey = stringPreferencesKey("zone_config")
 
 // --- ThreeColumnConfig ---
 
@@ -80,6 +82,27 @@ fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedConfig> {
 suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedConfig) {
     val key = if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey
     dataStore.edit { it[key] = json.encodeToString(config) }
+}
+
+// --- ZoneConfig ---
+
+@Serializable
+data class ZoneConfig(
+    val hrPalette: ZonePalette = ZonePalette.KAROO,
+    val powerPalette: ZonePalette = ZonePalette.KAROO,
+)
+
+fun Context.streamZoneConfig(): Flow<ZoneConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[zoneConfigKey]
+                ?.let { runCatching { json.decodeFromString<ZoneConfig>(it) }.getOrNull() }
+                ?: ZoneConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveZoneConfig(config: ZoneConfig) {
+    dataStore.edit { it[zoneConfigKey] = json.encodeToString(config) }
 }
 
 // --- TimeConfig ---
