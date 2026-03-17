@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -363,7 +364,8 @@ private fun ZoneColorPreview(colorMode: ZoneColorMode) {
     Row(
         modifier =
             Modifier.fillMaxWidth()
-                .background(Color.Black, RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.Black)
                 .height(64.dp),
     ) {
         BarberfishPreviewCell(speed, alignment, colorMode, Modifier.weight(1f))
@@ -393,8 +395,8 @@ private fun BarberfishPreviewCell(
 
     val cellModifier =
         if (hasZoneBg)
-            modifier.background(zoneColor!!).padding(start = 2.dp, end = 2.dp, top = 4.dp)
-        else modifier.padding(start = 2.dp, end = 2.dp, top = 4.dp)
+            modifier.background(zoneColor!!).padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp)
+        else modifier.padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp)
 
     val textAlign =
         when (alignment) {
