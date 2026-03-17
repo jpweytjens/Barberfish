@@ -108,7 +108,7 @@ suspend fun Context.saveZoneConfig(config: ZoneConfig) {
 // --- TimeConfig ---
 
 @Serializable
-enum class TimeFormat(val label: String) { COMPACT("Racing"), CLOCK("Clock") }
+enum class TimeFormat(val label: String) { COMPACT("Racing"), CLOCK("Clock"), HM_S("Segments") }
 
 @Serializable
 data class TimeConfig(val format: TimeFormat = TimeFormat.COMPACT)

@@ -31,8 +31,20 @@ class TimeFieldTest {
     @Test fun clock_3600s() = assertEquals("1:00:00", formatTime(3600L, TimeFormat.CLOCK))
     @Test fun clock_5025s() = assertEquals("1:23:45", formatTime(5025L, TimeFormat.CLOCK))
 
+    // --- HM_S ---
+
+    @Test fun hms_0s()    = assertEquals("0s",        formatTime(0L,    TimeFormat.HM_S))
+    @Test fun hms_5s()    = assertEquals("5s",        formatTime(5L,    TimeFormat.HM_S))
+    @Test fun hms_59s()   = assertEquals("59s",       formatTime(59L,   TimeFormat.HM_S))
+    @Test fun hms_60s()   = assertEquals("1m 0s",     formatTime(60L,   TimeFormat.HM_S))
+    @Test fun hms_90s()   = assertEquals("1m 30s",    formatTime(90L,   TimeFormat.HM_S))
+    @Test fun hms_3599s() = assertEquals("59m 59s",   formatTime(3599L, TimeFormat.HM_S))
+    @Test fun hms_3600s() = assertEquals("1h 0m 0s",  formatTime(3600L, TimeFormat.HM_S))
+    @Test fun hms_5025s() = assertEquals("1h 23m 45s",formatTime(5025L, TimeFormat.HM_S))
+
     // --- Negative guard ---
 
-    @Test fun compact_negative() = assertEquals("0'00\"", formatTime(-1L, TimeFormat.COMPACT))
-    @Test fun clock_negative()   = assertEquals("0:00:00", formatTime(-1L, TimeFormat.CLOCK))
+    @Test fun compact_negative() = assertEquals("0'00\"",   formatTime(-1L, TimeFormat.COMPACT))
+    @Test fun clock_negative()   = assertEquals("0:00:00",  formatTime(-1L, TimeFormat.CLOCK))
+    @Test fun hms_negative()     = assertEquals("0s",       formatTime(-1L, TimeFormat.HM_S))
 }
