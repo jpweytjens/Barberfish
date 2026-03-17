@@ -31,11 +31,11 @@ private val zoneConfigKey = stringPreferencesKey("zone_config")
 
 @Serializable
 enum class PowerStream(val label: String, val typeId: String, val fieldId: String) {
-    INSTANT("1s", DataType.Type.POWER, DataType.Field.POWER),
-    S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_POWER, DataType.Field.SMOOTHED_3S_AVERAGE_POWER),
-    S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_POWER, DataType.Field.SMOOTHED_5S_AVERAGE_POWER),
-    S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_POWER, DataType.Field.SMOOTHED_10S_AVERAGE_POWER),
-    S30("30s", DataType.Type.SMOOTHED_30S_AVERAGE_POWER, DataType.Field.SMOOTHED_30S_AVERAGE_POWER),
+    INSTANT("Power", DataType.Type.POWER, DataType.Field.POWER),
+    S3("3s Power", DataType.Type.SMOOTHED_3S_AVERAGE_POWER, DataType.Field.SMOOTHED_3S_AVERAGE_POWER),
+    S5("5s Power", DataType.Type.SMOOTHED_5S_AVERAGE_POWER, DataType.Field.SMOOTHED_5S_AVERAGE_POWER),
+    S10("10s Power", DataType.Type.SMOOTHED_10S_AVERAGE_POWER, DataType.Field.SMOOTHED_10S_AVERAGE_POWER),
+    S30("30s Power", DataType.Type.SMOOTHED_30S_AVERAGE_POWER, DataType.Field.SMOOTHED_30S_AVERAGE_POWER),
 }
 
 @Serializable
