@@ -121,7 +121,12 @@ class MainActivity : ComponentActivity() {
                 zoneConfig = zoneConfig,
             )
 
-            Text("Avg Speed (total time)", style = MaterialTheme.typography.titleMedium)
+            Text("Average Speed Thresholds", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Speed threshold in km/h. Color turns green above, red below. Leave empty to disable.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text("Total time", style = MaterialTheme.typography.labelMedium)
             ThresholdInput(
                 value = avgTotalConfig.thresholdKph,
                 onValueChange = { value ->
@@ -131,8 +136,7 @@ class MainActivity : ComponentActivity() {
                     }
                 },
             )
-
-            Text("Avg Speed (moving time)", style = MaterialTheme.typography.titleMedium)
+            Text("Moving time", style = MaterialTheme.typography.labelMedium)
             ThresholdInput(
                 value = avgMovingConfig.thresholdKph,
                 onValueChange = { value ->
@@ -338,7 +342,7 @@ private fun ThresholdInput(value: Double?, onValueChange: (Double?) -> Unit) {
             text = input
             onValueChange(input.toDoubleOrNull())
         },
-        label = { Text("Target speed (km/h) — leave empty to disable") },
+        placeholder = { Text("threshold") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth(),
     )
