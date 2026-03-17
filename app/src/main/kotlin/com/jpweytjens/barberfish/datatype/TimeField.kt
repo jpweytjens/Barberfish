@@ -75,7 +75,7 @@ class TimeField(
                     }
                     .collect { fieldValue ->
                         val composition = glance.compose(context, DpSize.Unspecified) {
-                            SingleValueView(fieldValue, config.alignment)
+                            BarberfishView(fieldValue, config.alignment)
                         }
                         emitter.updateView(composition.remoteViews)
                     }
@@ -111,7 +111,7 @@ class TimeField(
                 .sample(1000L)
                 .collect { fieldValue ->
                     val composition = glance.compose(context, DpSize.Unspecified) {
-                        SingleValueView(fieldValue, config.alignment)
+                        BarberfishView(fieldValue, config.alignment)
                     }
                     emitter.updateView(composition.remoteViews)
                 }
