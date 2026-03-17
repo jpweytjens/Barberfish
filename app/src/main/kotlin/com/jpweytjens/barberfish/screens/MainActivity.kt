@@ -115,7 +115,11 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch { saveThreeColumnConfig(threeColConfig) }
                 },
             )
-            ZoneColorPreview(colorMode = threeColConfig.colorMode)
+            ZoneColorPreview(
+                colorMode = threeColConfig.colorMode,
+                powerStream = threeColConfig.powerStream,
+                zoneConfig = zoneConfig,
+            )
 
             Text("Avg Speed (total time)", style = MaterialTheme.typography.titleMedium)
             ThresholdInput(
@@ -341,7 +345,11 @@ private fun ThresholdInput(value: Double?, onValueChange: (Double?) -> Unit) {
 }
 
 @Composable
-private fun ZoneColorPreview(colorMode: ZoneColorMode) {
+private fun ZoneColorPreview(
+    colorMode: ZoneColorMode,
+    powerStream: PowerStream,
+    zoneConfig: ZoneConfig,
+) {
     val alignment = ViewConfig.Alignment.RIGHT
     val speed =
         FieldValue("42.1", "km/h", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
@@ -350,15 +358,15 @@ private fun ZoneColorPreview(colorMode: ZoneColorMode) {
             "187",
             "bpm",
             "HR",
-            FieldColor.Zone(4, 5, ZonePalette.KAROO, isHr = true),
+            FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true),
             R.drawable.ic_col_hr,
         )
     val power =
         FieldValue(
             "247",
             "W",
-            "Power",
-            FieldColor.Zone(3, 7, ZonePalette.KAROO, isHr = false),
+            powerStream.label,
+            FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
             R.drawable.ic_col_power,
         )
     Row(
