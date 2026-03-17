@@ -46,12 +46,14 @@ fun BarberfishView(
     if (showLabel) {
         val textAlign = alignment.toTextAlign()
 
+        val bg = field.color.toBackgroundColorProvider()
+        val hasZoneBg = colorMode == ZoneColorMode.BACKGROUND && bg != null
+
         val textColor: ColorProvider
         val cellModifier: GlanceModifier
         when (colorMode) {
             ZoneColorMode.BACKGROUND -> {
                 textColor = whiteText
-                val bg = field.color.toBackgroundColorProvider()
                 cellModifier =
                     if (bg != null)
                         modifier
@@ -66,6 +68,9 @@ fun BarberfishView(
                     modifier.fillMaxHeight().padding(start = 2.dp, end = 2.dp, top = 4.dp)
             }
         }
+
+        val labelColor = ColorProvider(if (hasZoneBg) Color.Black else Color.White)
+        val iconTint = Color(if (hasZoneBg) 0xFF000000.toInt() else 0xFF31E09A.toInt())
 
         Column(
             modifier = cellModifier,
@@ -86,7 +91,7 @@ fun BarberfishView(
                         Image(
                             provider = ImageProvider(iconRes),
                             contentDescription = null,
-                            colorFilter = ColorFilter.tint(ColorProvider(Color(0xFFAAAAAA))),
+                            colorFilter = ColorFilter.tint(ColorProvider(iconTint)),
                             modifier = GlanceModifier.width(12.dp).height(12.dp),
                         )
                     }
@@ -98,7 +103,7 @@ fun BarberfishView(
                     style =
                         TextStyle(
                             fontSize = 16.sp,
-                            color = ColorProvider(Color(0xFFAAAAAA)),
+                            color = labelColor,
                             textAlign = textAlign,
                             fontFamily = FontFamily.Monospace,
                         ),
@@ -112,7 +117,7 @@ fun BarberfishView(
                 style =
                     TextStyle(
                         fontSize = valueSp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.Normal,
                         color = textColor,
                         textAlign = textAlign,
                         fontFamily = FontFamily.Monospace,
