@@ -65,11 +65,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                ConfigScreen()
-            }
-        }
+        setContent { MaterialTheme { ConfigScreen() } }
     }
 
     @Composable
@@ -89,10 +85,7 @@ class MainActivity : ComponentActivity() {
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Text("Three-Column Field", style = MaterialTheme.typography.titleMedium)
@@ -117,7 +110,9 @@ class MainActivity : ComponentActivity() {
                 value = avgTotalConfig.thresholdKph,
                 onValueChange = { value ->
                     avgTotalConfig = AvgSpeedConfig(value)
-                    lifecycleScope.launch { saveAvgSpeedConfig(includePaused = true, avgTotalConfig) }
+                    lifecycleScope.launch {
+                        saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                    }
                 },
             )
 
@@ -126,7 +121,9 @@ class MainActivity : ComponentActivity() {
                 value = avgMovingConfig.thresholdKph,
                 onValueChange = { value ->
                     avgMovingConfig = AvgSpeedConfig(value)
-                    lifecycleScope.launch { saveAvgSpeedConfig(includePaused = false, avgMovingConfig) }
+                    lifecycleScope.launch {
+                        saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                    }
                 },
             )
 
@@ -150,10 +147,13 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                 },
             )
-            ZoneColorBar(colors = when (zoneConfig.powerPalette) {
-                ZonePalette.KAROO -> karooPowerColors.map { it }
-                ZonePalette.WAHOO -> wahooPowerColors.map { it }
-            })
+            ZoneColorBar(
+                colors =
+                    when (zoneConfig.powerPalette) {
+                        ZonePalette.KAROO -> karooPowerColors.map { it }
+                        ZonePalette.WAHOO -> wahooPowerColors.map { it }
+                    }
+            )
 
             Text("HR zones", style = MaterialTheme.typography.labelMedium)
             ZonePaletteDropdown(
@@ -164,10 +164,13 @@ class MainActivity : ComponentActivity() {
                     lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                 },
             )
-            ZoneColorBar(colors = when (zoneConfig.hrPalette) {
-                ZonePalette.KAROO -> karooHrColors.map { it }
-                ZonePalette.WAHOO -> wahooHrColors.map { it }
-            })
+            ZoneColorBar(
+                colors =
+                    when (zoneConfig.hrPalette) {
+                        ZonePalette.KAROO -> karooHrColors.map { it }
+                        ZonePalette.WAHOO -> wahooHrColors.map { it }
+                    }
+            )
         }
     }
 }
@@ -176,24 +179,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun PowerStreamDropdown(selected: PowerStream, onSelected: (PowerStream) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
             value = selected.label,
             onValueChange = {},
             readOnly = true,
             label = { Text("Power averaging window") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth(),
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             PowerStream.entries.forEach { stream ->
                 DropdownMenuItem(
                     text = { Text(stream.label) },
@@ -211,24 +206,16 @@ private fun PowerStreamDropdown(selected: PowerStream, onSelected: (PowerStream)
 @Composable
 private fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
             value = selected.label,
             onValueChange = {},
             readOnly = true,
             label = { Text("Zone color mode") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth(),
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             ZoneColorMode.entries.forEach { mode ->
                 DropdownMenuItem(
                     text = { Text(mode.label) },
@@ -246,24 +233,16 @@ private fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneColo
 @Composable
 private fun TimeFormatDropdown(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
             value = selected.label,
             onValueChange = {},
             readOnly = true,
             label = { Text("Time display format") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth(),
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             TimeFormat.entries.forEach { format ->
                 DropdownMenuItem(
                     text = { Text(format.label) },
@@ -285,24 +264,16 @@ private fun ZonePaletteDropdown(
     onSelected: (ZonePalette) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-    ) {
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
             value = selected.label,
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth(),
+            modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             ZonePalette.entries.forEach { palette ->
                 DropdownMenuItem(
                     text = { Text(palette.label) },
@@ -328,10 +299,10 @@ private fun ZoneColorBar(colors: List<Color>) {
 @Composable
 private fun TimeFormatPreview(format: TimeFormat) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Black, RoundedCornerShape(8.dp))
-            .padding(vertical = 16.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .background(Color.Black, RoundedCornerShape(8.dp))
+                .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -360,15 +331,12 @@ private fun ThresholdInput(value: Double?, onValueChange: (Double?) -> Unit) {
 @Composable
 private fun ZoneColorPreview(colorMode: ZoneColorMode) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Black, RoundedCornerShape(8.dp))
-            .padding(vertical = 12.dp),
+        modifier =
+            Modifier.fillMaxWidth()
+                .background(Color.Black, RoundedCornerShape(8.dp))
+                .padding(vertical = 12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             ZonePreviewCell("SPEED", "42.1", "km/h", zoneColor = null, colorMode)
             ZonePreviewCell("HR", "187", "bpm", zoneColor = Color(0xFFE53935), colorMode)
             ZonePreviewCell("POWER", "247", "W", zoneColor = Color(0xFFFF9800), colorMode)
@@ -393,18 +361,14 @@ private fun ZonePreviewCell(
         }
         ZoneColorMode.BACKGROUND -> {
             textColor = Color.White
-            cellModifier = if (zoneColor != null)
-                Modifier
-                    .background(zoneColor, RoundedCornerShape(4.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            else
-                Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            cellModifier =
+                if (zoneColor != null)
+                    Modifier.background(zoneColor, RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                else Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
         }
     }
-    Column(
-        modifier = cellModifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    Column(modifier = cellModifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, fontSize = 9.sp, color = Color(0xFFAAAAAA))
         Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = textColor)
         Text(unit, fontSize = 10.sp, color = textColor)

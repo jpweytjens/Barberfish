@@ -24,8 +24,29 @@ fun ThreeColumnView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BarberfishView(left,   alignment, colorMode, narrow = true, showLabel = true, modifier = GlanceModifier.defaultWeight())
-        BarberfishView(center, alignment, colorMode, narrow = true, showLabel = true, modifier = GlanceModifier.defaultWeight())
-        BarberfishView(right,  alignment, colorMode, narrow = true, showLabel = true, modifier = GlanceModifier.defaultWeight())
+        BarberfishView(
+            left,
+            alignment,
+            colorMode,
+            narrow = true,
+            showLabel = true,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+        BarberfishView(
+            center,
+            alignment,
+            colorMode,
+            narrow = true,
+            showLabel = true,
+            modifier = GlanceModifier.defaultWeight(),
+        )
+        BarberfishView(
+            right,
+            alignment,
+            colorMode,
+            narrow = true,
+            showLabel = true,
+            modifier = GlanceModifier.defaultWeight(),
+        )
     }
 }

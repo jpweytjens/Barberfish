@@ -11,9 +11,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 fun KarooSystemService.streamDataFlow(dataTypeId: String): Flow<StreamState> = callbackFlow {
-    val listenerId = addConsumer(OnStreamState.StartStreaming(dataTypeId)) { event: OnStreamState ->
-        trySendBlocking(event.state)
-    }
+    val listenerId =
+        addConsumer(OnStreamState.StartStreaming(dataTypeId)) { event: OnStreamState ->
+            trySendBlocking(event.state)
+        }
     awaitClose { removeConsumer(listenerId) }
 }
 
