@@ -366,7 +366,7 @@ private fun ZoneColorPreview(colorMode: ZoneColorMode) {
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .background(Color.Black)
-                .height(64.dp),
+                .height(80.dp),
     ) {
         BarberfishPreviewCell(speed, alignment, colorMode, Modifier.weight(1f))
         BarberfishPreviewCell(hr, alignment, colorMode, Modifier.weight(1f))
