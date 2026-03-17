@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.sp
  */
 fun dynamicFontSp(length: Int, narrow: Boolean = false): TextUnit =
     if (narrow) {
-        if (length >= 4) 24.sp else 28.sp
+        if (length >= 4) 36.sp else 36.sp
     } else {
         when {
             length <= 5 -> 48.sp
