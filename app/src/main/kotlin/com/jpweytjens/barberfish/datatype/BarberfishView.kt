@@ -41,6 +41,7 @@ fun BarberfishView(
     colorMode: ZoneColorMode = ZoneColorMode.TEXT,
     narrow: Boolean = false,
     showLabel: Boolean = false,
+    modifier: GlanceModifier = GlanceModifier,
 ) {
     if (showLabel) {
         val textAlign = alignment.toTextAlign()
@@ -53,11 +54,13 @@ fun BarberfishView(
             ZoneColorMode.BACKGROUND -> {
                 textColor = whiteText
                 val bg = field.color.toBackgroundColorProvider()
-                cellModifier = if (bg != null) GlanceModifier.fillMaxHeight().background(bg) else GlanceModifier.fillMaxHeight()
+                cellModifier =
+                    if (bg != null) modifier.fillMaxHeight().background(bg)
+                    else modifier.fillMaxHeight()
             }
             ZoneColorMode.TEXT -> {
                 textColor = field.color.toColorProvider()
-                cellModifier = GlanceModifier.fillMaxHeight()
+                cellModifier = modifier.fillMaxHeight()
             }
         }
 
@@ -80,30 +83,46 @@ fun BarberfishView(
                 }
                 Text(
                     text = field.label.uppercase(),
-                    style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFFAAAAAA)), textAlign = textAlign, fontFamily = FontFamily.Monospace),
+                    style =
+                        TextStyle(
+                            fontSize = 10.sp,
+                            color = ColorProvider(Color(0xFFAAAAAA)),
+                            textAlign = textAlign,
+                            fontFamily = FontFamily.Monospace,
+                        ),
                 )
             }
             val valueSp = dynamicFontSp(field.primary.length, narrow = narrow)
             Text(
                 text = field.primary,
-                style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Bold, color = textColor, textAlign = textAlign, fontFamily = FontFamily.Monospace),
+                style =
+                    TextStyle(
+                        fontSize = valueSp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        textAlign = textAlign,
+                        fontFamily = FontFamily.Monospace,
+                    ),
             )
         }
     } else {
-        val color = when (colorMode) {
-            ZoneColorMode.BACKGROUND -> whiteText
-            ZoneColorMode.TEXT -> field.color.toColorProvider()
-        }
-        val horizontalAlign = when (alignment) {
-            ViewConfig.Alignment.LEFT   -> Alignment.Start
-            ViewConfig.Alignment.CENTER -> Alignment.CenterHorizontally
-            ViewConfig.Alignment.RIGHT  -> Alignment.End
-        }
-        val contentAlign = when (alignment) {
-            ViewConfig.Alignment.LEFT   -> Alignment.BottomStart
-            ViewConfig.Alignment.CENTER -> Alignment.BottomCenter
-            ViewConfig.Alignment.RIGHT  -> Alignment.BottomEnd
-        }
+        val color =
+            when (colorMode) {
+                ZoneColorMode.BACKGROUND -> whiteText
+                ZoneColorMode.TEXT -> field.color.toColorProvider()
+            }
+        val horizontalAlign =
+            when (alignment) {
+                ViewConfig.Alignment.LEFT -> Alignment.Start
+                ViewConfig.Alignment.CENTER -> Alignment.CenterHorizontally
+                ViewConfig.Alignment.RIGHT -> Alignment.End
+            }
+        val contentAlign =
+            when (alignment) {
+                ViewConfig.Alignment.LEFT -> Alignment.BottomStart
+                ViewConfig.Alignment.CENTER -> Alignment.BottomCenter
+                ViewConfig.Alignment.RIGHT -> Alignment.BottomEnd
+            }
         Column(
             modifier = GlanceModifier.fillMaxSize(),
             horizontalAlignment = horizontalAlign,
@@ -116,21 +135,29 @@ fun BarberfishView(
             ) {
                 Text(
                     text = field.primary,
-                    style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Normal, color = color, fontFamily = FontFamily.Monospace),
+                    style =
+                        TextStyle(
+                            fontSize = valueSp,
+                            fontWeight = FontWeight.Normal,
+                            color = color,
+                            fontFamily = FontFamily.Monospace,
+                        ),
                 )
             }
         }
     }
 }
 
-private fun ViewConfig.Alignment.toHorizontal(): Alignment.Horizontal = when (this) {
-    ViewConfig.Alignment.LEFT   -> Alignment.Start
-    ViewConfig.Alignment.CENTER -> Alignment.CenterHorizontally
-    ViewConfig.Alignment.RIGHT  -> Alignment.End
-}
+private fun ViewConfig.Alignment.toHorizontal(): Alignment.Horizontal =
+    when (this) {
+        ViewConfig.Alignment.LEFT -> Alignment.Start
+        ViewConfig.Alignment.CENTER -> Alignment.CenterHorizontally
+        ViewConfig.Alignment.RIGHT -> Alignment.End
+    }
 
-private fun ViewConfig.Alignment.toTextAlign(): TextAlign = when (this) {
-    ViewConfig.Alignment.LEFT   -> TextAlign.Left
-    ViewConfig.Alignment.CENTER -> TextAlign.Center
-    ViewConfig.Alignment.RIGHT  -> TextAlign.Right
-}
+private fun ViewConfig.Alignment.toTextAlign(): TextAlign =
+    when (this) {
+        ViewConfig.Alignment.LEFT -> TextAlign.Left
+        ViewConfig.Alignment.CENTER -> TextAlign.Center
+        ViewConfig.Alignment.RIGHT -> TextAlign.Right
+    }
