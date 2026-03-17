@@ -20,7 +20,7 @@ fun ThreeColumnView(
     colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     Row(
-        modifier = GlanceModifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 2.dp),
+        modifier = GlanceModifier.fillMaxSize().padding(vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
