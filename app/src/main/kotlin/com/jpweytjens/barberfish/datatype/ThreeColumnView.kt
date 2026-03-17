@@ -19,6 +19,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
+import androidx.glance.text.FontFamily
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
@@ -90,21 +91,14 @@ private fun ColumnCell(
             }
             Text(
                 text = field.label.uppercase(),
-                style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFFAAAAAA)), textAlign = textAlign),
+                style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFFAAAAAA)), textAlign = textAlign, fontFamily = FontFamily.Monospace),
             )
         }
         val valueSp = primaryFontSp(field.primary.length, narrow = true)
         Text(
             text = field.primary,
-            style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Bold, color = textColor, textAlign = textAlign),
+            style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Bold, color = textColor, textAlign = textAlign, fontFamily = FontFamily.Monospace),
         )
-        // Unit
-        if (field.unit.isNotEmpty()) {
-            Text(
-                text = field.unit,
-                style = TextStyle(fontSize = 11.sp, color = textColor, textAlign = textAlign),
-            )
-        }
     }
 }
 
