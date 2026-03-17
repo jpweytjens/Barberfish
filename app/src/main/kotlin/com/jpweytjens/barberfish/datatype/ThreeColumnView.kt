@@ -29,7 +29,6 @@ fun ThreeColumnView(
             alignment,
             colorMode,
             narrow = true,
-            showLabel = true,
             modifier = GlanceModifier.defaultWeight(),
         )
         BarberfishView(
@@ -37,7 +36,6 @@ fun ThreeColumnView(
             alignment,
             colorMode,
             narrow = true,
-            showLabel = true,
             modifier = GlanceModifier.defaultWeight(),
         )
         BarberfishView(
@@ -45,7 +43,6 @@ fun ThreeColumnView(
             alignment,
             colorMode,
             narrow = true,
-            showLabel = true,
             modifier = GlanceModifier.defaultWeight(),
         )
     }

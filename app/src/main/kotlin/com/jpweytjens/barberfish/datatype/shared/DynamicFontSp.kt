@@ -4,18 +4,16 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
 /**
- * Returns the appropriate primary-value font size for a field.
+ * Font size for single-value fields (showHeader=true, full-width Box layout).
  *
- * @param length Character count of the value string.
- * @param narrow true for 1/3-width columns (ThreeColumnView), false for full-width fields.
+ * Strips narrow punctuation (`:`, `.`, `'`, `"`) before scaling so that "0:00:00" (5 wide glyphs)
+ * is treated the same as a 5-character string.
  */
-fun dynamicFontSp(length: Int, narrow: Boolean = false): TextUnit =
-    if (narrow) {
-        if (length >= 4) 36.sp else 36.sp
-    } else {
-        when {
-            length <= 5 -> 48.sp
-            length <= 8 -> 38.sp
-            else -> 30.sp
-        }
-    }
+fun singleValueFontSp(text: String, textSize: Int): TextUnit {
+    // Narrow punctuation occupies ~50% of a digit's width in monospace; weight accordingly.
+    val effective = text.sumOf { if (it in ":.'\""  ) 0.5 else 1.0 }.coerceAtLeast(4.0)
+    return (textSize * 4f / effective).toInt().sp
+}
+
+/** Font size for narrow multicolumn columns (1/3-width, label+value layout). */
+fun narrowFontSp(@Suppress("UNUSED_PARAMETER") length: Int): TextUnit = 36.sp
