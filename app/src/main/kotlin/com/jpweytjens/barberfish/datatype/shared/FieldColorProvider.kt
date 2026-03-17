@@ -1,10 +1,7 @@
-package com.jpweytjens.barberfish.datatype
+package com.jpweytjens.barberfish.datatype.shared
 
 import androidx.compose.ui.graphics.Color
 import androidx.glance.unit.ColorProvider
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
-import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 
 internal val whiteText = ColorProvider(Color.White)
 

@@ -18,6 +18,8 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.primaryFontSp
+import com.jpweytjens.barberfish.datatype.shared.toColorProvider
 import io.hammerhead.karooext.models.ViewConfig
 
 @Composable
@@ -48,11 +50,8 @@ fun SingleValueView(
         ) {
             Text(
                 text = field.primary,
-                // modifier = GlanceModifier.padding(right = 4.dp),
                 style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Normal, color = color, fontFamily = FontFamily.Monospace),
             )
         }
-        // Spacer(GlanceModifier.height(2.dp))
-        // Spacer(GlanceModifier.width(2.dp))
     }
 }

@@ -6,6 +6,7 @@ import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceRemoteViews
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
+import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette

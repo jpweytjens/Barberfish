@@ -1,4 +1,4 @@
-package com.jpweytjens.barberfish.datatype
+package com.jpweytjens.barberfish.datatype.shared
 
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp

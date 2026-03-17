@@ -26,6 +26,10 @@ import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.primaryFontSp
+import com.jpweytjens.barberfish.datatype.shared.toBackgroundColorProvider
+import com.jpweytjens.barberfish.datatype.shared.toColorProvider
+import com.jpweytjens.barberfish.datatype.shared.whiteText
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
