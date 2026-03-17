@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,6 +23,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -32,16 +36,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.formatTime
+import com.jpweytjens.barberfish.datatype.shared.FieldColor
+import com.jpweytjens.barberfish.datatype.shared.FieldValue
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.karooHrColors
 import com.jpweytjens.barberfish.datatype.shared.karooPowerColors
+import com.jpweytjens.barberfish.datatype.shared.toColor
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColors
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColors
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
@@ -59,6 +69,7 @@ import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamThreeColumnConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -330,47 +341,102 @@ private fun ThresholdInput(value: Double?, onValueChange: (Double?) -> Unit) {
 
 @Composable
 private fun ZoneColorPreview(colorMode: ZoneColorMode) {
-    Box(
+    val alignment = ViewConfig.Alignment.RIGHT
+    val speed =
+        FieldValue("42.1", "km/h", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
+    val hr =
+        FieldValue(
+            "187",
+            "bpm",
+            "HR",
+            FieldColor.Zone(4, 5, ZonePalette.KAROO, isHr = true),
+            R.drawable.ic_col_hr,
+        )
+    val power =
+        FieldValue(
+            "247",
+            "W",
+            "Power",
+            FieldColor.Zone(3, 7, ZonePalette.KAROO, isHr = false),
+            R.drawable.ic_col_power,
+        )
+    Row(
         modifier =
             Modifier.fillMaxWidth()
                 .background(Color.Black, RoundedCornerShape(8.dp))
-                .padding(vertical = 12.dp)
+                .height(64.dp),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            ZonePreviewCell("SPEED", "42.1", "km/h", zoneColor = null, colorMode)
-            ZonePreviewCell("HR", "187", "bpm", zoneColor = Color(0xFFE53935), colorMode)
-            ZonePreviewCell("POWER", "247", "W", zoneColor = Color(0xFFFF9800), colorMode)
-        }
+        BarberfishPreviewCell(speed, alignment, colorMode, Modifier.weight(1f))
+        BarberfishPreviewCell(hr, alignment, colorMode, Modifier.weight(1f))
+        BarberfishPreviewCell(power, alignment, colorMode, Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun ZonePreviewCell(
-    label: String,
-    value: String,
-    unit: String,
-    zoneColor: Color?,
+private fun BarberfishPreviewCell(
+    field: FieldValue,
+    alignment: ViewConfig.Alignment,
     colorMode: ZoneColorMode,
+    modifier: Modifier = Modifier,
 ) {
-    val textColor: Color
-    val cellModifier: Modifier
-    when (colorMode) {
-        ZoneColorMode.TEXT -> {
-            textColor = zoneColor ?: Color.White
-            cellModifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+    val zoneColor = field.color.toColor()
+    val hasZoneBg = colorMode == ZoneColorMode.BACKGROUND && zoneColor != null
+
+    val valueColor =
+        when {
+            hasZoneBg -> Color.Black
+            colorMode == ZoneColorMode.TEXT -> zoneColor ?: Color.White
+            else -> Color.White
         }
-        ZoneColorMode.BACKGROUND -> {
-            textColor = Color.White
-            cellModifier =
-                if (zoneColor != null)
-                    Modifier.background(zoneColor, RoundedCornerShape(4.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                else Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+    val labelColor = if (hasZoneBg) Color.Black else Color.White
+    val iconTint = if (hasZoneBg) Color.Black else Color(0xFF31E09A)
+
+    val cellModifier =
+        if (hasZoneBg)
+            modifier.background(zoneColor!!).padding(start = 2.dp, end = 2.dp, top = 4.dp)
+        else modifier.padding(start = 2.dp, end = 2.dp, top = 4.dp)
+
+    val textAlign =
+        when (alignment) {
+            ViewConfig.Alignment.LEFT -> TextAlign.Left
+            ViewConfig.Alignment.CENTER -> TextAlign.Center
+            ViewConfig.Alignment.RIGHT -> TextAlign.Right
         }
-    }
-    Column(modifier = cellModifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, fontSize = 9.sp, color = Color(0xFFAAAAAA))
-        Text(value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = textColor)
-        Text(unit, fontSize = 10.sp, color = textColor)
+
+    Column(
+        modifier = cellModifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Top,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            field.iconRes?.let { res ->
+                Box(modifier = Modifier.size(12.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        painterResource(res),
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(10.dp),
+                    )
+                }
+                Spacer(Modifier.width(2.dp))
+            }
+            Text(
+                field.label.uppercase(),
+                modifier = Modifier.weight(1f),
+                fontSize = 16.sp,
+                color = labelColor,
+                textAlign = textAlign,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        Text(
+            field.primary,
+            modifier = Modifier.fillMaxWidth(),
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            color = valueColor,
+            textAlign = textAlign,
+            fontFamily = FontFamily.Monospace,
+        )
     }
 }
