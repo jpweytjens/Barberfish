@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -351,8 +351,7 @@ private fun ZoneColorPreview(
     zoneConfig: ZoneConfig,
 ) {
     val alignment = ViewConfig.Alignment.RIGHT
-    val speed =
-        FieldValue("42.1", "km/h", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
+    val speed = FieldValue("42.1", "km/h", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
     val hr =
         FieldValue(
             "187",
@@ -374,7 +373,7 @@ private fun ZoneColorPreview(
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .background(Color.Black)
-                .height(80.dp),
+                .height(80.dp)
     ) {
         BarberfishPreviewCell(speed, alignment, colorMode, Modifier.weight(1f))
         BarberfishPreviewCell(hr, alignment, colorMode, Modifier.weight(1f))
@@ -403,7 +402,9 @@ private fun BarberfishPreviewCell(
 
     val cellModifier =
         if (hasZoneBg)
-            modifier.background(zoneColor!!).padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp)
+            modifier
+                .background(zoneColor!!)
+                .padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp)
         else modifier.padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp)
 
     val textAlign =
@@ -413,10 +414,7 @@ private fun BarberfishPreviewCell(
             ViewConfig.Alignment.RIGHT -> TextAlign.Right
         }
 
-    Column(
-        modifier = cellModifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Top,
-    ) {
+    Column(modifier = cellModifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             field.iconRes?.let { res ->
                 Box(modifier = Modifier.size(12.dp), contentAlignment = Alignment.Center) {
@@ -432,10 +430,11 @@ private fun BarberfishPreviewCell(
             Text(
                 field.label.uppercase(),
                 modifier = Modifier.weight(1f),
-                fontSize = 16.sp,
+                fontSize = 12.sp,
                 color = labelColor,
                 textAlign = textAlign,
                 fontFamily = FontFamily.Monospace,
+                maxLines = 1,
             )
         }
         Spacer(Modifier.weight(1f))
