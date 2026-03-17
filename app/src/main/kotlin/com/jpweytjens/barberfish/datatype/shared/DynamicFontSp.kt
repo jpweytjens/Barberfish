@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.sp
  * @param length  Character count of the value string.
  * @param narrow  true for 1/3-width columns (ThreeColumnView), false for full-width fields.
  */
-fun primaryFontSp(length: Int, narrow: Boolean = false): TextUnit = if (narrow) {
+fun dynamicFontSp(length: Int, narrow: Boolean = false): TextUnit = if (narrow) {
     if (length >= 4) 24.sp else 28.sp
 } else {
     when {

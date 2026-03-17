@@ -12,13 +12,12 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.layout.padding
-import androidx.glance.layout.wrapContentHeight
 import androidx.glance.text.FontFamily
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
-import com.jpweytjens.barberfish.datatype.shared.primaryFontSp
+import com.jpweytjens.barberfish.datatype.shared.dynamicFontSp
 import com.jpweytjens.barberfish.datatype.shared.toColorProvider
 import io.hammerhead.karooext.models.ViewConfig
 
@@ -43,7 +42,7 @@ fun SingleValueView(
         horizontalAlignment = horizontalAlign,
         verticalAlignment = Alignment.Bottom,
     ) {
-        val valueSp = primaryFontSp(field.primary.length)
+        val valueSp = dynamicFontSp(field.primary.length)
         Box(
             modifier = GlanceModifier.fillMaxWidth().height(42.dp).padding(end= 4.dp),
             contentAlignment = contentAlign,

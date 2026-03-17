@@ -26,7 +26,7 @@ import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
-import com.jpweytjens.barberfish.datatype.shared.primaryFontSp
+import com.jpweytjens.barberfish.datatype.shared.dynamicFontSp
 import com.jpweytjens.barberfish.datatype.shared.toBackgroundColorProvider
 import com.jpweytjens.barberfish.datatype.shared.toColorProvider
 import com.jpweytjens.barberfish.datatype.shared.whiteText
@@ -98,7 +98,7 @@ private fun ColumnCell(
                 style = TextStyle(fontSize = 10.sp, color = ColorProvider(Color(0xFFAAAAAA)), textAlign = textAlign, fontFamily = FontFamily.Monospace),
             )
         }
-        val valueSp = primaryFontSp(field.primary.length, narrow = true)
+        val valueSp = dynamicFontSp(field.primary.length, narrow = true)
         Text(
             text = field.primary,
             style = TextStyle(fontSize = valueSp, fontWeight = FontWeight.Bold, color = textColor, textAlign = textAlign, fontFamily = FontFamily.Monospace),
