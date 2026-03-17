@@ -48,17 +48,21 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
     }
 }
 
-enum class TimeKind(val label: String) {
-    ELAPSED("Time"),
-    MOVING("Moving"),
-    PAUSED("Paused"),
+enum class TimeKind(val label: String, val typeId: String) {
+    ELAPSED         ("Time",           "time-elapsed"),
+    MOVING          ("Moving",         "time-moving"),
+    PAUSED          ("Paused",         "time-paused"),
+    TIME_TO_SUNRISE ("To Sunrise",     "time-to-sunrise"),
+    TIME_TO_SUNSET  ("To Sunset",      "time-to-sunset"),
+    TIME_TO_CIVIL_DAWN("To Civil Dawn","time-to-civil-dawn"),
+    TIME_TO_CIVIL_DUSK("To Civil Dusk","time-to-civil-dusk"),
 }
 
 @OptIn(ExperimentalGlanceRemoteViewsApi::class, ExperimentalCoroutinesApi::class, FlowPreview::class)
 class TimeField(
     private val karooSystem: KarooSystemService,
     private val kind: TimeKind,
-) : DataTypeImpl("barberfish", "time-${kind.name.lowercase()}") {
+) : DataTypeImpl("barberfish", kind.typeId) {
 
     private val glance = GlanceRemoteViews()
 
@@ -103,6 +107,14 @@ class TimeField(
                     karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME)
                         .map { state -> extractSeconds(state, DataType.Field.PAUSED_TIME) },
                 ) { elapsed, paused -> max(0L, elapsed - paused) }
+                TimeKind.TIME_TO_SUNRISE   -> karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE)
+                    .map { state -> extractSeconds(state, DataType.Field.TIME_TO_SUNRISE) }
+                TimeKind.TIME_TO_SUNSET    -> karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNSET)
+                    .map { state -> extractSeconds(state, DataType.Field.TIME_TO_SUNSET) }
+                TimeKind.TIME_TO_CIVIL_DAWN -> karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DAWN)
+                    .map { state -> extractSeconds(state, DataType.Field.TIME_TO_CIVIL_DAWN) }
+                TimeKind.TIME_TO_CIVIL_DUSK -> karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DUSK)
+                    .map { state -> extractSeconds(state, DataType.Field.TIME_TO_CIVIL_DUSK) }
             }
 
             combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->

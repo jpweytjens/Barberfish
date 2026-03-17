@@ -13,4 +13,12 @@
     <string name="time_moving_description">Time spent moving (elapsed minus paused)</string>
     <string name="time_paused_name">Paused Time</string>
     <string name="time_paused_description">Total paused time</string>
+    <string name="time_to_sunrise_name">Time to Sunrise</string>
+    <string name="time_to_sunrise_description">Time until sunrise at current location</string>
+    <string name="time_to_sunset_name">Time to Sunset</string>
+    <string name="time_to_sunset_description">Time until sunset at current location</string>
+    <string name="time_to_civil_dawn_name">Time to Civil Dawn</string>
+    <string name="time_to_civil_dawn_description">Time until civil dawn at current location</string>
+    <string name="time_to_civil_dusk_name">Time to Civil Dusk</string>
+    <string name="time_to_civil_dusk_description">Time until civil dusk at current location</string>
 </resources>

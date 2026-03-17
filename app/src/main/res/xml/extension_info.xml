@@ -34,4 +34,24 @@
         displayName="@string/time_paused_name"
         description="@string/time_paused_description"
         graphical="true" />
+    <DataType
+        typeId="time-to-sunrise"
+        displayName="@string/time_to_sunrise_name"
+        description="@string/time_to_sunrise_description"
+        graphical="true" />
+    <DataType
+        typeId="time-to-sunset"
+        displayName="@string/time_to_sunset_name"
+        description="@string/time_to_sunset_description"
+        graphical="true" />
+    <DataType
+        typeId="time-to-civil-dawn"
+        displayName="@string/time_to_civil_dawn_name"
+        description="@string/time_to_civil_dawn_description"
+        graphical="true" />
+    <DataType
+        typeId="time-to-civil-dusk"
+        displayName="@string/time_to_civil_dusk_name"
+        description="@string/time_to_civil_dusk_description"
+        graphical="true" />
 </ExtensionInfo>
