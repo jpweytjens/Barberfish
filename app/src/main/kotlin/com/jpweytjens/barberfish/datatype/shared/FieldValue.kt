@@ -3,7 +3,7 @@ package com.jpweytjens.barberfish.datatype.shared
 data class FieldValue(
     val primary: String,
     val unit: String,
-    val label: String,
+    val label: String = "",
     val color: FieldColor,
     val iconRes: Int? = null,
 ) {

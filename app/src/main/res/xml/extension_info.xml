@@ -10,46 +10,55 @@
         description="@string/three_column_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_speed_average"
         typeId="avg-speed-total"
         displayName="@string/avg_speed_total_name"
         description="@string/avg_speed_total_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_speed_average"
         typeId="avg-speed-moving"
         displayName="@string/avg_speed_moving_name"
         description="@string/avg_speed_moving_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_time_to_dest"
         typeId="time-elapsed"
         displayName="@string/time_elapsed_name"
         description="@string/time_elapsed_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_time_to_dest"
         typeId="time-moving"
         displayName="@string/time_moving_name"
         description="@string/time_moving_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_time_to_dest"
         typeId="time-paused"
         displayName="@string/time_paused_name"
         description="@string/time_paused_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_sunrise"
         typeId="time-to-sunrise"
         displayName="@string/time_to_sunrise_name"
         description="@string/time_to_sunrise_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_sunset"
         typeId="time-to-sunset"
         displayName="@string/time_to_sunset_name"
         description="@string/time_to_sunset_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_sunrise"
         typeId="time-to-civil-dawn"
         displayName="@string/time_to_civil_dawn_name"
         description="@string/time_to_civil_dawn_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_sunset"
         typeId="time-to-civil-dusk"
         displayName="@string/time_to_civil_dusk_name"
         description="@string/time_to_civil_dusk_description"
