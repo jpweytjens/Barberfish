@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import io.hammerhead.karooext.models.UserProfile
 
 // Karoo power zones (7 zones, low to high)
-private val karooPowerColors = listOf(
+internal val karooPowerColors = listOf(
     Color(0xFF1A8C3A),  // Zone 1 – Active Recovery   (dark green)
     Color(0xFF40D078),  // Zone 2 – Endurance         (mint green)
     Color(0xFFF0D800),  // Zone 3 – Tempo             (yellow)
@@ -15,7 +15,7 @@ private val karooPowerColors = listOf(
 )
 
 // Karoo HR zones (5 zones) — same palette, subset of power zones
-private val karooHrColors = listOf(
+internal val karooHrColors = listOf(
     Color(0xFF1A8C3A),  // Zone 1 – Active Recovery   (dark green)
     Color(0xFF40D078),  // Zone 2 – Endurance         (mint green)
     Color(0xFFF0D800),  // Zone 3 – Tempo             (yellow)
@@ -24,7 +24,7 @@ private val karooHrColors = listOf(
 )
 
 // Wahoo power zones (7 zones, low to high)
-private val wahooPowerColors = listOf(
+internal val wahooPowerColors = listOf(
     Color(0xFFC0C0C0),  // Zone 1 – Recovery Miles    (grey)
     Color(0xFF253070),  // Zone 2 – Foundation Miles  (navy)
     Color(0xFF4E90CC),  // Zone 3 – Endurance Miles   (blue)
@@ -35,7 +35,7 @@ private val wahooPowerColors = listOf(
 )
 
 // Wahoo HR zones (5 zones)
-private val wahooHrColors = listOf(
+internal val wahooHrColors = listOf(
     Color(0xFFC0C0C0),  // Zone 1 (grey)
     Color(0xFF253070),  // Zone 2 (navy)
     Color(0xFF48B830),  // Zone 3 (green)
