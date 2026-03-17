@@ -10,11 +10,11 @@ import androidx.compose.ui.unit.sp
  * @param narrow  true for 1/3-width columns (ThreeColumnView), false for full-width fields.
  */
 fun primaryFontSp(length: Int, narrow: Boolean = false): TextUnit = if (narrow) {
-    if (length >= 4) 22.sp else 26.sp
+    if (length >= 4) 24.sp else 28.sp
 } else {
     when {
         length <= 5 -> 48.sp
-        length <= 8 -> 36.sp
-        else        -> 26.sp
+        length <= 8 -> 38.sp
+        else        -> 30.sp
     }
 }
