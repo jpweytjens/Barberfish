@@ -53,13 +53,11 @@ fun BarberfishView(
         val cellModifier: GlanceModifier
         when (colorMode) {
             ZoneColorMode.BACKGROUND -> {
-                textColor = whiteText
+                textColor = if (hasZoneBg) ColorProvider(Color.Black) else whiteText
                 cellModifier =
                     if (bg != null)
-                        modifier
-                            .fillMaxHeight()
+                        modifier.fillMaxHeight().background(bg)
                             .padding(start = 2.dp, end = 2.dp, top = 4.dp)
-                            .background(bg)
                     else modifier.fillMaxHeight().padding(start = 2.dp, end = 2.dp, top = 4.dp)
             }
             ZoneColorMode.TEXT -> {
