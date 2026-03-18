@@ -4,18 +4,24 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -37,11 +43,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
@@ -56,18 +65,29 @@ import com.jpweytjens.barberfish.datatype.shared.toColor
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColors
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColors
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.HRFieldConfig
+import com.jpweytjens.barberfish.extension.HUDConfig
+import com.jpweytjens.barberfish.extension.PowerFieldConfig
+import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.PowerStream
-import com.jpweytjens.barberfish.extension.ThreeColumnConfig
+import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
-import com.jpweytjens.barberfish.extension.saveThreeColumnConfig
+import com.jpweytjens.barberfish.extension.saveHRFieldConfig
+import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.savePowerFieldConfig
+import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
-import com.jpweytjens.barberfish.extension.streamThreeColumnConfig
+import com.jpweytjens.barberfish.extension.streamHRFieldConfig
+import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
+import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.models.ViewConfig
@@ -82,14 +102,20 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun ConfigScreen() {
-        var threeColConfig by remember { mutableStateOf(ThreeColumnConfig()) }
+        var hudConfig by remember { mutableStateOf(HUDConfig()) }
+        var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
+        var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
+        var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
         var avgTotalConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
 
         LaunchedEffect(Unit) {
-            launch { streamThreeColumnConfig().collect { threeColConfig = it } }
+            launch { streamHUDConfig().collect { hudConfig = it } }
+            launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
+            launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
+            launch { streamSpeedFieldConfig().collect { speedFieldConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = true).collect { avgTotalConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
             launch { streamTimeConfig().collect { timeConfig = it } }
@@ -100,27 +126,134 @@ class MainActivity : ComponentActivity() {
             modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            Text("Three-Column Field", style = MaterialTheme.typography.titleMedium)
+            SectionHeader(title = "Fields", description = "Configures the standalone data fields.")
+            FieldCard(
+                title = "POWER",
+                description = "Power output in W.",
+                previewField =
+                    FieldValue(
+                        "247",
+                        "W",
+                        label =
+                            if (powerFieldConfig.smoothing == PowerSmoothingStream.S0) "Power"
+                            else "${powerFieldConfig.smoothing.label} Power",
+                        color =
+                            if (powerFieldConfig.colorMode == ZoneColorMode.NONE) FieldColor.Default
+                            else FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
+                        iconRes = R.drawable.ic_col_power,
+                    ),
+                colorMode = powerFieldConfig.colorMode,
+            ) {
+                Text(
+                    "SMOOTHING",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1B2D2D),
+                )
+                SmoothingSlider(
+                    options = PowerSmoothingStream.entries,
+                    selected = powerFieldConfig.smoothing,
+                    label = { it.label },
+                    thumbIcon = R.drawable.ic_col_power,
+                    onSelected = { stream ->
+                        powerFieldConfig = powerFieldConfig.copy(smoothing = stream)
+                        lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
+                    },
+                )
+                ZoneColorSlider(
+                    selected = powerFieldConfig.colorMode,
+                    onSelected = { mode ->
+                        powerFieldConfig = powerFieldConfig.copy(colorMode = mode)
+                        lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
+                    },
+                )
+            }
+
+            FieldCard(
+                title = "HEART RATE",
+                description = "Heart rate in bpm.",
+                previewField =
+                    FieldValue(
+                        "172",
+                        "bpm",
+                        label = "HR",
+                        color =
+                            if (hrFieldConfig.colorMode == ZoneColorMode.NONE) FieldColor.Default
+                            else FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true),
+                        iconRes = R.drawable.ic_col_hr,
+                    ),
+                colorMode = hrFieldConfig.colorMode,
+            ) {
+                ZoneColorSlider(
+                    selected = hrFieldConfig.colorMode,
+                    onSelected = { mode ->
+                        hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                        lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                    },
+                )
+            }
+
+            FieldCard(
+                title = "SPEED",
+                description = "Speed in km/h.",
+                previewField =
+                    FieldValue(
+                        "37.5",
+                        "km/h",
+                        label =
+                            if (speedFieldConfig.smoothing == SpeedSmoothingStream.S0) "Speed"
+                            else "${speedFieldConfig.smoothing.label} Speed",
+                        color = FieldColor.Default,
+                        iconRes = R.drawable.ic_speed_average,
+                    ),
+                colorMode = ZoneColorMode.NONE,
+            ) {
+                Text(
+                    "SMOOTHING",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1B2D2D),
+                )
+                SmoothingSlider(
+                    options = SpeedSmoothingStream.entries,
+                    selected = speedFieldConfig.smoothing,
+                    label = { it.label },
+                    thumbIcon = R.drawable.ic_speed_average,
+                    onSelected = { stream ->
+                        speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
+                        lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                    },
+                )
+            }
+
+            SectionHeader(
+                title = "HUD",
+                description = "Configures the data fields in the heads-up display (HUD).",
+            )
             PowerStreamDropdown(
-                selected = threeColConfig.powerStream,
+                selected = hudConfig.powerStream,
                 onSelected = { stream ->
-                    threeColConfig = threeColConfig.copy(powerStream = stream)
-                    lifecycleScope.launch { saveThreeColumnConfig(threeColConfig) }
+                    hudConfig = hudConfig.copy(powerStream = stream)
+                    lifecycleScope.launch { saveHUDConfig(hudConfig) }
                 },
             )
             ZoneColorModeDropdown(
-                selected = threeColConfig.colorMode,
+                selected = hudConfig.colorMode,
                 onSelected = { mode ->
-                    threeColConfig = threeColConfig.copy(colorMode = mode)
-                    lifecycleScope.launch { saveThreeColumnConfig(threeColConfig) }
+                    hudConfig = hudConfig.copy(colorMode = mode)
+                    lifecycleScope.launch { saveHUDConfig(hudConfig) }
                 },
             )
             ZoneColorPreview(
-                colorMode = threeColConfig.colorMode,
-                powerStream = threeColConfig.powerStream,
+                colorMode = hudConfig.colorMode,
+                powerStream = hudConfig.powerStream,
                 zoneConfig = zoneConfig,
             )
 
+            SectionHeader(
+                title = "Global",
+                description = "Zone palettes and time format shared across all fields.",
+            )
             Text("Average Speed Thresholds", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Speed threshold in km/h. Color turns green above, red below. Leave empty to disable.",
@@ -195,6 +328,104 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable
+private fun <T> SmoothingSlider(
+    options: List<T>,
+    selected: T,
+    label: (T) -> String,
+    onSelected: (T) -> Unit,
+    thumbIcon: Int? = null,
+) {
+    val density = LocalDensity.current
+    val thumbSizeDp = 40.dp
+    val dotSizeDp = 10.dp
+    val trackHeightDp = 18.dp // slightly taller than dotSizeDp
+    val grey = Color(0xFF9E9E9E)
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        BoxWithConstraints(
+            modifier =
+                Modifier.fillMaxWidth().height(thumbSizeDp).pointerInput(options, onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = ((x / slotWidthPx).toInt()).coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+        ) {
+            val totalWidthPx = constraints.maxWidth.toFloat()
+            val slotWidthPx = totalWidthPx / options.size
+            val thumbSizePx = with(density) { thumbSizeDp.toPx() }
+            val dotSizePx = with(density) { dotSizeDp.toPx() }
+            val selectedIdx = options.indexOf(selected).coerceAtLeast(0)
+            val thumbCenterX = (selectedIdx + 0.5f) * slotWidthPx
+
+            // White pill track
+            Box(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .height(trackHeightDp)
+                        .align(Alignment.Center)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.White)
+            )
+            // Dots at each stop position
+            options.forEachIndexed { index, _ ->
+                val cx = (index + 0.5f) * slotWidthPx
+                Box(
+                    modifier =
+                        Modifier.size(dotSizeDp)
+                            .align(Alignment.CenterStart)
+                            .offset { IntOffset((cx - dotSizePx / 2).toInt(), 0) }
+                            .clip(CircleShape)
+                            .background(grey)
+                )
+            }
+            // Thumb on top
+            Box(
+                modifier =
+                    Modifier.size(thumbSizeDp)
+                        .align(Alignment.CenterStart)
+                        .offset { IntOffset((thumbCenterX - thumbSizePx / 2).toInt(), 0) }
+                        .clip(CircleShape)
+                        .background(grey),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (thumbIcon != null) {
+                    Icon(
+                        painter = painterResource(thumbIcon),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+        // Labels — equal-weight slots aligned with dots
+        Row(modifier = Modifier.fillMaxWidth()) {
+            options.forEach { option ->
+                Text(
+                    text = label(option),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    color =
+                        if (option == selected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PowerStreamDropdown(selected: PowerStream, onSelected: (PowerStream) -> Unit) {
@@ -222,6 +453,119 @@ private fun PowerStreamDropdown(selected: PowerStream, onSelected: (PowerStream)
     }
 }
 
+@Composable
+private fun SectionHeader(title: String, description: String) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(
+            description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FieldCard(
+    title: String,
+    description: String,
+    previewField: FieldValue,
+    colorMode: ZoneColorMode,
+    controls: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFFDDDDDD)).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    description,
+                    modifier = Modifier.weight(1f),
+                    fontSize = 12.sp,
+                    color = Color(0xFF1B2D2D),
+                )
+                Box(
+                    modifier =
+                        Modifier.width(120.dp)
+                            .height(80.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.Black)
+                ) {
+                    BarberfishPreviewCell(
+                        previewField,
+                        ViewConfig.Alignment.RIGHT,
+                        colorMode,
+                        Modifier.fillMaxSize(),
+                    )
+                }
+            }
+        }
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFFD5D5D5)).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            content = controls,
+        )
+    }
+}
+
+@Composable
+private fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
+    val options = ZoneColorMode.entries
+    val grey = Color(0xFF9E9E9E)
+    Text("ZONE COLOR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { mode ->
+            val isSelected = mode == selected
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) grey else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text =
+                        when (mode) {
+                            ZoneColorMode.NONE -> "None"
+                            ZoneColorMode.TEXT -> "Text"
+                            ZoneColorMode.BACKGROUND -> "Bg"
+                        },
+                    fontSize = 11.sp,
+                    color = if (isSelected) Color.White else Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
@@ -231,7 +575,7 @@ private fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneColo
             value = selected.label,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Zone color mode") },
+            label = { Text("Zone color") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
@@ -408,8 +752,8 @@ private fun BarberfishPreviewCell(
         if (hasZoneBg)
             modifier
                 .background(zoneColor!!)
-                .padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp)
-        else modifier.padding(start = 2.dp, end = 2.dp, top = 4.dp, bottom = 4.dp)
+                .padding(start = 2.dp, end = 4.dp, top = 6.dp, bottom = 4.dp)
+        else modifier.padding(start = 2.dp, end = 4.dp, top = 6.dp, bottom = 4.dp)
 
     val textAlign =
         when (alignment) {
@@ -421,20 +765,20 @@ private fun BarberfishPreviewCell(
     Column(modifier = cellModifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             field.iconRes?.let { res ->
-                Box(modifier = Modifier.size(12.dp), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.size(16.dp), contentAlignment = Alignment.Center) {
                     Icon(
                         painterResource(res),
                         contentDescription = null,
                         tint = iconTint,
-                        modifier = Modifier.size(10.dp),
+                        modifier = Modifier.size(16.dp),
                     )
                 }
-                Spacer(Modifier.width(2.dp))
+                Spacer(Modifier.width(4.dp))
             }
             Text(
                 field.label.uppercase(),
-                modifier = Modifier.weight(1f),
-                fontSize = 12.sp,
+                modifier = Modifier.weight(2f),
+                fontSize = 16.sp,
                 color = labelColor,
                 textAlign = textAlign,
                 fontFamily = FontFamily.Monospace,
