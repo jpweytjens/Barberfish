@@ -28,6 +28,32 @@ android {
     }
 }
 
+tasks.register("generateManifest") {
+    description = "Generates manifest.json with current version information"
+    group = "build"
+
+    doLast {
+        val baseUrl = System.getenv("BASE_URL") ?: "https://github.com/jpweytjens/barberfish/releases/latest/download"
+        val manifestFile = file("$projectDir/manifest.json")
+        val manifest = mapOf(
+            "label" to "Barberfish",
+            "packageName" to "com.jpweytjens.barberfish",
+            "iconUrl" to "$baseUrl/barberfish.png",
+            "latestApkUrl" to "$baseUrl/app-release.apk",
+            "latestVersion" to android.defaultConfig.versionName,
+            "latestVersionCode" to android.defaultConfig.versionCode,
+            "developer" to "github.com/jpweytjens",
+            "description" to "Barberfish keeps Hammerheads sharp, on your handlebars and in the ocean. Native-feeling data field enhancements for the Hammerhead Karoo.",
+            "releaseNotes" to "",
+            "screenshotUrls" to listOf<String>()
+        )
+
+        val gson = groovy.json.JsonBuilder(manifest).toPrettyString()
+        manifestFile.writeText(gson)
+        println("Generated manifest.json with version ${android.defaultConfig.versionName} (${android.defaultConfig.versionCode})")
+    }
+}
+
 dependencies {
     implementation(libs.hammerhead.karoo.ext)
     implementation(libs.androidx.core.ktx)
