@@ -67,7 +67,8 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
         if (kind == TimeKind.TIME_OF_ARRIVAL) {
             return karooSystem.streamDataFlow(DataType.Type.TIME_OF_ARRIVAL).map { state ->
                 FieldValue(
-                    primary = formatClockTime(extractSeconds(state, DataType.Field.TIME_OF_ARRIVAL)),
+                    primary =
+                        formatClockTime(extractSeconds(state, DataType.Field.TIME_OF_ARRIVAL)),
                     unit = "",
                     color = FieldColor.Default,
                 )

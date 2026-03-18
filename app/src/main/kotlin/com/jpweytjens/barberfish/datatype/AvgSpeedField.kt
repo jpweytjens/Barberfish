@@ -111,8 +111,10 @@ class AvgSpeedField(
                 val imperial =
                     profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
                 val threshInUnit = if (imperial) cfg.thresholdKph * 0.621371 else cfg.thresholdKph
-                val factor = ((converted - threshInUnit) / threshInUnit * 100.0 / cfg.rangePercent)
-                    .coerceIn(-1.0, 1.0).toFloat()
+                val factor =
+                    ((converted - threshInUnit) / threshInUnit * 100.0 / cfg.rangePercent)
+                        .coerceIn(-1.0, 1.0)
+                        .toFloat()
                 FieldColor.Threshold(factor)
             } else FieldColor.Default
         return FieldValue(

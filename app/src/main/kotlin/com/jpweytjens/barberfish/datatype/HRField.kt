@@ -29,10 +29,12 @@ class HRField(private val karooSystem: KarooSystemService) :
 
     override fun liveFlow(context: Context): Flow<FieldValue> =
         combine(
-            context.streamHRFieldConfig(),
-            karooSystem.streamUserProfile(),
-            context.streamZoneConfig(),
-        ) { cfg, profile, zones -> Triple(cfg, profile, zones) }
+                context.streamHRFieldConfig(),
+                karooSystem.streamUserProfile(),
+                context.streamZoneConfig(),
+            ) { cfg, profile, zones ->
+                Triple(cfg, profile, zones)
+            }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map { state ->
                     val raw =
@@ -57,10 +59,12 @@ class HRField(private val karooSystem: KarooSystemService) :
 
     override fun previewFlow(context: Context): Flow<FieldValue> =
         combine(
-            context.streamHRFieldConfig(),
-            karooSystem.streamUserProfile(),
-            context.streamZoneConfig(),
-        ) { cfg, profile, zones -> Triple(cfg, profile, zones) }
+                context.streamHRFieldConfig(),
+                karooSystem.streamUserProfile(),
+                context.streamZoneConfig(),
+            ) { cfg, profile, zones ->
+                Triple(cfg, profile, zones)
+            }
             .flatMapLatest { (cfg, profile, zones) ->
                 previewHRFlow().map { bpm ->
                     val zone = hrZone(bpm.toDouble(), profile.heartRateZones)

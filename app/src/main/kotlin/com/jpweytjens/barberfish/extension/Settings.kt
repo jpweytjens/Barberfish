@@ -141,7 +141,8 @@ suspend fun Context.saveSpeedFieldConfig(config: SpeedFieldConfig) {
 // thresholdKph is always stored in km/h; converted to the user's preferred unit at display time.
 // rangePercent: ±% deviation from threshold that maps to fully red/blue (default 10%).
 // thresholdKph = 0.0 means no threshold (disabled).
-@Serializable data class AvgSpeedConfig(val thresholdKph: Double = 0.0, val rangePercent: Double = 10.0)
+@Serializable
+data class AvgSpeedConfig(val thresholdKph: Double = 0.0, val rangePercent: Double = 10.0)
 
 fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedConfig> {
     val key = if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey

@@ -19,6 +19,7 @@ sealed interface FieldColor {
     data class Zone(val zone: Int, val total: Int, val palette: ZonePalette, val isHr: Boolean) :
         FieldColor
 
-    // factor: -1.0 (fully red, well below threshold) to 0.0 (at threshold) to +1.0 (fully blue, well above)
+    // factor: -1.0 (fully red, well below threshold) to 0.0 (at threshold) to +1.0 (fully blue,
+    // well above)
     data class Threshold(val factor: Float) : FieldColor
 }

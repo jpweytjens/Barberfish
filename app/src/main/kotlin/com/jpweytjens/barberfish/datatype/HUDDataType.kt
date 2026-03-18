@@ -19,7 +19,8 @@ import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalGlanceRemoteViewsApi::class, FlowPreview::class)
-abstract class HUDDataType(extensionId: String, typeId: String) : DataTypeImpl(extensionId, typeId) {
+abstract class HUDDataType(extensionId: String, typeId: String) :
+    DataTypeImpl(extensionId, typeId) {
 
     protected val glance = GlanceRemoteViews()
 
@@ -37,11 +38,19 @@ abstract class HUDDataType(extensionId: String, typeId: String) : DataTypeImpl(e
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
         scope.launch {
-            val flow = if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
+            val flow =
+                if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
             flow.collect { state ->
-                val result = glance.compose(context, DpSize.Unspecified) {
-                    ThreeColumnView(state.speed, state.hr, state.power, config.alignment, state.colorMode)
-                }
+                val result =
+                    glance.compose(context, DpSize.Unspecified) {
+                        ThreeColumnView(
+                            state.speed,
+                            state.hr,
+                            state.power,
+                            config.alignment,
+                            state.colorMode
+                        )
+                    }
                 emitter.updateView(result.remoteViews)
             }
         }

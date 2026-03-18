@@ -4,9 +4,7 @@ import android.content.Context
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
-import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
-import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
@@ -14,7 +12,6 @@ import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -31,10 +28,12 @@ class PowerField(private val karooSystem: KarooSystemService) :
 
     override fun liveFlow(context: Context): Flow<FieldValue> =
         combine(
-            context.streamPowerFieldConfig(),
-            karooSystem.streamUserProfile(),
-            context.streamZoneConfig(),
-        ) { cfg, profile, zones -> Triple(cfg, profile, zones) }
+                context.streamPowerFieldConfig(),
+                karooSystem.streamUserProfile(),
+                context.streamZoneConfig(),
+            ) { cfg, profile, zones ->
+                Triple(cfg, profile, zones)
+            }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
                     val raw =
@@ -59,10 +58,12 @@ class PowerField(private val karooSystem: KarooSystemService) :
 
     override fun previewFlow(context: Context): Flow<FieldValue> =
         combine(
-            context.streamPowerFieldConfig(),
-            karooSystem.streamUserProfile(),
-            context.streamZoneConfig(),
-        ) { cfg, profile, zones -> Triple(cfg, profile, zones) }
+                context.streamPowerFieldConfig(),
+                karooSystem.streamUserProfile(),
+                context.streamZoneConfig(),
+            ) { cfg, profile, zones ->
+                Triple(cfg, profile, zones)
+            }
             .flatMapLatest { (cfg, profile, zones) ->
                 previewPowerFlow().map { watts ->
                     val zone = powerZone(watts.toDouble(), profile.powerZones)
