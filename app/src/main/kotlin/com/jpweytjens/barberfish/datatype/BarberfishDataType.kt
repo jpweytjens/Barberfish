@@ -8,7 +8,6 @@ import androidx.glance.appwidget.GlanceRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
-import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UpdateGraphicConfig
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.CoroutineScope
@@ -20,10 +19,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
-
-/** Extract the numeric value for [fieldKey] from a [StreamState], or null if not streaming. */
-fun StreamState.streamingValue(fieldKey: String): Double? =
-    (this as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
 
 @OptIn(
     ExperimentalGlanceRemoteViewsApi::class,
