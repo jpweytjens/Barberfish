@@ -126,6 +126,7 @@ class MainActivity : ComponentActivity() {
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
 
         var fieldsExpanded by remember { mutableStateOf(false) }
+        var thresholdsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
 
@@ -282,7 +283,15 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                val avgSpeedFactors = listOf(-1f, -0.5f, 0f, 0.5f, 1f)
+            } // end Fields
+
+            val avgSpeedFactors = listOf(-1f, -0.5f, 0f, 0.5f, 1f)
+            CollapsibleSection(
+                title = "Speed Thresholds",
+                description = "Color avg speed fields above and below a target speed.",
+                expanded = thresholdsExpanded,
+                onToggle = { thresholdsExpanded = !thresholdsExpanded },
+            ) {
                 FieldCard(
                     title = "AVG SPEED (TOTAL)",
                     description = "Average speed including paused time.",
@@ -404,7 +413,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                 }
-            } // end Fields
+            } // end Speed Thresholds
 
             CollapsibleSection(
                 title = "HUD",
