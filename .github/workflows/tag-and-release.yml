@@ -52,6 +52,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Run unit tests
+        run: ./gradlew --no-daemon test
+
       - name: Assemble release APK
         env:
           USERNAME: ${{ github.actor }}
@@ -78,3 +81,13 @@ jobs:
           asset_path: ./app/build/outputs/apk/release/app-release.apk
           asset_name: barberfish.apk
           asset_content_type: application/vnd.android.package-archive
+
+      - name: Upload icon
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./app/src/main/res/drawable/ic_extension.png
+          asset_name: ic_extension.png
+          asset_content_type: image/png

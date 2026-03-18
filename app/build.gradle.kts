@@ -38,7 +38,7 @@ tasks.register("generateManifest") {
         val manifest = mapOf(
             "label" to "Barberfish",
             "packageName" to "com.jpweytjens.barberfish",
-            "iconUrl" to "$baseUrl/barberfish.png",
+            "iconUrl" to "$baseUrl/ic_extension.png",
             "latestApkUrl" to "$baseUrl/app-release.apk",
             "latestVersion" to android.defaultConfig.versionName,
             "latestVersionCode" to android.defaultConfig.versionCode,

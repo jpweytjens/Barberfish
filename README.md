@@ -7,13 +7,13 @@ Native-feeling data field enhancements for the Hammerhead Karoo.
 
 ## Data field enhancements
 
-| Feature             | Default Karoo                                                                                 | Barberfish                                                                   |
-| ------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 3-column HUD        | Not available                                                                                 | Speed, HR, and power side by side with zone coloring                         |
-| Zone color palettes | Hammerhead only                                                                               | Adds Wahoo, Zwift, and intervals.icu palettes                                |
-| Time formatting     | `hh:mm` or `mm:ss` depending on duration                                                      | `xxh xxm xxs`, `xxh xx' xx"`, or `hh:mm:ss`                                  |
+| Feature             | Default Karoo                                                                                 | Barberfish                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 3-column HUD        | Not available                                                                                 | Speed, HR, and power side by side with zone coloring                                     |
+| Zone color palettes | Hammerhead only                                                                               | Adds Wahoo, Zwift, and intervals.icu palettes                                            |
+| Time formatting     | `hh:mm` or `mm:ss` depending on duration                                                      | `xxh xxm xxs`, `xxh xx' xx"`, or `hh:mm:ss`                                              |
 | Average speed       | No threshold coloring                                                                         | Total and moving-time variants, colored by configurable single threshold or min/max zone |
-| Time fields         | [Built-in](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend) | Reimplemented with Barberfish formatting options                             |
+| Time fields         | [Built-in](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend) | Reimplemented with Barberfish formatting options                                         |
 
 ## Data fields
 
@@ -38,10 +38,10 @@ Complete list of data fields provided by Barberfish.
 - Elapsed time
 - Moving time
 - Paused time
+
 ### Navigation
 
 - Time to destination
-- Time of arrival
 
 ### Daylight
 
@@ -58,11 +58,11 @@ Complete list of data fields provided by Barberfish.
 
 Configure the average speed field with **Min: 15 km/h** and **Max: 30 km/h**. The color signals your position relative to the target zone:
 
-| Color  | Meaning |
-|--------|---------|
-| Green  | Within the target speed zone |
+| Color  | Meaning                                                 |
+| ------ | ------------------------------------------------------- |
+| Green  | Within the target speed zone                            |
 | Orange | Approaching a boundary (width configurable via range %) |
-| Red    | Outside the zone — too slow or too fast |
+| Red    | Outside the zone — too slow or too fast                 |
 
 The field also supports simpler configurations:
 
