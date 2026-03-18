@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- TODO: populate — Step 12 -->
+    <color name="barberfish_yellow">#FBE401</color>
+    <color name="black">#000000</color>
 </resources>
