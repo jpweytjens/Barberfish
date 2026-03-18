@@ -118,15 +118,7 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     private fun previewTimeFlow() =
         flow {
-                val steps =
-                    listOf(
-                        0L,
-                        45L,
-                        150L,
-                        1665L,
-                        5025L,
-                        7384L,
-                    ) // 0s, 45s, 2'30", 27'45", 1h23'45", 2h03'04"
+                val steps = listOf(0L, 45L, 150L, 1665L, 5025L, 36234L)
                 var i = 0
                 while (true) {
                     emit(steps[i++ % steps.size])
