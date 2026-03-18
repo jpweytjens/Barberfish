@@ -115,6 +115,7 @@ private fun LabelRow(label: String, iconRes: Int?, colors: ColorConfig, textAlig
                     fontSize = LABEL_FONT_SIZE,
                     color = colors.labelText,
                     textAlign = textAlign,
+                    fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
                 ),
         )
