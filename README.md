@@ -36,9 +36,6 @@ Native-feeling data field enhancements for the Hammerhead Karoo.
 - Elapsed time
 - Moving time
 - Paused time
-- Lap time
-- Last lap time
-
 ### Navigation
 
 - Time to destination
