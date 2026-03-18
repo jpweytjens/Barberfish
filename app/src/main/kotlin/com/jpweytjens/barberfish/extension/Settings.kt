@@ -30,31 +30,6 @@ private val zoneConfigKey = stringPreferencesKey("zone_config")
 // --- HUDConfig (was ThreeColumnConfig) ---
 
 @Serializable
-enum class PowerStream(val label: String, val typeId: String, val fieldId: String) {
-    INSTANT("Power", DataType.Type.POWER, DataType.Field.POWER),
-    S3(
-        "3s Power",
-        DataType.Type.SMOOTHED_3S_AVERAGE_POWER,
-        DataType.Field.SMOOTHED_3S_AVERAGE_POWER,
-    ),
-    S5(
-        "5s Power",
-        DataType.Type.SMOOTHED_5S_AVERAGE_POWER,
-        DataType.Field.SMOOTHED_5S_AVERAGE_POWER,
-    ),
-    S10(
-        "10s Power",
-        DataType.Type.SMOOTHED_10S_AVERAGE_POWER,
-        DataType.Field.SMOOTHED_10S_AVERAGE_POWER,
-    ),
-    S30(
-        "30s Power",
-        DataType.Type.SMOOTHED_30S_AVERAGE_POWER,
-        DataType.Field.SMOOTHED_30S_AVERAGE_POWER,
-    ),
-}
-
-@Serializable
 enum class ZoneColorMode(val label: String) {
     NONE("None"),
     TEXT("Text"),
@@ -63,7 +38,7 @@ enum class ZoneColorMode(val label: String) {
 
 @Serializable
 data class HUDConfig(
-    val powerStream: PowerStream = PowerStream.S3,
+    val powerStream: PowerSmoothingStream = PowerSmoothingStream.S3,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
@@ -88,8 +63,9 @@ enum class PowerSmoothingStream(val label: String, val typeId: String, val field
     S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_POWER, DataType.Field.SMOOTHED_3S_AVERAGE_POWER),
     S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_POWER, DataType.Field.SMOOTHED_5S_AVERAGE_POWER),
     S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_POWER, DataType.Field.SMOOTHED_10S_AVERAGE_POWER),
+    S30("30s", DataType.Type.SMOOTHED_30S_AVERAGE_POWER, DataType.Field.SMOOTHED_30S_AVERAGE_POWER),
     M20("20m", DataType.Type.SMOOTHED_20M_AVERAGE_POWER, DataType.Field.SMOOTHED_20M_AVERAGE_POWER),
-    H1("1hr", DataType.Type.SMOOTHED_1HR_AVERAGE_POWER, DataType.Field.SMOOTHED_1HR_AVERAGE_POWER),
+    H1("1h", DataType.Type.SMOOTHED_1HR_AVERAGE_POWER, DataType.Field.SMOOTHED_1HR_AVERAGE_POWER),
 }
 
 @Serializable
