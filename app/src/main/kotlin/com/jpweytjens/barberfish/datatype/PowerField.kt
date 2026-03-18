@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import com.jpweytjens.barberfish.extension.toErrorFieldValue
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.Dispatchers
@@ -36,11 +37,11 @@ class PowerField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
+                    state.toErrorFieldValue()?.let {
+                        return@map it
+                    }
                     val raw =
-                        (state as? StreamState.Streaming)
-                            ?.dataPoint
-                            ?.values
-                            ?.get(cfg.smoothing.fieldId)
+                        (state as StreamState.Streaming).dataPoint.values[cfg.smoothing.fieldId]
                             ?: return@map FieldValue("---", "W", color = FieldColor.Default)
                     val zone = powerZone(raw, profile.powerZones)
                     val color =

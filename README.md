@@ -12,10 +12,12 @@ Native-feeling data field enhancements for the Hammerhead Karoo.
 | 3-column HUD        | Not available                                                                                 | Speed, HR, and power side by side with zone coloring                         |
 | Zone color palettes | Hammerhead only                                                                               | Adds Wahoo, Zwift, and intervals.icu palettes                                |
 | Time formatting     | `hh:mm` or `mm:ss` depending on duration                                                      | `xxh xxm xxs`, `xxh xx' xx"`, or `hh:mm:ss`                                  |
-| Average speed       | No threshold coloring                                                                         | Total and moving-time variants, colored above/below a configurable threshold |
+| Average speed       | No threshold coloring                                                                         | Total and moving-time variants, colored by configurable single threshold or min/max zone |
 | Time fields         | [Built-in](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend) | Reimplemented with Barberfish formatting options                             |
 
 ## Data fields
+
+Complete list of data fields provided by Barberfish.
 
 ### HUD
 
@@ -52,9 +54,21 @@ Native-feeling data field enhancements for the Hammerhead Karoo.
 
 ### ACP randonneuring
 
-[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds: a minimum of 15 km/h and a maximum of 30 km/h. Riding below 15 km/h risks missing a checkpoint closing time; riding above 30 km/h disqualifies the attempt. Alternatively, replace these values with your event's thresholds.
+[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds: a minimum of 15 km/h and a maximum of 30 km/h. Riding below 15 km/h risks missing a checkpoint closing time; riding above 30 km/h disqualifies the attempt.
 
-The field grades from blue to red as your average speed drifts from your threshold. It turns redder the further you fall below, bluer the further you push above. How quickly the color appears can also be configured.
+Configure the average speed field with **Min: 15 km/h** and **Max: 30 km/h**. The color signals your position relative to the target zone:
+
+| Color  | Meaning |
+|--------|---------|
+| Green  | Within the target speed zone |
+| Orange | Approaching a boundary (width configurable via range %) |
+| Red    | Outside the zone — too slow or too fast |
+
+The field also supports simpler configurations:
+
+- **Single threshold** — green above, red below. Useful for a minimum pace target.
+- **Min only** — red when below the minimum, neutral otherwise.
+- **Max only** — red when above the maximum, neutral otherwise.
 
 
 ## Installation

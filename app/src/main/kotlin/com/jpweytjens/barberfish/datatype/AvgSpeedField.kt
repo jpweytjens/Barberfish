@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdMode
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -106,17 +107,63 @@ class AvgSpeedField(
     private fun toFieldValue(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile): FieldValue {
         val converted = ConvertType.SPEED.apply(rawMs, profile)
         val unit = ConvertType.SPEED.unit(profile)
+        val imperial = profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
         val color =
-            if (cfg.thresholdKph > 0.0) {
-                val imperial =
-                    profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
-                val threshInUnit = if (imperial) cfg.thresholdKph * 0.621371 else cfg.thresholdKph
-                val factor =
-                    ((converted - threshInUnit) / threshInUnit * 100.0 / cfg.rangePercent)
-                        .coerceIn(-1.0, 1.0)
-                        .toFloat()
-                FieldColor.Threshold(factor)
-            } else FieldColor.Default
+            when (cfg.mode) {
+                SpeedThresholdMode.SINGLE -> {
+                    if (cfg.thresholdKph <= 0.0) {
+                        FieldColor.Default
+                    } else {
+                        val thresh = if (imperial) cfg.thresholdKph * 0.621371 else cfg.thresholdKph
+                        val rangePercent =
+                            if (converted >= thresh) cfg.rangePercentAbove
+                            else cfg.rangePercentBelow
+                        val factor =
+                            ((converted - thresh) / thresh * 100.0 / rangePercent)
+                                .coerceIn(-1.0, 1.0)
+                                .toFloat()
+                        FieldColor.Threshold(factor)
+                    }
+                }
+                SpeedThresholdMode.MIN_MAX -> {
+                    val min = cfg.minKph?.let { if (imperial) it * 0.621371 else it }
+                    val max = cfg.maxKph?.let { if (imperial) it * 0.621371 else it }
+                    if (min == null && max == null) {
+                        FieldColor.Default
+                    } else {
+                        val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
+                        val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
+                        val hasSafeZone = min != null && max != null
+                        when {
+                            min != null && converted < min -> {
+                                val outsideFactor =
+                                    ((min - converted) / bandBelow).coerceIn(0.0, 1.0).toFloat()
+                                FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
+                            }
+                            max != null && converted > max -> {
+                                val outsideFactor =
+                                    ((converted - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
+                                FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
+                            }
+                            else -> {
+                                val nearMin =
+                                    if (min != null && bandBelow > 0.0)
+                                        (1.0 - (converted - min) / bandBelow)
+                                            .coerceIn(0.0, 1.0)
+                                            .toFloat()
+                                    else 0f
+                                val nearMax =
+                                    if (max != null && bandAbove > 0.0)
+                                        (1.0 - (max - converted) / bandAbove)
+                                            .coerceIn(0.0, 1.0)
+                                            .toFloat()
+                                    else 0f
+                                FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
+                            }
+                        }
+                    }
+                }
+            }
         return FieldValue(
             primary = "%.1f".format(converted),
             unit = unit,

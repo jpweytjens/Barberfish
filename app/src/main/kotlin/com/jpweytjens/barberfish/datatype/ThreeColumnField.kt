@@ -15,6 +15,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import com.jpweytjens.barberfish.extension.toErrorFieldValue
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
@@ -107,8 +108,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
             }
 
     private fun toSpeed(state: StreamState, profile: UserProfile): FieldValue {
+        state.toErrorFieldValue("Speed")?.let {
+            return it
+        }
         val raw =
-            (state as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.SPEED)
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.SPEED]
                 ?: return FieldValue.unavailable("Speed")
         return FieldValue(
             primary = "%.1f".format(ConvertType.SPEED.apply(raw, profile)),
@@ -120,8 +124,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
     }
 
     private fun toHr(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldValue {
+        state.toErrorFieldValue("HR")?.let {
+            return it
+        }
         val raw =
-            (state as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.HEART_RATE)
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
                 ?: return FieldValue.unavailable("HR")
         return FieldValue(
             primary = raw.toInt().toString(),
@@ -144,8 +151,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
         profile: UserProfile,
         zones: ZoneConfig
     ): FieldValue {
+        state.toErrorFieldValue("Power")?.let {
+            return it
+        }
         val raw =
-            (state as? StreamState.Streaming)?.dataPoint?.values?.get(stream.fieldId)
+            (state as StreamState.Streaming).dataPoint.values[stream.fieldId]
                 ?: return FieldValue.unavailable("Power")
         return FieldValue(
             primary = raw.toInt().toString(),

@@ -56,19 +56,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.formatTime
+import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
+import com.jpweytjens.barberfish.datatype.shared.RDYLGN_RED
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.intervalsHrColors
 import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColors
@@ -86,6 +92,7 @@ import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
+import com.jpweytjens.barberfish.extension.SpeedThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -304,75 +311,44 @@ class MainActivity : ComponentActivity() {
                     }
                 } // end Fields
 
-                val avgSpeedFactors = listOf(-1f, -0.5f, 0f, 0.5f, 1f)
                 CollapsibleSection(
                     title = "Speed thresholds",
                     description =
-                        "Speed thresholds for above/below coloring on average speed fields.",
+                        "Color average speed fields by distance from a target speed or zone.",
                     expanded = thresholdsExpanded,
                     onToggle = { thresholdsExpanded = !thresholdsExpanded },
                 ) {
                     Text(
-                        "Typical ACP randonneuring checkpoint cutoff speeds: 15 km/h minimum, 30 km/h maximum. Set any event-specific speed limit as your threshold.",
+                        buildAnnotatedString {
+                            append("Single: ")
+                            withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
+                            append(" above and ")
+                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
+                            append(" below the threshold.\n")
+                            append("Min/Max: ")
+                            withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
+                            append(" inside the zone, ")
+                            withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
+                            append(" near the boundaries, ")
+                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
+                            append(" outside.\n")
+                            append("Leave fields empty to disable.")
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     FieldCard(
                         title = "AVG SPEED (TOTAL)",
                         description = "Average speed including paused time.",
-                        previewFields =
-                            if (avgTotalConfig.thresholdKph > 0.0)
-                                avgSpeedFactors.map { factor ->
-                                    val speed =
-                                        avgTotalConfig.thresholdKph *
-                                            (1.0 + factor * avgTotalConfig.rangePercent / 100.0)
-                                    FieldValue(
-                                        "%.1f".format(speed),
-                                        "km/h",
-                                        "Avg Speed",
-                                        FieldColor.Threshold(factor),
-                                        R.drawable.ic_speed_average,
-                                    )
-                                }
-                            else
-                                listOf(
-                                    FieldValue(
-                                        "30.0",
-                                        "km/h",
-                                        "Avg Speed",
-                                        FieldColor.Default,
-                                        R.drawable.ic_speed_average,
-                                    )
-                                ),
+                        previewFields = avgSpeedPreviewFields(avgTotalConfig),
                         colorMode = ZoneColorMode.TEXT,
                     ) {
-                        Text(
-                            "THRESHOLD (KM/H)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
-                        )
-                        ThresholdInput(
-                            value = avgTotalConfig.thresholdKph,
-                            onValueChange = { value ->
-                                avgTotalConfig = avgTotalConfig.copy(thresholdKph = value)
+                        AvgSpeedThresholdControls(
+                            config = avgTotalConfig,
+                            onConfigChange = { cfg ->
+                                avgTotalConfig = cfg
                                 lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
-                                }
-                            },
-                        )
-                        Text(
-                            "MAX DEVIATION (%)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
-                        )
-                        RangeInput(
-                            value = avgTotalConfig.rangePercent,
-                            onValueChange = { value ->
-                                avgTotalConfig = avgTotalConfig.copy(rangePercent = value)
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                                    saveAvgSpeedConfig(includePaused = true, cfg)
                                 }
                             },
                         )
@@ -381,59 +357,15 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "AVG SPEED (MOVING)",
                         description = "Average speed excluding paused time.",
-                        previewFields =
-                            if (avgMovingConfig.thresholdKph > 0.0)
-                                avgSpeedFactors.map { factor ->
-                                    val speed =
-                                        avgMovingConfig.thresholdKph *
-                                            (1.0 + factor * avgMovingConfig.rangePercent / 100.0)
-                                    FieldValue(
-                                        "%.1f".format(speed),
-                                        "km/h",
-                                        "Avg Speed",
-                                        FieldColor.Threshold(factor),
-                                        R.drawable.ic_speed_average,
-                                    )
-                                }
-                            else
-                                listOf(
-                                    FieldValue(
-                                        "30.0",
-                                        "km/h",
-                                        "Avg Speed",
-                                        FieldColor.Default,
-                                        R.drawable.ic_speed_average,
-                                    )
-                                ),
+                        previewFields = avgSpeedPreviewFields(avgMovingConfig),
                         colorMode = ZoneColorMode.TEXT,
                     ) {
-                        Text(
-                            "THRESHOLD (KM/H)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
-                        )
-                        ThresholdInput(
-                            value = avgMovingConfig.thresholdKph,
-                            onValueChange = { value ->
-                                avgMovingConfig = avgMovingConfig.copy(thresholdKph = value)
+                        AvgSpeedThresholdControls(
+                            config = avgMovingConfig,
+                            onConfigChange = { cfg ->
+                                avgMovingConfig = cfg
                                 lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
-                                }
-                            },
-                        )
-                        Text(
-                            "MAX DEVIATION (%)",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
-                        )
-                        RangeInput(
-                            value = avgMovingConfig.rangePercent,
-                            onValueChange = { value ->
-                                avgMovingConfig = avgMovingConfig.copy(rangePercent = value)
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                                    saveAvgSpeedConfig(includePaused = false, cfg)
                                 }
                             },
                         )
@@ -769,7 +701,7 @@ private fun FieldCard(
                             .background(Color.Black)
                 ) {
                     BarberfishPreviewCell(
-                        previewFields[index],
+                        previewFields[index.coerceAtMost(previewFields.size - 1)],
                         ViewConfig.Alignment.RIGHT,
                         colorMode,
                         Modifier.fillMaxSize(),
@@ -985,6 +917,251 @@ private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+@Composable
+private fun NullableThresholdInput(
+    value: Double?,
+    placeholder: String,
+    onValueChange: (Double?) -> Unit,
+) {
+    var text by remember(value) { mutableStateOf(value?.toString() ?: "") }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { input ->
+            text = input
+            onValueChange(input.toDoubleOrNull())
+        },
+        placeholder = {
+            Text(placeholder, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun AvgSpeedThresholdControls(
+    config: AvgSpeedConfig,
+    onConfigChange: (AvgSpeedConfig) -> Unit,
+) {
+    val modeOptions =
+        listOf(SpeedThresholdMode.SINGLE to "Single", SpeedThresholdMode.MIN_MAX to "Min / Max")
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(onConfigChange) {
+                    val slotWidthPx = size.width.toFloat() / modeOptions.size
+                    fun idxAt(x: Float) =
+                        (x / slotWidthPx).toInt().coerceIn(0, modeOptions.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onConfigChange(
+                            config.copy(mode = modeOptions[idxAt(down.position.x)].first)
+                        )
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onConfigChange(
+                                config.copy(mode = modeOptions[idxAt(change.position.x)].first)
+                            )
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        modeOptions.forEach { (mode, label) ->
+            val isSelected = config.mode == mode
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Color(0xFF9E9E9E) else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+    if (config.mode == SpeedThresholdMode.SINGLE) {
+        Text(
+            "THRESHOLD (KM/H)",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1B2D2D),
+        )
+        ThresholdInput(
+            value = config.thresholdKph,
+            onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
+        )
+    } else {
+        Text(
+            "MIN SPEED (KM/H)",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1B2D2D),
+        )
+        NullableThresholdInput(
+            value = config.minKph,
+            placeholder = "Min (km/h)",
+            onValueChange = { onConfigChange(config.copy(minKph = it)) },
+        )
+        Text(
+            "MAX SPEED (KM/H)",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1B2D2D),
+        )
+        NullableThresholdInput(
+            value = config.maxKph,
+            placeholder = "Max (km/h)",
+            onValueChange = { onConfigChange(config.copy(maxKph = it)) },
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "RANGE BELOW (%)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1B2D2D),
+            )
+            RangeInput(
+                value = config.rangePercentBelow,
+                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "RANGE ABOVE (%)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1B2D2D),
+            )
+            RangeInput(
+                value = config.rangePercentAbove,
+                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+            )
+        }
+    }
+}
+
+private fun previewColorForKph(speedKph: Double, cfg: AvgSpeedConfig): FieldColor =
+    when (cfg.mode) {
+        SpeedThresholdMode.SINGLE -> {
+            if (cfg.thresholdKph <= 0.0) FieldColor.Default
+            else {
+                val rangePercent =
+                    if (speedKph >= cfg.thresholdKph) cfg.rangePercentAbove
+                    else cfg.rangePercentBelow
+                val factor =
+                    ((speedKph - cfg.thresholdKph) / cfg.thresholdKph * 100.0 / rangePercent)
+                        .coerceIn(-1.0, 1.0)
+                        .toFloat()
+                FieldColor.Threshold(factor)
+            }
+        }
+        SpeedThresholdMode.MIN_MAX -> {
+            val min = cfg.minKph
+            val max = cfg.maxKph
+            if (min == null && max == null) FieldColor.Default
+            else {
+                val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
+                val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
+                val hasSafeZone = min != null && max != null
+                when {
+                    min != null && speedKph < min ->
+                        FieldColor.DangerZone(
+                            ((min - speedKph) / bandBelow).coerceIn(0.0, 1.0).toFloat(),
+                            1f,
+                            hasSafeZone,
+                        )
+                    max != null && speedKph > max ->
+                        FieldColor.DangerZone(
+                            ((speedKph - max) / bandAbove).coerceIn(0.0, 1.0).toFloat(),
+                            1f,
+                            hasSafeZone,
+                        )
+                    else -> {
+                        val nearMin =
+                            if (min != null && bandBelow > 0.0)
+                                (1.0 - (speedKph - min) / bandBelow).coerceIn(0.0, 1.0).toFloat()
+                            else 0f
+                        val nearMax =
+                            if (max != null && bandAbove > 0.0)
+                                (1.0 - (max - speedKph) / bandAbove).coerceIn(0.0, 1.0).toFloat()
+                            else 0f
+                        FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
+                    }
+                }
+            }
+        }
+    }
+
+private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldValue> {
+    val disabled =
+        listOf(
+            FieldValue("30.0", "km/h", "Avg Speed", FieldColor.Default, R.drawable.ic_speed_average)
+        )
+    // 6 steps per side (5 within range + 1 outside) + midpoint = 13 preview fields
+    val n = 5
+    val speeds: List<Double> =
+        when (cfg.mode) {
+            SpeedThresholdMode.SINGLE -> {
+                val t = cfg.thresholdKph
+                if (t <= 0.0) return disabled
+                val stepBelow = t * cfg.rangePercentBelow / (n * 100.0)
+                val stepAbove = t * cfg.rangePercentAbove / (n * 100.0)
+                (n + 1 downTo 1).map { i -> t - i * stepBelow } +
+                    listOf(t) +
+                    (1..n + 1).map { i -> t + i * stepAbove }
+            }
+            SpeedThresholdMode.MIN_MAX -> {
+                val min = cfg.minKph
+                val max = cfg.maxKph
+                if (min == null && max == null) return disabled
+                when {
+                    min != null && max != null -> {
+                        val stepBelow = min * cfg.rangePercentBelow / (n * 100.0)
+                        val stepAbove = max * cfg.rangePercentAbove / (n * 100.0)
+                        (n + 1 downTo 1).map { i -> min - i * stepBelow } +
+                            listOf((min + max) / 2.0) +
+                            (1..n + 1).map { i -> max + i * stepAbove }
+                    }
+                    min != null -> {
+                        val step = min * cfg.rangePercentBelow / (n * 100.0)
+                        (n + 1 downTo 1).map { i -> min - i * step } +
+                            listOf(min) +
+                            (1..n + 1).map { i -> min + i * step }
+                    }
+                    else -> {
+                        val step = max!! * cfg.rangePercentAbove / (n * 100.0)
+                        (n + 1 downTo 1).map { i -> max - i * step } +
+                            listOf(max) +
+                            (1..n + 1).map { i -> max + i * step }
+                    }
+                }
+            }
+        }
+    return speeds.map { speed ->
+        FieldValue(
+            "%.1f".format(speed),
+            "km/h",
+            "Avg Speed",
+            previewColorForKph(speed, cfg),
+            R.drawable.ic_speed_average,
+        )
+    }
 }
 
 @Composable

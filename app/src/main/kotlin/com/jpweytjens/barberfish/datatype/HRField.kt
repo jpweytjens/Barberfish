@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import com.jpweytjens.barberfish.extension.toErrorFieldValue
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
@@ -37,11 +38,11 @@ class HRField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map { state ->
+                    state.toErrorFieldValue()?.let {
+                        return@map it
+                    }
                     val raw =
-                        (state as? StreamState.Streaming)
-                            ?.dataPoint
-                            ?.values
-                            ?.get(DataType.Field.HEART_RATE)
+                        (state as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
                             ?: return@map FieldValue("---", "bpm", color = FieldColor.Default)
                     val zone = hrZone(raw, profile.heartRateZones)
                     val color =

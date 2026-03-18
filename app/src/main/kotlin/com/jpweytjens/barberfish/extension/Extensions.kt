@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.extension
 
+import com.jpweytjens.barberfish.datatype.shared.FieldValue
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.KarooEvent
 import io.hammerhead.karooext.models.OnStreamState
@@ -24,3 +25,14 @@ inline fun <reified T : KarooEvent> KarooSystemService.consumerFlow(): Flow<T> =
 }
 
 fun KarooSystemService.streamUserProfile(): Flow<UserProfile> = consumerFlow()
+
+/**
+ * Returns a [FieldValue] for non-Streaming states, or null if the state is [StreamState.Streaming].
+ */
+fun StreamState.toErrorFieldValue(label: String = ""): FieldValue? =
+    when (this) {
+        is StreamState.Streaming -> null
+        is StreamState.Searching -> FieldValue.noSensor(label)
+        is StreamState.NotAvailable -> FieldValue.notAvailable(label)
+        else -> FieldValue.noData(label) // Idle: sensor stopped emitting data
+    }
