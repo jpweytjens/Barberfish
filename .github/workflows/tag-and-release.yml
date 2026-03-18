@@ -25,12 +25,10 @@ jobs:
       - name: Detect Version Change
         id: detect_version
         run: |
-          # Get current and previous versions
-          current_version=$(grep 'libVersion' lib/build.gradle.kts | sed -e 's/.*"\(.*\)".*/\1/' | head -n 1)
-          echo "Current version in the repository: $current_version"
+          current_version=$(grep 'versionName' app/build.gradle.kts | sed -e 's/.*"\(.*\)".*/\1/' | head -n 1)
+          echo "Current version: $current_version"
 
-          # Check for existing tag for this version
-          if git tag -l | grep -q "$current_version"; then
+          if git tag -l | grep -q "^$current_version$"; then
             echo "Version $current_version already tagged. No new release will be created."
           else
             echo "Version $current_version is new."
@@ -54,7 +52,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Assemble library and app
+      - name: Assemble release APK
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon assembleRelease
 
       - name: Create Release
@@ -68,28 +69,12 @@ jobs:
           draft: false
           prerelease: true
 
-      - name: Publish library to Github packges
-        env:
-          GITHUB_USERNAME: actions
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew --no-daemon publish
-
-      - name: Upload Sample
+      - name: Upload APK
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./app/build/outputs/apk/release/app-release.apk
-          asset_name: karoo-ext-sample.apk
+          asset_name: barberfish.apk
           asset_content_type: application/vnd.android.package-archive
-
-      - name: Upload Manifest
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./app/manifest.json
-          asset_name: manifest.json
-          asset_content_type: application/json
