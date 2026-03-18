@@ -38,10 +38,19 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
     }
 }
 
+fun formatClockTime(secondsSinceMidnight: Long): String {
+    val t = secondsSinceMidnight % 86400
+    val h = t / 3600
+    val m = (t % 3600) / 60
+    return "%02d:%02d".format(h, m)
+}
+
 enum class TimeKind(val typeId: String) {
     TOTAL("time-elapsed"),
     RIDING("time-moving"),
     PAUSED("time-paused"),
+    TIME_TO_DESTINATION("time-to-destination"),
+    TIME_OF_ARRIVAL("time-of-arrival"),
     TIME_TO_SUNRISE("time-to-sunrise"),
     TIME_TO_SUNSET("time-to-sunset"),
     TIME_TO_CIVIL_DAWN("time-to-civil-dawn"),
@@ -55,6 +64,16 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
     override val sampleMs = 1000L
 
     override fun liveFlow(context: Context): Flow<FieldValue> {
+        if (kind == TimeKind.TIME_OF_ARRIVAL) {
+            return karooSystem.streamDataFlow(DataType.Type.TIME_OF_ARRIVAL).map { state ->
+                FieldValue(
+                    primary = formatClockTime(extractSeconds(state, DataType.Field.TIME_OF_ARRIVAL)),
+                    unit = "",
+                    color = FieldColor.Default,
+                )
+            }
+        }
+
         val secondsFlow =
             when (kind) {
                 TimeKind.TOTAL ->
@@ -76,6 +95,11 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                     ) { elapsed, paused ->
                         max(0L, elapsed - paused)
                     }
+                TimeKind.TIME_TO_DESTINATION ->
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_DESTINATION).map { state ->
+                        extractSeconds(state, DataType.Field.TIME_TO_DESTINATION)
+                    }
+                TimeKind.TIME_OF_ARRIVAL -> error("handled above")
                 TimeKind.TIME_TO_SUNRISE ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE).map { state ->
                         extractSeconds(state, DataType.Field.TIME_TO_SUNRISE)

@@ -19,6 +19,10 @@
     <string name="time_moving_description">Time spent moving (elapsed minus paused)</string>
     <string name="time_paused_name">Paused Time</string>
     <string name="time_paused_description">Total paused time</string>
+    <string name="time_to_destination_name">Time to Destination</string>
+    <string name="time_to_destination_description">Estimated time remaining to reach the destination</string>
+    <string name="time_of_arrival_name">Time of Arrival</string>
+    <string name="time_of_arrival_description">Estimated clock time of arrival at the destination</string>
     <string name="time_to_sunrise_name">Time to Sunrise</string>
     <string name="time_to_sunrise_description">Time until sunrise at current location</string>
     <string name="time_to_sunset_name">Time to Sunset</string>

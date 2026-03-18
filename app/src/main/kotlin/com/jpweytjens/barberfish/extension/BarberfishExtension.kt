@@ -27,6 +27,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             TimeField(karooSystem, TimeKind.TOTAL),
             TimeField(karooSystem, TimeKind.RIDING),
             TimeField(karooSystem, TimeKind.PAUSED),
+            TimeField(karooSystem, TimeKind.TIME_TO_DESTINATION),
+            TimeField(karooSystem, TimeKind.TIME_OF_ARRIVAL),
             TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
             TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
             TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
