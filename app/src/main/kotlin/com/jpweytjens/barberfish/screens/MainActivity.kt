@@ -69,7 +69,6 @@ import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
-import com.jpweytjens.barberfish.extension.PowerStream
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -254,31 +253,6 @@ class MainActivity : ComponentActivity() {
                 title = "Global",
                 description = "Zone palettes and time format shared across all fields.",
             )
-            Text("Average Speed Thresholds", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Speed threshold in km/h. Color turns green above, red below. Leave empty to disable.",
-                style = MaterialTheme.typography.bodySmall,
-            )
-            Text("Total time", style = MaterialTheme.typography.labelMedium)
-            ThresholdInput(
-                value = avgTotalConfig.thresholdKph,
-                onValueChange = { value ->
-                    avgTotalConfig = AvgSpeedConfig(value)
-                    lifecycleScope.launch {
-                        saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
-                    }
-                },
-            )
-            Text("Moving time", style = MaterialTheme.typography.labelMedium)
-            ThresholdInput(
-                value = avgMovingConfig.thresholdKph,
-                onValueChange = { value ->
-                    avgMovingConfig = AvgSpeedConfig(value)
-                    lifecycleScope.launch {
-                        saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
-                    }
-                },
-            )
 
             Text("Time Fields", style = MaterialTheme.typography.titleMedium)
             TimeFormatDropdown(
@@ -323,6 +297,37 @@ class MainActivity : ComponentActivity() {
                         ZonePalette.KAROO -> karooHrColors.map { it }
                         ZonePalette.WAHOO -> wahooHrColors.map { it }
                     }
+            )
+            SectionHeader(
+                title = "Average speed thresholds",
+                description =
+                    "Speed threshold in km/h. Color turns green above, red below. Leave empty to disable.",
+            )
+            Text(
+                "Average speed including paused time",
+                style = MaterialTheme.typography.labelMedium,
+            )
+            ThresholdInput(
+                value = avgTotalConfig.thresholdKph,
+                onValueChange = { value ->
+                    avgTotalConfig = AvgSpeedConfig(value)
+                    lifecycleScope.launch {
+                        saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                    }
+                },
+            )
+            Text(
+                "Average speed excluding paused time",
+                style = MaterialTheme.typography.labelMedium,
+            )
+            ThresholdInput(
+                value = avgMovingConfig.thresholdKph,
+                onValueChange = { value ->
+                    avgMovingConfig = AvgSpeedConfig(value)
+                    lifecycleScope.launch {
+                        saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                    }
+                },
             )
         }
     }
@@ -428,19 +433,22 @@ private fun <T> SmoothingSlider(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PowerStreamDropdown(selected: PowerStream, onSelected: (PowerStream) -> Unit) {
+private fun PowerStreamDropdown(
+    selected: PowerSmoothingStream,
+    onSelected: (PowerSmoothingStream) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
             value = selected.label,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Power averaging window") },
+            label = { Text("Power smoothing") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor().fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            PowerStream.entries.forEach { stream ->
+            PowerSmoothingStream.entries.forEach { stream ->
                 DropdownMenuItem(
                     text = { Text(stream.label) },
                     onClick = {
@@ -555,10 +563,10 @@ private fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode)
                         when (mode) {
                             ZoneColorMode.NONE -> "None"
                             ZoneColorMode.TEXT -> "Text"
-                            ZoneColorMode.BACKGROUND -> "Bg"
+                            ZoneColorMode.BACKGROUND -> "Background"
                         },
-                    fontSize = 11.sp,
-                    color = if (isSelected) Color.White else Color(0xFF1B2D2D),
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -686,7 +694,13 @@ private fun ThresholdInput(value: Double?, onValueChange: (Double?) -> Unit) {
             text = input
             onValueChange(input.toDoubleOrNull())
         },
-        placeholder = { Text("threshold") },
+        placeholder = {
+            Text(
+                "Threshold (km/h)",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth(),
     )
@@ -695,7 +709,7 @@ private fun ThresholdInput(value: Double?, onValueChange: (Double?) -> Unit) {
 @Composable
 private fun ZoneColorPreview(
     colorMode: ZoneColorMode,
-    powerStream: PowerStream,
+    powerStream: PowerSmoothingStream,
     zoneConfig: ZoneConfig,
 ) {
     val alignment = ViewConfig.Alignment.RIGHT
