@@ -7,6 +7,7 @@ import androidx.glance.ColorFilter
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -27,8 +28,8 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
-import com.jpweytjens.barberfish.datatype.shared.narrowFontSp
-import com.jpweytjens.barberfish.datatype.shared.singleValueFontSp
+import com.jpweytjens.barberfish.datatype.shared.dynamicFontSp
+import com.jpweytjens.barberfish.datatype.shared.dynamicTopPadding
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
@@ -45,16 +46,13 @@ fun BarberfishView(
     alignment: ViewConfig.Alignment = ViewConfig.Alignment.CENTER,
     colorMode: ZoneColorMode = ZoneColorMode.TEXT,
     narrow: Boolean = false,
-    textSize: Int = 0,
     modifier: GlanceModifier = GlanceModifier,
 ) {
+    val context = LocalContext.current
     val colors = field.color.toColorConfig(colorMode)
-    val fontSize =
-        if (textSize > 0 && !narrow) singleValueFontSp(field.primary, textSize)
-        else narrowFontSp(field.primary.length)
     val valueStyle =
         TextStyle(
-            fontSize = fontSize,
+            fontSize = dynamicFontSp(field.primary, narrow = narrow),
             fontWeight = FontWeight.Normal,
             color = colors.valueText,
             textAlign = alignment.toTextAlign(),
@@ -81,23 +79,23 @@ fun BarberfishView(
         }
     } else {
         // No-label layout (single-value fields with showHeader=true): center value in cell
-        Box(
+        Column(
             modifier =
                 modifier
                     .fillMaxSize()
                     .maybeBackground(colors.background)
-                    .padding(horizontal = CELL_PADDING_H,),
-            contentAlignment =
-                Alignment(
-                    vertical = Alignment.Vertical.CenterVertically,
-                    horizontal = Alignment.Horizontal.CenterHorizontally,
-                ),
+                    .padding(horizontal = CELL_PADDING_H),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.Bottom,
         ) {
+            Spacer(GlanceModifier.height(dynamicTopPadding(field.primary, context = context)))
+
             PrimaryText(
                 text = field.primary,
                 style = valueStyle,
                 modifier = GlanceModifier.fillMaxWidth(),
             )
+            Spacer(modifier = GlanceModifier.height(4.dp))
         }
     }
 }
@@ -112,7 +110,6 @@ private fun LabelRow(label: String, iconRes: Int?, colors: ColorConfig, textAlig
         Text(
             text = label.uppercase(),
             modifier = GlanceModifier.defaultWeight(),
-            // maxLines = 1,
             style =
                 TextStyle(
                     fontSize = LABEL_FONT_SIZE,

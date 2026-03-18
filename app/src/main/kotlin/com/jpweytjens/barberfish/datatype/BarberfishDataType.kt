@@ -25,11 +25,13 @@ import kotlinx.coroutines.launch
 fun StreamState.streamingValue(fieldKey: String): Double? =
     (this as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
 
-@OptIn(ExperimentalGlanceRemoteViewsApi::class, ExperimentalCoroutinesApi::class, FlowPreview::class)
-abstract class BarberfishDataType(
-    extensionId: String,
-    typeId: String,
-) : DataTypeImpl(extensionId, typeId) {
+@OptIn(
+    ExperimentalGlanceRemoteViewsApi::class,
+    ExperimentalCoroutinesApi::class,
+    FlowPreview::class,
+)
+abstract class BarberfishDataType(extensionId: String, typeId: String) :
+    DataTypeImpl(extensionId, typeId) {
 
     protected val glance = GlanceRemoteViews()
 
@@ -45,7 +47,7 @@ abstract class BarberfishDataType(
     /** Renders the Glance UI for one FieldValue. Default: plain BarberfishView. */
     @Composable
     open fun Content(field: FieldValue, config: ViewConfig) {
-        BarberfishView(field, config.alignment, textSize = config.textSize)
+        BarberfishView(field, config.alignment)
     }
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
@@ -54,11 +56,9 @@ abstract class BarberfishDataType(
         emitter.setCancellable { scope.cancel() }
         scope.launch {
             val flow =
-                if (config.preview) previewFlow(context)
-                else liveFlow(context).sample(sampleMs)
+                if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
             flow.collect { field ->
-                val result =
-                    glance.compose(context, DpSize.Unspecified) { Content(field, config) }
+                val result = glance.compose(context, DpSize.Unspecified) { Content(field, config) }
                 emitter.updateView(result.remoteViews)
             }
         }
