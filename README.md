@@ -2,8 +2,8 @@
 
 ![Barberfish](app/src/main/res/drawable/ic_extension.png)
 
-[Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keeps Hammerheads sharp, on your handlebars and in the ocean.
-Native-feeling data field enhancements for the Hammerhead Karoo.
+[Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keeps Hammerheads sharp, in the ocean and on your bike.
+Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
 
 ## Data field enhancements
 
@@ -52,23 +52,13 @@ Complete list of data fields provided by Barberfish.
 
 ## Use cases
 
-### ACP randonneuring
+### ACP randonneuring (min + max threshold)
 
-[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds: a minimum of 15 km/h and a maximum of 30 km/h. Riding below 15 km/h risks missing a checkpoint closing time; riding above 30 km/h disqualifies the attempt.
+[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds — 15 km/h minimum and 30 km/h maximum. Set Min: 15 and Max: 30 on the average speed field. The field colors green inside the zone, orange when approaching a boundary, and red when outside.
 
-Configure the average speed field with **Min: 15 km/h** and **Max: 30 km/h**. The color signals your position relative to the target zone:
+### Race with a goal pace (single threshold)
 
-| Color  | Meaning                                                 |
-| ------ | ------------------------------------------------------- |
-| Green  | Within the target speed zone                            |
-| Orange | Approaching a boundary (width configurable via range %) |
-| Red    | Outside the zone — too slow or too fast                 |
-
-The field also supports simpler configurations:
-
-- **Single threshold** — green above, red below. Useful for a minimum pace target.
-- **Min only** — red when below the minimum, neutral otherwise.
-- **Max only** — red when above the maximum, neutral otherwise.
+Racing a gran fondo with a target average? Set a single threshold at your goal pace. The field colors green above it and red below, so you know at a glance whether you're on track.
 
 
 ## Installation
