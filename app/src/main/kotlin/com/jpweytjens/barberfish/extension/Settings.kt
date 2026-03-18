@@ -33,7 +33,7 @@ private val zoneConfigKey = stringPreferencesKey("zone_config")
 enum class ZoneColorMode(val label: String) {
     NONE("None"),
     TEXT("Text"),
-    BACKGROUND("Background"),
+    BACKGROUND("Fill"),
 }
 
 @Serializable
