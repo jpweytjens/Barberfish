@@ -3,9 +3,16 @@ package com.jpweytjens.barberfish.screens
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -117,6 +125,10 @@ class MainActivity : ComponentActivity() {
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
 
+        var fieldsExpanded by remember { mutableStateOf(false) }
+        var hudExpanded by remember { mutableStateOf(false) }
+        var globalExpanded by remember { mutableStateOf(false) }
+
         LaunchedEffect(Unit) {
             launch { streamHUDConfig().collect { hudConfig = it } }
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
@@ -129,310 +141,353 @@ class MainActivity : ComponentActivity() {
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier.fillMaxSize().padding(6.dp).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SectionHeader(title = "Fields", description = "Configures the standalone data fields.")
-            val powerLabel =
-                if (powerFieldConfig.smoothing == PowerSmoothingStream.S0) "Power"
-                else "${powerFieldConfig.smoothing.label} Power"
-            FieldCard(
-                title = "POWER",
-                description = "Power output in W.",
-                previewFields =
-                    listOf(
-                            180 to 2,
-                            240 to 3,
-                            320 to 5,
-                            400 to 6,
-                            807 to 6,
-                            1203 to 7,
-                            254 to 3,
-                            120 to 1,
-                        )
-                        .map { (watts, zone) ->
-                            FieldValue(
-                                watts.toString(),
-                                "W",
-                                label = powerLabel,
-                                color =
-                                    if (powerFieldConfig.colorMode == ZoneColorMode.NONE)
-                                        FieldColor.Default
-                                    else
-                                        FieldColor.Zone(
-                                            zone,
-                                            7,
-                                            zoneConfig.powerPalette,
-                                            isHr = false,
-                                        ),
-                                iconRes = R.drawable.ic_col_power,
+            CollapsibleSection(
+                title = "Fields",
+                description = "Configure the standalone data fields.",
+                expanded = fieldsExpanded,
+                onToggle = { fieldsExpanded = !fieldsExpanded },
+            ) {
+                val powerLabel =
+                    if (powerFieldConfig.smoothing == PowerSmoothingStream.S0) "Power"
+                    else "${powerFieldConfig.smoothing.label} Power"
+                FieldCard(
+                    title = "POWER",
+                    description = "Power output in W.",
+                    previewFields =
+                        listOf(
+                                180 to 2,
+                                240 to 3,
+                                320 to 5,
+                                400 to 6,
+                                807 to 6,
+                                1203 to 7,
+                                254 to 3,
+                                120 to 1,
                             )
+                            .map { (watts, zone) ->
+                                FieldValue(
+                                    watts.toString(),
+                                    "W",
+                                    label = powerLabel,
+                                    color =
+                                        if (powerFieldConfig.colorMode == ZoneColorMode.NONE)
+                                            FieldColor.Default
+                                        else
+                                            FieldColor.Zone(
+                                                zone,
+                                                7,
+                                                zoneConfig.powerPalette,
+                                                isHr = false,
+                                            ),
+                                    iconRes = R.drawable.ic_col_power,
+                                )
+                            },
+                    colorMode = powerFieldConfig.colorMode,
+                ) {
+                    Text(
+                        "SMOOTHING",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B2D2D),
+                    )
+                    SmoothingSlider(
+                        options = PowerSmoothingStream.entries,
+                        selected = powerFieldConfig.smoothing,
+                        label = { it.label },
+                        thumbIcon = R.drawable.ic_col_power,
+                        onSelected = { stream ->
+                            powerFieldConfig = powerFieldConfig.copy(smoothing = stream)
+                            lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
                         },
-                colorMode = powerFieldConfig.colorMode,
-            ) {
-                Text(
-                    "SMOOTHING",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1B2D2D),
-                )
-                SmoothingSlider(
-                    options = PowerSmoothingStream.entries,
-                    selected = powerFieldConfig.smoothing,
-                    label = { it.label },
-                    thumbIcon = R.drawable.ic_col_power,
-                    onSelected = { stream ->
-                        powerFieldConfig = powerFieldConfig.copy(smoothing = stream)
-                        lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
-                    },
-                )
-                ZoneColorSlider(
-                    selected = powerFieldConfig.colorMode,
-                    onSelected = { mode ->
-                        powerFieldConfig = powerFieldConfig.copy(colorMode = mode)
-                        lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
-                    },
-                )
-            }
+                    )
+                    ZoneColorSlider(
+                        selected = powerFieldConfig.colorMode,
+                        onSelected = { mode ->
+                            powerFieldConfig = powerFieldConfig.copy(colorMode = mode)
+                            lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
+                        },
+                    )
+                }
 
-            FieldCard(
-                title = "HEART RATE",
-                description = "Heart rate in bpm.",
-                previewFields =
-                    listOf(98 to 1, 130 to 2, 152 to 3, 165 to 4, 172 to 4, 187 to 5, 145 to 2)
-                        .map { (bpm, zone) ->
+                FieldCard(
+                    title = "HEART RATE",
+                    description = "Heart rate in bpm.",
+                    previewFields =
+                        listOf(98 to 1, 130 to 2, 152 to 3, 165 to 4, 172 to 4, 187 to 5, 145 to 2)
+                            .map { (bpm, zone) ->
+                                FieldValue(
+                                    bpm.toString(),
+                                    "bpm",
+                                    label = "HR",
+                                    color =
+                                        if (hrFieldConfig.colorMode == ZoneColorMode.NONE)
+                                            FieldColor.Default
+                                        else
+                                            FieldColor.Zone(
+                                                zone,
+                                                5,
+                                                zoneConfig.hrPalette,
+                                                isHr = true,
+                                            ),
+                                    iconRes = R.drawable.ic_col_hr,
+                                )
+                            },
+                    colorMode = hrFieldConfig.colorMode,
+                ) {
+                    ZoneColorSlider(
+                        selected = hrFieldConfig.colorMode,
+                        onSelected = { mode ->
+                            hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                            lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                        },
+                    )
+                }
+
+                FieldCard(
+                    title = "SPEED",
+                    description = "Speed in km/h.",
+                    previewFields =
+                        listOf(
                             FieldValue(
-                                bpm.toString(),
-                                "bpm",
-                                label = "HR",
-                                color =
-                                    if (hrFieldConfig.colorMode == ZoneColorMode.NONE)
-                                        FieldColor.Default
-                                    else
-                                        FieldColor.Zone(zone, 5, zoneConfig.hrPalette, isHr = true),
-                                iconRes = R.drawable.ic_col_hr,
+                                "37.5",
+                                "km/h",
+                                label =
+                                    if (speedFieldConfig.smoothing == SpeedSmoothingStream.S0)
+                                        "Speed"
+                                    else "${speedFieldConfig.smoothing.label} Speed",
+                                color = FieldColor.Default,
+                                iconRes = R.drawable.ic_speed_average,
                             )
+                        ),
+                    colorMode = ZoneColorMode.NONE,
+                ) {
+                    Text(
+                        "SMOOTHING",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B2D2D),
+                    )
+                    SmoothingSlider(
+                        options = SpeedSmoothingStream.entries,
+                        selected = speedFieldConfig.smoothing,
+                        label = { it.label },
+                        thumbIcon = R.drawable.ic_speed_average,
+                        onSelected = { stream ->
+                            speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
+                            lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
                         },
-                colorMode = hrFieldConfig.colorMode,
-            ) {
-                ZoneColorSlider(
-                    selected = hrFieldConfig.colorMode,
-                    onSelected = { mode ->
-                        hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                        lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
-                    },
-                )
-            }
+                    )
+                }
 
-            FieldCard(
-                title = "SPEED",
-                description = "Speed in km/h.",
-                previewFields =
-                    listOf(
-                        FieldValue(
-                            "37.5",
-                            "km/h",
-                            label =
-                                if (speedFieldConfig.smoothing == SpeedSmoothingStream.S0) "Speed"
-                                else "${speedFieldConfig.smoothing.label} Speed",
-                            color = FieldColor.Default,
-                            iconRes = R.drawable.ic_speed_average,
-                        )
-                    ),
-                colorMode = ZoneColorMode.NONE,
-            ) {
-                Text(
-                    "SMOOTHING",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1B2D2D),
-                )
-                SmoothingSlider(
-                    options = SpeedSmoothingStream.entries,
-                    selected = speedFieldConfig.smoothing,
-                    label = { it.label },
-                    thumbIcon = R.drawable.ic_speed_average,
-                    onSelected = { stream ->
-                        speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
-                        lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
-                    },
-                )
-            }
+                val avgSpeedFactors = listOf(-1f, -0.5f, 0f, 0.5f, 1f)
+                FieldCard(
+                    title = "AVG SPEED (TOTAL)",
+                    description = "Average speed including paused time.",
+                    previewFields =
+                        if (avgTotalConfig.thresholdKph > 0.0)
+                            avgSpeedFactors.map { factor ->
+                                val speed =
+                                    avgTotalConfig.thresholdKph *
+                                        (1.0 + factor * avgTotalConfig.rangePercent / 100.0)
+                                FieldValue(
+                                    "%.1f".format(speed),
+                                    "km/h",
+                                    "Avg Speed",
+                                    FieldColor.Threshold(factor),
+                                    R.drawable.ic_speed_average,
+                                )
+                            }
+                        else
+                            listOf(
+                                FieldValue(
+                                    "30.0",
+                                    "km/h",
+                                    "Avg Speed",
+                                    FieldColor.Default,
+                                    R.drawable.ic_speed_average,
+                                )
+                            ),
+                    colorMode = ZoneColorMode.TEXT,
+                ) {
+                    Text(
+                        "THRESHOLD (KM/H)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B2D2D),
+                    )
+                    ThresholdInput(
+                        value = avgTotalConfig.thresholdKph,
+                        onValueChange = { value ->
+                            avgTotalConfig = avgTotalConfig.copy(thresholdKph = value)
+                            lifecycleScope.launch {
+                                saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                            }
+                        },
+                    )
+                    Text(
+                        "MAX DEVIATION (%)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B2D2D),
+                    )
+                    RangeInput(
+                        value = avgTotalConfig.rangePercent,
+                        onValueChange = { value ->
+                            avgTotalConfig = avgTotalConfig.copy(rangePercent = value)
+                            lifecycleScope.launch {
+                                saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                            }
+                        },
+                    )
+                }
 
-            val avgSpeedFactors = listOf(-1f, -0.5f, 0f, 0.5f, 1f)
-            FieldCard(
-                title = "AVG SPEED (TOTAL)",
-                description = "Average speed including paused time.",
-                previewFields =
-                    if (avgTotalConfig.thresholdKph > 0.0)
-                        avgSpeedFactors.map { factor ->
-                            val speed = avgTotalConfig.thresholdKph *
-                                (1.0 + factor * avgTotalConfig.rangePercent / 100.0)
-                            FieldValue("%.1f".format(speed), "km/h", "Avg Speed",
-                                FieldColor.Threshold(factor), R.drawable.ic_speed_average)
-                        }
-                    else
-                        listOf(FieldValue("30.0", "km/h", "Avg Speed",
-                            FieldColor.Default, R.drawable.ic_speed_average)),
-                colorMode = ZoneColorMode.TEXT,
-            ) {
-                Text(
-                    "THRESHOLD (KM/H)",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1B2D2D),
-                )
-                ThresholdInput(
-                    value = avgTotalConfig.thresholdKph,
-                    onValueChange = { value ->
-                        avgTotalConfig = avgTotalConfig.copy(thresholdKph = value)
-                        lifecycleScope.launch {
-                            saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
-                        }
-                    },
-                )
-                Text(
-                    "MAX DEVIATION (%)",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1B2D2D),
-                )
-                RangeInput(
-                    value = avgTotalConfig.rangePercent,
-                    onValueChange = { value ->
-                        avgTotalConfig = avgTotalConfig.copy(rangePercent = value)
-                        lifecycleScope.launch {
-                            saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
-                        }
-                    },
-                )
-            }
+                FieldCard(
+                    title = "AVG SPEED (MOVING)",
+                    description = "Average speed excluding paused time.",
+                    previewFields =
+                        if (avgMovingConfig.thresholdKph > 0.0)
+                            avgSpeedFactors.map { factor ->
+                                val speed =
+                                    avgMovingConfig.thresholdKph *
+                                        (1.0 + factor * avgMovingConfig.rangePercent / 100.0)
+                                FieldValue(
+                                    "%.1f".format(speed),
+                                    "km/h",
+                                    "Avg Speed",
+                                    FieldColor.Threshold(factor),
+                                    R.drawable.ic_speed_average,
+                                )
+                            }
+                        else
+                            listOf(
+                                FieldValue(
+                                    "30.0",
+                                    "km/h",
+                                    "Avg Speed",
+                                    FieldColor.Default,
+                                    R.drawable.ic_speed_average,
+                                )
+                            ),
+                    colorMode = ZoneColorMode.TEXT,
+                ) {
+                    Text(
+                        "THRESHOLD (KM/H)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B2D2D),
+                    )
+                    ThresholdInput(
+                        value = avgMovingConfig.thresholdKph,
+                        onValueChange = { value ->
+                            avgMovingConfig = avgMovingConfig.copy(thresholdKph = value)
+                            lifecycleScope.launch {
+                                saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                            }
+                        },
+                    )
+                    Text(
+                        "MAX DEVIATION (%)",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1B2D2D),
+                    )
+                    RangeInput(
+                        value = avgMovingConfig.rangePercent,
+                        onValueChange = { value ->
+                            avgMovingConfig = avgMovingConfig.copy(rangePercent = value)
+                            lifecycleScope.launch {
+                                saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                            }
+                        },
+                    )
+                }
+            } // end Fields
 
-            FieldCard(
-                title = "AVG SPEED (MOVING)",
-                description = "Average speed excluding paused time.",
-                previewFields =
-                    if (avgMovingConfig.thresholdKph > 0.0)
-                        avgSpeedFactors.map { factor ->
-                            val speed = avgMovingConfig.thresholdKph *
-                                (1.0 + factor * avgMovingConfig.rangePercent / 100.0)
-                            FieldValue("%.1f".format(speed), "km/h", "Avg Speed",
-                                FieldColor.Threshold(factor), R.drawable.ic_speed_average)
-                        }
-                    else
-                        listOf(FieldValue("30.0", "km/h", "Avg Speed",
-                            FieldColor.Default, R.drawable.ic_speed_average)),
-                colorMode = ZoneColorMode.TEXT,
-            ) {
-                Text(
-                    "THRESHOLD (KM/H)",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1B2D2D),
-                )
-                ThresholdInput(
-                    value = avgMovingConfig.thresholdKph,
-                    onValueChange = { value ->
-                        avgMovingConfig = avgMovingConfig.copy(thresholdKph = value)
-                        lifecycleScope.launch {
-                            saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
-                        }
-                    },
-                )
-                Text(
-                    "MAX DEVIATION (%)",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1B2D2D),
-                )
-                RangeInput(
-                    value = avgMovingConfig.rangePercent,
-                    onValueChange = { value ->
-                        avgMovingConfig = avgMovingConfig.copy(rangePercent = value)
-                        lifecycleScope.launch {
-                            saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
-                        }
-                    },
-                )
-            }
-
-            SectionHeader(
+            CollapsibleSection(
                 title = "HUD",
-                description = "Configures the data fields in the heads-up display (HUD).",
-            )
-            PowerStreamDropdown(
-                selected = hudConfig.powerStream,
-                onSelected = { stream ->
-                    hudConfig = hudConfig.copy(powerStream = stream)
-                    lifecycleScope.launch { saveHUDConfig(hudConfig) }
-                },
-            )
-            ZoneColorModeDropdown(
-                selected = hudConfig.colorMode,
-                onSelected = { mode ->
-                    hudConfig = hudConfig.copy(colorMode = mode)
-                    lifecycleScope.launch { saveHUDConfig(hudConfig) }
-                },
-            )
-            ZoneColorPreview(
-                colorMode = hudConfig.colorMode,
-                powerStream = hudConfig.powerStream,
-                zoneConfig = zoneConfig,
-            )
+                description = "Configure the data fields in the heads-up display (HUD).",
+                expanded = hudExpanded,
+                onToggle = { hudExpanded = !hudExpanded },
+            ) {
+                PowerStreamDropdown(
+                    selected = hudConfig.powerStream,
+                    onSelected = { stream ->
+                        hudConfig = hudConfig.copy(powerStream = stream)
+                        lifecycleScope.launch { saveHUDConfig(hudConfig) }
+                    },
+                )
+                ZoneColorModeDropdown(
+                    selected = hudConfig.colorMode,
+                    onSelected = { mode ->
+                        hudConfig = hudConfig.copy(colorMode = mode)
+                        lifecycleScope.launch { saveHUDConfig(hudConfig) }
+                    },
+                )
+                ZoneColorPreview(
+                    colorMode = hudConfig.colorMode,
+                    powerStream = hudConfig.powerStream,
+                    zoneConfig = zoneConfig,
+                )
+            } // end HUD
 
-            SectionHeader(
+            CollapsibleSection(
                 title = "Global",
-                description = "Zone palettes and time format shared across all fields.",
-            )
+                description = "Zone color palettes and time format shared across all fields.",
+                expanded = globalExpanded,
+                onToggle = { globalExpanded = !globalExpanded },
+            ) {
+                Text("Time Fields", style = MaterialTheme.typography.titleMedium)
+                TimeFormatDropdown(
+                    selected = timeConfig.format,
+                    onSelected = { format ->
+                        timeConfig = TimeConfig(format)
+                        lifecycleScope.launch { saveTimeConfig(timeConfig) }
+                    },
+                )
+                TimeFormatPreview(format = timeConfig.format)
 
-            Text("Time Fields", style = MaterialTheme.typography.titleMedium)
-            TimeFormatDropdown(
-                selected = timeConfig.format,
-                onSelected = { format ->
-                    timeConfig = TimeConfig(format)
-                    lifecycleScope.launch { saveTimeConfig(timeConfig) }
-                },
-            )
-            TimeFormatPreview(format = timeConfig.format)
+                Text("Zone Colors", style = MaterialTheme.typography.titleMedium)
+                Text("Power zones", style = MaterialTheme.typography.labelMedium)
+                ZonePaletteDropdown(
+                    label = "Power zone palette",
+                    selected = zoneConfig.powerPalette,
+                    onSelected = { palette ->
+                        zoneConfig = zoneConfig.copy(powerPalette = palette)
+                        lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                    },
+                )
+                ZoneColorBar(
+                    colors =
+                        when (zoneConfig.powerPalette) {
+                            ZonePalette.KAROO -> karooPowerColors.map { it }
+                            ZonePalette.WAHOO -> wahooPowerColors.map { it }
+                            ZonePalette.INTERVALS -> intervalsPowerColors.map { it }
+                            ZonePalette.ZWIFT -> zwiftPowerColors.map { it }
+                        }
+                )
 
-            Text("Zone Colors", style = MaterialTheme.typography.titleMedium)
-            Text("Power zones", style = MaterialTheme.typography.labelMedium)
-            ZonePaletteDropdown(
-                label = "Power zone palette",
-                selected = zoneConfig.powerPalette,
-                onSelected = { palette ->
-                    zoneConfig = zoneConfig.copy(powerPalette = palette)
-                    lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                },
-            )
-            ZoneColorBar(
-                colors =
-                    when (zoneConfig.powerPalette) {
-                        ZonePalette.KAROO -> karooPowerColors.map { it }
-                        ZonePalette.WAHOO -> wahooPowerColors.map { it }
-                        ZonePalette.INTERVALS -> intervalsPowerColors.map { it }
-                        ZonePalette.ZWIFT -> zwiftPowerColors.map { it }
-                    }
-            )
-
-            Text("HR zones", style = MaterialTheme.typography.labelMedium)
-            ZonePaletteDropdown(
-                label = "HR zone palette",
-                selected = zoneConfig.hrPalette,
-                onSelected = { palette ->
-                    zoneConfig = zoneConfig.copy(hrPalette = palette)
-                    lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                },
-            )
-            ZoneColorBar(
-                colors =
-                    when (zoneConfig.hrPalette) {
-                        ZonePalette.KAROO -> karooHrColors.map { it }
-                        ZonePalette.WAHOO -> wahooHrColors.map { it }
-                        ZonePalette.INTERVALS -> intervalsHrColors.map { it }
-                        ZonePalette.ZWIFT -> zwiftHrColors.map { it }
-                    }
-            )
+                Text("HR zones", style = MaterialTheme.typography.labelMedium)
+                ZonePaletteDropdown(
+                    label = "HR zone palette",
+                    selected = zoneConfig.hrPalette,
+                    onSelected = { palette ->
+                        zoneConfig = zoneConfig.copy(hrPalette = palette)
+                        lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                    },
+                )
+                ZoneColorBar(
+                    colors =
+                        when (zoneConfig.hrPalette) {
+                            ZonePalette.KAROO -> karooHrColors.map { it }
+                            ZonePalette.WAHOO -> wahooHrColors.map { it }
+                            ZonePalette.INTERVALS -> intervalsHrColors.map { it }
+                            ZonePalette.ZWIFT -> zwiftHrColors.map { it }
+                        }
+                )
+            } // end Global
         }
     }
 }
@@ -566,14 +621,62 @@ private fun PowerStreamDropdown(
 }
 
 @Composable
-private fun SectionHeader(title: String, description: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(
-            description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun CollapsibleSection(
+    title: String,
+    description: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .border(1.dp, Color(0xFFCCCCCC), RoundedCornerShape(8.dp))
+                .background(Color.White)
+    ) {
+        Row(
+            modifier =
+                Modifier.fillMaxWidth()
+                    .pointerInput(onToggle) { detectTapGestures(onTap = { onToggle() }) }
+                    .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            val rotation by
+                animateFloatAsState(
+                    if (expanded) 0f else 90f,
+                    label = "chevron",
+                    animationSpec = tween(200),
+                )
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_down),
+                contentDescription = if (expanded) "Collapse" else "Expand",
+                modifier = Modifier.size(24.dp).rotate(rotation),
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(animationSpec = tween(200)),
+            exit = shrinkVertically(animationSpec = tween(200)),
+        ) {
+            Column(
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                content = content,
+            )
+        }
     }
 }
 
@@ -675,7 +778,7 @@ private fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode)
                         when (mode) {
                             ZoneColorMode.NONE -> "None"
                             ZoneColorMode.TEXT -> "Text"
-                            ZoneColorMode.BACKGROUND -> "Background"
+                            ZoneColorMode.BACKGROUND -> "Fill"
                         },
                     fontSize = 10.sp,
                     color = Color(0xFF1B2D2D),
