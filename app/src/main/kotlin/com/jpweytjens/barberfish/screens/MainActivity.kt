@@ -312,6 +312,11 @@ class MainActivity : ComponentActivity() {
                     expanded = thresholdsExpanded,
                     onToggle = { thresholdsExpanded = !thresholdsExpanded },
                 ) {
+                    Text(
+                        "Typical ACP randonneuring checkpoint cutoff speeds: 15 km/h minimum, 30 km/h maximum. Set any event-specific speed limit as your threshold.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     FieldCard(
                         title = "AVG SPEED (TOTAL)",
                         description = "Average speed including paused time.",

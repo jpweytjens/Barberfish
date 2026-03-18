@@ -48,6 +48,15 @@ Native-feeling data field enhancements for the Hammerhead Karoo.
 - Time to civil dawn
 - Time to civil dusk
 
+## Use cases
+
+### ACP randonneuring
+
+[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds: a minimum of 15 km/h and a maximum of 30 km/h. Riding below 15 km/h risks missing a checkpoint closing time; riding above 30 km/h disqualifies the attempt. Alternatively, replace these values with your event's thresholds.
+
+The field grades from blue to red as your average speed drifts from your threshold. It turns redder the further you fall below, bluer the further you push above. How quickly the color appears can also be configured.
+
+
 ## Installation
 
 1. Find the APK link on the [latest release page](https://github.com/jpweytjens/barberfish/releases/latest).
