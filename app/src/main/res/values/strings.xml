@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="extension_name">Barberfish</string>
-    <string name="three_column_name">Speed · HR · Power</string>
-    <string name="three_column_description">Speed, HR, and power in three columns with zone coloring</string>
+    <string name="hud_name">HUD</string>
+    <string name="hud_description">Heads-up display with speed, HR, and power in three columns with zone coloring</string>
+    <string name="power_name">Power</string>
+    <string name="power_description">Current power output with smoothing and zone coloring</string>
+    <string name="hr_name">Heart Rate</string>
+    <string name="hr_description">Heart rate with zone coloring</string>
+    <string name="speed_name">Speed</string>
+    <string name="speed_description">Current speed with optional smoothing</string>
     <string name="avg_speed_total_name">Avg Speed (total)</string>
     <string name="avg_speed_total_description">Average speed including paused time, with optional threshold coloring</string>
     <string name="avg_speed_moving_name">Avg Speed (moving)</string>

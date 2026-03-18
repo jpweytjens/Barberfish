@@ -2,7 +2,10 @@ package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
-import com.jpweytjens.barberfish.datatype.ThreeColumnField
+import com.jpweytjens.barberfish.datatype.HRField
+import com.jpweytjens.barberfish.datatype.HUDField
+import com.jpweytjens.barberfish.datatype.PowerField
+import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import io.hammerhead.karooext.KarooSystemService
@@ -15,7 +18,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
     override val types by lazy {
         listOf(
-            ThreeColumnField(karooSystem),
+            HUDField(karooSystem),
+            PowerField(karooSystem),
+            HRField(karooSystem),
+            SpeedField(karooSystem),
             AvgSpeedField(karooSystem, includePaused = true),
             AvgSpeedField(karooSystem, includePaused = false),
             TimeField(karooSystem, TimeKind.TOTAL),

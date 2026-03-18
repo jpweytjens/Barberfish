@@ -11,10 +11,11 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.PowerStream
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
-import com.jpweytjens.barberfish.extension.streamThreeColumnConfig
+import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
@@ -40,7 +41,7 @@ import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalGlanceRemoteViewsApi::class, ExperimentalCoroutinesApi::class)
-class ThreeColumnField(private val karooSystem: KarooSystemService) :
+class HUDField(private val karooSystem: KarooSystemService) :
     DataTypeImpl("barberfish", "three-column") {
 
     private val glance = GlanceRemoteViews()
@@ -53,7 +54,7 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
             emitter.setCancellable { scope.cancel() }
             scope.launch {
                 combine(
-                        context.streamThreeColumnConfig(),
+                        context.streamHUDConfig(),
                         context.streamZoneConfig(),
                         karooSystem.streamUserProfile(),
                     ) { cfg, zones, profile ->
@@ -117,7 +118,7 @@ class ThreeColumnField(private val karooSystem: KarooSystemService) :
 
         scope.launch {
             combine(
-                    context.streamThreeColumnConfig(),
+                    context.streamHUDConfig(),
                     context.streamZoneConfig(),
                     karooSystem.streamUserProfile(),
                 ) { cfg, zones, profile ->

@@ -27,40 +27,137 @@ private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_confi
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
 private val zoneConfigKey = stringPreferencesKey("zone_config")
 
-// --- ThreeColumnConfig ---
+// --- HUDConfig (was ThreeColumnConfig) ---
 
 @Serializable
 enum class PowerStream(val label: String, val typeId: String, val fieldId: String) {
     INSTANT("Power", DataType.Type.POWER, DataType.Field.POWER),
-    S3("3s Power", DataType.Type.SMOOTHED_3S_AVERAGE_POWER, DataType.Field.SMOOTHED_3S_AVERAGE_POWER),
-    S5("5s Power", DataType.Type.SMOOTHED_5S_AVERAGE_POWER, DataType.Field.SMOOTHED_5S_AVERAGE_POWER),
-    S10("10s Power", DataType.Type.SMOOTHED_10S_AVERAGE_POWER, DataType.Field.SMOOTHED_10S_AVERAGE_POWER),
-    S30("30s Power", DataType.Type.SMOOTHED_30S_AVERAGE_POWER, DataType.Field.SMOOTHED_30S_AVERAGE_POWER),
+    S3(
+        "3s Power",
+        DataType.Type.SMOOTHED_3S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_3S_AVERAGE_POWER,
+    ),
+    S5(
+        "5s Power",
+        DataType.Type.SMOOTHED_5S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_5S_AVERAGE_POWER,
+    ),
+    S10(
+        "10s Power",
+        DataType.Type.SMOOTHED_10S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_10S_AVERAGE_POWER,
+    ),
+    S30(
+        "30s Power",
+        DataType.Type.SMOOTHED_30S_AVERAGE_POWER,
+        DataType.Field.SMOOTHED_30S_AVERAGE_POWER,
+    ),
 }
 
 @Serializable
 enum class ZoneColorMode(val label: String) {
-    TEXT("Colored text"),
-    BACKGROUND("Colored background"),
+    NONE("None"),
+    TEXT("Text"),
+    BACKGROUND("Background"),
 }
 
 @Serializable
-data class ThreeColumnConfig(
+data class HUDConfig(
     val powerStream: PowerStream = PowerStream.S3,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
-fun Context.streamThreeColumnConfig(): Flow<ThreeColumnConfig> =
+fun Context.streamHUDConfig(): Flow<HUDConfig> =
     dataStore.data
         .map { prefs ->
             prefs[threeColumnConfigKey]?.let {
-                runCatching { json.decodeFromString<ThreeColumnConfig>(it) }.getOrNull()
-            } ?: ThreeColumnConfig()
+                runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
+            } ?: HUDConfig()
         }
         .distinctUntilChanged()
 
-suspend fun Context.saveThreeColumnConfig(config: ThreeColumnConfig) {
+suspend fun Context.saveHUDConfig(config: HUDConfig) {
     dataStore.edit { it[threeColumnConfigKey] = json.encodeToString(config) }
+}
+
+// --- PowerFieldConfig ---
+
+@Serializable
+enum class PowerSmoothingStream(val label: String, val typeId: String, val fieldId: String) {
+    S0("Off", DataType.Type.POWER, DataType.Field.POWER),
+    S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_POWER, DataType.Field.SMOOTHED_3S_AVERAGE_POWER),
+    S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_POWER, DataType.Field.SMOOTHED_5S_AVERAGE_POWER),
+    S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_POWER, DataType.Field.SMOOTHED_10S_AVERAGE_POWER),
+    M20("20m", DataType.Type.SMOOTHED_20M_AVERAGE_POWER, DataType.Field.SMOOTHED_20M_AVERAGE_POWER),
+    H1("1hr", DataType.Type.SMOOTHED_1HR_AVERAGE_POWER, DataType.Field.SMOOTHED_1HR_AVERAGE_POWER),
+}
+
+@Serializable
+data class PowerFieldConfig(
+    val smoothing: PowerSmoothingStream = PowerSmoothingStream.S3,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+private val powerFieldConfigKey = stringPreferencesKey("power_field_config")
+
+fun Context.streamPowerFieldConfig(): Flow<PowerFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[powerFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<PowerFieldConfig>(it) }.getOrNull()
+            } ?: PowerFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.savePowerFieldConfig(config: PowerFieldConfig) {
+    dataStore.edit { it[powerFieldConfigKey] = json.encodeToString(config) }
+}
+
+// --- HRFieldConfig ---
+
+@Serializable data class HRFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val hrFieldConfigKey = stringPreferencesKey("hr_field_config")
+
+fun Context.streamHRFieldConfig(): Flow<HRFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[hrFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<HRFieldConfig>(it) }.getOrNull()
+            } ?: HRFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveHRFieldConfig(config: HRFieldConfig) {
+    dataStore.edit { it[hrFieldConfigKey] = json.encodeToString(config) }
+}
+
+// --- SpeedFieldConfig ---
+
+@Serializable
+enum class SpeedSmoothingStream(val label: String, val typeId: String, val fieldId: String) {
+    S0("Off", DataType.Type.SPEED, DataType.Field.SPEED),
+    S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_SPEED, DataType.Field.SMOOTHED_3S_AVERAGE_SPEED),
+    S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_SPEED, DataType.Field.SMOOTHED_5S_AVERAGE_SPEED),
+    S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_SPEED, DataType.Field.SMOOTHED_10S_AVERAGE_SPEED),
+}
+
+@Serializable
+data class SpeedFieldConfig(val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S3)
+
+private val speedFieldConfigKey = stringPreferencesKey("speed_field_config")
+
+fun Context.streamSpeedFieldConfig(): Flow<SpeedFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[speedFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<SpeedFieldConfig>(it) }.getOrNull()
+            } ?: SpeedFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveSpeedFieldConfig(config: SpeedFieldConfig) {
+    dataStore.edit { it[speedFieldConfigKey] = json.encodeToString(config) }
 }
 
 // --- AvgSpeedConfig ---

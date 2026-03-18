@@ -6,8 +6,26 @@
     scansDevices="false">
     <DataType
         typeId="three-column"
-        displayName="@string/three_column_name"
-        description="@string/three_column_description"
+        displayName="@string/hud_name"
+        description="@string/hud_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="power"
+        displayName="@string/power_name"
+        description="@string/power_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_hr"
+        typeId="hr"
+        displayName="@string/hr_name"
+        description="@string/hr_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_speed_average"
+        typeId="speed"
+        displayName="@string/speed_name"
+        description="@string/speed_description"
         graphical="true" />
     <DataType
         icon="@drawable/ic_speed_average"
