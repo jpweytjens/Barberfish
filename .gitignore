@@ -7,8 +7,6 @@
 /captures
 .externalNativeBuild
 .cxx
-docs
-
 ### Kotlin ###
 # Compiled class file
 *.class
@@ -43,6 +41,4 @@ COMPLETED.MD
 WIP.MD
 
 # Screenshots
-*.png
-*.jpg
 screencaps/
