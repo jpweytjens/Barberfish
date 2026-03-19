@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Barberfish" parent="android:Theme.Material.Light">
+        <item name="android:colorPrimary">@color/barberfish_yellow</item>
+        <item name="android:statusBarColor">@color/barberfish_yellow</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:actionBarStyle">@style/Theme.Barberfish.ActionBar</item>
+    </style>
+
+    <style name="Theme.Barberfish.ActionBar" parent="android:Widget.Material.Light.ActionBar.Solid">
+        <item name="android:background">@color/barberfish_yellow</item>
+        <item name="android:titleTextStyle">@style/Theme.Barberfish.ActionBar.TitleText</item>
+    </style>
+
+    <style name="Theme.Barberfish.ActionBar.TitleText" parent="android:TextAppearance.Material.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/black</item>
+    </style>
+</resources>
