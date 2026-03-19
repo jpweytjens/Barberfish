@@ -7,16 +7,19 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 <br clear="left">
 
+Barberfish extends the Karoo's built-in data fields. It adds a three-column HUD, configurable zone color palettes and coloring styles, unambiguous time formatting, and average speed fields with threshold coloring, all designed to look and feel like native Karoo fields.
+
 ## Data field enhancements
 
-| Feature             | Default Karoo                                                                                 | Barberfish                                                                               |
-| ------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 3-column HUD        | Not available                                                                                 | Speed, HR, and power side by side with zone coloring                                     |
-| Zone color palettes | Hammerhead only                                                                               | Hammerhead, Wahoo, Zwift, and Intervals.icu                                              |
-| Zone coloring style | Background fill only                                                                          | Background fill or text color                                                            |
-| Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                            | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                                   |
-| Average speed       | No threshold coloring                                                                         | Total and moving-time variants, colored by configurable single threshold or min/max zone |
-| Time fields         | [Built-in](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend) | Reimplemented with Barberfish formatting options                                         |
+| Feature             | Default Karoo                                                                                                                                                      | Barberfish                                                                  |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| 3-column HUD        | Not available                                                                                                                                                      | Speed, HR, and power side by side with zone coloring                        |
+| Zone color palettes | Hammerhead only                                                                                                                                                    | Hammerhead, Wahoo, Zwift, and Intervals.icu                                 |
+| Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                               |
+| Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                           |
+| Threshold coloring  | Not available                                                                                                                                                      | Configurable single threshold or min/max thresholds on average speed fields |
+| Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                      |
+| Duration fields     | [Built-in duration fields](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend)  including total time, riding time, paused time, ... | Reimplemented with Barberfish formatting options                            |
 
 ### Zone color palettes
 
@@ -26,6 +29,14 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 | Intervals.icu | ![](docs/palette-intervals.svg) | ![](docs/palette-intervals-hr.svg) |
 | Wahoo         | ![](docs/palette-wahoo.svg)     | ![](docs/palette-wahoo-hr.svg)     |
 | Zwift         | ![](docs/palette-zwift.svg)     | ![](docs/palette-zwift-hr.svg)     |
+
+### Time formatting
+
+| Format   | Under an hour | Over an hour |
+| -------- | ------------- | ------------ |
+| Racing   | `23'45"`      | `1h23'45"`   |
+| Clock    | `0:23:45`     | `1:23:45`    |
+| Segments | `23m 45s`     | `1h 23m 45s` |
 
 ## Data fields
 
@@ -64,14 +75,16 @@ Complete list of data fields provided by Barberfish.
 
 ## Examples
 
-| <img width="180" src="docs/hud-routegraph.jpg">                                                                                          | <img width="180" src="docs/time-formatting.jpg">                                                                                                        | <img width="180" src="docs/config.jpg">                                                             | <img width="180" src="docs/config-threshold.jpg">                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| HUD on a map page with [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row. HR and power use text zone coloring. | Unambiguous `1:23:45` time formatting on time-to-destination and paused time, alongside the green total average speed exceding the `30 km/h` threshold. | Karoo-style config screen with collapsible sections for fields, HUD, threshold and global settings. | Average speed threshold config with a live field preview that updates as you type. |
+| <img width="180" src="docs/hud-routegraph.jpg">                                                                                          | <img width="180" src="docs/time-formatting.jpg">                                                                                                        | <img width="180" src="docs/config.jpg">              | <img width="180" src="docs/config-threshold.jpg">         |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| HUD on a map page with [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row. HR and power use text zone coloring. | Unambiguous `1:23:45` time formatting on time-to-destination and paused time, alongside the green total average speed exceding the `30 km/h` threshold. | Karoo-style config screen with collapsible sections. | Average speed threshold config with a live field preview. |
 
 ## Use cases
 ### Map page HUD
 
-The three-column HUD is designed as the top row of a map data page — speed, heart rate, and power at a glance without leaving the map. The wide HUD field leaves a row below with unused horizontal space. Pair it with [RouteGraph](https://github.com/timklge/karoo-routegraph) in that second row for an elevation profile that fills the width naturally.
+The three-column HUD is designed as the top row of a map data page providing speed, heart rate, and power at a glance. 
+
+A single row on the map page is quite high, leading to a lot of unused horizontal space. A nice workaround is adding a second row to occupy this excess horizontal space with e.g. [RouteGraph](https://github.com/timklge/karoo-routegraph) for an elevation profile.
 
 ### ACP randonneuring (min + max threshold)
 
@@ -82,6 +95,15 @@ The three-column HUD is designed as the top row of a map data page — speed, he
 Racing a gran fondo with a target average? Set a single threshold at your goal pace. The field colors green above it and red below, so you know at a glance whether you're on track.
 
 
+
+## Roadmap
+
+Ideas that may or may not be implemented — no promises on if or when.
+
+- **Day mode support** — fields are currently only tested in night mode; day mode rendering needs verification and adjustments
+- **Configurable HUD fields** — choose which metrics appear in each column of the three-column HUD instead of the fixed speed / HR / power layout
+- **Four-column HUD** — add a fourth column to fit more metrics at a glance
+- **ETA data field** — estimated time of arrival at destination, gradient- and paused-time aware for more accurate predictions on hilly routes
 
 ## Compatibility
 
@@ -103,6 +125,10 @@ Tested on a Karoo 3 running firmware 1.618.2377.20. Should work on Karoo 2 and o
 ## Contributing
 
 Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish).
+
+### For extension developers
+
+`BarberfishView` and `BarberfishDataType` are a reimplementation of the native Karoo data field that matches the Hammerhead look and feel, with added support for variable font sizes and control over the fill color behind the label and icon.
 
 ## License
 
