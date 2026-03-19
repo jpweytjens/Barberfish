@@ -98,12 +98,16 @@ Racing a gran fondo with a target average? Set a single threshold at your goal p
 
 ## Roadmap
 
-Ideas that may or may not be implemented — no promises on if or when.
+Ideas that may or may not be implemented
 
-- **Day mode support** — fields are currently only tested in night mode; day mode rendering needs verification and adjustments
-- **Configurable HUD fields** — choose which metrics appear in each column of the three-column HUD instead of the fixed speed / HR / power layout
-- **Four-column HUD** — add a fourth column to fit more metrics at a glance
-- **ETA data field** — estimated time of arrival at destination, gradient- and paused-time aware for more accurate predictions on hilly routes
+- Day mode support  
+  fields are currently only tested in night mode; day mode rendering needs verification and adjustments
+- Configurable HUD fields  
+  choose which metrics appear in each column of the three-column HUD instead of the fixed speed / HR / power layout
+- Four-column HUD  
+  add a fourth column to fit more metrics at a glance
+- ETA data field  
+   estimated time of arrival at destination, gradient- and paused-time aware for more accurate predictions on hilly routes
 
 ## Compatibility
 
