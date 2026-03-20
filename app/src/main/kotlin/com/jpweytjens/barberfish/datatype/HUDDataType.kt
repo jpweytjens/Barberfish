@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceRemoteViews
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
@@ -51,7 +52,10 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                 val result =
                     glance.compose(context, DpSize.Unspecified) {
                         Row(
-                            modifier = GlanceModifier.fillMaxSize().padding(vertical = 2.dp),
+                            modifier =
+                                GlanceModifier.fillMaxSize().padding(vertical = 2.dp).let {
+                                    if (config.preview) it.cornerRadius(8.dp) else it
+                                },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -60,21 +64,21 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                                 config.alignment,
                                 state.colorMode,
                                 ViewSizeConfig.HUD,
-                                GlanceModifier.defaultWeight()
+                                modifier = GlanceModifier.defaultWeight()
                             )
                             BarberfishView(
                                 state.hr,
                                 config.alignment,
                                 state.colorMode,
                                 ViewSizeConfig.HUD,
-                                GlanceModifier.defaultWeight()
+                                modifier = GlanceModifier.defaultWeight()
                             )
                             BarberfishView(
                                 state.power,
                                 config.alignment,
                                 state.colorMode,
                                 ViewSizeConfig.HUD,
-                                GlanceModifier.defaultWeight()
+                                modifier = GlanceModifier.defaultWeight()
                             )
                         }
                     }

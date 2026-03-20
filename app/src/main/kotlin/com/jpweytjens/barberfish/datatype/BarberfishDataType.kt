@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -42,7 +43,12 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
     /** Renders the Glance UI for one FieldState. Default: plain BarberfishView. */
     @Composable
     open fun Content(field: FieldState, config: ViewConfig) {
-        BarberfishView(field, config.alignment, field.colorMode)
+        BarberfishView(
+            field,
+            config.alignment,
+            field.colorMode,
+            cornerRadius = if (config.preview) 8.dp else 0.dp,
+        )
     }
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {

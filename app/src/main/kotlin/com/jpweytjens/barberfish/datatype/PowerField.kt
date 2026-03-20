@@ -59,7 +59,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                         raw.toInt().toString(),
                         label =
                             if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
-                            else "Power\n${cfg.smoothing.label}",
+                            else "${cfg.smoothing.label} Power",
                         color = color,
                         iconRes = R.drawable.ic_col_power,
                         colorMode = cfg.colorMode
@@ -91,7 +91,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                         watts.toString(),
                         label =
                             if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
-                            else "Power\n${cfg.smoothing.label}",
+                            else "${cfg.smoothing.label} Power",
                         color = color,
                         iconRes = R.drawable.ic_col_power,
                         colorMode = cfg.colorMode

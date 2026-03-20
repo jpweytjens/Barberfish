@@ -43,7 +43,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                         "%.1f".format(converted),
                         label =
                             if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
-                            else "Speed\n${cfg.smoothing.label}",
+                            else "${cfg.smoothing.label} Speed",
                         color = FieldColor.Default,
                         iconRes = R.drawable.ic_col_speed
                     )
@@ -61,7 +61,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                         "%.1f".format(converted),
                         label =
                             if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
-                            else "Speed\n${cfg.smoothing.label}",
+                            else "${cfg.smoothing.label} Speed",
                         color = FieldColor.Default,
                         iconRes = R.drawable.ic_col_speed
                     )
