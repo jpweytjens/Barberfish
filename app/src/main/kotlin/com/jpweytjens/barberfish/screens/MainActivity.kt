@@ -73,7 +73,7 @@ import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_RED
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
@@ -189,7 +189,7 @@ class MainActivity : ComponentActivity() {
                                     120 to 1,
                                 )
                                 .map { (watts, zone) ->
-                                    FieldValue(
+                                    FieldState(
                                         watts.toString(),
                                         label = powerLabel,
                                         color =
@@ -246,7 +246,7 @@ class MainActivity : ComponentActivity() {
                                     145 to 2,
                                 )
                                 .map { (bpm, zone) ->
-                                    FieldValue(
+                                    FieldState(
                                         bpm.toString(),
                                         label = "HR",
                                         color =
@@ -278,7 +278,7 @@ class MainActivity : ComponentActivity() {
                         description = "Speed in km/h.",
                         previewFields =
                             listOf(
-                                FieldValue(
+                                FieldState(
                                     "37.5",
                                     label =
                                         if (speedFieldConfig.smoothing == SpeedSmoothingStream.S0)
@@ -663,7 +663,7 @@ private fun CollapsibleSection(
 private fun FieldCard(
     title: String,
     description: String,
-    previewFields: List<FieldValue>,
+    previewFields: List<FieldState>,
     colorMode: ZoneColorMode,
     controls: @Composable ColumnScope.() -> Unit,
 ) {
@@ -1106,9 +1106,9 @@ private fun previewColorForKph(speedKph: Double, cfg: AvgSpeedConfig): FieldColo
         }
     }
 
-private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldValue> {
+private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldState> {
     val disabled =
-        listOf(FieldValue("30.0", "Avg Speed", FieldColor.Default, R.drawable.ic_speed_average))
+        listOf(FieldState("30.0", "Avg Speed", FieldColor.Default, R.drawable.ic_speed_average))
     // 6 steps per side (5 within range + 1 outside) + midpoint = 13 preview fields
     val n = 5
     val speeds: List<Double> =
@@ -1150,7 +1150,7 @@ private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldValue> {
             }
         }
     return speeds.map { speed ->
-        FieldValue(
+        FieldState(
             "%.1f".format(speed),
             "Avg Speed",
             previewColorForKph(speed, cfg),
@@ -1166,16 +1166,16 @@ private fun ZoneColorPreview(
     zoneConfig: ZoneConfig,
 ) {
     val alignment = ViewConfig.Alignment.RIGHT
-    val speed = FieldValue("42.1", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
+    val speed = FieldState("42.1", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
     val hr =
-        FieldValue(
+        FieldState(
             "187",
             "HR",
             FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true),
             R.drawable.ic_col_hr,
         )
     val power =
-        FieldValue(
+        FieldState(
             "247",
             powerStream.label,
             FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
@@ -1196,7 +1196,7 @@ private fun ZoneColorPreview(
 
 @Composable
 private fun BarberfishPreviewCell(
-    field: FieldValue,
+    field: FieldState,
     alignment: ViewConfig.Alignment,
     colorMode: ZoneColorMode,
     modifier: Modifier = Modifier,

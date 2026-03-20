@@ -5,7 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HudState
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
@@ -15,7 +15,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
-import com.jpweytjens.barberfish.extension.toErrorFieldValue
+import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
@@ -69,14 +69,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     val pwrZoneIdx = powerZone(powerW.toDouble(), profile.powerZones)
                     HudState(
                         speed =
-                            FieldValue(
+                            FieldState(
                                 "%.1f".format(speedKph),
                                 "Speed",
                                 FieldColor.Default,
                                 R.drawable.ic_col_speed,
                             ),
                         hr =
-                            FieldValue(
+                            FieldState(
                                 hrBpm.toString(),
                                 "HR",
                                 FieldColor.Zone(
@@ -88,7 +88,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                 R.drawable.ic_col_hr,
                             ),
                         power =
-                            FieldValue(
+                            FieldState(
                                 powerW.toString(),
                                 cfg.powerStream.label,
                                 FieldColor.Zone(
@@ -104,14 +104,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 }
             }
 
-    private fun toSpeed(state: StreamState, profile: UserProfile): FieldValue {
-        state.toErrorFieldValue("Speed")?.let {
+    private fun toSpeed(state: StreamState, profile: UserProfile): FieldState {
+        state.toErrorFieldState("Speed")?.let {
             return it
         }
         val raw =
             (state as StreamState.Streaming).dataPoint.values[DataType.Field.SPEED]
-                ?: return FieldValue.unavailable("Speed")
-        return FieldValue(
+                ?: return FieldState.unavailable("Speed")
+        return FieldState(
             primary = "%.1f".format(ConvertType.SPEED.apply(raw, profile)),
             label = "Speed",
             color = FieldColor.Default,
@@ -119,14 +119,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
         )
     }
 
-    private fun toHr(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldValue {
-        state.toErrorFieldValue("HR")?.let {
+    private fun toHr(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldState {
+        state.toErrorFieldState("HR")?.let {
             return it
         }
         val raw =
             (state as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
-                ?: return FieldValue.unavailable("HR")
-        return FieldValue(
+                ?: return FieldState.unavailable("HR")
+        return FieldState(
             primary = raw.toInt().toString(),
             label = "HR",
             color =
@@ -145,14 +145,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
         stream: PowerSmoothingStream,
         profile: UserProfile,
         zones: ZoneConfig
-    ): FieldValue {
-        state.toErrorFieldValue("Power")?.let {
+    ): FieldState {
+        state.toErrorFieldState("Power")?.let {
             return it
         }
         val raw =
             (state as StreamState.Streaming).dataPoint.values[stream.fieldId]
-                ?: return FieldValue.unavailable("Power")
-        return FieldValue(
+                ?: return FieldState.unavailable("Power")
+        return FieldState(
             primary = raw.toInt().toString(),
             label = stream.label,
             color =

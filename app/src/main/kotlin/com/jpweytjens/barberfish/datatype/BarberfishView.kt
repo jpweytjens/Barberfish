@@ -10,18 +10,18 @@ import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.unit.ColorProvider
-import com.jpweytjens.barberfish.datatype.shared.FieldSizeConfig
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
 @Composable
 fun BarberfishView(
-    field: FieldValue,
+    field: FieldState,
     alignment: ViewConfig.Alignment = ViewConfig.Alignment.CENTER,
     colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-    sizeConfig: FieldSizeConfig = FieldSizeConfig.STANDARD,
+    sizeConfig: ViewSizeConfig = ViewSizeConfig.STANDARD,
     modifier: GlanceModifier = GlanceModifier,
 ) {
     val colors = field.color.toColorConfig(colorMode)
@@ -39,8 +39,8 @@ fun BarberfishView(
                 GlanceModifier.fillMaxWidth()
                     .fillMaxHeight()
                     .padding(
-                        start = sizeConfig.cellPaddingH,
-                        end = sizeConfig.cellPaddingH,
+                        start = sizeConfig.paddingH,
+                        end = sizeConfig.paddingH,
                     ),
         )
         BarberfishHeader(
@@ -52,9 +52,9 @@ fun BarberfishView(
             modifier =
                 GlanceModifier.fillMaxWidth()
                     .padding(
-                        start = sizeConfig.cellPaddingH,
-                        end = sizeConfig.cellPaddingH,
-                        top = if (field.label.contains("\n")) 0.dp else sizeConfig.cellPaddingTop,
+                        start = sizeConfig.paddingH,
+                        end = sizeConfig.paddingH,
+                        top = if (field.label.contains("\n")) 0.dp else sizeConfig.paddingTop,
                     ),
         )
     }

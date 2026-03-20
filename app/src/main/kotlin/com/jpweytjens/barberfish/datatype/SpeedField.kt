@@ -5,7 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.map
 class SpeedField(private val karooSystem: KarooSystemService) :
     BarberfishDataType("barberfish", "speed") {
 
-    override fun liveFlow(context: Context): Flow<FieldValue> =
+    override fun liveFlow(context: Context): Flow<FieldState> =
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
                 cfg to profile
             }
@@ -36,9 +36,9 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                             ?.dataPoint
                             ?.values
                             ?.get(cfg.smoothing.fieldId)
-                            ?: return@map FieldValue.unavailable("Speed")
+                            ?: return@map FieldState.unavailable("Speed")
                     val converted = ConvertType.SPEED.apply(raw, profile)
-                    FieldValue(
+                    FieldState(
                         "%.1f".format(converted),
                         label = "Speed",
                         color = FieldColor.Default,
@@ -47,14 +47,14 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 }
             }
 
-    override fun previewFlow(context: Context): Flow<FieldValue> =
+    override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
                 cfg to profile
             }
             .flatMapLatest { (_, profile) ->
                 previewSpeedFlow().map { rawMs ->
                     val converted = ConvertType.SPEED.apply(rawMs, profile)
-                    FieldValue(
+                    FieldState(
                         "%.1f".format(converted),
                         label = "Speed",
                         color = FieldColor.Default,

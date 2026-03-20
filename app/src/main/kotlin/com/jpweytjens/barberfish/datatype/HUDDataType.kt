@@ -10,8 +10,8 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
-import com.jpweytjens.barberfish.datatype.shared.FieldSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.HudState
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
 import io.hammerhead.karooext.models.UpdateGraphicConfig
@@ -59,21 +59,21 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                                 state.speed,
                                 config.alignment,
                                 state.colorMode,
-                                FieldSizeConfig.HUD,
+                                ViewSizeConfig.HUD,
                                 GlanceModifier.defaultWeight()
                             )
                             BarberfishView(
                                 state.hr,
                                 config.alignment,
                                 state.colorMode,
-                                FieldSizeConfig.HUD,
+                                ViewSizeConfig.HUD,
                                 GlanceModifier.defaultWeight()
                             )
                             BarberfishView(
                                 state.power,
                                 config.alignment,
                                 state.colorMode,
-                                FieldSizeConfig.HUD,
+                                ViewSizeConfig.HUD,
                                 GlanceModifier.defaultWeight()
                             )
                         }

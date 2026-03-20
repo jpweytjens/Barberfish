@@ -134,6 +134,8 @@ Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytj
 
 `BarberfishView` and `BarberfishDataType` are a reimplementation of the native Karoo data field that matches the Hammerhead look and feel, with added support for variable font sizes and control over the fill color behind the label and icon.
 
+See [docs/architecture.md](docs/architecture.md) for the component hierarchy, naming conventions, and the rationale behind using `AndroidRemoteViews` for the label and value rendering.
+
 ## License
 
 Released under the [Apache License 2.0](LICENSE).

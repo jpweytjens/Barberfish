@@ -13,7 +13,7 @@ import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.layout.fillMaxWidth
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
-import com.jpweytjens.barberfish.datatype.shared.FieldSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.dynamicFontSp
 import io.hammerhead.karooext.models.ViewConfig
 
@@ -22,7 +22,7 @@ internal fun BarberfishValue(
     text: String,
     alignment: ViewConfig.Alignment,
     colors: ColorConfig,
-    config: FieldSizeConfig,
+    config: ViewSizeConfig,
     modifier: GlanceModifier = GlanceModifier,
 ) {
     val ctx = LocalContext.current
@@ -33,7 +33,7 @@ internal fun BarberfishValue(
 private fun makeValueRemoteViews(
     text: String,
     colors: ColorConfig,
-    config: FieldSizeConfig,
+    config: ViewSizeConfig,
     alignment: ViewConfig.Alignment,
     context: Context,
 ): RemoteViews {

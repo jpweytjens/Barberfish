@@ -4,14 +4,14 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
-import com.jpweytjens.barberfish.extension.toErrorFieldValue
+import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.map
 class PowerField(private val karooSystem: KarooSystemService) :
     BarberfishDataType("barberfish", "power") {
 
-    override fun liveFlow(context: Context): Flow<FieldValue> =
+    override fun liveFlow(context: Context): Flow<FieldState> =
         combine(
                 context.streamPowerFieldConfig(),
                 karooSystem.streamUserProfile(),
@@ -38,12 +38,12 @@ class PowerField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
-                    state.toErrorFieldValue("Power")?.let {
+                    state.toErrorFieldState("Power")?.let {
                         return@map it
                     }
                     val raw =
                         (state as StreamState.Streaming).dataPoint.values[cfg.smoothing.fieldId]
-                            ?: return@map FieldValue.unavailable("Power")
+                            ?: return@map FieldState.unavailable("Power")
                     val zone = powerZone(raw, profile.powerZones)
                     val color =
                         if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
@@ -54,7 +54,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                                 zones.powerPalette,
                                 isHr = false,
                             )
-                    FieldValue(
+                    FieldState(
                         raw.toInt().toString(),
                         label = "Power",
                         color = color,
@@ -64,7 +64,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                 }
             }
 
-    override fun previewFlow(context: Context): Flow<FieldValue> =
+    override fun previewFlow(context: Context): Flow<FieldState> =
         combine(
                 context.streamPowerFieldConfig(),
                 karooSystem.streamUserProfile(),
@@ -84,7 +84,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                                 zones.powerPalette,
                                 isHr = false,
                             )
-                    FieldValue(
+                    FieldState(
                         watts.toString(),
                         label = "Power",
                         color = color,

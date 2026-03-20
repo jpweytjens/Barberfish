@@ -2,7 +2,7 @@ package com.jpweytjens.barberfish.datatype.shared
 
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 
-data class FieldValue(
+data class FieldState(
     val primary: String,
     val label: String = "",
     val color: FieldColor,
@@ -10,13 +10,13 @@ data class FieldValue(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
-        fun unavailable(label: String) = FieldValue("---", label, FieldColor.Default)
+        fun unavailable(label: String) = FieldState("---", label, FieldColor.Default)
 
-        fun noSensor(label: String = "") = FieldValue("No sensor", label, FieldColor.Error)
+        fun noSensor(label: String = "") = FieldState("No sensor", label, FieldColor.Error)
 
-        fun notAvailable(label: String = "") = FieldValue("Not available", label, FieldColor.Error)
+        fun notAvailable(label: String = "") = FieldState("Not available", label, FieldColor.Error)
 
-        fun noData(label: String = "") = FieldValue("No data", label, FieldColor.Muted)
+        fun noData(label: String = "") = FieldState("No data", label, FieldColor.Muted)
     }
 }
 

@@ -4,14 +4,14 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
-import com.jpweytjens.barberfish.extension.toErrorFieldValue
+import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.map
 class HRField(private val karooSystem: KarooSystemService) :
     BarberfishDataType("barberfish", "hr") {
 
-    override fun liveFlow(context: Context): Flow<FieldValue> =
+    override fun liveFlow(context: Context): Flow<FieldState> =
         combine(
                 context.streamHRFieldConfig(),
                 karooSystem.streamUserProfile(),
@@ -39,12 +39,12 @@ class HRField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map { state ->
-                    state.toErrorFieldValue("HR")?.let {
+                    state.toErrorFieldState("HR")?.let {
                         return@map it
                     }
                     val raw =
                         (state as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
-                            ?: return@map FieldValue.unavailable("HR")
+                            ?: return@map FieldState.unavailable("HR")
                     val zone = hrZone(raw, profile.heartRateZones)
                     val color =
                         if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
@@ -55,7 +55,7 @@ class HRField(private val karooSystem: KarooSystemService) :
                                 zones.hrPalette,
                                 isHr = true,
                             )
-                    FieldValue(
+                    FieldState(
                         raw.toInt().toString(),
                         label = "HR",
                         color = color,
@@ -65,7 +65,7 @@ class HRField(private val karooSystem: KarooSystemService) :
                 }
             }
 
-    override fun previewFlow(context: Context): Flow<FieldValue> =
+    override fun previewFlow(context: Context): Flow<FieldState> =
         combine(
                 context.streamHRFieldConfig(),
                 karooSystem.streamUserProfile(),
@@ -85,7 +85,7 @@ class HRField(private val karooSystem: KarooSystemService) :
                                 zones.hrPalette,
                                 isHr = true,
                             )
-                    FieldValue(
+                    FieldState(
                         bpm.toString(),
                         label = "HR",
                         color = color,

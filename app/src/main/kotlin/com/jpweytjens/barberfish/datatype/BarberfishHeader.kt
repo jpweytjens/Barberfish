@@ -25,7 +25,7 @@ import androidx.glance.layout.width
 import androidx.glance.unit.ColorProvider
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
-import com.jpweytjens.barberfish.datatype.shared.FieldSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import io.hammerhead.karooext.models.ViewConfig
 
 @Composable
@@ -34,7 +34,7 @@ internal fun BarberfishHeader(
     iconRes: Int?,
     colors: ColorConfig,
     alignment: ViewConfig.Alignment,
-    config: FieldSizeConfig,
+    config: ViewSizeConfig,
     modifier: GlanceModifier = GlanceModifier,
 ) {
     val ctx = LocalContext.current
@@ -46,7 +46,7 @@ internal fun BarberfishHeader(
             textSize =
                 TypedValue.applyDimension(
                     TypedValue.COMPLEX_UNIT_SP,
-                    config.labelFontSize.value,
+                    config.headerFontSize.value,
                     ctx.resources.displayMetrics,
                 )
             typeface = Typeface.DEFAULT
@@ -59,12 +59,12 @@ internal fun BarberfishHeader(
     val descentPx = paint.fontMetrics.descent
     val spaceAboveCapsPx =
         capBounds.top - paint.fontMetrics.ascent // both negative, result positive
-    val lineSpacingPx = config.labelLineSpacing.value * ctx.resources.displayMetrics.density
+    val lineSpacingPx = config.headerLineSpacing.value * ctx.resources.displayMetrics.density
     val rv =
         makeLabelRemoteViews(
             label = label,
             labelColorArgb = labelColorArgb,
-            fontSizeSp = config.labelFontSize.value,
+            fontSizeSp = config.headerFontSize.value,
             line2TranslationY = -(descentPx + spaceAboveCapsPx) + lineSpacingPx,
             gravity = alignment.toGravity(),
             context = ctx,
@@ -75,10 +75,10 @@ internal fun BarberfishHeader(
             BarberfishIcon(
                 iconRes,
                 colors,
-                config.iconSize,
-                topPadding = if (isMultiLine) config.multilineIconTopPadding else 0.dp,
+                config.headerIconSize,
+                topPadding = if (isMultiLine) config.headerIconTopPadding else 0.dp,
             )
-            Spacer(GlanceModifier.width(config.iconLabelGap))
+            Spacer(GlanceModifier.width(config.headerIconLabelGap))
         }
         AndroidRemoteViews(remoteViews = rv, modifier = GlanceModifier.defaultWeight())
     }

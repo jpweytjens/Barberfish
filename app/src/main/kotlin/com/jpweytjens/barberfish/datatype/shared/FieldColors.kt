@@ -44,7 +44,7 @@ private fun dangerZoneColor(
 
 data class ColorConfig(
     val valueText: Color,
-    val labelText: ColorProvider,
+    val headerText: ColorProvider,
     val iconTint: Color,
     val background: ColorProvider?, // null = transparent cell
 )
@@ -98,7 +98,7 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
         }
     return ColorConfig(
         valueText = valueColor,
-        labelText = ColorProvider(if (onBg) Color.Black else Color.White),
+        headerText = ColorProvider(if (onBg) Color.Black else Color.White),
         iconTint = if (onBg) ICON_TINT_BLACK else ICON_TINT_TEAL,
         background = bg,
     )

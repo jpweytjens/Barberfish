@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceRemoteViews
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
 import io.hammerhead.karooext.models.UpdateGraphicConfig
@@ -33,15 +33,15 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
     /** Throttle applied to [liveFlow] emissions. Override for slower fields (e.g. 1000L). */
     open val sampleMs: Long = 400L
 
-    /** Emits FieldValues from real sensor streams. Must not sample internally. */
-    abstract fun liveFlow(context: Context): Flow<FieldValue>
+    /** Emits FieldStates from real sensor streams. Must not sample internally. */
+    abstract fun liveFlow(context: Context): Flow<FieldState>
 
-    /** Emits FieldValues for the Karoo config-screen preview carousel. */
-    abstract fun previewFlow(context: Context): Flow<FieldValue>
+    /** Emits FieldStates for the Karoo config-screen preview carousel. */
+    abstract fun previewFlow(context: Context): Flow<FieldState>
 
-    /** Renders the Glance UI for one FieldValue. Default: plain BarberfishView. */
+    /** Renders the Glance UI for one FieldState. Default: plain BarberfishView. */
     @Composable
-    open fun Content(field: FieldValue, config: ViewConfig) {
+    open fun Content(field: FieldState, config: ViewConfig) {
         BarberfishView(field, config.alignment, field.colorMode)
     }
 

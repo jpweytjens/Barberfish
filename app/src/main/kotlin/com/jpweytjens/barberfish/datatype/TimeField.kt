@@ -4,7 +4,7 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamTimeConfig
@@ -64,10 +64,10 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     override val sampleMs = 1000L
 
-    override fun liveFlow(context: Context): Flow<FieldValue> {
+    override fun liveFlow(context: Context): Flow<FieldState> {
         if (kind == TimeKind.TIME_OF_ARRIVAL) {
             return karooSystem.streamDataFlow(DataType.Type.TIME_OF_ARRIVAL).map { state ->
-                FieldValue(
+                FieldState(
                     primary =
                         formatClockTime(extractSeconds(state, DataType.Field.TIME_OF_ARRIVAL)),
                     label = kind.label,
@@ -121,7 +121,7 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                     }
             }
         return combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->
-            FieldValue(
+            FieldState(
                 primary = formatTime(seconds, cfg.format),
                 label = kind.label,
                 color = FieldColor.Default,
@@ -130,10 +130,10 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
         }
     }
 
-    override fun previewFlow(context: Context): Flow<FieldValue> =
+    override fun previewFlow(context: Context): Flow<FieldState> =
         context.streamTimeConfig().flatMapLatest { cfg ->
             previewTimeFlow().map { seconds ->
-                FieldValue(
+                FieldState(
                     primary = formatTime(seconds, cfg.format),
                     label = kind.label,
                     color = FieldColor.Default,

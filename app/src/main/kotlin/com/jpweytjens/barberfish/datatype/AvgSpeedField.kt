@@ -5,7 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.FieldValue
+import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdMode
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
@@ -31,7 +31,7 @@ class AvgSpeedField(
     private val includePaused: Boolean,
 ) : BarberfishDataType("barberfish", if (includePaused) "avg-speed-total" else "avg-speed-moving") {
 
-    override fun liveFlow(context: Context): Flow<FieldValue> =
+    override fun liveFlow(context: Context): Flow<FieldState> =
         combine(context.streamAvgSpeedConfig(includePaused), karooSystem.streamUserProfile()) {
                 cfg,
                 profile ->
@@ -39,17 +39,17 @@ class AvgSpeedField(
             }
             .flatMapLatest { (cfg, profile) -> streamAvgSpeed(cfg, profile) }
 
-    override fun previewFlow(context: Context): Flow<FieldValue> =
+    override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamAvgSpeedConfig(includePaused), karooSystem.streamUserProfile()) {
                 cfg,
                 profile ->
                 cfg to profile
             }
             .flatMapLatest { (cfg, profile) ->
-                previewSpeedFlow().map { rawMs -> toFieldValue(rawMs, cfg, profile) }
+                previewSpeedFlow().map { rawMs -> toFieldState(rawMs, cfg, profile) }
             }
 
-    private fun streamAvgSpeed(cfg: AvgSpeedConfig, profile: UserProfile): Flow<FieldValue> {
+    private fun streamAvgSpeed(cfg: AvgSpeedConfig, profile: UserProfile): Flow<FieldState> {
         return if (includePaused) {
             karooSystem.streamDataFlow(DataType.Type.AVERAGE_SPEED).map { state ->
                 val rawMs =
@@ -57,7 +57,7 @@ class AvgSpeedField(
                         ?.dataPoint
                         ?.values
                         ?.get(DataType.Field.AVERAGE_SPEED) ?: 0.0
-                toFieldValue(rawMs, cfg, profile)
+                toFieldState(rawMs, cfg, profile)
             }
         } else {
             val distanceFlow =
@@ -87,14 +87,14 @@ class AvgSpeedField(
                 paused: Double ->
                 val movingSeconds = elapsed - paused
                 val rawMs = if (movingSeconds > 0) distanceM / movingSeconds else 0.0
-                toFieldValue(rawMs, cfg, profile)
+                toFieldState(rawMs, cfg, profile)
             }
         }
     }
 
     private fun previewSpeedFlow() =
         flow {
-                // values in m/s — toFieldValue converts to user unit and applies threshold
+                // values in m/s — toFieldState converts to user unit and applies threshold
                 val steps =
                     listOf(4.17, 6.11, 7.22, 7.78, 8.89, 11.11) // 15, 22, 26, 28, 32, 40 km/h
                 var i = 0
@@ -105,7 +105,7 @@ class AvgSpeedField(
             }
             .flowOn(Dispatchers.IO)
 
-    private fun toFieldValue(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile): FieldValue {
+    private fun toFieldState(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile): FieldState {
         val converted = ConvertType.SPEED.apply(rawMs, profile)
         val imperial = profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
         val color =
@@ -164,7 +164,7 @@ class AvgSpeedField(
                     }
                 }
             }
-        return FieldValue(
+        return FieldState(
             primary = "%.1f".format(converted),
             label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
             color = color,
