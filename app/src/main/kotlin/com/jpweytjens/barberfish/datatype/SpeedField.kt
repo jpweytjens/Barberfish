@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
@@ -35,16 +36,13 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                             ?.dataPoint
                             ?.values
                             ?.get(cfg.smoothing.fieldId)
-                            ?: return@map FieldValue(
-                                "---",
-                                ConvertType.SPEED.unit(profile),
-                                color = FieldColor.Default,
-                            )
+                            ?: return@map FieldValue.unavailable("Speed")
                     val converted = ConvertType.SPEED.apply(raw, profile)
                     FieldValue(
                         "%.1f".format(converted),
-                        ConvertType.SPEED.unit(profile),
+                        label = "Speed",
                         color = FieldColor.Default,
+                        iconRes = R.drawable.ic_col_speed
                     )
                 }
             }
@@ -58,8 +56,9 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                     val converted = ConvertType.SPEED.apply(rawMs, profile)
                     FieldValue(
                         "%.1f".format(converted),
-                        ConvertType.SPEED.unit(profile),
+                        label = "Speed",
                         color = FieldColor.Default,
+                        iconRes = R.drawable.ic_col_speed
                     )
                 }
             }

@@ -42,11 +42,11 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
     /** Renders the Glance UI for one FieldValue. Default: plain BarberfishView. */
     @Composable
     open fun Content(field: FieldValue, config: ViewConfig) {
-        BarberfishView(field, config.alignment)
+        BarberfishView(field, config.alignment, field.colorMode)
     }
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        emitter.onNext(UpdateGraphicConfig(showHeader = true))
+        emitter.onNext(UpdateGraphicConfig(showHeader = false))
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
         scope.launch {

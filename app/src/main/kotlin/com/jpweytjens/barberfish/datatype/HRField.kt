@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
@@ -38,12 +39,12 @@ class HRField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map { state ->
-                    state.toErrorFieldValue()?.let {
+                    state.toErrorFieldValue("HR")?.let {
                         return@map it
                     }
                     val raw =
                         (state as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
-                            ?: return@map FieldValue("---", "bpm", color = FieldColor.Default)
+                            ?: return@map FieldValue.unavailable("HR")
                     val zone = hrZone(raw, profile.heartRateZones)
                     val color =
                         if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
@@ -54,7 +55,13 @@ class HRField(private val karooSystem: KarooSystemService) :
                                 zones.hrPalette,
                                 isHr = true,
                             )
-                    FieldValue(raw.toInt().toString(), "bpm", color = color)
+                    FieldValue(
+                        raw.toInt().toString(),
+                        label = "HR",
+                        color = color,
+                        iconRes = R.drawable.ic_col_hr,
+                        colorMode = cfg.colorMode
+                    )
                 }
             }
 
@@ -78,7 +85,13 @@ class HRField(private val karooSystem: KarooSystemService) :
                                 zones.hrPalette,
                                 isHr = true,
                             )
-                    FieldValue(bpm.toString(), "bpm", color = color)
+                    FieldValue(
+                        bpm.toString(),
+                        label = "HR",
+                        color = color,
+                        iconRes = R.drawable.ic_col_hr,
+                        colorMode = cfg.colorMode
+                    )
                 }
             }
 

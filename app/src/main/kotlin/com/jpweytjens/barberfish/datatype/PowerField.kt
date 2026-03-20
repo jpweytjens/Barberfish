@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
@@ -37,12 +38,12 @@ class PowerField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
-                    state.toErrorFieldValue()?.let {
+                    state.toErrorFieldValue("Power")?.let {
                         return@map it
                     }
                     val raw =
                         (state as StreamState.Streaming).dataPoint.values[cfg.smoothing.fieldId]
-                            ?: return@map FieldValue("---", "W", color = FieldColor.Default)
+                            ?: return@map FieldValue.unavailable("Power")
                     val zone = powerZone(raw, profile.powerZones)
                     val color =
                         if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
@@ -53,7 +54,13 @@ class PowerField(private val karooSystem: KarooSystemService) :
                                 zones.powerPalette,
                                 isHr = false,
                             )
-                    FieldValue(raw.toInt().toString(), "W", color = color)
+                    FieldValue(
+                        raw.toInt().toString(),
+                        label = "Power",
+                        color = color,
+                        iconRes = R.drawable.ic_col_power,
+                        colorMode = cfg.colorMode
+                    )
                 }
             }
 
@@ -77,7 +84,13 @@ class PowerField(private val karooSystem: KarooSystemService) :
                                 zones.powerPalette,
                                 isHr = false,
                             )
-                    FieldValue(watts.toString(), "W", color = color)
+                    FieldValue(
+                        watts.toString(),
+                        label = "Power",
+                        color = color,
+                        iconRes = R.drawable.ic_col_power,
+                        colorMode = cfg.colorMode
+                    )
                 }
             }
 

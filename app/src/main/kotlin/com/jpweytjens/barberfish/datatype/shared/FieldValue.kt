@@ -1,25 +1,27 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import com.jpweytjens.barberfish.extension.ZoneColorMode
+
 data class FieldValue(
     val primary: String,
-    val unit: String,
     val label: String = "",
     val color: FieldColor,
     val iconRes: Int? = null,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
-        fun unavailable(label: String) = FieldValue("---", "", label, FieldColor.Default)
+        fun unavailable(label: String) = FieldValue("---", label, FieldColor.Default)
 
-        fun noSensor(label: String = "") = FieldValue("No sensor", "", label, FieldColor.Error)
+        fun noSensor(label: String = "") = FieldValue("No sensor", label, FieldColor.Error)
 
-        fun notAvailable(label: String = "") =
-            FieldValue("Not available", "", label, FieldColor.Error)
+        fun notAvailable(label: String = "") = FieldValue("Not available", label, FieldColor.Error)
 
-        fun noData(label: String = "") = FieldValue("No data", "", label, FieldColor.Muted)
+        fun noData(label: String = "") = FieldValue("No data", label, FieldColor.Muted)
     }
 }
 
 sealed interface FieldColor {
+
     data object Default : FieldColor
 
     // zone: 1-based zone number, total: number of zones (7 for power, 5 for HR)

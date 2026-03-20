@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldValue
@@ -45,16 +46,16 @@ fun formatClockTime(secondsSinceMidnight: Long): String {
     return "%02d:%02d".format(h, m)
 }
 
-enum class TimeKind(val typeId: String) {
-    TOTAL("time-elapsed"),
-    RIDING("time-moving"),
-    PAUSED("time-paused"),
-    TIME_TO_DESTINATION("time-to-destination"),
-    TIME_OF_ARRIVAL("time-of-arrival"),
-    TIME_TO_SUNRISE("time-to-sunrise"),
-    TIME_TO_SUNSET("time-to-sunset"),
-    TIME_TO_CIVIL_DAWN("time-to-civil-dawn"),
-    TIME_TO_CIVIL_DUSK("time-to-civil-dusk"),
+enum class TimeKind(val typeId: String, val label: String, val iconRes: Int) {
+    TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
+    RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),
+    PAUSED("time-paused", "Paused\ntime", R.drawable.ic_time_to_dest),
+    TIME_TO_DESTINATION("time-to-destination", "To\nDest", R.drawable.ic_time_to_dest),
+    TIME_OF_ARRIVAL("time-of-arrival", "Arrival", R.drawable.ic_time_to_dest),
+    TIME_TO_SUNRISE("time-to-sunrise", "Sunrise", R.drawable.ic_sunrise),
+    TIME_TO_SUNSET("time-to-sunset", "Sunset", R.drawable.ic_sunset),
+    TIME_TO_CIVIL_DAWN("time-to-civil-dawn", "Dawn", R.drawable.ic_sunrise),
+    TIME_TO_CIVIL_DUSK("time-to-civil-dusk", "Dusk", R.drawable.ic_sunset),
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -69,8 +70,9 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                 FieldValue(
                     primary =
                         formatClockTime(extractSeconds(state, DataType.Field.TIME_OF_ARRIVAL)),
-                    unit = "",
+                    label = kind.label,
                     color = FieldColor.Default,
+                    iconRes = kind.iconRes,
                 )
             }
         }
@@ -121,8 +123,9 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
         return combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->
             FieldValue(
                 primary = formatTime(seconds, cfg.format),
-                unit = "",
+                label = kind.label,
                 color = FieldColor.Default,
+                iconRes = kind.iconRes,
             )
         }
     }
@@ -132,8 +135,9 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
             previewTimeFlow().map { seconds ->
                 FieldValue(
                     primary = formatTime(seconds, cfg.format),
-                    unit = "",
+                    label = kind.label,
                     color = FieldColor.Default,
+                    iconRes = kind.iconRes,
                 )
             }
         }

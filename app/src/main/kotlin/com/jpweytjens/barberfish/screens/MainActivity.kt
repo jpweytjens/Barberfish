@@ -191,7 +191,6 @@ class MainActivity : ComponentActivity() {
                                 .map { (watts, zone) ->
                                     FieldValue(
                                         watts.toString(),
-                                        "W",
                                         label = powerLabel,
                                         color =
                                             if (powerFieldConfig.colorMode == ZoneColorMode.NONE)
@@ -249,7 +248,6 @@ class MainActivity : ComponentActivity() {
                                 .map { (bpm, zone) ->
                                     FieldValue(
                                         bpm.toString(),
-                                        "bpm",
                                         label = "HR",
                                         color =
                                             if (hrFieldConfig.colorMode == ZoneColorMode.NONE)
@@ -282,7 +280,6 @@ class MainActivity : ComponentActivity() {
                             listOf(
                                 FieldValue(
                                     "37.5",
-                                    "km/h",
                                     label =
                                         if (speedFieldConfig.smoothing == SpeedSmoothingStream.S0)
                                             "Speed"
@@ -1111,9 +1108,7 @@ private fun previewColorForKph(speedKph: Double, cfg: AvgSpeedConfig): FieldColo
 
 private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldValue> {
     val disabled =
-        listOf(
-            FieldValue("30.0", "km/h", "Avg Speed", FieldColor.Default, R.drawable.ic_speed_average)
-        )
+        listOf(FieldValue("30.0", "Avg Speed", FieldColor.Default, R.drawable.ic_speed_average))
     // 6 steps per side (5 within range + 1 outside) + midpoint = 13 preview fields
     val n = 5
     val speeds: List<Double> =
@@ -1157,7 +1152,6 @@ private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldValue> {
     return speeds.map { speed ->
         FieldValue(
             "%.1f".format(speed),
-            "km/h",
             "Avg Speed",
             previewColorForKph(speed, cfg),
             R.drawable.ic_speed_average,
@@ -1172,11 +1166,10 @@ private fun ZoneColorPreview(
     zoneConfig: ZoneConfig,
 ) {
     val alignment = ViewConfig.Alignment.RIGHT
-    val speed = FieldValue("42.1", "km/h", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
+    val speed = FieldValue("42.1", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
     val hr =
         FieldValue(
             "187",
-            "bpm",
             "HR",
             FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true),
             R.drawable.ic_col_hr,
@@ -1184,7 +1177,6 @@ private fun ZoneColorPreview(
     val power =
         FieldValue(
             "247",
-            "W",
             powerStream.label,
             FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
             R.drawable.ic_col_power,

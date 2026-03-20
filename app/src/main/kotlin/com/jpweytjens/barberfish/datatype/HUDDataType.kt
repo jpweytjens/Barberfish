@@ -2,8 +2,15 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
 import androidx.glance.appwidget.GlanceRemoteViews
+import androidx.glance.layout.Alignment
+import androidx.glance.layout.Row
+import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.padding
+import com.jpweytjens.barberfish.datatype.shared.FieldSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.HudState
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
@@ -43,13 +50,33 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
             flow.collect { state ->
                 val result =
                     glance.compose(context, DpSize.Unspecified) {
-                        ThreeColumnView(
-                            state.speed,
-                            state.hr,
-                            state.power,
-                            config.alignment,
-                            state.colorMode
-                        )
+                        Row(
+                            modifier = GlanceModifier.fillMaxSize().padding(vertical = 2.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BarberfishView(
+                                state.speed,
+                                config.alignment,
+                                state.colorMode,
+                                FieldSizeConfig.HUD,
+                                GlanceModifier.defaultWeight()
+                            )
+                            BarberfishView(
+                                state.hr,
+                                config.alignment,
+                                state.colorMode,
+                                FieldSizeConfig.HUD,
+                                GlanceModifier.defaultWeight()
+                            )
+                            BarberfishView(
+                                state.power,
+                                config.alignment,
+                                state.colorMode,
+                                FieldSizeConfig.HUD,
+                                GlanceModifier.defaultWeight()
+                            )
+                        }
                     }
                 emitter.updateView(result.remoteViews)
             }

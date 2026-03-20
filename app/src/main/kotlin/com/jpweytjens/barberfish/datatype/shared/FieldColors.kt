@@ -43,7 +43,7 @@ private fun dangerZoneColor(
     }
 
 data class ColorConfig(
-    val valueText: ColorProvider,
+    val valueText: Color,
     val labelText: ColorProvider,
     val iconTint: Color,
     val background: ColorProvider?, // null = transparent cell
@@ -88,16 +88,16 @@ internal fun FieldColor.toColor(): Color? =
 internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
     val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColorProvider() else null
     val onBg = bg != null
-    val value =
+    val valueColor: Color =
         when {
-            onBg -> ColorProvider(Color.Black)
+            onBg -> Color.Black
             // Error/Muted always use their own text color regardless of colorMode
-            this is FieldColor.Error || this is FieldColor.Muted -> toColorProvider()
-            colorMode == ZoneColorMode.TEXT -> toColorProvider()
-            else -> whiteText
+            this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: Color.White
+            colorMode == ZoneColorMode.TEXT -> toColor() ?: Color.White
+            else -> Color.White
         }
     return ColorConfig(
-        valueText = value,
+        valueText = valueColor,
         labelText = ColorProvider(if (onBg) Color.Black else Color.White),
         iconTint = if (onBg) ICON_TINT_BLACK else ICON_TINT_TEAL,
         background = bg,

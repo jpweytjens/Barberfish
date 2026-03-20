@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
@@ -106,7 +107,6 @@ class AvgSpeedField(
 
     private fun toFieldValue(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile): FieldValue {
         val converted = ConvertType.SPEED.apply(rawMs, profile)
-        val unit = ConvertType.SPEED.unit(profile)
         val imperial = profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
         val color =
             when (cfg.mode) {
@@ -166,8 +166,9 @@ class AvgSpeedField(
             }
         return FieldValue(
             primary = "%.1f".format(converted),
-            unit = unit,
+            label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
             color = color,
+            iconRes = R.drawable.ic_speed_average,
         )
     }
 }
