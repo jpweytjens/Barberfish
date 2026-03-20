@@ -47,7 +47,7 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
             field,
             config.alignment,
             field.colorMode,
-            cornerRadius = if (config.preview) 8.dp else 0.dp,
+            cornerRadius = if (config.preview) 12.dp else 0.dp,
         )
     }
 

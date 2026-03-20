@@ -54,7 +54,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                         Row(
                             modifier =
                                 GlanceModifier.fillMaxSize().padding(vertical = 2.dp).let {
-                                    if (config.preview) it.cornerRadius(8.dp) else it
+                                    if (config.preview) it.cornerRadius(12.dp) else it
                                 },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalAlignment = Alignment.CenterVertically,
@@ -64,21 +64,21 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                                 config.alignment,
                                 state.colorMode,
                                 ViewSizeConfig.HUD,
-                                modifier = GlanceModifier.defaultWeight()
+                                modifier = GlanceModifier.defaultWeight(),
                             )
                             BarberfishView(
                                 state.hr,
                                 config.alignment,
                                 state.colorMode,
                                 ViewSizeConfig.HUD,
-                                modifier = GlanceModifier.defaultWeight()
+                                modifier = GlanceModifier.defaultWeight(),
                             )
                             BarberfishView(
                                 state.power,
                                 config.alignment,
                                 state.colorMode,
                                 ViewSizeConfig.HUD,
-                                modifier = GlanceModifier.defaultWeight()
+                                modifier = GlanceModifier.defaultWeight(),
                             )
                         }
                     }
