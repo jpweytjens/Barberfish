@@ -1,8 +1,14 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
     kotlin("plugin.serialization") version "2.0.20"
+}
+
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
 
 android {
@@ -15,6 +21,21 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("SIGNING_KEYSTORE_PATH") ?: localProperties["signing.store.file"] as String)
+            storePassword = System.getenv("SIGNING_STORE_PASSWORD") ?: localProperties["signing.store.password"] as String
+            keyAlias = System.getenv("SIGNING_KEY_ALIAS") ?: localProperties["signing.key.alias"] as String
+            keyPassword = System.getenv("SIGNING_KEY_PASSWORD") ?: localProperties["signing.key.password"] as String
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+        }
     }
 
     buildFeatures {

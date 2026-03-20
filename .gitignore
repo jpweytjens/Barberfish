@@ -43,3 +43,7 @@ WIP.MD
 
 # Screenshots
 screencaps/
+
+# Signing
+*.keystore
+*.jks

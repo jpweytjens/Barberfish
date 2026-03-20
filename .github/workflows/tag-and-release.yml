@@ -67,10 +67,17 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon test
 
+      - name: Decode keystore
+        run: echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > app/barberfish.keystore
+
       - name: Assemble release APK
         env:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNING_KEYSTORE_PATH: app/barberfish.keystore
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew --no-daemon assembleRelease
 
       - name: Generate manifest
@@ -96,7 +103,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./app/build/outputs/apk/release/app-release-unsigned.apk
+          asset_path: ./app/build/outputs/apk/release/app-release.apk
           asset_name: barberfish.apk
           asset_content_type: application/vnd.android.package-archive
 
