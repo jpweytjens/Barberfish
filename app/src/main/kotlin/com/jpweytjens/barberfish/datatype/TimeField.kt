@@ -49,7 +49,7 @@ fun formatClockTime(secondsSinceMidnight: Long): String {
 enum class TimeKind(val typeId: String, val label: String, val iconRes: Int) {
     TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
     RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),
-    PAUSED("time-paused", "Paused\ntime", R.drawable.ic_time_to_dest),
+    PAUSED("time-paused", "Paused\ntime", R.drawable.ic_stopwatch),
     TIME_TO_DESTINATION("time-to-destination", "To\nDest", R.drawable.ic_time_to_dest),
     TIME_OF_ARRIVAL("time-of-arrival", "Arrival", R.drawable.ic_time_to_dest),
     TIME_TO_SUNRISE("time-to-sunrise", "Sunrise", R.drawable.ic_sunrise),
