@@ -25,15 +25,12 @@ android {
 
     signingConfigs {
         create("release") {
-            val storePath = System.getenv("SIGNING_KEYSTORE_PATH") ?: localProperties["signing.store.file"] as? String
-            val storePass = System.getenv("SIGNING_STORE_PASSWORD") ?: localProperties["signing.store.password"] as? String
-            val alias = System.getenv("SIGNING_KEY_ALIAS") ?: localProperties["signing.key.alias"] as? String
-            val keyPass = System.getenv("SIGNING_KEY_PASSWORD") ?: localProperties["signing.key.password"] as? String
+            val storePath = localProperties["signing.store.file"] as? String
             if (storePath != null) {
                 storeFile = file(storePath)
-                storePassword = storePass
-                keyAlias = alias
-                keyPassword = keyPass
+                storePassword = localProperties["signing.store.password"] as? String
+                keyAlias = localProperties["signing.key.alias"] as? String
+                keyPassword = localProperties["signing.key.password"] as? String
             }
         }
     }

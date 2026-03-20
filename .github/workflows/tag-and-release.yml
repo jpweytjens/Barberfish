@@ -67,17 +67,20 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon test
 
-      - name: Decode keystore
-        run: echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > app/barberfish.keystore
+      - name: Inject signing config
+        env:
+          SIGNING_KEYSTORE: ${{ secrets.SIGNING_KEYSTORE }}
+        run: |
+          echo "$SIGNING_KEYSTORE" | base64 -d > app/barberfish.keystore
+          echo "signing.store.file=barberfish.keystore" >> local.properties
+          echo "signing.store.password=${{ secrets.SIGNING_STORE_PASSWORD }}" >> local.properties
+          echo "signing.key.alias=${{ secrets.SIGNING_KEY_ALIAS }}" >> local.properties
+          echo "signing.key.password=${{ secrets.SIGNING_KEY_PASSWORD }}" >> local.properties
 
       - name: Assemble release APK
         env:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SIGNING_KEYSTORE_PATH: app/barberfish.keystore
-          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
-          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: ./gradlew --no-daemon assembleRelease
 
       - name: Generate manifest
