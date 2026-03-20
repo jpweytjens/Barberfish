@@ -7,7 +7,9 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 <br clear="left">
 
-Barberfish extends the Karoo's built-in data fields. It adds a three-column HUD, configurable zone color palettes and coloring styles, unambiguous time formatting, and average speed fields with threshold coloring, all designed to look and feel like native Karoo fields.
+## Description
+
+Barberfish reimplements and enhances a core set of Karoo data fields with features the built-in fields don't offer. A three-column HUD shows speed, heart rate, and power side by side with zone coloring. Zone coloring supports both background-fill and text-color styles across four palettes. Time fields use a consistent, unambiguous format across all durations. Average speed fields support a single target or a min/max range with threshold coloring. All fields are styled to match the native Karoo look and feel.
 
 ## Data field enhancements
 
@@ -20,6 +22,10 @@ Barberfish extends the Karoo's built-in data fields. It adds a three-column HUD,
 | Threshold coloring  | Not available                                                                                                                                                      | Configurable single threshold or min/max thresholds on average speed fields |
 | Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                      |
 | Duration fields     | [Built-in duration fields](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend)  including total time, riding time, paused time, ... | Reimplemented with Barberfish formatting options                            |
+
+### Configuration
+
+All field settings are configured in the Barberfish app on your Karoo. Changes update live in the settings and take effect immediately without restarting your ride.
 
 ### Zone color palettes
 
@@ -75,25 +81,24 @@ Complete list of data fields provided by Barberfish.
 
 ## Examples
 
-| <img width="180" src="docs/hud-routegraph.jpg">                                                                                          | <img width="180" src="docs/time-formatting.jpg">                                                                                                        | <img width="180" src="docs/config.jpg">              | <img width="180" src="docs/config-threshold.jpg">         |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
-| HUD on a map page with [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row. HR and power use text zone coloring. | Unambiguous `1:23:45` time formatting on time-to-destination and paused time, alongside the green total average speed exceding the `30 km/h` threshold. | Karoo-style config screen with collapsible sections. | Average speed threshold config with a live field preview. |
+| <img width="180" height="300" src="docs/hud.jpg">                                                                                   | <img width="180" height="300" src="docs/hud_fill.jpg"> | <img width="180" height="300" src="docs/comparison.jpg">                                                                                                                                                              | <img width="180" height="300" src="docs/config.jpg"> |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| HUD using the Wahoo palette for text zone coloring and [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row. | HUD with background-fill zone coloring.                | Comparing 4 reimplemented fields: Text-color power vs background-fill power and HR. Moving average speed in red above the configurable 30 km/h threshold. Paused time in clock format showing the difference between. | Karoo-style config screen with collapsible sections. |
 
 ## Use cases
 ### Map page HUD
 
 The three-column HUD is designed as the top row of a map data page providing speed, heart rate, and power at a glance. 
 
-A single row on the map page is quite high, leading to a lot of unused horizontal space. A nice workaround is adding a second row to occupy this excess horizontal space with e.g. [RouteGraph](https://github.com/timklge/karoo-routegraph) for an elevation profile.
-
-### ACP randonneuring (min + max threshold)
-
-[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds — 15 km/h minimum and 30 km/h maximum. Set Min: 15 and Max: 30 on the average speed field. The field colors green inside the zone, orange when approaching a boundary, and red when outside.
+A single row on the map page takes up a lot of vertical space. A nice workaround is adding a second row to occupy this excess vertical space with e.g. [RouteGraph](https://github.com/timklge/karoo-routegraph) for an elevation profile.
 
 ### Race with a goal pace (single threshold)
 
-Racing a gran fondo with a target average? Set a single threshold at your goal pace. The field colors green above it and red below, so you know at a glance whether you're on track.
+Racing an event with a target average? Set a single threshold at your goal pace on the average speed field (excluding paused time). The field colors green above it and red below, so you know at a glance whether you're on track.
 
+### ACP randonneuring (min + max threshold)
+
+[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds on your total average speed, including any paused time. The rules set a 15 km/h minimum and 30 km/h maximum. Set Min: 15 and Max: 30 on the total average speed field to keep track. The field colors green inside the zone, orange when approaching a boundary, and red when outside.
 
 
 ## Roadmap
