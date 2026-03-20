@@ -62,6 +62,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Run unit tests
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon test
 
       - name: Assemble release APK
