@@ -24,7 +24,7 @@ data class ViewSizeConfig(
                 headerIconSize = 17.dp,
                 headerIconLabelGap = 6.dp,
                 headerFontSize = 17.sp,
-                headerLineSpacing = 2.dp,
+                headerLineSpacing = 4.dp,
                 headerIconTopPadding = 12.dp,
                 valueFontSizeBase = 49,
                 valueBottomPadding = 4.dp,
@@ -33,13 +33,13 @@ data class ViewSizeConfig(
             ViewSizeConfig(
                 paddingH = 4.dp,
                 paddingTop = 6.dp,
-                headerIconSize = 16.dp,
+                headerIconSize = 14.dp,
                 headerIconLabelGap = 4.dp,
                 headerFontSize = 14.sp,
                 headerLineSpacing = 2.dp,
                 headerIconTopPadding = 8.dp,
                 valueFontSizeBase = 36,
-                valueBottomPadding = 1.dp,
+                valueBottomPadding = 4.dp,
             )
     }
 }
