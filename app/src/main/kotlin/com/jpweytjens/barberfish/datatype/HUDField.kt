@@ -90,7 +90,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         power =
                             FieldState(
                                 powerW.toString(),
-                                cfg.powerStream.label,
+                                if (cfg.powerStream == PowerSmoothingStream.S0) "Power"
+                                else "${cfg.powerStream.label} Power",
                                 FieldColor.Zone(
                                     pwrZoneIdx,
                                     profile.powerZones.size.coerceAtLeast(1),
@@ -154,7 +155,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 ?: return FieldState.unavailable("Power")
         return FieldState(
             primary = raw.toInt().toString(),
-            label = stream.label,
+            label = if (stream == PowerSmoothingStream.S0) "Power" else "${stream.label} Power",
             color =
                 FieldColor.Zone(
                     powerZone(raw, profile.powerZones),
