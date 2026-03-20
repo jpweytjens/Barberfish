@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
@@ -56,7 +57,9 @@ class PowerField(private val karooSystem: KarooSystemService) :
                             )
                     FieldState(
                         raw.toInt().toString(),
-                        label = "Power",
+                        label =
+                            if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
+                            else "Power\n${cfg.smoothing.label}",
                         color = color,
                         iconRes = R.drawable.ic_col_power,
                         colorMode = cfg.colorMode
@@ -86,7 +89,9 @@ class PowerField(private val karooSystem: KarooSystemService) :
                             )
                     FieldState(
                         watts.toString(),
-                        label = "Power",
+                        label =
+                            if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
+                            else "Power\n${cfg.smoothing.label}",
                         color = color,
                         iconRes = R.drawable.ic_col_power,
                         colorMode = cfg.colorMode

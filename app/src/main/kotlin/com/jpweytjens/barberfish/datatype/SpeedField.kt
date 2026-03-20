@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -40,7 +41,9 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                     val converted = ConvertType.SPEED.apply(raw, profile)
                     FieldState(
                         "%.1f".format(converted),
-                        label = "Speed",
+                        label =
+                            if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
+                            else "Speed\n${cfg.smoothing.label}",
                         color = FieldColor.Default,
                         iconRes = R.drawable.ic_col_speed
                     )
@@ -51,12 +54,14 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
                 cfg to profile
             }
-            .flatMapLatest { (_, profile) ->
+            .flatMapLatest { (cfg, profile) ->
                 previewSpeedFlow().map { rawMs ->
                     val converted = ConvertType.SPEED.apply(rawMs, profile)
                     FieldState(
                         "%.1f".format(converted),
-                        label = "Speed",
+                        label =
+                            if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
+                            else "Speed\n${cfg.smoothing.label}",
                         color = FieldColor.Default,
                         iconRes = R.drawable.ic_col_speed
                     )
