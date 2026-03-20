@@ -25,9 +25,11 @@ fun BarberfishView(
     colorMode: ZoneColorMode = ZoneColorMode.TEXT,
     sizeConfig: ViewSizeConfig = ViewSizeConfig.STANDARD,
     cornerRadius: Dp = 0.dp,
+    wideLayout: Boolean = false,
     modifier: GlanceModifier = GlanceModifier,
 ) {
     val colors = field.color.toColorConfig(colorMode)
+    val displayLabel = if (wideLayout) field.label.replace("\n", " ") else field.label
 
     Box(
         modifier =
@@ -51,7 +53,7 @@ fun BarberfishView(
                     ),
         )
         BarberfishHeader(
-            label = field.label,
+            label = displayLabel,
             iconRes = field.iconRes,
             colors = colors,
             alignment = alignment,
@@ -61,7 +63,7 @@ fun BarberfishView(
                     .padding(
                         start = sizeConfig.paddingH,
                         end = sizeConfig.paddingH,
-                        top = if (field.label.contains("\n")) 0.dp else sizeConfig.paddingTop,
+                        top = if (displayLabel.contains("\n")) 0.dp else sizeConfig.paddingTop,
                     ),
         )
     }

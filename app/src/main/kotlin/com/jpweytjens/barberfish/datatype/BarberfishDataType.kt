@@ -48,6 +48,7 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
             config.alignment,
             field.colorMode,
             cornerRadius = if (config.preview) 12.dp else 0.dp,
+            wideLayout = config.gridSize.first == 1,
         )
     }
 
