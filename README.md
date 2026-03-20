@@ -2,7 +2,7 @@
 
 <img src="app/src/main/res/drawable/ic_extension.png" align="left" width="120" alt="Barberfish">
 
-[Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keeps Hammerheads sharp, in the ocean and on your bike.
+[Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keeps Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.
 Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
 
 <br clear="left">

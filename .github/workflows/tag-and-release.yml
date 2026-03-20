@@ -69,8 +69,9 @@ jobs:
         with:
           tag_name: ${{ needs.check.outputs.VERSION }}
           release_name: ${{ needs.check.outputs.VERSION }}
+          body: "Initial release with 15 data fields for power, heart rate, speed, time, navigation, and daylight — all with zone coloring and native Karoo styling."
           draft: false
-          prerelease: true
+          prerelease: false
 
       - name: Upload APK
         uses: actions/upload-release-asset@v1
@@ -91,3 +92,13 @@ jobs:
           asset_path: ./app/src/main/res/drawable/ic_extension.png
           asset_name: ic_extension.png
           asset_content_type: image/png
+
+      - name: Upload manifest
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./app/manifest.json
+          asset_name: manifest.json
+          asset_content_type: application/json

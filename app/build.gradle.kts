@@ -39,12 +39,12 @@ tasks.register("generateManifest") {
             "label" to "Barberfish",
             "packageName" to "com.jpweytjens.barberfish",
             "iconUrl" to "$baseUrl/ic_extension.png",
-            "latestApkUrl" to "$baseUrl/app-release.apk",
+            "latestApkUrl" to "$baseUrl/barberfish.apk",
             "latestVersion" to android.defaultConfig.versionName,
             "latestVersionCode" to android.defaultConfig.versionCode,
             "developer" to "github.com/jpweytjens",
             "description" to "Barberfish keeps Hammerheads sharp, on your handlebars and in the ocean. Native-feeling data field enhancements for the Hammerhead Karoo.",
-            "releaseNotes" to "",
+            "releaseNotes" to "Initial release with 15 data fields for power, heart rate, speed, time, navigation, and daylight — all with zone coloring and native Karoo styling.",
             "screenshotUrls" to listOf<String>()
         )
 
