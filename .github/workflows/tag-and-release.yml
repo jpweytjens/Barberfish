@@ -43,6 +43,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Extract release notes
+        id: release_notes
+        run: |
+          VERSION="${{ needs.check.outputs.VERSION }}"
+          notes=$(awk "/^## $VERSION/{found=1; next} found && /^## /{exit} found{print}" CHANGELOG.md)
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
+          echo "$notes" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -61,6 +70,11 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon assembleRelease
 
+      - name: Generate manifest
+        env:
+          RELEASE_NOTES: ${{ steps.release_notes.outputs.NOTES }}
+        run: ./gradlew --no-daemon generateManifest
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@latest
@@ -69,7 +83,7 @@ jobs:
         with:
           tag_name: ${{ needs.check.outputs.VERSION }}
           release_name: ${{ needs.check.outputs.VERSION }}
-          body: "Initial release with 15 data fields for power, heart rate, speed, time, navigation, and daylight — all with zone coloring and native Karoo styling."
+          body: ${{ steps.release_notes.outputs.NOTES }}
           draft: false
           prerelease: false
 
