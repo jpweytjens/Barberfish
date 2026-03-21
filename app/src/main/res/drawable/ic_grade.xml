@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="38"
+    android:viewportHeight="38">
+    <!-- Bottom horizontal bar (run) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,30 L34,30 L34,33 L5,33 Z" />
+    <!-- Right vertical bar (rise) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,6 L33,6 L33,30 L30,30 Z" />
+    <!-- Diagonal slope bar -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M6,34 L31,7 L29,5 L4,32 Z" />
+</vector>
