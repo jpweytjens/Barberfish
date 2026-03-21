@@ -81,9 +81,20 @@ Complete list of data fields provided by Barberfish.
 
 ## Examples
 
-| <img width="180" height="300" src="docs/hud.jpg">                                                                                   | <img width="180" height="300" src="docs/hud_fill.jpg"> | <img width="180" height="300" src="docs/comparison.jpg">                                                                                                                                                              | <img width="180" height="300" src="docs/config.jpg"> |
-| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| HUD using the Wahoo palette for text zone coloring and [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row. | HUD with background-fill zone coloring.                | Comparing 4 reimplemented fields: Text-color power vs background-fill power and HR. Moving average speed in red above the configurable 30 km/h threshold. Paused time in clock format showing the difference between. | Karoo-style config screen with collapsible sections. |
+|                                             |                                                                                                                                                                                                                       |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img width="180" src="docs/hud.jpg">        | HUD using the Wahoo palette for text zone coloring and [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row.                                                                                   |
+| <img width="180" src="docs/hud_fill.jpg">   | HUD with background-fill zone coloring.                                                                                                                                                                               |
+| <img width="180" src="docs/comparison.jpg"> | Comparing 4 reimplemented fields: Text-color power vs background-fill power and HR. Moving average speed in red above the configurable 30 km/h threshold. Paused time in clock format showing the difference between. |
+| <img width="180" src="docs/config.jpg">     | Karoo-style config screen with collapsible sections.                                                                                                                                                                  |
+|                                             |                                                                                                                                                                                                                       |
+|                                             |                                                                                                                                                                                                                       |
+|                                             |                                                                                                                                                                                                                       |
+|                                             |                                                                                                                                                                                                                       |
+|                                             |                                                                                                                                                                                                                       |
+|                                             |                                                                                                                                                                                                                       |
+|                                             |                                                                                                                                                                                                                       |
+|                                             |                                                                                                                                                                                                                       |
 
 ## Use cases
 ### Map page HUD
@@ -105,18 +116,23 @@ Racing an event with a target average? Set a single threshold at your goal pace 
 
 Ideas that may or may not be implemented
 
+- Configurable HUD fields *(v2.0)*  
+  choose which metrics appear in each column of the three-column HUD instead of the fixed speed / HR / power layout
+- Four-column HUD *(v2.0)*  
+  add a fourth column to fit more metrics at a glance
 - Day mode support  
   fields are currently only tested in night mode; day mode rendering needs verification and adjustments
-- Configurable HUD fields  
-  choose which metrics appear in each column of the three-column HUD instead of the fixed speed / HR / power layout
-- Four-column HUD  
-  add a fourth column to fit more metrics at a glance
 - ETA data field  
    estimated time of arrival at destination, gradient- and paused-time aware for more accurate predictions on hilly routes
 
 ## Compatibility
 
 Tested on a Karoo 3 running firmware 1.618.2377.20. Should work on Karoo 2 and other firmware versions, but no guarantees.
+
+|            | Metric units | Imperial units |
+| ---------- | ------------ | -------------- |
+| Dark mode  | Tested       | To be tested   |
+| Light mode | To be tested | To be tested   |
 
 ## Installation
 
