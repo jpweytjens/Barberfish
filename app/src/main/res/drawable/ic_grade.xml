@@ -3,16 +3,14 @@
     android:height="38dp"
     android:viewportWidth="38"
     android:viewportHeight="38">
-    <!-- Bottom horizontal bar (run) -->
+    <!-- Mountain landscape fill (semi-transparent) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M5,30 L34,30 L34,33 L5,33 Z" />
-    <!-- Right vertical bar (rise) -->
+        android:fillColor="#60FFFFFF"
+        android:pathData="M3,34 L3,32 L13,16 L19,22 L28,8 L35,20 L35,34 Z" />
+    <!-- Profile line following the mountain contour (solid) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M30,6 L33,6 L33,30 L30,30 Z" />
-    <!-- Diagonal slope bar -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M6,34 L31,7 L29,5 L4,32 Z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:pathData="M3,32 L13,16 L19,22 L28,8 L35,20" />
 </vector>
