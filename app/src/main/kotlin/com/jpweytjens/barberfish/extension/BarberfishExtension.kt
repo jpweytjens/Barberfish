@@ -1,9 +1,13 @@
 package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.BuildConfig
+import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
+import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HUDField
+import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
@@ -22,6 +26,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             PowerField(karooSystem),
             HRField(karooSystem),
             SpeedField(karooSystem),
+            CadenceField(karooSystem),
+            AvgPowerField(karooSystem),
+            NPField(karooSystem),
+            GradeField(karooSystem),
             AvgSpeedField(karooSystem, includePaused = true),
             AvgSpeedField(karooSystem, includePaused = false),
             TimeField(karooSystem, TimeKind.TOTAL),

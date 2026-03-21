@@ -31,4 +31,12 @@
     <string name="time_to_civil_dawn_description">Time until civil dawn at current location</string>
     <string name="time_to_civil_dusk_name">Time to Civil Dusk</string>
     <string name="time_to_civil_dusk_description">Time until civil dusk at current location</string>
+    <string name="cadence_name">Cadence</string>
+    <string name="cadence_description">Current cadence with optional smoothing</string>
+    <string name="avg_power_name">Avg Power</string>
+    <string name="avg_power_description">Average power with zone coloring</string>
+    <string name="np_name">NP</string>
+    <string name="np_description">Normalized power with zone coloring</string>
+    <string name="grade_name">Grade</string>
+    <string name="grade_description">Current road gradient with gradient palette coloring</string>
 </resources>

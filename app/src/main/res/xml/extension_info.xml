@@ -93,4 +93,28 @@
         displayName="@string/time_to_civil_dusk_name"
         description="@string/time_to_civil_dusk_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_cadence"
+        typeId="cadence"
+        displayName="@string/cadence_name"
+        description="@string/cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="avg-power"
+        displayName="@string/avg_power_name"
+        description="@string/avg_power_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="np"
+        displayName="@string/np_name"
+        description="@string/np_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_grade"
+        typeId="grade"
+        displayName="@string/grade_name"
+        description="@string/grade_description"
+        graphical="true" />
 </ExtensionInfo>
