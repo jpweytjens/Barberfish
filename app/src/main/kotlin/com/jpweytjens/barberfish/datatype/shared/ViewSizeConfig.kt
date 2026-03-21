@@ -27,17 +27,17 @@ data class ViewSizeConfig(
                 headerLineSpacing = 4.dp,
                 headerIconTopPadding = 12.dp,
                 valueFontSizeBase = 49,
-                valueBottomPadding = 4.dp,
+                valueBottomPadding = 6.dp,
             )
         val HUD =
             ViewSizeConfig(
                 paddingH = 4.dp,
-                paddingTop = 6.dp,
-                headerIconSize = 14.dp,
-                headerIconLabelGap = 4.dp,
-                headerFontSize = 14.sp,
+                paddingTop = 4.dp,
+                headerIconSize = 12.dp,
+                headerIconLabelGap = 2.dp,
+                headerFontSize = 12.sp,
                 headerLineSpacing = 2.dp,
-                headerIconTopPadding = 8.dp,
+                headerIconTopPadding = 10.dp,
                 valueFontSizeBase = 36,
                 valueBottomPadding = 4.dp,
             )
