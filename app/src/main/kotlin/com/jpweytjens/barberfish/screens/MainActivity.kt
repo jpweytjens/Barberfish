@@ -586,6 +586,7 @@ class MainActivity : ComponentActivity() {
                             }
                     )
 
+                    Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
                     Text("Grade", style = MaterialTheme.typography.labelMedium)
                     GradePaletteDropdown(
                         selected = zoneConfig.gradePalette,
@@ -594,7 +595,7 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
-                    GradeColorBar(palette = zoneConfig.gradePalette)
+                    GradeBandBar(palette = zoneConfig.gradePalette)
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
             }
@@ -1248,14 +1249,30 @@ private fun GradePaletteDropdown(selected: GradePalette, onSelected: (GradePalet
 }
 
 @Composable
-private fun GradeColorBar(palette: GradePalette) {
-    val percents = when (palette) {
+private fun GradeBandBar(palette: GradePalette) {
+    val thresholds = when (palette) {
         GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
         GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
         GradePalette.HAMMERHEAD -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
     }
-    ZoneColorBar(colors = percents.map { gradeColor(it, palette) })
+    Row(modifier = Modifier.fillMaxWidth()) {
+        thresholds.forEachIndexed { i, lower ->
+            val color = gradeColor(lower, palette)
+            val label =
+                if (i == thresholds.lastIndex) "${formatGradePct(lower)}%+"
+                else "${formatGradePct(lower)}-${formatGradePct(thresholds[i + 1])}%"
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(color))
+                Text(text = label, fontSize = 7.sp, color = Color(0xFF1B2D2D))
+            }
+        }
+    }
 }
+
+private fun formatGradePct(d: Double) = "%.0f".format(d)
 
 private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldState> {
     val disabled =
