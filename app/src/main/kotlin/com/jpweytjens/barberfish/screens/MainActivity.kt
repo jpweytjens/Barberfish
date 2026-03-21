@@ -286,7 +286,7 @@ class MainActivity : ComponentActivity() {
                                             "Speed"
                                         else "${speedFieldConfig.smoothing.label} Speed",
                                     color = FieldColor.Default,
-                                    iconRes = R.drawable.ic_speed_average,
+                                    iconRes = R.drawable.ic_col_speed,
                                 )
                             ),
                         colorMode = ZoneColorMode.NONE,
@@ -301,7 +301,7 @@ class MainActivity : ComponentActivity() {
                             options = SpeedSmoothingStream.entries,
                             selected = speedFieldConfig.smoothing,
                             label = { it.label },
-                            thumbIcon = R.drawable.ic_speed_average,
+                            thumbIcon = R.drawable.ic_col_speed,
                             onSelected = { stream ->
                                 speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
                                 lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
@@ -377,24 +377,13 @@ class MainActivity : ComponentActivity() {
                     expanded = hudExpanded,
                     onToggle = { hudExpanded = !hudExpanded },
                 ) {
-                    PowerStreamDropdown(
-                        selected = hudConfig.powerStream,
-                        onSelected = { stream ->
-                            hudConfig = hudConfig.copy(powerStream = stream)
-                            lifecycleScope.launch { saveHUDConfig(hudConfig) }
-                        },
-                    )
-                    ZoneColorModeDropdown(
-                        selected = hudConfig.colorMode,
-                        onSelected = { mode ->
-                            hudConfig = hudConfig.copy(colorMode = mode)
-                            lifecycleScope.launch { saveHUDConfig(hudConfig) }
-                        },
-                    )
-                    ZoneColorPreview(
-                        colorMode = hudConfig.colorMode,
-                        powerStream = hudConfig.powerStream,
+                    HUDConfigSection(
+                        hudConfig = hudConfig,
                         zoneConfig = zoneConfig,
+                        onUpdate = { updated ->
+                            hudConfig = updated
+                            lifecycleScope.launch { saveHUDConfig(updated) }
+                        },
                     )
                 } // end HUD
 
@@ -473,7 +462,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun <T> SmoothingSlider(
+internal fun <T> SmoothingSlider(
     options: List<T>,
     selected: T,
     label: (T) -> String,
@@ -564,36 +553,6 @@ private fun <T> SmoothingSlider(
                     color =
                         if (option == selected) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PowerStreamDropdown(
-    selected: PowerSmoothingStream,
-    onSelected: (PowerSmoothingStream) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = selected.label,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Power smoothing") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            PowerSmoothingStream.entries.forEach { stream ->
-                DropdownMenuItem(
-                    text = { Text(stream.label) },
-                    onClick = {
-                        onSelected(stream)
-                        expanded = false
-                    },
                 )
             }
         }
@@ -717,7 +676,7 @@ private fun FieldCard(
 }
 
 @Composable
-private fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
+internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
     val options = ZoneColorMode.entries
     val grey = Color(0xFF9E9E9E)
     Text("ZONE COLOR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
@@ -771,7 +730,7 @@ private fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
+internal fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
@@ -940,7 +899,7 @@ private fun NullableThresholdInput(
 }
 
 @Composable
-private fun AvgSpeedThresholdControls(
+internal fun AvgSpeedThresholdControls(
     config: AvgSpeedConfig,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
@@ -1161,42 +1120,7 @@ private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldState> {
 }
 
 @Composable
-private fun ZoneColorPreview(
-    colorMode: ZoneColorMode,
-    powerStream: PowerSmoothingStream,
-    zoneConfig: ZoneConfig,
-) {
-    val alignment = ViewConfig.Alignment.RIGHT
-    val speed = FieldState("42.1", "Speed", FieldColor.Default, R.drawable.ic_col_speed)
-    val hr =
-        FieldState(
-            "187",
-            "HR",
-            FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true),
-            R.drawable.ic_col_hr,
-        )
-    val power =
-        FieldState(
-            "247",
-            if (powerStream == PowerSmoothingStream.S0) "Power" else "${powerStream.label} Power",
-            FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
-            R.drawable.ic_col_power,
-        )
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black)
-                .height(80.dp)
-    ) {
-        BarberfishPreviewCell(speed, alignment, colorMode, Modifier.weight(1f), PreviewSizeConfig.HUD)
-        BarberfishPreviewCell(hr, alignment, colorMode, Modifier.weight(1f), PreviewSizeConfig.HUD)
-        BarberfishPreviewCell(power, alignment, colorMode, Modifier.weight(1f), PreviewSizeConfig.HUD)
-    }
-}
-
-@Composable
-private fun BarberfishPreviewCell(
+internal fun BarberfishPreviewCell(
     field: FieldState,
     alignment: ViewConfig.Alignment,
     colorMode: ZoneColorMode,
