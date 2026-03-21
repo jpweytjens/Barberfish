@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 
 data class FieldState(
@@ -43,4 +44,7 @@ sealed interface FieldColor {
     data object Error : FieldColor // sensor missing or unavailable — #FF5252 red
 
     data object Muted : FieldColor // sensor idle, no data flowing — #7D7D7D grey
+
+    // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
+    data class Grade(val percent: Double, val palette: GradePalette) : FieldColor
 }
