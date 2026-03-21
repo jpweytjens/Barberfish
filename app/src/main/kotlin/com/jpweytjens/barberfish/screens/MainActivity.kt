@@ -438,26 +438,12 @@ class MainActivity : ComponentActivity() {
                                     color =
                                         if (gradeFieldConfig.colorMode == ZoneColorMode.NONE)
                                             FieldColor.Default
-                                        else FieldColor.Grade(pct, gradeFieldConfig.palette),
+                                        else FieldColor.Grade(pct, zoneConfig.gradePalette),
                                     iconRes = R.drawable.ic_grade,
                                 )
                             },
                         colorMode = gradeFieldConfig.colorMode,
                     ) {
-                        Text(
-                            "PALETTE",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
-                        )
-                        GradePaletteSelector(
-                            selected = gradeFieldConfig.palette,
-                            onSelected = { palette ->
-                                gradeFieldConfig = gradeFieldConfig.copy(palette = palette)
-                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
-                            },
-                        )
-                        GradeColorBar(palette = gradeFieldConfig.palette)
                         ZoneColorSlider(
                             selected = gradeFieldConfig.colorMode,
                             onSelected = { mode ->
@@ -599,6 +585,16 @@ class MainActivity : ComponentActivity() {
                                 ZonePalette.ZWIFT -> zwiftHrColors.map { it }
                             }
                     )
+
+                    Text("Grade", style = MaterialTheme.typography.labelMedium)
+                    GradePaletteDropdown(
+                        selected = zoneConfig.gradePalette,
+                        onSelected = { palette ->
+                            zoneConfig = zoneConfig.copy(gradePalette = palette)
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
+                    GradeColorBar(palette = zoneConfig.gradePalette)
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
             }
@@ -1224,48 +1220,27 @@ private fun previewColorForKph(speedKph: Double, cfg: AvgSpeedConfig): FieldColo
         }
     }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GradePaletteSelector(selected: GradePalette, onSelected: (GradePalette) -> Unit) {
-    val options = GradePalette.entries
-    val grey = Color(0xFF9E9E9E)
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(onSelected) {
-                    val slotWidthPx = size.width.toFloat() / options.size
-                    fun idxAt(x: Float) =
-                        (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onSelected(options[idxAt(down.position.x)])
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onSelected(options[idxAt(change.position.x)])
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        options.forEach { palette ->
-            val isSelected = palette == selected
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) grey else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = palette.label,
-                    fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+private fun GradePaletteDropdown(selected: GradePalette, onSelected: (GradePalette) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selected.label,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Grade palette") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            GradePalette.entries.forEach { palette ->
+                DropdownMenuItem(
+                    text = { Text(palette.label) },
+                    onClick = {
+                        onSelected(palette)
+                        expanded = false
+                    },
                 )
             }
         }

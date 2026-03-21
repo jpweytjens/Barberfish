@@ -6,9 +6,11 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
+import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
@@ -16,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
@@ -30,7 +33,9 @@ class GradeField(private val karooSystem: KarooSystemService) :
     BarberfishDataType("barberfish", "grade") {
 
     override fun liveFlow(context: Context): Flow<FieldState> =
-        context.streamGradeFieldConfig().flatMapLatest { cfg ->
+        combine(context.streamGradeFieldConfig(), context.streamZoneConfig()) { cfg, zones ->
+            cfg to zones
+        }.flatMapLatest { (cfg, zones) ->
             karooSystem
                 .streamDataFlow(DataType.Type.ELEVATION_GRADE)
                 .map { state ->
@@ -39,18 +44,20 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 }
                 .filterNotNull()
                 .scan(0.0) { ema, raw -> EMA_ALPHA * raw + (1 - EMA_ALPHA) * ema }
-                .map { emaPercent -> toGradeFieldState(emaPercent, cfg) }
+                .map { emaPercent -> toGradeFieldState(emaPercent, cfg, zones.gradePalette) }
         }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
-        context.streamGradeFieldConfig().flatMapLatest { cfg ->
-            previewGradeFlow().map { percent -> toGradeFieldState(percent, cfg) }
+        combine(context.streamGradeFieldConfig(), context.streamZoneConfig()) { cfg, zones ->
+            cfg to zones
+        }.flatMapLatest { (cfg, zones) ->
+            previewGradeFlow().map { percent -> toGradeFieldState(percent, cfg, zones.gradePalette) }
         }
 
-    private fun toGradeFieldState(percent: Double, cfg: GradeFieldConfig): FieldState {
+    private fun toGradeFieldState(percent: Double, cfg: GradeFieldConfig, palette: GradePalette): FieldState {
         val color =
             if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-            else FieldColor.Grade(percent, cfg.palette)
+            else FieldColor.Grade(percent, palette)
         return FieldState(
             "%.1f%%".format(percent),
             label = "Grade",

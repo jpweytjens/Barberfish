@@ -209,6 +209,7 @@ suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedC
 data class ZoneConfig(
     val hrPalette: ZonePalette = ZonePalette.KAROO,
     val powerPalette: ZonePalette = ZonePalette.KAROO,
+    val gradePalette: GradePalette = GradePalette.WAHOO,
 )
 
 fun Context.streamZoneConfig(): Flow<ZoneConfig> =
@@ -294,7 +295,6 @@ enum class GradePalette(val label: String) {
 
 @Serializable
 data class GradeFieldConfig(
-    val palette: GradePalette = GradePalette.WAHOO,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 

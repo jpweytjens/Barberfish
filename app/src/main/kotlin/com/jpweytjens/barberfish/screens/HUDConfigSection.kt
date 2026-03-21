@@ -41,7 +41,6 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
-import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
@@ -192,7 +191,7 @@ private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): 
         HUDSlotField.NP ->
             FieldState("247", "NP", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_col_power)
         HUDSlotField.Grade ->
-            FieldState("6.2%", "Grade", FieldColor.Grade(6.2, GradePalette.WAHOO), R.drawable.ic_grade)
+            FieldState("6.2%", "Grade", FieldColor.Grade(6.2, zoneConfig.gradePalette), R.drawable.ic_grade)
         is HUDSlotField.AvgSpeed ->
             FieldState(
                 "30.0",
