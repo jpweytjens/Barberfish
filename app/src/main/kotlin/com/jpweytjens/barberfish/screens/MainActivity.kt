@@ -71,6 +71,7 @@ import androidx.lifecycle.lifecycleScope
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
+import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -1177,7 +1178,7 @@ private fun ZoneColorPreview(
     val power =
         FieldState(
             "247",
-            powerStream.label,
+            if (powerStream == PowerSmoothingStream.S0) "Power" else "${powerStream.label} Power",
             FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
             R.drawable.ic_col_power,
         )
@@ -1188,9 +1189,9 @@ private fun ZoneColorPreview(
                 .background(Color.Black)
                 .height(80.dp)
     ) {
-        BarberfishPreviewCell(speed, alignment, colorMode, Modifier.weight(1f))
-        BarberfishPreviewCell(hr, alignment, colorMode, Modifier.weight(1f))
-        BarberfishPreviewCell(power, alignment, colorMode, Modifier.weight(1f))
+        BarberfishPreviewCell(speed, alignment, colorMode, Modifier.weight(1f), PreviewSizeConfig.HUD)
+        BarberfishPreviewCell(hr, alignment, colorMode, Modifier.weight(1f), PreviewSizeConfig.HUD)
+        BarberfishPreviewCell(power, alignment, colorMode, Modifier.weight(1f), PreviewSizeConfig.HUD)
     }
 }
 
@@ -1200,6 +1201,7 @@ private fun BarberfishPreviewCell(
     alignment: ViewConfig.Alignment,
     colorMode: ZoneColorMode,
     modifier: Modifier = Modifier,
+    sizeConfig: PreviewSizeConfig = PreviewSizeConfig.SINGLE,
 ) {
     val zoneColor = field.color.toColor()
     val hasZoneBg = colorMode == ZoneColorMode.BACKGROUND && zoneColor != null
@@ -1217,8 +1219,19 @@ private fun BarberfishPreviewCell(
         if (hasZoneBg)
             modifier
                 .background(zoneColor!!)
-                .padding(start = 2.dp, end = 4.dp, top = 6.dp, bottom = 4.dp)
-        else modifier.padding(start = 2.dp, end = 4.dp, top = 6.dp, bottom = 4.dp)
+                .padding(
+                    start = sizeConfig.paddingStart,
+                    end = sizeConfig.paddingEnd,
+                    top = sizeConfig.paddingTop,
+                    bottom = sizeConfig.valueBottomPadding,
+                )
+        else
+            modifier.padding(
+                start = sizeConfig.paddingStart,
+                end = sizeConfig.paddingEnd,
+                top = sizeConfig.paddingTop,
+                bottom = sizeConfig.valueBottomPadding,
+            )
 
     val textAlign =
         when (alignment) {
@@ -1230,20 +1243,23 @@ private fun BarberfishPreviewCell(
     Column(modifier = cellModifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             field.iconRes?.let { res ->
-                Box(modifier = Modifier.size(16.dp), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.size(sizeConfig.headerIconSize),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Icon(
                         painterResource(res),
                         contentDescription = null,
                         tint = iconTint,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(sizeConfig.headerIconSize),
                     )
                 }
-                Spacer(Modifier.width(4.dp))
+                Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
             }
             Text(
                 field.label.uppercase(),
                 modifier = Modifier.weight(2f),
-                fontSize = 16.sp,
+                fontSize = sizeConfig.headerFontSize,
                 color = labelColor,
                 textAlign = textAlign,
                 fontFamily = FontFamily.Monospace,
@@ -1254,7 +1270,7 @@ private fun BarberfishPreviewCell(
         Text(
             field.primary,
             modifier = Modifier.fillMaxWidth(),
-            fontSize = 36.sp,
+            fontSize = sizeConfig.valueFontSize,
             fontWeight = FontWeight.Bold,
             color = valueColor,
             textAlign = textAlign,
