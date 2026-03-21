@@ -187,7 +187,7 @@ private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): 
                 R.drawable.ic_cadence,
             )
         HUDSlotField.AvgPower ->
-            FieldState("220", "Avg Power", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_col_power)
+            FieldState("220", "Avg Power", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_avg_power)
         HUDSlotField.NP ->
             FieldState("247", "NP", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_col_power)
         HUDSlotField.Grade ->

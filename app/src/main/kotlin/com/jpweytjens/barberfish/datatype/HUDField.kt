@@ -221,7 +221,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 zones.powerPalette,
                 isHr = false,
             ),
-            iconRes = R.drawable.ic_col_power,
+            iconRes = R.drawable.ic_avg_power,
         )
     }
 
@@ -490,7 +490,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 FieldState(
                     "220", "Avg Power",
                     FieldColor.Zone(zone, profile.powerZones.size.coerceAtLeast(1), zones.powerPalette, isHr = false),
-                    R.drawable.ic_col_power,
+                    R.drawable.ic_avg_power,
                 )
             }
             HUDSlotField.NP -> {

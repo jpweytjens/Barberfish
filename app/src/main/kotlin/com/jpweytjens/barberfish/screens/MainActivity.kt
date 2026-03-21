@@ -383,7 +383,7 @@ class MainActivity : ComponentActivity() {
                                                 listOf(2, 3, 3, 2, 3)[i], 7,
                                                 zoneConfig.powerPalette, isHr = false,
                                             ),
-                                    iconRes = R.drawable.ic_col_power,
+                                    iconRes = R.drawable.ic_avg_power,
                                 )
                             },
                         colorMode = avgPowerFieldConfig.colorMode,

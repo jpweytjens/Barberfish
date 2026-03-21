@@ -100,7 +100,7 @@
         description="@string/cadence_description"
         graphical="true" />
     <DataType
-        icon="@drawable/ic_col_power"
+        icon="@drawable/ic_avg_power"
         typeId="avg-power"
         displayName="@string/avg_power_name"
         description="@string/avg_power_description"

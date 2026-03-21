@@ -57,7 +57,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
                         raw.toInt().toString(),
                         label = "Avg Power",
                         color = color,
-                        iconRes = R.drawable.ic_col_power,
+                        iconRes = R.drawable.ic_avg_power,
                         colorMode = cfg.colorMode,
                     )
                 }
@@ -87,7 +87,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
                         watts.toString(),
                         label = "Avg Power",
                         color = color,
-                        iconRes = R.drawable.ic_col_power,
+                        iconRes = R.drawable.ic_avg_power,
                         colorMode = cfg.colorMode,
                     )
                 }
