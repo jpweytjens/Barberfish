@@ -147,15 +147,16 @@ class HUDField(private val karooSystem: KarooSystemService) :
         profile: UserProfile,
         zones: ZoneConfig
     ): FieldState {
-        state.toErrorFieldState("Power")?.let {
+        val label = if (stream == PowerSmoothingStream.S0) "Power" else "${stream.label} Power"
+        state.toErrorFieldState(label)?.let {
             return it
         }
         val raw =
             (state as StreamState.Streaming).dataPoint.values[stream.fieldId]
-                ?: return FieldState.unavailable("Power")
+                ?: return FieldState.unavailable(label)
         return FieldState(
             primary = raw.toInt().toString(),
-            label = if (stream == PowerSmoothingStream.S0) "Power" else "${stream.label} Power",
+            label = label,
             color =
                 FieldColor.Zone(
                     powerZone(raw, profile.powerZones),
