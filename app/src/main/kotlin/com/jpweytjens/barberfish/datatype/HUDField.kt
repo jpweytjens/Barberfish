@@ -10,13 +10,18 @@ import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.GradeFieldConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedThresholdMode
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -32,10 +37,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.scan
+
+private const val EMA_ALPHA = 0.15
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HUDField(private val karooSystem: KarooSystemService) :
@@ -105,6 +114,19 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 karooSystem
                     .streamDataFlow(slot.powerSmoothing.typeId)
                     .map { toPower(it, slot.powerSmoothing, profile, zones) }
+            HUDSlotField.Cadence ->
+                karooSystem
+                    .streamDataFlow(slot.cadenceSmoothing.typeId)
+                    .map { toCadence(it, slot.cadenceSmoothing) }
+            HUDSlotField.AvgPower ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.AVERAGE_POWER)
+                    .map { toAvgPower(it, profile, zones) }
+            HUDSlotField.NP ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.NORMALIZED_POWER)
+                    .map { toNP(it, profile, zones) }
+            HUDSlotField.Grade -> gradeSlotFlow(context)
             is HUDSlotField.AvgSpeed -> avgSpeedSlotFlow(slot, profile)
             is HUDSlotField.Time -> timeSlotFlow(slot, context)
         }
@@ -174,6 +196,75 @@ class HUDField(private val karooSystem: KarooSystemService) :
             iconRes = R.drawable.ic_col_power,
         )
     }
+
+    private fun toCadence(state: StreamState, smoothing: CadenceSmoothingStream): FieldState {
+        val label = if (smoothing == CadenceSmoothingStream.S0) "Cadence" else "${smoothing.label} Cad"
+        val raw =
+            (state as? StreamState.Streaming)?.dataPoint?.values?.get(smoothing.fieldId)
+                ?: return FieldState.unavailable(label)
+        return FieldState(
+            primary = raw.toInt().toString(),
+            label = label,
+            color = FieldColor.Default,
+            iconRes = R.drawable.ic_cadence,
+        )
+    }
+
+    private fun toAvgPower(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldState {
+        state.toErrorFieldState("Avg Power")?.let { return it }
+        val raw =
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
+                ?: return FieldState.unavailable("Avg Power")
+        return FieldState(
+            primary = raw.toInt().toString(),
+            label = "Avg Power",
+            color = FieldColor.Zone(
+                powerZone(raw, profile.powerZones),
+                profile.powerZones.size.coerceAtLeast(1),
+                zones.powerPalette,
+                isHr = false,
+            ),
+            iconRes = R.drawable.ic_col_power,
+        )
+    }
+
+    private fun toNP(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldState {
+        state.toErrorFieldState("NP")?.let { return it }
+        val raw =
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
+                ?: return FieldState.unavailable("NP")
+        return FieldState(
+            primary = raw.toInt().toString(),
+            label = "NP",
+            color = FieldColor.Zone(
+                powerZone(raw, profile.powerZones),
+                profile.powerZones.size.coerceAtLeast(1),
+                zones.powerPalette,
+                isHr = false,
+            ),
+            iconRes = R.drawable.ic_col_power,
+        )
+    }
+
+    private fun gradeSlotFlow(context: Context): Flow<FieldState> =
+        context.streamGradeFieldConfig().flatMapLatest { gradeConfig ->
+            karooSystem
+                .streamDataFlow(DataType.Type.ELEVATION_GRADE)
+                .map { state ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint?.values?.get(DataType.Field.ELEVATION_GRADE)
+                }
+                .filterNotNull()
+                .scan(0.0) { ema, raw -> EMA_ALPHA * raw + (1 - EMA_ALPHA) * ema }
+                .map { percent ->
+                    FieldState(
+                        primary = "%.1f%%".format(percent),
+                        label = "Grade",
+                        color = FieldColor.Grade(percent, gradeConfig.palette),
+                        iconRes = R.drawable.ic_grade,
+                    )
+                }
+        }
 
     private fun avgSpeedSlotFlow(slot: HUDSlotConfig, profile: UserProfile): Flow<FieldState> {
         val includePaused = (slot.field as HUDSlotField.AvgSpeed).includePaused
@@ -394,6 +485,29 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     R.drawable.ic_col_power,
                 )
             }
+            HUDSlotField.Cadence -> {
+                val label = if (slot.cadenceSmoothing == CadenceSmoothingStream.S0) "Cadence"
+                            else "${slot.cadenceSmoothing.label} Cad"
+                FieldState("87", label, FieldColor.Default, R.drawable.ic_cadence)
+            }
+            HUDSlotField.AvgPower -> {
+                val zone = powerZone(220.0, profile.powerZones)
+                FieldState(
+                    "220", "Avg Power",
+                    FieldColor.Zone(zone, profile.powerZones.size.coerceAtLeast(1), zones.powerPalette, isHr = false),
+                    R.drawable.ic_col_power,
+                )
+            }
+            HUDSlotField.NP -> {
+                val zone = powerZone(247.0, profile.powerZones)
+                FieldState(
+                    "247", "NP",
+                    FieldColor.Zone(zone, profile.powerZones.size.coerceAtLeast(1), zones.powerPalette, isHr = false),
+                    R.drawable.ic_col_power,
+                )
+            }
+            HUDSlotField.Grade ->
+                FieldState("6.2%", "Grade", FieldColor.Grade(6.2, GradePalette.WAHOO), R.drawable.ic_grade)
             is HUDSlotField.AvgSpeed -> {
                 val includePaused = (slot.field as HUDSlotField.AvgSpeed).includePaused
                 val label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving"
