@@ -87,9 +87,16 @@ import com.jpweytjens.barberfish.datatype.shared.wahooHrColors
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftHrColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColors
+import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.CadenceFieldConfig
+import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.GradeFieldConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
+import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
@@ -99,16 +106,24 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
+import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
+import com.jpweytjens.barberfish.extension.saveGradeFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.saveNPFieldConfig
 import com.jpweytjens.barberfish.extension.savePowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
+import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
+import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
+import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamNPFieldConfig
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
@@ -139,6 +154,10 @@ class MainActivity : ComponentActivity() {
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
+        var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
+        var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
+        var npFieldConfig by remember { mutableStateOf(NPFieldConfig()) }
+        var gradeFieldConfig by remember { mutableStateOf(GradeFieldConfig()) }
         var avgTotalConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
@@ -154,6 +173,10 @@ class MainActivity : ComponentActivity() {
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
             launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
             launch { streamSpeedFieldConfig().collect { speedFieldConfig = it } }
+            launch { streamCadenceFieldConfig().collect { cadenceFieldConfig = it } }
+            launch { streamAvgPowerFieldConfig().collect { avgPowerFieldConfig = it } }
+            launch { streamNPFieldConfig().collect { npFieldConfig = it } }
+            launch { streamGradeFieldConfig().collect { gradeFieldConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = true).collect { avgTotalConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
             launch { streamTimeConfig().collect { timeConfig = it } }
@@ -305,6 +328,141 @@ class MainActivity : ComponentActivity() {
                             onSelected = { stream ->
                                 speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
                                 lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "CADENCE",
+                        description = "Cadence in rpm.",
+                        previewFields =
+                            listOf(
+                                FieldState(
+                                    "87",
+                                    label =
+                                        if (cadenceFieldConfig.smoothing == CadenceSmoothingStream.S0)
+                                            "Cadence"
+                                        else "${cadenceFieldConfig.smoothing.label} Cad",
+                                    color = FieldColor.Default,
+                                    iconRes = R.drawable.ic_cadence,
+                                )
+                            ),
+                        colorMode = ZoneColorMode.NONE,
+                    ) {
+                        Text(
+                            "SMOOTHING",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1B2D2D),
+                        )
+                        SmoothingSlider(
+                            options = CadenceSmoothingStream.entries,
+                            selected = cadenceFieldConfig.smoothing,
+                            label = { it.label },
+                            thumbIcon = R.drawable.ic_cadence,
+                            onSelected = { stream ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "AVG POWER",
+                        description = "Average power in W with zone coloring.",
+                        previewFields =
+                            listOf(195, 210, 220, 185, 230).mapIndexed { i, watts ->
+                                FieldState(
+                                    watts.toString(),
+                                    label = "Avg Power",
+                                    color =
+                                        if (avgPowerFieldConfig.colorMode == ZoneColorMode.NONE)
+                                            FieldColor.Default
+                                        else
+                                            FieldColor.Zone(
+                                                listOf(2, 3, 3, 2, 3)[i], 7,
+                                                zoneConfig.powerPalette, isHr = false,
+                                            ),
+                                    iconRes = R.drawable.ic_col_power,
+                                )
+                            },
+                        colorMode = avgPowerFieldConfig.colorMode,
+                    ) {
+                        ZoneColorSlider(
+                            selected = avgPowerFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                avgPowerFieldConfig = avgPowerFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveAvgPowerFieldConfig(avgPowerFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "NP",
+                        description = "Normalized power in W with zone coloring.",
+                        previewFields =
+                            listOf(240, 255, 247, 262, 238).mapIndexed { i, watts ->
+                                FieldState(
+                                    watts.toString(),
+                                    label = "NP",
+                                    color =
+                                        if (npFieldConfig.colorMode == ZoneColorMode.NONE)
+                                            FieldColor.Default
+                                        else
+                                            FieldColor.Zone(
+                                                listOf(3, 4, 3, 4, 3)[i], 7,
+                                                zoneConfig.powerPalette, isHr = false,
+                                            ),
+                                    iconRes = R.drawable.ic_col_power,
+                                )
+                            },
+                        colorMode = npFieldConfig.colorMode,
+                    ) {
+                        ZoneColorSlider(
+                            selected = npFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "GRADE",
+                        description = "Road gradient with palette-based coloring.",
+                        previewFields =
+                            listOf(0.0, 3.0, 6.0, 9.0, 14.0, 6.2, 1.5).map { pct ->
+                                FieldState(
+                                    "%.1f%%".format(pct),
+                                    label = "Grade",
+                                    color =
+                                        if (gradeFieldConfig.colorMode == ZoneColorMode.NONE)
+                                            FieldColor.Default
+                                        else FieldColor.Grade(pct, gradeFieldConfig.palette),
+                                    iconRes = R.drawable.ic_grade,
+                                )
+                            },
+                        colorMode = gradeFieldConfig.colorMode,
+                    ) {
+                        Text(
+                            "PALETTE",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1B2D2D),
+                        )
+                        GradePaletteSelector(
+                            selected = gradeFieldConfig.palette,
+                            onSelected = { palette ->
+                                gradeFieldConfig = gradeFieldConfig.copy(palette = palette)
+                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                            },
+                        )
+                        GradeColorBar(palette = gradeFieldConfig.palette)
+                        ZoneColorSlider(
+                            selected = gradeFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
                             },
                         )
                     }
@@ -1065,6 +1223,64 @@ private fun previewColorForKph(speedKph: Double, cfg: AvgSpeedConfig): FieldColo
             }
         }
     }
+
+@Composable
+private fun GradePaletteSelector(selected: GradePalette, onSelected: (GradePalette) -> Unit) {
+    val options = GradePalette.entries
+    val grey = Color(0xFF9E9E9E)
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) =
+                        (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { palette ->
+            val isSelected = palette == selected
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) grey else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = palette.label,
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GradeColorBar(palette: GradePalette) {
+    val percents = when (palette) {
+        GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
+        GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
+        GradePalette.HAMMERHEAD -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
+    }
+    ZoneColorBar(colors = percents.map { gradeColor(it, palette) })
+}
 
 private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldState> {
     val disabled =

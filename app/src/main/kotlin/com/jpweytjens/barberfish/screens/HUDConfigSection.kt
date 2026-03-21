@@ -40,6 +40,8 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
@@ -177,6 +179,20 @@ private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): 
                 FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
                 R.drawable.ic_col_power,
             )
+        HUDSlotField.Cadence ->
+            FieldState(
+                "87",
+                if (slot.cadenceSmoothing == CadenceSmoothingStream.S0) "Cadence"
+                else "${slot.cadenceSmoothing.label} Cad",
+                FieldColor.Default,
+                R.drawable.ic_cadence,
+            )
+        HUDSlotField.AvgPower ->
+            FieldState("220", "Avg Power", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_col_power)
+        HUDSlotField.NP ->
+            FieldState("247", "NP", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_col_power)
+        HUDSlotField.Grade ->
+            FieldState("6.2%", "Grade", FieldColor.Grade(6.2, GradePalette.WAHOO), R.drawable.ic_grade)
         is HUDSlotField.AvgSpeed ->
             FieldState(
                 "30.0",
@@ -213,11 +229,17 @@ private fun HUDSlotFieldCard(
             HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
             HUDSlotField.HR -> {}
             HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
+            HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
+            HUDSlotField.AvgPower -> {}
+            HUDSlotField.NP -> {}
+            HUDSlotField.Grade -> {}
             is HUDSlotField.AvgSpeed -> HUDAvgSpeedCard(slot, f, onUpdate)
             is HUDSlotField.Time -> HUDTimeDropdown(slot, f, onUpdate)
         }
 
-        if (slot.field == HUDSlotField.HR || slot.field == HUDSlotField.Power) {
+        if (slot.field == HUDSlotField.HR || slot.field == HUDSlotField.Power ||
+            slot.field == HUDSlotField.AvgPower || slot.field == HUDSlotField.NP ||
+            slot.field == HUDSlotField.Grade) {
             ZoneColorSlider(
                 selected = slot.colorMode,
                 onSelected = { onUpdate(slot.copy(colorMode = it)) },
@@ -234,6 +256,10 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             HUDSlotField.Speed -> "Speed"
             HUDSlotField.HR -> "HR"
             HUDSlotField.Power -> "Power"
+            HUDSlotField.Cadence -> "Cadence"
+            HUDSlotField.AvgPower -> "Avg Power"
+            HUDSlotField.NP -> "NP"
+            HUDSlotField.Grade -> "Grade"
             is HUDSlotField.AvgSpeed -> "Avg Speed"
             is HUDSlotField.Time -> "Time"
         }
@@ -252,6 +278,10 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                     "Speed" to HUDSlotField.Speed,
                     "HR" to HUDSlotField.HR,
                     "Power" to HUDSlotField.Power,
+                    "Cadence" to HUDSlotField.Cadence,
+                    "Avg Power" to HUDSlotField.AvgPower,
+                    "NP" to HUDSlotField.NP,
+                    "Grade" to HUDSlotField.Grade,
                     "Avg Speed" to HUDSlotField.AvgSpeed(),
                     "Time" to HUDSlotField.Time(),
                 )
@@ -336,6 +366,17 @@ private fun HUDAvgSpeedCard(
     AvgSpeedThresholdControls(
         config = slot.avgSpeedConfig,
         onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
+    )
+}
+
+@Composable
+private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+    SmoothingSlider(
+        options = CadenceSmoothingStream.entries,
+        selected = slot.cadenceSmoothing,
+        label = { it.label },
+        onSelected = { onUpdate(slot.copy(cadenceSmoothing = it)) },
+        thumbIcon = R.drawable.ic_cadence,
     )
 }
 
