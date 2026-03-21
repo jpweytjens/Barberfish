@@ -81,15 +81,15 @@ Complete list of data fields provided by Barberfish.
 
 ## Examples
 
-|                                             |                                                                                                                                                                                                                       |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img width="180" src="docs/hud.jpg">        | HUD using the Wahoo palette for text zone coloring and [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row.                                                                                   |
-| <img width="180" src="docs/hud_fill.jpg">   | HUD with background-fill zone coloring.                                                                                                                                                                               |
-| <img width="180" src="docs/comparison.jpg"> | Comparing 4 reimplemented fields: Text-color power vs background-fill power and HR. Moving average speed in red above the configurable 30 km/h threshold. Paused time in clock format showing the difference between. |
-| <img width="180" src="docs/config.jpg">          | Karoo-style config screen with collapsible sections.                                                                                                                                                                  |
-| <img width="180" src="docs/config_fieldcard.jpg">  | FieldCard with live preview showing the smoothing-aware label and zone color mode selector.                                                                                                                           |
+|                                                   |                                                                                                                                                                                                                       |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img width="180" src="docs/hud.jpg">              | HUD using the Wahoo palette for text zone coloring and [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row.                                                                                   |
+| <img width="180" src="docs/hud_fill.jpg">         | HUD with background-fill zone coloring.                                                                                                                                                                               |
+| <img width="180" src="docs/comparison.jpg">       | Comparing 4 reimplemented fields: Text-color power vs background-fill power and HR. Moving average speed in red above the configurable 30 km/h threshold. Paused time in clock format showing the difference between. |
+| <img width="180" src="docs/config.jpg">           | Karoo-style config screen with collapsible sections.                                                                                                                                                                  |
+| <img width="180" src="docs/config_fieldcard.jpg"> | FieldCard with live preview showing the smoothing-aware label and zone color mode selector.                                                                                                                           |
 | <img width="180" src="docs/config_threshold.jpg"> | Threshold configuration for average speed: single threshold or min/max range with configurable warning bands.                                                                                                         |
-|                                             |                                                                                                                                                                                                                       |
+|                                                   |                                                                                                                                                                                                                       |
 
 ## Use cases
 ### Map page HUD
@@ -122,12 +122,7 @@ Ideas that may or may not be implemented
 
 ## Compatibility
 
-Tested on a Karoo 3 running firmware 1.618.2377.20. Should work on Karoo 2 and other firmware versions, but no guarantees.
-
-|            | Metric units | Imperial units |
-| ---------- | ------------ | -------------- |
-| Dark mode  | Tested       | To be tested   |
-| Light mode | To be tested | To be tested   |
+Tested on a Karoo 3 running firmware 1.618.2377.20 using metric units and dark mode. Should work on Karoo 2 and other firmware versions, but no guarantees.
 
 ## Installation
 
