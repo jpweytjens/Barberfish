@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +28,7 @@ private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_confi
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
 private val zoneConfigKey = stringPreferencesKey("zone_config")
 
-// --- HUDConfig (was ThreeColumnConfig) ---
+// --- HUDConfig ---
 
 @Serializable
 enum class ZoneColorMode(val label: String) {
@@ -37,9 +38,28 @@ enum class ZoneColorMode(val label: String) {
 }
 
 @Serializable
-data class HUDConfig(
-    val powerStream: PowerSmoothingStream = PowerSmoothingStream.S3,
+sealed interface HUDSlotField {
+    @Serializable data object Speed : HUDSlotField
+    @Serializable data object HR : HUDSlotField
+    @Serializable data object Power : HUDSlotField
+    @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
+    @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
+}
+
+@Serializable
+data class HUDSlotConfig(
+    val field: HUDSlotField = HUDSlotField.Power,
+    val powerSmoothing: PowerSmoothingStream = PowerSmoothingStream.S3,
+    val speedSmoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0,
+    val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+@Serializable
+data class HUDConfig(
+    val leftSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Speed),
+    val middleSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
+    val rightSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Power),
 )
 
 fun Context.streamHUDConfig(): Flow<HUDConfig> =
@@ -59,7 +79,7 @@ suspend fun Context.saveHUDConfig(config: HUDConfig) {
 
 @Serializable
 enum class PowerSmoothingStream(val label: String, val typeId: String, val fieldId: String) {
-    S0("Off", DataType.Type.POWER, DataType.Field.POWER),
+    S0("0s", DataType.Type.POWER, DataType.Field.POWER),
     S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_POWER, DataType.Field.SMOOTHED_3S_AVERAGE_POWER),
     S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_POWER, DataType.Field.SMOOTHED_5S_AVERAGE_POWER),
     S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_POWER, DataType.Field.SMOOTHED_10S_AVERAGE_POWER),
@@ -112,7 +132,7 @@ suspend fun Context.saveHRFieldConfig(config: HRFieldConfig) {
 
 @Serializable
 enum class SpeedSmoothingStream(val label: String, val typeId: String, val fieldId: String) {
-    S0("Off", DataType.Type.SPEED, DataType.Field.SPEED),
+    S0("0s", DataType.Type.SPEED, DataType.Field.SPEED),
     S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_SPEED, DataType.Field.SMOOTHED_3S_AVERAGE_SPEED),
     S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_SPEED, DataType.Field.SMOOTHED_5S_AVERAGE_SPEED),
     S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_SPEED, DataType.Field.SMOOTHED_10S_AVERAGE_SPEED),

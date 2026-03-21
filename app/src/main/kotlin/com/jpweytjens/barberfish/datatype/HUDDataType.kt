@@ -11,7 +11,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Row
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
-import com.jpweytjens.barberfish.datatype.shared.HudState
+import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
@@ -35,11 +35,11 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
     /** Throttle applied to [liveFlow] emissions. */
     open val sampleMs: Long = 400L
 
-    /** Emits HudState from real sensor streams. Must not sample internally. */
-    abstract fun liveFlow(context: Context): Flow<HudState>
+    /** Emits HUDState from real sensor streams. Must not sample internally. */
+    abstract fun liveFlow(context: Context): Flow<HUDState>
 
-    /** Emits HudState for the Karoo config-screen preview carousel. */
-    abstract fun previewFlow(context: Context): Flow<HudState>
+    /** Emits HUDState for the Karoo config-screen preview carousel. */
+    abstract fun previewFlow(context: Context): Flow<HUDState>
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
@@ -60,23 +60,23 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             BarberfishView(
-                                state.speed,
+                                state.leftSlot,
                                 config.alignment,
-                                state.colorMode,
+                                state.leftColorMode,
                                 ViewSizeConfig.HUD,
                                 modifier = GlanceModifier.defaultWeight(),
                             )
                             BarberfishView(
-                                state.hr,
+                                state.middleSlot,
                                 config.alignment,
-                                state.colorMode,
+                                state.middleColorMode,
                                 ViewSizeConfig.HUD,
                                 modifier = GlanceModifier.defaultWeight(),
                             )
                             BarberfishView(
-                                state.power,
+                                state.rightSlot,
                                 config.alignment,
-                                state.colorMode,
+                                state.rightColorMode,
                                 ViewSizeConfig.HUD,
                                 modifier = GlanceModifier.defaultWeight(),
                             )
