@@ -27,6 +27,10 @@ private val threeColumnConfigKey = stringPreferencesKey("three_column_config")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
 private val zoneConfigKey = stringPreferencesKey("zone_config")
+private val gradeFieldConfigKey = stringPreferencesKey("grade_field_config")
+private val avgPowerFieldConfigKey = stringPreferencesKey("avg_power_field_config")
+private val npFieldConfigKey = stringPreferencesKey("np_field_config")
+private val cadenceFieldConfigKey = stringPreferencesKey("cadence_field_config")
 
 // --- HUDConfig ---
 
@@ -42,6 +46,10 @@ sealed interface HUDSlotField {
     @Serializable data object Speed : HUDSlotField
     @Serializable data object HR : HUDSlotField
     @Serializable data object Power : HUDSlotField
+    @Serializable data object Cadence : HUDSlotField
+    @Serializable data object AvgPower : HUDSlotField
+    @Serializable data object NP : HUDSlotField
+    @Serializable data object Grade : HUDSlotField
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
 }
@@ -51,6 +59,7 @@ data class HUDSlotConfig(
     val field: HUDSlotField = HUDSlotField.Power,
     val powerSmoothing: PowerSmoothingStream = PowerSmoothingStream.S3,
     val speedSmoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0,
+    val cadenceSmoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0,
     val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
@@ -213,6 +222,93 @@ fun Context.streamZoneConfig(): Flow<ZoneConfig> =
 
 suspend fun Context.saveZoneConfig(config: ZoneConfig) {
     dataStore.edit { it[zoneConfigKey] = json.encodeToString(config) }
+}
+
+// --- CadenceFieldConfig ---
+
+@Serializable
+enum class CadenceSmoothingStream(val label: String, val typeId: String, val fieldId: String) {
+    S0("0s", DataType.Type.CADENCE, DataType.Field.CADENCE),
+    S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_CADENCE, DataType.Field.SMOOTHED_3S_AVERAGE_CADENCE),
+    S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_CADENCE, DataType.Field.SMOOTHED_5S_AVERAGE_CADENCE),
+    S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_CADENCE, DataType.Field.SMOOTHED_10S_AVERAGE_CADENCE),
+}
+
+@Serializable data class CadenceFieldConfig(val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0)
+
+fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[cadenceFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<CadenceFieldConfig>(it) }.getOrNull()
+            } ?: CadenceFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveCadenceFieldConfig(config: CadenceFieldConfig) {
+    dataStore.edit { it[cadenceFieldConfigKey] = json.encodeToString(config) }
+}
+
+// --- AvgPowerFieldConfig ---
+
+@Serializable data class AvgPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+fun Context.streamAvgPowerFieldConfig(): Flow<AvgPowerFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[avgPowerFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<AvgPowerFieldConfig>(it) }.getOrNull()
+            } ?: AvgPowerFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveAvgPowerFieldConfig(config: AvgPowerFieldConfig) {
+    dataStore.edit { it[avgPowerFieldConfigKey] = json.encodeToString(config) }
+}
+
+// --- NPFieldConfig ---
+
+@Serializable data class NPFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+fun Context.streamNPFieldConfig(): Flow<NPFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[npFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<NPFieldConfig>(it) }.getOrNull()
+            } ?: NPFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) {
+    dataStore.edit { it[npFieldConfigKey] = json.encodeToString(config) }
+}
+
+// --- GradeFieldConfig ---
+
+@Serializable
+enum class GradePalette(val label: String) {
+    WAHOO("Wahoo"),
+    GARMIN("Garmin"),
+    HAMMERHEAD("Hammerhead"),
+}
+
+@Serializable
+data class GradeFieldConfig(
+    val palette: GradePalette = GradePalette.WAHOO,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
+
+fun Context.streamGradeFieldConfig(): Flow<GradeFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[gradeFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<GradeFieldConfig>(it) }.getOrNull()
+            } ?: GradeFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) {
+    dataStore.edit { it[gradeFieldConfigKey] = json.encodeToString(config) }
 }
 
 // --- TimeConfig ---
