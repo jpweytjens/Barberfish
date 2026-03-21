@@ -1,0 +1,23 @@
+#!/bin/sh
+# Enforce Conventional Commits format:
+# <type>[(<scope>)]: <description>
+# Types: feat, fix, refactor, test, chore, docs, perf, build, ci, revert
+
+commit_msg=$(cat "$1")
+
+pattern='^(feat|fix|refactor|test|chore|docs|perf|build|ci|revert)(\([a-z0-9][a-z0-9-]*\))?: .+'
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+  echo ""
+  echo "ERROR: Commit message does not follow Conventional Commits format."
+  echo ""
+  echo "  Expected: <type>[(<scope>)]: <description>"
+  echo "  Example:  feat(hud): add configurable slots"
+  echo "  Example:  fix(power): use smoothing-aware label in error state"
+  echo ""
+  echo "  Types: feat, fix, refactor, test, chore, docs, perf, build, ci, revert"
+  echo ""
+  echo "  Got: $commit_msg"
+  echo ""
+  exit 1
+fi
