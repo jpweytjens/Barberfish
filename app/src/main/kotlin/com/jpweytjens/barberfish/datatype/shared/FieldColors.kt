@@ -114,6 +114,19 @@ internal fun FieldColor.toBackgroundColorProvider(): ColorProvider? =
         is FieldColor.Grade -> ColorProvider(gradeColor(percent, palette))
     }
 
+internal fun FieldColor.toBackgroundColor(): Color? =
+    when (this) {
+        is FieldColor.Default,
+        is FieldColor.Error,
+        is FieldColor.Muted -> null
+        is FieldColor.Threshold -> thresholdColor(factor)
+        is FieldColor.DangerZone ->
+            dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
+        is FieldColor.Zone ->
+            if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette)
+        is FieldColor.Grade -> gradeColor(percent, palette)
+    }
+
 internal fun FieldColor.toColor(): Color? =
     when (this) {
         is FieldColor.Default -> null

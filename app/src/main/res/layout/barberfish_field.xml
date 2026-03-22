@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Combined field layout: header (wrap_content) + value (fills remaining, CENTER_VERTICAL).
+    Mirrors native data_element_single.xml structure using LinearLayout weights instead of
+    ConstraintLayout. Horizontal padding and all text/icon properties are set programmatically.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/field_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- Header row: optional icon + label (1 or 2 lines) -->
+    <LinearLayout
+        android:id="@+id/field_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="22dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/field_icon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/field_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textAllCaps="true"
+            android:fontFamily="sans-serif"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="0.6" />
+
+    </LinearLayout>
+
+    <!-- Value: fills remaining space below header, vertically centered -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/field_value"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:fontFamily="monospace"
+            android:letterSpacing="-0.04" />
+
+    </FrameLayout>
+
+</LinearLayout>
