@@ -1,16 +1,10 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
-import androidx.glance.GlanceModifier
-import androidx.glance.appwidget.ExperimentalGlanceRemoteViewsApi
-import androidx.glance.appwidget.GlanceRemoteViews
-import androidx.glance.appwidget.cornerRadius
-import androidx.glance.layout.Alignment
-import androidx.glance.layout.Row
-import androidx.glance.layout.fillMaxSize
-import androidx.glance.layout.padding
+import android.os.Build
+import android.util.TypedValue
+import android.widget.RemoteViews
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import io.hammerhead.karooext.extension.DataTypeImpl
@@ -26,11 +20,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalGlanceRemoteViewsApi::class, FlowPreview::class)
+@OptIn(FlowPreview::class)
 abstract class HUDDataType(extensionId: String, typeId: String) :
     DataTypeImpl(extensionId, typeId) {
-
-    protected val glance = GlanceRemoteViews()
 
     /** Throttle applied to [liveFlow] emissions. */
     open val sampleMs: Long = 400L
@@ -49,40 +41,36 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
             val flow =
                 if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
             flow.collect { state ->
-                val result =
-                    glance.compose(context, DpSize.Unspecified) {
-                        Row(
-                            modifier =
-                                GlanceModifier.fillMaxSize().padding(vertical = 2.dp).let {
-                                    if (config.preview) it.cornerRadius(12.dp) else it
-                                },
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            BarberfishView(
-                                state.leftSlot,
-                                config.alignment,
-                                state.leftColorMode,
-                                ViewSizeConfig.HUD,
-                                modifier = GlanceModifier.defaultWeight(),
-                            )
-                            BarberfishView(
-                                state.middleSlot,
-                                config.alignment,
-                                state.middleColorMode,
-                                ViewSizeConfig.HUD,
-                                modifier = GlanceModifier.defaultWeight(),
-                            )
-                            BarberfishView(
-                                state.rightSlot,
-                                config.alignment,
-                                state.rightColorMode,
-                                ViewSizeConfig.HUD,
-                                modifier = GlanceModifier.defaultWeight(),
-                            )
-                        }
-                    }
-                emitter.updateView(result.remoteViews)
+                val rv = RemoteViews(context.packageName, R.layout.barberfish_hud)
+                // Preserve the original 2dp vertical padding from the Glance Row
+                val paddingPx = (2f * context.resources.displayMetrics.density).toInt()
+                rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, paddingPx)
+                // Preview corner radius
+                if (config.preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    rv.setViewOutlinePreferredRadius(R.id.hud_root, 12f, TypedValue.COMPLEX_UNIT_DIP)
+                    rv.setBoolean(R.id.hud_root, "setClipToOutline", true)
+                }
+                listOf(
+                    Triple(R.id.hud_slot_left, state.leftSlot, state.leftColorMode),
+                    Triple(R.id.hud_slot_middle, state.middleSlot, state.middleColorMode),
+                    Triple(R.id.hud_slot_right, state.rightSlot, state.rightColorMode),
+                ).forEach { (slotId, field, colorMode) ->
+                    rv.removeAllViews(slotId)
+                    rv.addView(
+                        slotId,
+                        barberfishFieldRemoteViews(
+                            field = field,
+                            alignment = config.alignment,
+                            colorMode = colorMode,
+                            sizeConfig = ViewSizeConfig.HUD,
+                            preview = false,
+                            wideLayout = false,
+                            cellWidthPx = 0,
+                            context = context,
+                        ),
+                    )
+                }
+                emitter.updateView(rv)
             }
         }
     }
