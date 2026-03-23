@@ -55,15 +55,15 @@ class TimeFieldTest {
 
     @Test fun hms_59s() = assertEquals("59s", formatTime(59L, TimeFormat.HM_S))
 
-    @Test fun hms_60s() = assertEquals("1m 0s", formatTime(60L, TimeFormat.HM_S))
+    @Test fun hms_60s() = assertEquals("1m0s", formatTime(60L, TimeFormat.HM_S))
 
-    @Test fun hms_90s() = assertEquals("1m 30s", formatTime(90L, TimeFormat.HM_S))
+    @Test fun hms_90s() = assertEquals("1m30s", formatTime(90L, TimeFormat.HM_S))
 
-    @Test fun hms_3599s() = assertEquals("59m 59s", formatTime(3599L, TimeFormat.HM_S))
+    @Test fun hms_3599s() = assertEquals("59m59s", formatTime(3599L, TimeFormat.HM_S))
 
-    @Test fun hms_3600s() = assertEquals("1h 0m 0s", formatTime(3600L, TimeFormat.HM_S))
+    @Test fun hms_3600s() = assertEquals("1h0m0s", formatTime(3600L, TimeFormat.HM_S))
 
-    @Test fun hms_5025s() = assertEquals("1h 23m 45s", formatTime(5025L, TimeFormat.HM_S))
+    @Test fun hms_5025s() = assertEquals("1h23m45s", formatTime(5025L, TimeFormat.HM_S))
 
     // --- Negative guard ---
 

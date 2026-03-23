@@ -32,8 +32,8 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
         TimeFormat.CLOCK -> "%d:%02d:%02d".format(h, m, s)
         TimeFormat.HM_S ->
             when {
-                h > 0 -> "${h}h ${m}m ${s}s"
-                m > 0 -> "${m}m ${s}s"
+                h > 0 -> "${h}h${m}m${s}s"
+                m > 0 -> "${m}m${s}s"
                 else -> "${s}s"
             }
     }
@@ -147,7 +147,9 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     private fun previewTimeFlow() =
         flow {
-                val steps = listOf(0L, 45L, 150L, 1665L, 5025L, 36234L)
+                // val steps = listOf(0L, 45L, 150L, 1665L, 5025L, 37425L)
+                val steps = listOf(1665L, 5025L, 37425L)
+
                 var i = 0
                 while (true) {
                     emit(steps[i++ % steps.size])
