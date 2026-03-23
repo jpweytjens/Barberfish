@@ -8,6 +8,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
@@ -51,30 +52,33 @@ class GradeField(private val karooSystem: KarooSystemService) :
         combine(context.streamGradeFieldConfig(), context.streamZoneConfig()) { cfg, zones ->
             cfg to zones
         }.flatMapLatest { (cfg, zones) ->
-            previewGradeFlow().map { percent -> toGradeFieldState(percent, cfg, zones.gradePalette) }
-        }
-
-    private fun toGradeFieldState(percent: Double, cfg: GradeFieldConfig, palette: GradePalette): FieldState {
-        val color =
-            if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-            else FieldColor.Grade(percent, palette)
-        return FieldState(
-            "%.1f%%".format(percent),
-            label = "Grade",
-            color = color,
-            iconRes = R.drawable.ic_grade,
-            colorMode = cfg.colorMode,
-        )
-    }
-
-    private fun previewGradeFlow() =
-        flow {
-                val steps = listOf(2.0, 5.5, 9.2, 13.0, 6.2, 1.0)
+            flow {
+                val states = previewStates(cfg, zones)
                 var i = 0
                 while (true) {
-                    emit(steps[i++ % steps.size])
+                    emit(states[i++ % states.size])
                     delay(Delay.PREVIEW.time)
                 }
+            }.flowOn(Dispatchers.IO)
+        }
+
+    companion object {
+        fun previewStates(cfg: GradeFieldConfig, zones: ZoneConfig): List<FieldState> =
+            listOf(2.0, 5.5, 9.2, 13.0, 6.2, 1.0).map { percent ->
+                toGradeFieldState(percent, cfg, zones.gradePalette)
             }
-            .flowOn(Dispatchers.IO)
+
+        fun toGradeFieldState(percent: Double, cfg: GradeFieldConfig, palette: GradePalette): FieldState {
+            val color =
+                if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
+                else FieldColor.Grade(percent, palette)
+            return FieldState(
+                "%.1f%%".format(percent),
+                label = "Grade",
+                color = color,
+                iconRes = R.drawable.ic_grade,
+                colorMode = cfg.colorMode,
+            )
+        }
+    }
 }
