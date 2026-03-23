@@ -35,7 +35,8 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
         val density = context.resources.displayMetrics.density
         val cellHeightDp = config.viewSize.second / density
         val sizeConfig = config.toViewSizeConfig()
-        Log.d("Barberfish", "density=$density cellH=${cellHeightDp}dp textSize=${config.textSize}sp gridSize=${config.gridSize} → headerSp=${sizeConfig.headerFontSize} typeId=$typeId")
+        val cellWidthPx = config.viewSize.first
+        Log.d("Barberfish", "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} → headerSp=${sizeConfig.headerFontSize} typeId=$typeId")
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
@@ -49,8 +50,6 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
                     colorMode = field.colorMode,
                     sizeConfig = sizeConfig,
                     preview = config.preview,
-                    wideLayout = config.gridSize.first == 60,
-                    cellWidthPx = config.viewSize.first,
                     context = context,
                 )
                 emitter.updateView(rv)

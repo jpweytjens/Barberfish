@@ -64,8 +64,6 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                             colorMode = colorMode,
                             sizeConfig = ViewSizeConfig.HUD,
                             preview = false,
-                            wideLayout = false,
-                            cellWidthPx = 0,
                             context = context,
                         ),
                     )
