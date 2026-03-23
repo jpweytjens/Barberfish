@@ -101,21 +101,33 @@ private fun makeFieldRemoteViews(
         rv.setViewPadding(R.id.field_label, gapPx, 0, 0, 0)
         // setViewLayoutWidth/Height requires API 31; Karoo 3 is API 33
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            rv.setViewLayoutWidth(R.id.field_icon, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
-            rv.setViewLayoutHeight(R.id.field_icon, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
+            rv.setViewLayoutWidth(
+                R.id.field_icon,
+                sizeConfig.headerIconSize.value,
+                TypedValue.COMPLEX_UNIT_DIP,
+            )
+            rv.setViewLayoutHeight(
+                R.id.field_icon,
+                sizeConfig.headerIconSize.value,
+                TypedValue.COMPLEX_UNIT_DIP,
+            )
         }
     } else {
         rv.setViewVisibility(R.id.field_icon, View.GONE)
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Value — layout_centerVertical in XML handles vertical centering; only horizontal gravity here.
+    // Value — layout_centerVertical in XML handles vertical centering; only horizontal gravity
+    // here.
     rv.setTextViewText(R.id.field_value, field.primary)
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp)
     rv.setInt(R.id.field_value, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
     if (sizeConfig.valueTranslationY != 0f) {
-        rv.setFloat(R.id.field_value, "setTranslationY", sizeConfig.valueTranslationY)
+        val scaledTranslationY =
+            sizeConfig.valueTranslationY + (sizeConfig.valueFontSizeBase - fontSp) * 0.80f
+        // header when scaled
+        rv.setFloat(R.id.field_value, "setTranslationY", scaledTranslationY)
     }
 
     return rv
