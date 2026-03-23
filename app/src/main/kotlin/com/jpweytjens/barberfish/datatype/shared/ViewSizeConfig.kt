@@ -29,13 +29,15 @@ fun ViewConfig.toViewSizeConfig(): ViewSizeConfig {
             else -> 15.5f
         }
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
+    // Wide (1-col) cells have short labels that fit on one line; cap at 1 to avoid dead space.
+    val labelMaxLines = if (colSpan == 60) 1 else 2
     // Native dataTranslationY (px) from hhv5.d.hha() — negative = move value up.
     val translationYPx: Float =
         when {
-            colSpan == 60 && rowSpan >= 18 -> -12f
-            colSpan == 60 && rowSpan >= 12 -> -10f
-            colSpan == 30 && rowSpan >= 15 -> -26f
-            colSpan == 30 && rowSpan >= 12 -> -9f
+            colSpan == 60 && rowSpan >= 18 -> 12f
+            colSpan == 60 && rowSpan >= 12 -> 10f
+            colSpan == 30 && rowSpan >= 15 -> 27f
+            colSpan == 30 && rowSpan >= 12 -> 24f
             else -> 0f
         }
     return ViewSizeConfig.STANDARD.copy(
@@ -43,6 +45,7 @@ fun ViewConfig.toViewSizeConfig(): ViewSizeConfig {
         headerFontSize = labelSp.sp,
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
+        labelMaxLines = labelMaxLines,
         valueTranslationY = translationYPx,
     )
 }
@@ -54,6 +57,7 @@ data class ViewSizeConfig(
     val headerFontSize: TextUnit,
     val headerLineSpacing: Dp,
     val headerIconTopPadding: Dp,
+    val labelMaxLines: Int,
     val valueFontSizeBase: Int,
     val valueTranslationY: Float,
 ) {
@@ -66,6 +70,7 @@ data class ViewSizeConfig(
                 headerFontSize = 17.sp,
                 headerLineSpacing = 2.dp,
                 headerIconTopPadding = 12.dp,
+                labelMaxLines = 2,
                 valueFontSizeBase = 49,
                 valueTranslationY = 0f,
             )
@@ -77,6 +82,7 @@ data class ViewSizeConfig(
                 headerFontSize = 12.sp,
                 headerLineSpacing = 2.dp,
                 headerIconTopPadding = 10.dp,
+                labelMaxLines = 1,
                 valueFontSizeBase = 36,
                 valueTranslationY = 0f,
             )

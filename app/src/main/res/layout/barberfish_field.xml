@@ -1,23 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Field layout matching native data_element_single.xml centering behaviour.
-    A RelativeLayout fills the space below the header (layout_weight="1"), and
-    field_value uses layout_centerVertical="true" to center itself (wrap_content) within it.
-    This mirrors ConstraintLayout (top_toBottomOf=header + bottom_toBottomOf=parent + wrap_content).
-    RemoteViews-safe: only LinearLayout, RelativeLayout, ImageView, TextView are used.
+    FrameLayout root: field_value fills full cell height with gravity=center_vertical,
+    matching native ConstraintLayout (top_toBottomOf=header + bottom_toBottomOf=parent + wrap_content).
+    field_header overlays at top. Value can extend into header area via translationY without clipping.
+    RemoteViews-safe: only FrameLayout, LinearLayout, ImageView, TextView are used.
     Horizontal padding and all text/icon properties are set programmatically.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <!-- Header row: optional icon + label. Mirrors native DataHeaderView. -->
+    <!-- Value: fills full cell, text centered vertically (drawn first = behind header). -->
+    <TextView
+        android:id="@+id/field_value"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:fontFamily="relative"
+        android:letterSpacing="-0.04" />
+
+    <!-- Header row: overlays at top. Mirrors native DataHeaderView. -->
     <LinearLayout
         android:id="@+id/field_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="top"
         android:minHeight="22dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
@@ -45,25 +56,4 @@
 
     </LinearLayout>
 
-    <!-- Value container: fills remaining space, centers field_value vertically.
-         RelativeLayout + layout_centerVertical mirrors ConstraintLayout wrap_content centering. -->
-    <RelativeLayout
-        android:id="@+id/field_value_container"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        >
-
-        <TextView
-            android:id="@+id/field_value"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:fontFamily="relative"
-            android:letterSpacing="-0.04" />
-
-    </RelativeLayout>
-
-</LinearLayout>
+</FrameLayout>

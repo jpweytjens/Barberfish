@@ -72,7 +72,6 @@ private fun makeFieldRemoteViews(
 
     if (DEBUG_LAYOUT) {
         rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())
-        rv.setInt(R.id.field_value_container, "setBackgroundColor", 0x550000FF.toInt())
         rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt())
     }
 
@@ -82,6 +81,11 @@ private fun makeFieldRemoteViews(
     rv.setTextViewText(R.id.field_label, displayLabel)
     rv.setTextColor(R.id.field_label, labelArgb)
     rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, sizeConfig.headerFontSize.value)
+    // Wide cells: collapse to 1 line (setLines overrides android:lines="2" from XML).
+    // Narrow cells: XML lines="2" stays, preserving 2-line reserved height for long labels.
+    if (sizeConfig.labelMaxLines == 1) {
+        rv.setInt(R.id.field_label, "setLines", 1)
+    }
     rv.setInt(R.id.field_label, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
 
     // Icon
@@ -105,7 +109,7 @@ private fun makeFieldRemoteViews(
     rv.setTextViewText(R.id.field_value, field.primary)
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp)
-    rv.setInt(R.id.field_value, "setGravity", hGravity)
+    rv.setInt(R.id.field_value, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
     if (sizeConfig.valueTranslationY != 0f) {
         rv.setFloat(R.id.field_value, "setTranslationY", sizeConfig.valueTranslationY)
     }
