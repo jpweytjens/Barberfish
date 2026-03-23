@@ -3,17 +3,17 @@
     android:height="38dp"
     android:viewportWidth="38"
     android:viewportHeight="38">
-    <!-- Chainring donut: outer r=11, inner r=7 — ring width=4 -->
+    <!-- Chainring donut: outer r=12, inner r=9 — ring width=3 -->
     <path
         android:fillColor="#FFFFFF"
         android:fillType="evenOdd"
-        android:pathData="M19,8 A11,11,0,0,1,30,19 A11,11,0,0,1,19,30 A11,11,0,0,1,8,19 A11,11,0,0,1,19,8 Z M19,12 A7,7,0,0,0,12,19 A7,7,0,0,0,19,26 A7,7,0,0,0,26,19 A7,7,0,0,0,19,12 Z" />
-    <!-- Top-right crank arm: center → past outer circle, width=4 (offset ±1.5 at 45°) -->
+        android:pathData="M19,7 A12,12,0,0,1,31,19 A12,12,0,0,1,19,31 A12,12,0,0,1,7,19 A12,12,0,0,1,19,7 Z M19,10 A9,9,0,0,0,10,19 A9,9,0,0,0,19,28 A9,9,0,0,0,28,19 A9,9,0,0,0,19,10 Z" />
+    <!-- Top-right crank arm: center → past outer circle, width=3 (offset ±1.1 at 45°) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M20.5,20.5 L33.5,7.5 L30.5,4.5 L17.5,17.5 Z" />
-    <!-- Bottom-left crank arm: outside ring only, width=4 -->
+        android:pathData="M20.1,20.1 L35.1,5.1 L32.9,2.9 L17.9,17.9 Z" />
+    <!-- Bottom-left crank arm: outside ring only, width=3 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12.7,28.3 L7.8,33.2 L4.8,30.2 L9.7,25.3 Z" />
+        android:pathData="M12.3,27.9 L7.4,32.8 L5.2,30.6 L10.1,25.7 Z" />
 </vector>
