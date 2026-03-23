@@ -6,7 +6,9 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -15,6 +17,7 @@ import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
+import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -72,35 +75,40 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, profile, zones)
             }
             .flatMapLatest { (cfg, profile, zones) ->
-                previewAvgPowerFlow().map { watts ->
-                    val zone = powerZone(watts.toDouble(), profile.powerZones)
-                    val color =
-                        if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                        else
-                            FieldColor.Zone(
-                                zone,
-                                profile.powerZones.size.coerceAtLeast(1),
-                                zones.powerPalette,
-                                isHr = false,
-                            )
-                    FieldState(
-                        watts.toString(),
-                        label = "Avg Power",
-                        color = color,
-                        iconRes = R.drawable.ic_avg_power,
-                        colorMode = cfg.colorMode,
-                    )
-                }
+                flow {
+                    val states = previewStates(cfg, profile, zones)
+                    var i = 0
+                    while (true) {
+                        emit(states[i++ % states.size])
+                        delay(Delay.PREVIEW.time)
+                    }
+                }.flowOn(Dispatchers.IO)
             }
 
-    private fun previewAvgPowerFlow() =
-        flow {
-                val steps = listOf(195, 210, 220, 185, 230)
-                var i = 0
-                while (true) {
-                    emit(steps[i++ % steps.size])
-                    delay(Delay.PREVIEW.time)
-                }
+    companion object {
+        fun previewStates(
+            cfg: AvgPowerFieldConfig,
+            profile: UserProfile,
+            zones: ZoneConfig,
+        ): List<FieldState> =
+            listOf(195, 210, 220, 185, 230).map { watts ->
+                val zone = powerZone(watts.toDouble(), profile.powerZones)
+                val color =
+                    if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
+                    else
+                        FieldColor.Zone(
+                            zone,
+                            profile.powerZones.size.coerceAtLeast(1),
+                            zones.powerPalette,
+                            isHr = false,
+                        )
+                FieldState(
+                    watts.toString(),
+                    label = "Avg Power",
+                    color = color,
+                    iconRes = R.drawable.ic_avg_power,
+                    colorMode = cfg.colorMode,
+                )
             }
-            .flowOn(Dispatchers.IO)
+    }
 }

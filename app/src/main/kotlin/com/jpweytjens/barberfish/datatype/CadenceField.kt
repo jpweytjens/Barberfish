@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
@@ -42,7 +43,23 @@ class CadenceField(private val karooSystem: KarooSystemService) :
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         context.streamCadenceFieldConfig().flatMapLatest { cfg ->
-            previewCadenceFlow().map { rpm ->
+            flow {
+                val states = previewStates(cfg)
+                var i = 0
+                while (true) {
+                    emit(states[i++ % states.size])
+                    delay(Delay.PREVIEW.time)
+                }
+            }.flowOn(Dispatchers.IO)
+        }
+
+    companion object {
+        fun cadenceLabel(smoothing: CadenceSmoothingStream) =
+            if (smoothing == CadenceSmoothingStream.S0) "Cadence"
+            else "${smoothing.label} Cad"
+
+        fun previewStates(cfg: CadenceFieldConfig): List<FieldState> =
+            listOf(82, 87, 91, 78, 95).map { rpm ->
                 FieldState(
                     rpm.toString(),
                     label = cadenceLabel(cfg.smoothing),
@@ -50,20 +67,5 @@ class CadenceField(private val karooSystem: KarooSystemService) :
                     iconRes = R.drawable.ic_cadence,
                 )
             }
-        }
-
-    private fun cadenceLabel(smoothing: CadenceSmoothingStream) =
-        if (smoothing == CadenceSmoothingStream.S0) "Cadence"
-        else "${smoothing.label} Cad"
-
-    private fun previewCadenceFlow() =
-        flow {
-                val steps = listOf(82, 87, 91, 78, 95)
-                var i = 0
-                while (true) {
-                    emit(steps[i++ % steps.size])
-                    delay(Delay.PREVIEW.time)
-                }
-            }
-            .flowOn(Dispatchers.IO)
+    }
 }
