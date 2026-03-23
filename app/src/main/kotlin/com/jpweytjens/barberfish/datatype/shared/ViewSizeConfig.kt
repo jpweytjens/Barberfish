@@ -14,23 +14,29 @@ import io.hammerhead.karooext.models.ViewConfig
 //   60       ≥ 12     33 px    17.6 sp  1-col 5-row      55
 //   30       ≥ 15     33 px    17.6 sp  2-col 4-row      50
 //   30       ≥ 12     29 px    15.5 sp  2-col 5-row      47
+//   20       ≥ 12     —        12.0 sp  HUD slot (1/3 of 60-wide cell)
 //
 // Icon size equals labelSize in the native app (same px value, width = height).
 // Native root cell padding is 0dp. Header wraps content; value fills remaining space, centered.
-fun ViewConfig.toViewSizeConfig(): ViewSizeConfig {
-    val colSpan = gridSize.first
+fun ViewConfig.toViewSizeConfig(
+    colSpanOverride: Int? = null,
+    textSizeOverride: Int? = null,
+): ViewSizeConfig {
+    val colSpan = colSpanOverride ?: gridSize.first
     val rowSpan = gridSize.second
+    val textSizeEff = textSizeOverride ?: textSize
     val labelSp: Float =
         when {
             colSpan == 60 && rowSpan >= 15 -> 19.2f // 36 px
             colSpan == 60 && rowSpan >= 12 -> 17.6f // 33 px
             colSpan == 30 && rowSpan >= 15 -> 17.6f // 33 px
             colSpan == 30 && rowSpan >= 12 -> 15.5f // 29 px
+            colSpan == 20 && rowSpan >= 12 -> 12.0f // HUD slot
             else -> 15.5f
         }
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
-    // Wide (1-col) cells have short labels that fit on one line; cap at 1 to avoid dead space.
-    val labelMaxLines = if (colSpan == 60) 1 else 2
+    // Wide (1-col) cells have short labels that fit on one line; colSpan=20 HUD slots also use 1.
+    val labelMaxLines = if (colSpan != 30) 1 else 2
     // Wide cells have more horizontal space; scale font only beyond 6 chars (vs 4 for narrow).
     val baseChars = if (colSpan == 60) 6 else 4
     // Move value up in FrameLayout
@@ -41,10 +47,12 @@ fun ViewConfig.toViewSizeConfig(): ViewSizeConfig {
             colSpan == 60 && rowSpan >= 12 -> 10f
             colSpan == 30 && rowSpan >= 15 -> 27f
             colSpan == 30 && rowSpan >= 12 -> 24f
+            colSpan == 20 && rowSpan >= 15 -> 27f
+            colSpan == 20 && rowSpan >= 12 -> 24f
             else -> 0f
         }
     return ViewSizeConfig.STANDARD.copy(
-        valueFontSizeBase = textSize.coerceAtLeast(20),
+        valueFontSizeBase = textSizeEff.coerceAtLeast(20),
         headerFontSize = labelSp.sp,
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
@@ -59,8 +67,6 @@ data class ViewSizeConfig(
     val headerIconSize: Dp,
     val headerIconLabelGap: Dp,
     val headerFontSize: TextUnit,
-    val headerLineSpacing: Dp,
-    val headerIconTopPadding: Dp,
     val labelMaxLines: Int,
     val baseChars: Int,
     val valueFontSizeBase: Int,
@@ -73,24 +79,9 @@ data class ViewSizeConfig(
                 headerIconSize = 17.dp,
                 headerIconLabelGap = 6.dp,
                 headerFontSize = 17.sp,
-                headerLineSpacing = 2.dp,
-                headerIconTopPadding = 12.dp,
                 labelMaxLines = 2,
                 baseChars = 4,
                 valueFontSizeBase = 49,
-                valueTranslationY = 0f,
-            )
-        val HUD =
-            ViewSizeConfig(
-                paddingH = 4.dp,
-                headerIconSize = 12.dp,
-                headerIconLabelGap = 2.dp,
-                headerFontSize = 12.sp,
-                headerLineSpacing = 2.dp,
-                headerIconTopPadding = 10.dp,
-                labelMaxLines = 1,
-                baseChars = 4,
-                valueFontSizeBase = 36,
                 valueTranslationY = 0f,
             )
     }

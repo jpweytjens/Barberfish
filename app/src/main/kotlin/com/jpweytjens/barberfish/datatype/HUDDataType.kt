@@ -6,7 +6,7 @@ import android.util.TypedValue
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.HUDState
-import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
 import io.hammerhead.karooext.extension.DataTypeImpl
 import io.hammerhead.karooext.internal.ViewEmitter
 import io.hammerhead.karooext.models.UpdateGraphicConfig
@@ -35,6 +35,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
+        val sizeConfig = config.toViewSizeConfig(colSpanOverride = 20, textSizeOverride = 36)
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
         scope.launch {
@@ -42,7 +43,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                 if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
             flow.collect { state ->
                 val rv = RemoteViews(context.packageName, R.layout.barberfish_hud)
-                // Preserve the original 2dp vertical padding from the Glance Row
+                // 2dp top/bottom padding
                 val paddingPx = (2f * context.resources.displayMetrics.density).toInt()
                 rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, paddingPx)
                 // Preview corner radius
@@ -62,7 +63,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                             field = field,
                             alignment = config.alignment,
                             colorMode = colorMode,
-                            sizeConfig = ViewSizeConfig.HUD,
+                            sizeConfig = sizeConfig,
                             preview = false,
                             context = context,
                         ),
