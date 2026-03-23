@@ -60,11 +60,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     slotFlow(cfg.leftSlot, zones, profile, context),
                     slotFlow(cfg.middleSlot, zones, profile, context),
                     slotFlow(cfg.rightSlot, zones, profile, context),
-                ) { left, middle, right ->
+                    slotFlow(cfg.fourthSlot, zones, profile, context),
+                ) { left, middle, right, fourth ->
                     HUDState(
+                        cfg.columns,
                         left, cfg.leftSlot.colorMode,
                         middle, cfg.middleSlot.colorMode,
                         right, cfg.rightSlot.colorMode,
+                        fourth, cfg.fourthSlot.colorMode,
                     )
                 }
             }
@@ -80,12 +83,15 @@ class HUDField(private val karooSystem: KarooSystemService) :
             .flatMapLatest { (cfg, zones, profile) ->
                 previewHudFlow().map { (speedKph, hrBpm, powerW) ->
                     HUDState(
+                        columns = cfg.columns,
                         leftSlot = previewSlotState(cfg.leftSlot, zones, profile, speedKph, hrBpm, powerW),
                         leftColorMode = cfg.leftSlot.colorMode,
                         middleSlot = previewSlotState(cfg.middleSlot, zones, profile, speedKph, hrBpm, powerW),
                         middleColorMode = cfg.middleSlot.colorMode,
                         rightSlot = previewSlotState(cfg.rightSlot, zones, profile, speedKph, hrBpm, powerW),
                         rightColorMode = cfg.rightSlot.colorMode,
+                        fourthSlot = previewSlotState(cfg.fourthSlot, zones, profile, speedKph, hrBpm, powerW),
+                        fourthColorMode = cfg.fourthSlot.colorMode,
                     )
                 }
             }

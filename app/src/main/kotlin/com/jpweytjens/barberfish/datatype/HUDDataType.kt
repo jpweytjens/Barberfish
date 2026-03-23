@@ -35,14 +35,16 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
-        val sizeConfig = config.toViewSizeConfig(colSpanOverride = 20, textSizeOverride = 36)
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
         scope.launch {
             val flow =
                 if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
             flow.collect { state ->
-                val rv = RemoteViews(context.packageName, R.layout.barberfish_hud)
+                val colSpanOverride = if (state.columns == 4) 15 else 20
+                val sizeConfig = config.toViewSizeConfig(colSpanOverride = colSpanOverride, textSizeOverride = 36)
+                val layoutRes = if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
+                val rv = RemoteViews(context.packageName, layoutRes)
                 // 2dp top/bottom padding
                 val paddingPx = (2f * context.resources.displayMetrics.density).toInt()
                 rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, paddingPx)
@@ -51,11 +53,12 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                     rv.setViewOutlinePreferredRadius(R.id.hud_root, 12f, TypedValue.COMPLEX_UNIT_DIP)
                     rv.setBoolean(R.id.hud_root, "setClipToOutline", true)
                 }
-                listOf(
-                    Triple(R.id.hud_slot_left, state.leftSlot, state.leftColorMode),
-                    Triple(R.id.hud_slot_middle, state.middleSlot, state.middleColorMode),
-                    Triple(R.id.hud_slot_right, state.rightSlot, state.rightColorMode),
-                ).forEach { (slotId, field, colorMode) ->
+                buildList {
+                    add(Triple(R.id.hud_slot_left, state.leftSlot, state.leftColorMode))
+                    add(Triple(R.id.hud_slot_middle, state.middleSlot, state.middleColorMode))
+                    add(Triple(R.id.hud_slot_right, state.rightSlot, state.rightColorMode))
+                    if (state.columns == 4) add(Triple(R.id.hud_slot_fourth, state.fourthSlot, state.fourthColorMode))
+                }.forEach { (slotId, field, colorMode) ->
                     rv.removeAllViews(slotId)
                     rv.addView(
                         slotId,
