@@ -10,13 +10,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Returns a font size that fits [text] in a cell designed for [fontSizeBase] sp at 4 characters.
- * Narrow punctuation (`:`, `.`, `'`, `"`) counts as 0.5 glyphs.
+ * Returns a font size that fits [text] in a cell designed for [fontSizeBase] sp at [baseChars]
+ * characters. Narrow punctuation (`:`, `.`, `'`, `"`) is excluded from the character count. Use
+ * [baseChars]=4 for narrow (2-col) cells, [baseChars]=7 for wide (1-col) cells. [k] scales the
+ * result; tweak below 1f to reduce aggressiveness.
  */
-fun dynamicFontSp(text: String, fontSizeBase: Int = 49): TextUnit {
-    // Narrow punctuation occupies less than a digit's width in monospace; weight accordingly.
-    val effective = text.sumOf { if (it in ":.'\"") 0.10 else 1.0 }.coerceAtLeast(4.0)
-    return (fontSizeBase * 4f / effective).toInt().sp
+fun dynamicFontSp(
+    text: String,
+    fontSizeBase: Int = 49,
+    baseChars: Int = 4,
+    k: Float = 1.25f,
+): TextUnit {
+    val effective = text.count { it !in ":.'\"" }
+    if (effective <= baseChars) return fontSizeBase.sp
+    return (fontSizeBase * k * baseChars / effective).toInt().coerceAtMost(fontSizeBase).sp
 }
 
 /**
