@@ -66,7 +66,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                         label = label,
                         color = color,
                         iconRes = R.drawable.ic_col_power,
-                        colorMode = cfg.colorMode
+                        colorMode = cfg.colorMode,
                     )
                 }
             }
@@ -81,13 +81,14 @@ class PowerField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 flow {
-                    val states = previewStates(cfg, profile, zones)
-                    var i = 0
-                    while (true) {
-                        emit(states[i++ % states.size])
-                        delay(Delay.PREVIEW.time)
+                        val states = previewStates(cfg, profile, zones)
+                        var i = 0
+                        while (true) {
+                            emit(states[i++ % states.size])
+                            delay(Delay.PREVIEW.time)
+                        }
                     }
-                }.flowOn(Dispatchers.IO)
+                    .flowOn(Dispatchers.IO)
             }
 
     companion object {
@@ -99,7 +100,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
             val label =
                 if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
                 else "${cfg.smoothing.label} Power"
-            return listOf(180, 240, 320, 400, 247, 120).map { watts ->
+            return listOf(180, 240, 320, 400, 531, 647, 1234).map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color =
                     if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default

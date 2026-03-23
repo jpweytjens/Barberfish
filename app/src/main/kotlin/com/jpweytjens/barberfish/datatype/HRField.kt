@@ -38,7 +38,7 @@ class HRField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(130, 152, 165, 172, 187, 145).map { bpm ->
+            listOf(85, 130, 152, 165, 172, 187, 145).map { bpm ->
                 val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
                 val color =
                     if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
@@ -90,7 +90,7 @@ class HRField(private val karooSystem: KarooSystemService) :
                         label = "HR",
                         color = color,
                         iconRes = R.drawable.ic_col_hr,
-                        colorMode = cfg.colorMode
+                        colorMode = cfg.colorMode,
                     )
                 }
             }
@@ -105,12 +105,13 @@ class HRField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 flow {
-                    val states = previewStates(cfg, profile, zones)
-                    var i = 0
-                    while (true) {
-                        emit(states[i++ % states.size])
-                        delay(Delay.PREVIEW.time)
+                        val states = previewStates(cfg, profile, zones)
+                        var i = 0
+                        while (true) {
+                            emit(states[i++ % states.size])
+                            delay(Delay.PREVIEW.time)
+                        }
                     }
-                }.flowOn(Dispatchers.IO)
+                    .flowOn(Dispatchers.IO)
             }
 }
