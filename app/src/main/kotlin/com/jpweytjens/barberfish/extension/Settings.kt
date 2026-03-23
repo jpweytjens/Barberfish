@@ -44,13 +44,21 @@ enum class ZoneColorMode(val label: String) {
 @Serializable
 sealed interface HUDSlotField {
     @Serializable data object Speed : HUDSlotField
+
     @Serializable data object HR : HUDSlotField
+
     @Serializable data object Power : HUDSlotField
+
     @Serializable data object Cadence : HUDSlotField
+
     @Serializable data object AvgPower : HUDSlotField
+
     @Serializable data object NP : HUDSlotField
+
     @Serializable data object Grade : HUDSlotField
+
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
+
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
 }
 
@@ -232,10 +240,15 @@ enum class CadenceSmoothingStream(val label: String, val typeId: String, val fie
     S0("0s", DataType.Type.CADENCE, DataType.Field.CADENCE),
     S3("3s", DataType.Type.SMOOTHED_3S_AVERAGE_CADENCE, DataType.Field.SMOOTHED_3S_AVERAGE_CADENCE),
     S5("5s", DataType.Type.SMOOTHED_5S_AVERAGE_CADENCE, DataType.Field.SMOOTHED_5S_AVERAGE_CADENCE),
-    S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_CADENCE, DataType.Field.SMOOTHED_10S_AVERAGE_CADENCE),
+    S10(
+        "10s",
+        DataType.Type.SMOOTHED_10S_AVERAGE_CADENCE,
+        DataType.Field.SMOOTHED_10S_AVERAGE_CADENCE,
+    ),
 }
 
-@Serializable data class CadenceFieldConfig(val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0)
+@Serializable
+data class CadenceFieldConfig(val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0)
 
 fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
     dataStore.data
@@ -293,10 +306,7 @@ enum class GradePalette(val label: String) {
     HAMMERHEAD("Hammerhead"),
 }
 
-@Serializable
-data class GradeFieldConfig(
-    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-)
+@Serializable data class GradeFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 fun Context.streamGradeFieldConfig(): Flow<GradeFieldConfig> =
     dataStore.data

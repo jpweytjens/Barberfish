@@ -31,10 +31,23 @@ fun barberfishFieldRemoteViews(
     // Always collapse \n to space — maxLines=2 + breakStrategy=simple in XML handles line breaking.
     val displayLabel = field.label.replace("\n", " ")
     val colors = field.color.toColorConfig(colorMode)
-    val rv = makeFieldRemoteViews(field, displayLabel, alignment, colors, sizeConfig, paddingHPx, context)
+    val rv =
+        makeFieldRemoteViews(
+            field,
+            displayLabel,
+            alignment,
+            colors,
+            sizeConfig,
+            paddingHPx,
+            context,
+        )
 
     // Background colour (zone / threshold / grade coloring in BACKGROUND mode)
-    rv.setInt(R.id.field_root, "setBackgroundColor", colors.background?.toArgb() ?: android.graphics.Color.TRANSPARENT)
+    rv.setInt(
+        R.id.field_root,
+        "setBackgroundColor",
+        colors.background?.toArgb() ?: android.graphics.Color.TRANSPARENT,
+    )
 
     // Corner radius for config-screen preview (API 31+ / Karoo 3 is API 33)
     if (preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -84,7 +97,11 @@ private fun makeFieldRemoteViews(
     // Label
     rv.setTextViewText(R.id.field_label, displayLabel)
     rv.setTextColor(R.id.field_label, labelArgb)
-    rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, sizeConfig.headerFontSize.value)
+    rv.setTextViewTextSize(
+        R.id.field_label,
+        TypedValue.COMPLEX_UNIT_SP,
+        sizeConfig.headerFontSize.value,
+    )
     // Wide cells: collapse to 1 line (setLines overrides android:lines="2" from XML).
     // Narrow cells: XML lines="2" stays, preserving 2-line reserved height for long labels.
     if (sizeConfig.labelMaxLines == 1) {
