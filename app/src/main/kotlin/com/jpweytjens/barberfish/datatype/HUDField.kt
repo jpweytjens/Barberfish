@@ -25,7 +25,6 @@ import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
-import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHUDConfig
