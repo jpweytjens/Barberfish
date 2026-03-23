@@ -106,6 +106,9 @@ private fun makeFieldRemoteViews(
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp)
     rv.setInt(R.id.field_value, "setGravity", hGravity)
+    if (sizeConfig.valueTranslationY != 0f) {
+        rv.setFloat(R.id.field_value, "setTranslationY", sizeConfig.valueTranslationY)
+    }
 
     return rv
 }
