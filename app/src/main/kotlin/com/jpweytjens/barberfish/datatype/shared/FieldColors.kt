@@ -2,7 +2,6 @@ package com.jpweytjens.barberfish.datatype.shared
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.glance.unit.ColorProvider
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import kotlin.math.sqrt
@@ -19,8 +18,6 @@ internal val RDYLGN_GREEN = Color(0xFF1A9850)
 
 // Danger zone color map (min/max mode) — light amber so the whitish gradient reads clearly
 internal val DANGER_ORANGE = Color(0xFFFFA726)
-
-internal val whiteText = ColorProvider(Color.White)
 
 // sqrt curve pushes color out quickly: at 10% of range, ~31% saturation; at 1%, ~10%
 // factor: -1.0 = fully red, 0.0 = white (at threshold), +1.0 = fully green
@@ -82,38 +79,12 @@ internal fun gradeColor(percent: Double, palette: GradePalette): Color {
 
 data class ColorConfig(
     val valueText: Color,
-    val headerText: ColorProvider,
+    val headerText: Color,
     val iconTint: Color,
-    val background: ColorProvider?, // null = transparent cell
+    val background: Color?, // null = transparent cell
 )
 
-internal fun FieldColor.toColorProvider(): ColorProvider =
-    when (this) {
-        is FieldColor.Default -> ColorProvider(Color.White)
-        is FieldColor.Error -> ColorProvider(ERROR_RED)
-        is FieldColor.Muted -> ColorProvider(MUTED_GREY)
-        is FieldColor.Threshold -> ColorProvider(thresholdColor(factor))
-        is FieldColor.DangerZone ->
-            ColorProvider(dangerZoneColor(outsideFactor, borderProximity, hasSafeZone))
-        is FieldColor.Zone ->
-            ColorProvider(if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette))
-        is FieldColor.Grade -> ColorProvider(gradeColor(percent, palette))
-    }
-
 // Error and Muted never fill the cell background — colored text is enough.
-internal fun FieldColor.toBackgroundColorProvider(): ColorProvider? =
-    when (this) {
-        is FieldColor.Default,
-        is FieldColor.Error,
-        is FieldColor.Muted -> null
-        is FieldColor.Threshold -> ColorProvider(thresholdColor(factor))
-        is FieldColor.DangerZone ->
-            ColorProvider(dangerZoneColor(outsideFactor, borderProximity, hasSafeZone))
-        is FieldColor.Zone ->
-            ColorProvider(if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette))
-        is FieldColor.Grade -> ColorProvider(gradeColor(percent, palette))
-    }
-
 internal fun FieldColor.toBackgroundColor(): Color? =
     when (this) {
         is FieldColor.Default,
@@ -140,7 +111,7 @@ internal fun FieldColor.toColor(): Color? =
     }
 
 internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
-    val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColorProvider() else null
+    val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColor() else null
     val onBg = bg != null
     val valueColor: Color =
         when {
@@ -152,7 +123,7 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
         }
     return ColorConfig(
         valueText = valueColor,
-        headerText = ColorProvider(if (onBg) Color.Black else Color.White),
+        headerText = if (onBg) Color.Black else Color.White,
         iconTint = if (onBg) ICON_TINT_BLACK else ICON_TINT_TEAL,
         background = bg,
     )
