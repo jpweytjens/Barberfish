@@ -59,13 +59,17 @@ private fun makeFieldRemoteViews(
         if (colors.background != null) android.graphics.Color.BLACK
         else android.graphics.Color.WHITE
     val hGravity = alignment.toHorizontalGravity()
-    val fontSp = dynamicFontSp(field.primary, sizeConfig.valueFontSizeBase).value
+    val fontSp =
+        dynamicFontSp(field.primary, sizeConfig.valueFontSizeBase, sizeConfig.baseChars).value
 
     if (DEBUG_LAYOUT) {
-        Log.d("Barberfish", "makeFieldRemoteViews: label='$displayLabel' text='${field.primary}'" +
-            " fontSp=$fontSp valueFontSizeBase=${sizeConfig.valueFontSizeBase}" +
-            " headerFontSp=${sizeConfig.headerFontSize.value} headerIconSizeDp=${sizeConfig.headerIconSize.value}" +
-            " hGravity=$hGravity paddingHPx=$paddingHPx")
+        Log.d(
+            "Barberfish",
+            "makeFieldRemoteViews: label='$displayLabel' text='${field.primary}'" +
+                " fontSp=$fontSp valueFontSizeBase=${sizeConfig.valueFontSizeBase}" +
+                " headerFontSp=${sizeConfig.headerFontSize.value} headerIconSizeDp=${sizeConfig.headerIconSize.value}" +
+                " hGravity=$hGravity paddingHPx=$paddingHPx",
+        )
     }
 
     val rv = RemoteViews(context.packageName, R.layout.barberfish_field)

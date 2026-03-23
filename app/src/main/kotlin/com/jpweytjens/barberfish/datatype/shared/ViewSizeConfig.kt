@@ -31,7 +31,9 @@ fun ViewConfig.toViewSizeConfig(): ViewSizeConfig {
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
     // Wide (1-col) cells have short labels that fit on one line; cap at 1 to avoid dead space.
     val labelMaxLines = if (colSpan == 60) 1 else 2
-    // Native dataTranslationY (px) from hhv5.d.hha() — negative = move value up.
+    // Wide cells have more horizontal space; scale font only beyond 6 chars (vs 4 for narrow).
+    val baseChars = if (colSpan == 60) 6 else 4
+    // Move value up in FrameLayout
     val translationYPx: Float =
         when {
             colSpan == 60 && rowSpan >= 18 -> 12f
@@ -46,6 +48,7 @@ fun ViewConfig.toViewSizeConfig(): ViewSizeConfig {
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
         labelMaxLines = labelMaxLines,
+        baseChars = baseChars,
         valueTranslationY = translationYPx,
     )
 }
@@ -58,6 +61,7 @@ data class ViewSizeConfig(
     val headerLineSpacing: Dp,
     val headerIconTopPadding: Dp,
     val labelMaxLines: Int,
+    val baseChars: Int,
     val valueFontSizeBase: Int,
     val valueTranslationY: Float,
 ) {
@@ -71,6 +75,7 @@ data class ViewSizeConfig(
                 headerLineSpacing = 2.dp,
                 headerIconTopPadding = 12.dp,
                 labelMaxLines = 2,
+                baseChars = 4,
                 valueFontSizeBase = 49,
                 valueTranslationY = 0f,
             )
@@ -83,6 +88,7 @@ data class ViewSizeConfig(
                 headerLineSpacing = 2.dp,
                 headerIconTopPadding = 10.dp,
                 labelMaxLines = 1,
+                baseChars = 4,
                 valueFontSizeBase = 36,
                 valueTranslationY = 0f,
             )

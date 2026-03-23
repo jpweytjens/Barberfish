@@ -17,7 +17,7 @@ internal fun barberfishValueRemoteViews(
     config: ViewSizeConfig,
     context: Context,
 ): RemoteViews {
-    val fontSp = dynamicFontSp(text, config.valueFontSizeBase).value
+    val fontSp = dynamicFontSp(text, config.valueFontSizeBase, config.baseChars).value
     val rv = RemoteViews(context.packageName, R.layout.barberfish_value)
     rv.setTextViewText(R.id.value_text, text)
     rv.setTextColor(R.id.value_text, colors.valueText.toArgb())
