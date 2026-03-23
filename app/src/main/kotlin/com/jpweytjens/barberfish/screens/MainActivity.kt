@@ -1123,7 +1123,7 @@ private fun GradeBandBar(palette: GradePalette) {
     val thresholds = when (palette) {
         GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
         GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
-        GradePalette.HAMMERHEAD -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
+        GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
     }
     Row(modifier = Modifier.fillMaxWidth()) {
         thresholds.forEachIndexed { i, lower ->

@@ -9,19 +9,22 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 ## Description
 
-Barberfish reimplements and enhances a core set of Karoo data fields with features the built-in fields don't offer. A three-column HUD shows speed, heart rate, and power side by side with zone coloring. Zone coloring supports both background-fill and text-color styles across four palettes. Time fields use a consistent, unambiguous format across all durations. Average speed fields support a single target or a min/max range with threshold coloring. All fields are styled to match the native Karoo look and feel.
+Barberfish reimplements and enhances a core set of Karoo data fields with features the built-in fields don't offer. A configurable 3- or 4-column HUD shows any combination of speed, heart rate, power, cadence, average power, normalized power, or grade side by side with zone coloring.   
+
+Zone coloring supports both background-fill and text-color styles across four palettes. Time fields use a consistent, unambiguous format across all durations. Average speed fields support a single target or a min/max range with threshold coloring. All fields are styled to match the native Karoo look and feel. Settings are configured through a Karoo-native config screen with live-updating field previews.
 
 ## Data field enhancements
 
-| Feature             | Default Karoo                                                                                                                                                      | Barberfish                                                                  |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| 3-column HUD        | Not available                                                                                                                                                      | Speed, HR, and power side by side with zone coloring                        |
-| Zone color palettes | Hammerhead only                                                                                                                                                    | Hammerhead, Wahoo, Zwift, and Intervals.icu                                 |
-| Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                               |
-| Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                           |
-| Threshold coloring  | Not available                                                                                                                                                      | Configurable single threshold or min/max thresholds on average speed fields |
-| Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                      |
-| Duration fields     | [Built-in duration fields](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend)  including total time, riding time, paused time, ... | Reimplemented with Barberfish formatting options                            |
+| Feature             | Default Karoo                                                                                                                                                      | Barberfish                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HUD                 | Not available                                                                                                                                                      | Configurable 3- or 4-column layout; each slot independently selectable from Speed, HR, Power, Cadence, Avg Power, NP, or Grade with per-slot zone coloring |
+| Zone color palettes | Karoo only                                                                                                                                                         | Karoo, Wahoo, Zwift, and Intervals.icu                                                                                                                     |
+| Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                                                                                                              |
+| Grade coloring      | Not available                                                                                                                                                      | Color-coded by road gradient steepness; Karoo, Wahoo, and Garmin palettes                                                                                  |
+| Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                                                                                                          |
+| Avg speed threshold | Not available                                                                                                                                                      | Configurable single threshold or min/max range with warning bands                                                                                          |
+| Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                                                                                                     |
+| Duration fields     | [Built-in duration fields](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend)  including total time, riding time, paused time, ... | Reimplemented with Barberfish formatting options                                                                                                           |
 
 ### Configuration
 
@@ -32,9 +35,17 @@ All field settings are configured in the Barberfish app on your Karoo. Changes u
 | Palette       | Power zones (Z1 – Z7)           | Heart rate zones (Z1 – Z5)         |
 | ------------- | ------------------------------- | ---------------------------------- |
 | Karoo         | ![](docs/palette-karoo.svg)     | ![](docs/palette-karoo-hr.svg)     |
-| Intervals.icu | ![](docs/palette-intervals.svg) | ![](docs/palette-intervals-hr.svg) |
 | Wahoo         | ![](docs/palette-wahoo.svg)     | ![](docs/palette-wahoo-hr.svg)     |
 | Zwift         | ![](docs/palette-zwift.svg)     | ![](docs/palette-zwift-hr.svg)     |
+| Intervals.icu | ![](docs/palette-intervals.svg) | ![](docs/palette-intervals-hr.svg) |
+
+### Grade color palettes
+
+| Palette    | Bands (flat → steep)                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------- |
+| Karoo  | ![](docs/palette-grade-karoo.svg)<br><sub>0–5% · 5–8% · 8–13% · 13–16% · 16–20% · 20–24% · ≥24%</sub>    |
+| Wahoo  | ![](docs/palette-grade-wahoo.svg)<br><sub>0–4% · 4–8% · 8–12% · 12–20% · ≥20%</sub>                      |
+| Garmin | ![](docs/palette-grade-garmin.svg)<br><sub>0–3% · 3–6% · 6–9% · 9–12% · ≥12%</sub>                       |
 
 ### Time formatting
 
@@ -50,11 +61,13 @@ Complete list of data fields provided by Barberfish.
 
 ### HUD
 
-- HUD — three-column speed, heart rate, and power with zone coloring
+- HUD — configurable 3 or 4 columns; each slot selectable from speed, HR, power, cadence, avg power, NP, or grade
 
 ### Power & Heart Rate
 
 - Power (Instant, 3s, 5s, 10s, 30s, 20m, 1h smoothing)
+- Avg Power
+- Normalized Power
 - Heart rate
 
 ### Speed
@@ -62,6 +75,15 @@ Complete list of data fields provided by Barberfish.
 - Speed (Instant, 3s, 5s, 10s smoothing)
 - Total average speed (including paused time)
 - Moving-time average speed (excluding paused time)
+
+### Cadence
+
+- Cadence (Instant, 3s, 5s, 10s smoothing)
+
+### Grade
+
+- Grade
+
 ### Time
 
 - Elapsed time
@@ -89,6 +111,9 @@ Complete list of data fields provided by Barberfish.
 | <img width="180" src="docs/config.jpg">           | Karoo-style config screen with collapsible sections.                                                                                                                                                                  |
 | <img width="180" src="docs/config_fieldcard.jpg"> | FieldCard with live preview showing the smoothing-aware label and zone color mode selector.                                                                                                                           |
 | <img width="180" src="docs/config_threshold.jpg"> | Threshold configuration for average speed: single threshold or min/max range with configurable warning bands.                                                                                                         |
+| <img width="180" src="docs/hud_four.jpg">         | 4-column HUD showing speed, HR, power, and cadence.                                                                                                                                                                   |
+| <img width="180" src="docs/hud_configurable.jpg"> | Configurable HUD slot picker — tapping a column opens the field selector.                                                                                                                                             |
+| <img width="180" src="docs/grade.jpg">            | Grade field with gradient coloring.                                                                                                                                                                                   |
 |                                                   |                                                                                                                                                                                                                       |
 
 ## Use cases
@@ -111,11 +136,7 @@ Racing an event with a target average? Set a single threshold at your goal pace 
 
 Ideas that may or may not be implemented
 
-- Configurable HUD fields *(v2.0)*  
-  choose which metrics appear in each column of the three-column HUD instead of the fixed speed / HR / power layout
-- Four-column HUD *(v2.0)*  
-  add a fourth column to fit more metrics at a glance
-- Day mode support  
+- Day mode support
   fields are currently only tested in night mode; day mode rendering needs verification and adjustments
 - ETA data field  
    estimated time of arrival at destination, gradient- and paused-time aware for more accurate predictions on hilly routes

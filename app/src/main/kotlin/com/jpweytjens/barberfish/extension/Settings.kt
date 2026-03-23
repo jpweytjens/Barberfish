@@ -303,9 +303,9 @@ suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) {
 
 @Serializable
 enum class GradePalette(val label: String) {
+    KAROO("Karoo"),
     WAHOO("Wahoo"),
     GARMIN("Garmin"),
-    HAMMERHEAD("Hammerhead"),
 }
 
 @Serializable data class GradeFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)

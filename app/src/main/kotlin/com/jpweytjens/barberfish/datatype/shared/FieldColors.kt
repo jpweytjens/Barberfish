@@ -58,7 +58,7 @@ private val GARMIN_GRADE_BANDS = listOf(
 )
 
 // Reuses Karoo power zone palette (green→yellow→orange→red→purple)
-private val HAMMERHEAD_GRADE_BANDS = listOf(
+private val KAROO_GRADE_BANDS = listOf(
     23.6 to karooPowerColors[6], // >23.5%     — purple
     19.6 to karooPowerColors[5], // 19.6–23.5% — red
     15.6 to karooPowerColors[4], // 15.6–19.5% — orange
@@ -72,7 +72,7 @@ internal fun gradeColor(percent: Double, palette: GradePalette): Color {
     val bands = when (palette) {
         GradePalette.WAHOO -> WAHOO_GRADE_BANDS
         GradePalette.GARMIN -> GARMIN_GRADE_BANDS
-        GradePalette.HAMMERHEAD -> HAMMERHEAD_GRADE_BANDS
+        GradePalette.KAROO -> KAROO_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second ?: bands.last().second
 }
