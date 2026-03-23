@@ -74,9 +74,11 @@ data class HUDSlotConfig(
 
 @Serializable
 data class HUDConfig(
+    val columns: Int = 3,
     val leftSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Speed),
     val middleSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
     val rightSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Power),
+    val fourthSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Cadence),
 )
 
 fun Context.streamHUDConfig(): Flow<HUDConfig> =
