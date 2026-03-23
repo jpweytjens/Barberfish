@@ -47,3 +47,7 @@ screencaps/
 # Signing
 *.keystore
 *.jks
+
+# Decompiled files
+docs/ride_decompiled/
+docs/ride.apk
