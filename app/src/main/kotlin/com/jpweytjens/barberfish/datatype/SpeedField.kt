@@ -6,12 +6,14 @@ import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
+import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -56,28 +58,30 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 cfg to profile
             }
             .flatMapLatest { (cfg, profile) ->
-                previewSpeedFlow().map { rawMs ->
-                    val converted = ConvertType.SPEED.apply(rawMs, profile)
-                    FieldState(
-                        "%.1f".format(converted),
-                        label =
-                            if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
-                            else "${cfg.smoothing.label} Speed",
-                        color = FieldColor.Default,
-                        iconRes = R.drawable.ic_col_speed
-                    )
-                }
+                flow {
+                    val states = previewStates(cfg, profile)
+                    var i = 0
+                    while (true) {
+                        emit(states[i++ % states.size])
+                        delay(Delay.PREVIEW.time)
+                    }
+                }.flowOn(Dispatchers.IO)
             }
 
-    private fun previewSpeedFlow() =
-        flow {
-                // values in m/s
-                val steps = listOf(8.33, 9.72, 11.11, 7.50, 10.56) // 30, 35, 40, 27, 38 km/h
-                var i = 0
-                while (true) {
-                    emit(steps[i++ % steps.size])
-                    delay(Delay.PREVIEW.time)
-                }
+    companion object {
+        fun previewStates(cfg: SpeedFieldConfig, profile: UserProfile): List<FieldState> {
+            val label =
+                if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
+                else "${cfg.smoothing.label} Speed"
+            // values in m/s: 30, 35, 40, 27, 38 km/h
+            return listOf(8.33, 9.72, 11.11, 7.50, 10.56).map { rawMs ->
+                FieldState(
+                    "%.1f".format(ConvertType.SPEED.apply(rawMs, profile)),
+                    label = label,
+                    color = FieldColor.Default,
+                    iconRes = R.drawable.ic_col_speed,
+                )
             }
-            .flowOn(Dispatchers.IO)
+        }
+    }
 }
