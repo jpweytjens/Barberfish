@@ -6,17 +6,17 @@ Every native Hammerhead data field follows the same visual structure:
 
 ```
 ┌─────────────────────────────┐
-│ 🗲  POWER          ← Header │
+│ 🔥 ← Icon   POWER  ← Header │
 │                             │
-│          239        ← Value │
+│          239       ← Value  │
 └─────────────────────────────┘
 ```
 
-The **Header** sits at the top of the cell and contains:
-- an optional **Icon** (tinted teal, or black when the cell has a colored background)
-- a **Label** — short, all-caps, typically one word (POWER, HR, SPEED) but two lines for compound names (AVG SPEED / MOVING)
+The Header sits at the top of the cell and contains:
+- an optional Icon (tinted teal, or black when the cell has a colored background)
+- a Label — short, all-caps, typically one word (POWER, HR, SPEED) but two lines for compound names (AVG SPEED  MOVING)
 
-The **Value** is the large number below the header. Its font shrinks automatically to fit longer strings (e.g. `00:18` is smaller than `239`).
+The Value is the large number below the header. Its font shrinks automatically to fit longer strings (e.g. `00:18` is smaller than `239`).
 
 Barberfish reimplements this anatomy via `RemoteViews` using `barberfish_field.xml`, matching the native look and feel precisely, with added support for zone coloring, variable font sizes, and a three-column HUD.
 
@@ -41,7 +41,7 @@ barberfishFieldRemoteViews(field, alignment, colorMode, sizeConfig, preview, con
 
 ## HUD three-column layout
 
-The HUD field uses `barberfish_hud.xml` — a horizontal `LinearLayout` with three equal-weight `FrameLayout` slots. `HUDDataType` populates each slot by calling `barberfishFieldRemoteViews()` with `colSpanOverride = 20` (each slot is 1/3 of the 60-unit grid) and `textSizeOverride = 36` (per-slot value font size, independent of the SDK's full-cell `textSize`).
+The HUD field uses `barberfish_hud.xml` (3-col) or `barberfish_hud_four.xml` (4-col) — a horizontal `LinearLayout` with equal-weight `FrameLayout` slots. `HUDDataType` populates each slot by calling `barberfishFieldRemoteViews()` with a `colSpanOverride` and `textSizeOverride` that depend on the column count (see *Value font sizing* below), bypassing the SDK's full-cell `textSize`.
 
 ```
 barberfish_hud.xml (LinearLayout horizontal)
@@ -78,16 +78,16 @@ For the HUD, `HUDDataType.startView()` computes one `ViewSizeConfig` (with `colS
 
 ## Naming conventions
 
-| Term | Meaning |
-|---|---|
-| **Field** | The full cell — header + value together |
-| **Header** | The top strip inside a field: icon and label |
-| **Icon** | The small glyph at the start of the header |
-| **Label** | The short all-caps text in the header (1–2 lines) |
-| **Value** | The large primary number displayed below the header |
-| **FieldState** | Runtime data snapshot emitted by a `DataTypeImpl` each tick |
-| **ColorConfig** | Derived per-render colors (value text, header text, icon tint, background) |
-| **ViewSizeConfig** | Per-layout sizing constants (see below) |
+| Term           | Meaning                                                                    |
+| -------------- | -------------------------------------------------------------------------- |
+| Field          | The full cell — header + value together                                    |
+| Header         | The top strip inside a field: icon and label                               |
+| Icon           | The small glyph at the start of the header                                 |
+| Label          | The short all-caps text in the header (1–2 lines)                          |
+| Value          | The large primary number displayed below the header                        |
+| FieldState     | Runtime data snapshot emitted by a `DataTypeImpl` each tick                |
+| ColorConfig    | Derived per-render colors (value text, header text, icon tint, background) |
+| ViewSizeConfig | Per-layout sizing constants (see below)                                    |
 
 ### ViewSizeConfig
 
@@ -101,9 +101,79 @@ Value        valueFontSizeBase, baseChars, valueTranslationY
 
 One preset ships out of the box:
 
-| Preset | Use |
-|---|---|
+| Preset                    | Use                                                           |
+| ------------------------- | ------------------------------------------------------------- |
 | `ViewSizeConfig.STANDARD` | Default values; overridden by `toViewSizeConfig()` at runtime |
+
+---
+
+## Value font sizing
+
+The Karoo SDK provides `ViewConfig.textSize` — the recommended value font size in sp, already adjusted for the cell's column/row span. Barberfish passes it directly to `ViewSizeConfig.valueFontSizeBase` (clamped to a minimum of 20 sp):
+
+```kotlin
+valueFontSizeBase = textSizeEff.coerceAtLeast(20)
+```
+
+This value is calibrated by the native rideapp for the number of characters that typically fill the cell at full size. In practice:
+
+- 2-column cells (`colSpan = 30`): `textSize` fits roughly 4 wide characters — e.g. `"239"` or `"1234"` sit comfortably; a fifth character would start to clip.
+- 1-column cells (`colSpan = 60`): `textSize` is proportionally larger and fits roughly 6–7 characters — e.g. time values like `"1:23:45"` or `"23m 45s"` fit at or near full size.
+
+For HUD slots the SDK `textSize` is meaningless, so `textSizeOverride` is used instead:
+
+| HUD columns | `colSpanOverride` | `textSizeOverride` |
+| ----------- | ----------------- | ------------------ |
+| 3-col       | 20                | 36 sp              |
+| 4-col       | 15                | 30 sp              |
+
+### Dynamic shrinking: `dynamicFontSp`
+
+`valueFontSizeBase` is the *ceiling* — the size used when the value is short. For longer strings, `dynamicFontSp()` shrinks the font proportionally:
+
+```
+dynamicFontSp(text, fontSizeBase, baseChars, k = 1.05)
+```
+
+1. Compute the effective character count of `text` using weighted widths:
+
+   | Characters      | Weight |
+   | --------------- | ------ |
+   | digits, letters | 1.0    |
+   | `h` `m` `s`     | 0.25   |
+   | `: . ' "`       | 0.15   |
+
+2. If `effective ≤ baseChars` → return `fontSizeBase` unchanged.
+3. Otherwise → `floor(fontSizeBase × k × baseChars / effective)`, capped at `fontSizeBase`.
+
+The `k = 1.05` factor increases the font to take up as much of the width as possible, to reduce abrupt font size changes.
+
+### `baseChars` per layout
+
+`baseChars` controls how aggressively the font shrinks and is derived from `colSpan` in `ViewConfig.toViewSizeConfig()`:
+
+| `colSpan` | Layout context | `baseChars` | Starts shrinking at… |
+| --------- | -------------- | ----------- | -------------------- |
+| 60        | 1-column field | 6           | 7th effective char   |
+| 30        | 2-column field | 4           | 5th effective char   |
+| 20        | HUD 3-col slot | 4           | 5th effective char   |
+| 15        | HUD 4-col slot | 3           | 4th effective char   |
+
+### End-to-end flow
+
+```
+ViewConfig.textSize  (SDK, sp, layout-aware)
+  │  or textSizeOverride (HUD slots: 36 for 3-col, 30 for 4-col)
+  ▼
+ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig()
+ViewSizeConfig.baseChars                  ← derived from colSpan (6 / 4 / 3)
+
+  ▼ at render time, in BarberfishValue
+dynamicFontSp(value, valueFontSizeBase, baseChars)
+  └─► actual sp applied to field_value TextView via RemoteViews.setTextViewTextSize()
+```
+
+`BarberfishValue` is the only place `dynamicFontSp` is called. All scaling parameters flow in through `ViewSizeConfig`; the view layer makes no sizing decisions of its own.
 
 ---
 
