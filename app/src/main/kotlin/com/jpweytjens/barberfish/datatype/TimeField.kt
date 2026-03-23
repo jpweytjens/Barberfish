@@ -28,7 +28,7 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
     val m = (t % 3600) / 60
     val s = t % 60
     return when (format) {
-        TimeFormat.COMPACT -> if (h > 0) "${h}h${m}'%02d\"".format(s) else "${m}'%02d\"".format(s)
+        TimeFormat.RACING -> if (h > 0) "${h}h${m}'%02d\"".format(s) else "${m}'%02d\"".format(s)
         TimeFormat.CLOCK -> "%d:%02d:%02d".format(h, m, s)
         TimeFormat.HM_S ->
             when {

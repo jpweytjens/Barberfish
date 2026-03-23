@@ -325,12 +325,12 @@ suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) {
 
 @Serializable
 enum class TimeFormat(val label: String) {
-    COMPACT("Racing"),
+    RACING("Racing"),
     CLOCK("Clock"),
     HM_S("Segments"),
 }
 
-@Serializable data class TimeConfig(val format: TimeFormat = TimeFormat.COMPACT)
+@Serializable data class TimeConfig(val format: TimeFormat = TimeFormat.RACING)
 
 private val timeConfigKey = stringPreferencesKey("time_config")
 

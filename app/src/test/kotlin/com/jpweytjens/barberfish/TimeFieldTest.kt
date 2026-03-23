@@ -7,25 +7,25 @@ import org.junit.Test
 
 class TimeFieldTest {
 
-    // --- COMPACT ---
+    // --- RACING ---
 
-    @Test fun compact_0s() = assertEquals("0'00\"", formatTime(0L, TimeFormat.COMPACT))
+    @Test fun racing_0s() = assertEquals("0'00\"", formatTime(0L, TimeFormat.RACING))
 
-    @Test fun compact_5s() = assertEquals("0'05\"", formatTime(5L, TimeFormat.COMPACT))
+    @Test fun racing_5s() = assertEquals("0'05\"", formatTime(5L, TimeFormat.RACING))
 
-    @Test fun compact_32s() = assertEquals("0'32\"", formatTime(32L, TimeFormat.COMPACT))
+    @Test fun racing_32s() = assertEquals("0'32\"", formatTime(32L, TimeFormat.RACING))
 
-    @Test fun compact_59s() = assertEquals("0'59\"", formatTime(59L, TimeFormat.COMPACT))
+    @Test fun racing_59s() = assertEquals("0'59\"", formatTime(59L, TimeFormat.RACING))
 
-    @Test fun compact_60s() = assertEquals("1'00\"", formatTime(60L, TimeFormat.COMPACT))
+    @Test fun racing_60s() = assertEquals("1'00\"", formatTime(60L, TimeFormat.RACING))
 
-    @Test fun compact_180s() = assertEquals("3'00\"", formatTime(180L, TimeFormat.COMPACT))
+    @Test fun racing_180s() = assertEquals("3'00\"", formatTime(180L, TimeFormat.RACING))
 
-    @Test fun compact_3599s() = assertEquals("59'59\"", formatTime(3599L, TimeFormat.COMPACT))
+    @Test fun racing_3599s() = assertEquals("59'59\"", formatTime(3599L, TimeFormat.RACING))
 
-    @Test fun compact_3600s() = assertEquals("1h0'00\"", formatTime(3600L, TimeFormat.COMPACT))
+    @Test fun racing_3600s() = assertEquals("1h0'00\"", formatTime(3600L, TimeFormat.RACING))
 
-    @Test fun compact_5025s() = assertEquals("1h23'45\"", formatTime(5025L, TimeFormat.COMPACT))
+    @Test fun racing_5025s() = assertEquals("1h23'45\"", formatTime(5025L, TimeFormat.RACING))
 
     // --- CLOCK ---
 
@@ -67,7 +67,7 @@ class TimeFieldTest {
 
     // --- Negative guard ---
 
-    @Test fun compact_negative() = assertEquals("0'00\"", formatTime(-1L, TimeFormat.COMPACT))
+    @Test fun racing_negative() = assertEquals("0'00\"", formatTime(-1L, TimeFormat.RACING))
 
     @Test fun clock_negative() = assertEquals("0:00:00", formatTime(-1L, TimeFormat.CLOCK))
 
