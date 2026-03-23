@@ -36,7 +36,8 @@ fun ViewConfig.toViewSizeConfig(): ViewSizeConfig {
     // Move value up in FrameLayout
     val translationYPx: Float =
         when {
-            colSpan == 60 && rowSpan >= 18 -> 12f
+            colSpan == 60 && rowSpan >= 20 -> 16f
+            colSpan == 60 && rowSpan >= 15 -> 14f
             colSpan == 60 && rowSpan >= 12 -> 10f
             colSpan == 30 && rowSpan >= 15 -> 27f
             colSpan == 30 && rowSpan >= 12 -> 24f
