@@ -25,6 +25,78 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
+internal fun avgSpeedFieldState(
+    rawMs: Double,
+    cfg: AvgSpeedConfig,
+    profile: UserProfile,
+    includePaused: Boolean,
+): FieldState {
+    val converted = ConvertType.SPEED.apply(rawMs, profile)
+    val imperial = profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
+    val color =
+        when (cfg.mode) {
+            SpeedThresholdMode.SINGLE -> {
+                if (cfg.thresholdKph <= 0.0) {
+                    FieldColor.Default
+                } else {
+                    val thresh = if (imperial) cfg.thresholdKph * 0.621371 else cfg.thresholdKph
+                    val rangePercent =
+                        if (converted >= thresh) cfg.rangePercentAbove
+                        else cfg.rangePercentBelow
+                    val factor =
+                        ((converted - thresh) / thresh * 100.0 / rangePercent)
+                            .coerceIn(-1.0, 1.0)
+                            .toFloat()
+                    FieldColor.Threshold(factor)
+                }
+            }
+            SpeedThresholdMode.MIN_MAX -> {
+                val min = cfg.minKph?.let { if (imperial) it * 0.621371 else it }
+                val max = cfg.maxKph?.let { if (imperial) it * 0.621371 else it }
+                if (min == null && max == null) {
+                    FieldColor.Default
+                } else {
+                    val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
+                    val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
+                    val hasSafeZone = min != null && max != null
+                    when {
+                        min != null && converted < min -> {
+                            val outsideFactor =
+                                ((min - converted) / bandBelow).coerceIn(0.0, 1.0).toFloat()
+                            FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
+                        }
+                        max != null && converted > max -> {
+                            val outsideFactor =
+                                ((converted - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
+                            FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
+                        }
+                        else -> {
+                            val nearMin =
+                                if (min != null && bandBelow > 0.0)
+                                    (1.0 - (converted - min) / bandBelow)
+                                        .coerceIn(0.0, 1.0)
+                                        .toFloat()
+                                else 0f
+                            val nearMax =
+                                if (max != null && bandAbove > 0.0)
+                                    (1.0 - (max - converted) / bandAbove)
+                                        .coerceIn(0.0, 1.0)
+                                        .toFloat()
+                                else 0f
+                            FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
+                        }
+                    }
+                }
+            }
+        }
+    return FieldState(
+        primary = "%.1f".format(converted),
+        label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
+        color = color,
+        iconRes = R.drawable.ic_speed_average,
+    )
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class AvgSpeedField(
     private val karooSystem: KarooSystemService,
@@ -46,7 +118,15 @@ class AvgSpeedField(
                 cfg to profile
             }
             .flatMapLatest { (cfg, profile) ->
-                previewSpeedFlow().map { rawMs -> toFieldState(rawMs, cfg, profile) }
+                flow {
+                    val states = previewStates(cfg, profile, includePaused)
+                    var i = 0
+                    while (true) {
+                        emit(states[i++ % states.size])
+                        delay(Delay.PREVIEW.time)
+                    }
+                }
+                    .flowOn(Dispatchers.IO)
             }
 
     private fun streamAvgSpeed(cfg: AvgSpeedConfig, profile: UserProfile): Flow<FieldState> {
@@ -57,7 +137,7 @@ class AvgSpeedField(
                         ?.dataPoint
                         ?.values
                         ?.get(DataType.Field.AVERAGE_SPEED) ?: 0.0
-                toFieldState(rawMs, cfg, profile)
+                avgSpeedFieldState(rawMs, cfg, profile, includePaused)
             }
         } else {
             val distanceFlow =
@@ -87,88 +167,23 @@ class AvgSpeedField(
                 paused: Double ->
                 val movingSeconds = elapsed - paused
                 val rawMs = if (movingSeconds > 0) distanceM / movingSeconds else 0.0
-                toFieldState(rawMs, cfg, profile)
+                avgSpeedFieldState(rawMs, cfg, profile, includePaused)
             }
         }
     }
 
-    private fun previewSpeedFlow() =
-        flow {
-                // values in m/s — toFieldState converts to user unit and applies threshold
-                val steps =
-                    listOf(4.17, 6.11, 7.22, 7.78, 8.89, 11.11) // 15, 22, 26, 28, 32, 40 km/h
-                var i = 0
-                while (true) {
-                    emit(steps[i++ % steps.size])
-                    delay(Delay.PREVIEW.time)
-                }
-            }
-            .flowOn(Dispatchers.IO)
+    private fun toFieldState(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile) =
+        avgSpeedFieldState(rawMs, cfg, profile, includePaused)
 
-    private fun toFieldState(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile): FieldState {
-        val converted = ConvertType.SPEED.apply(rawMs, profile)
-        val imperial = profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
-        val color =
-            when (cfg.mode) {
-                SpeedThresholdMode.SINGLE -> {
-                    if (cfg.thresholdKph <= 0.0) {
-                        FieldColor.Default
-                    } else {
-                        val thresh = if (imperial) cfg.thresholdKph * 0.621371 else cfg.thresholdKph
-                        val rangePercent =
-                            if (converted >= thresh) cfg.rangePercentAbove
-                            else cfg.rangePercentBelow
-                        val factor =
-                            ((converted - thresh) / thresh * 100.0 / rangePercent)
-                                .coerceIn(-1.0, 1.0)
-                                .toFloat()
-                        FieldColor.Threshold(factor)
-                    }
-                }
-                SpeedThresholdMode.MIN_MAX -> {
-                    val min = cfg.minKph?.let { if (imperial) it * 0.621371 else it }
-                    val max = cfg.maxKph?.let { if (imperial) it * 0.621371 else it }
-                    if (min == null && max == null) {
-                        FieldColor.Default
-                    } else {
-                        val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
-                        val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
-                        val hasSafeZone = min != null && max != null
-                        when {
-                            min != null && converted < min -> {
-                                val outsideFactor =
-                                    ((min - converted) / bandBelow).coerceIn(0.0, 1.0).toFloat()
-                                FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                            }
-                            max != null && converted > max -> {
-                                val outsideFactor =
-                                    ((converted - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
-                                FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                            }
-                            else -> {
-                                val nearMin =
-                                    if (min != null && bandBelow > 0.0)
-                                        (1.0 - (converted - min) / bandBelow)
-                                            .coerceIn(0.0, 1.0)
-                                            .toFloat()
-                                    else 0f
-                                val nearMax =
-                                    if (max != null && bandAbove > 0.0)
-                                        (1.0 - (max - converted) / bandAbove)
-                                            .coerceIn(0.0, 1.0)
-                                            .toFloat()
-                                    else 0f
-                                FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
-                            }
-                        }
-                    }
-                }
-            }
-        return FieldState(
-            primary = "%.1f".format(converted),
-            label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
-            color = color,
-            iconRes = R.drawable.ic_speed_average,
-        )
+    companion object {
+        fun previewStates(
+            cfg: AvgSpeedConfig,
+            profile: UserProfile,
+            includePaused: Boolean,
+        ): List<FieldState> {
+            // values in m/s: 15, 22, 26, 28, 32, 40 km/h
+            val rawValues = listOf(4.17, 6.11, 7.22, 7.78, 8.89, 11.11)
+            return rawValues.map { rawMs -> avgSpeedFieldState(rawMs, cfg, profile, includePaused) }
+        }
     }
 }
