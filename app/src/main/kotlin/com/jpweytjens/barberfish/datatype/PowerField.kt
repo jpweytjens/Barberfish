@@ -6,8 +6,10 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -15,6 +17,7 @@ import com.jpweytjens.barberfish.extension.streamZoneConfig
 import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
+import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -77,37 +80,44 @@ class PowerField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, profile, zones)
             }
             .flatMapLatest { (cfg, profile, zones) ->
-                previewPowerFlow().map { watts ->
-                    val zone = powerZone(watts.toDouble(), profile.powerZones)
-                    val color =
-                        if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                        else
-                            FieldColor.Zone(
-                                zone,
-                                profile.powerZones.size.coerceAtLeast(1),
-                                zones.powerPalette,
-                                isHr = false,
-                            )
-                    FieldState(
-                        watts.toString(),
-                        label =
-                            if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
-                            else "${cfg.smoothing.label} Power",
-                        color = color,
-                        iconRes = R.drawable.ic_col_power,
-                        colorMode = cfg.colorMode
-                    )
-                }
+                flow {
+                    val states = previewStates(cfg, profile, zones)
+                    var i = 0
+                    while (true) {
+                        emit(states[i++ % states.size])
+                        delay(Delay.PREVIEW.time)
+                    }
+                }.flowOn(Dispatchers.IO)
             }
 
-    private fun previewPowerFlow() =
-        flow {
-                val steps = listOf(180, 240, 320, 400, 247, 120)
-                var i = 0
-                while (true) {
-                    emit(steps[i++ % steps.size])
-                    delay(Delay.PREVIEW.time)
-                }
+    companion object {
+        fun previewStates(
+            cfg: PowerFieldConfig,
+            profile: UserProfile,
+            zones: ZoneConfig,
+        ): List<FieldState> {
+            val label =
+                if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
+                else "${cfg.smoothing.label} Power"
+            return listOf(180, 240, 320, 400, 247, 120).map { watts ->
+                val zone = powerZone(watts.toDouble(), profile.powerZones)
+                val color =
+                    if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
+                    else
+                        FieldColor.Zone(
+                            zone,
+                            profile.powerZones.size.coerceAtLeast(1),
+                            zones.powerPalette,
+                            isHr = false,
+                        )
+                FieldState(
+                    watts.toString(),
+                    label = label,
+                    color = color,
+                    iconRes = R.drawable.ic_col_power,
+                    colorMode = cfg.colorMode,
+                )
             }
-            .flowOn(Dispatchers.IO)
+        }
+    }
 }
