@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamTimeConfig
@@ -61,6 +62,32 @@ enum class TimeKind(val typeId: String, val label: String, val iconRes: Int) {
 @OptIn(ExperimentalCoroutinesApi::class)
 class TimeField(private val karooSystem: KarooSystemService, private val kind: TimeKind) :
     BarberfishDataType("barberfish", kind.typeId) {
+
+    companion object {
+        private val previewDurationSeconds = listOf(1665L, 5025L, 37425L)
+        private val previewClockTimes = listOf("08:15", "14:32", "19:47")
+
+        fun previewStates(cfg: TimeConfig, kind: TimeKind): List<FieldState> =
+            if (kind == TimeKind.TIME_OF_ARRIVAL) {
+                previewClockTimes.map { time ->
+                    FieldState(
+                        time,
+                        label = kind.label,
+                        color = FieldColor.Default,
+                        iconRes = kind.iconRes,
+                    )
+                }
+            } else {
+                previewDurationSeconds.map { seconds ->
+                    FieldState(
+                        formatTime(seconds, cfg.format),
+                        label = kind.label,
+                        color = FieldColor.Default,
+                        iconRes = kind.iconRes,
+                    )
+                }
+            }
+    }
 
     override val sampleMs = 1000L
 
@@ -132,29 +159,16 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         context.streamTimeConfig().flatMapLatest { cfg ->
-            previewTimeFlow().map { seconds ->
-                FieldState(
-                    primary = formatTime(seconds, cfg.format),
-                    label = kind.label,
-                    color = FieldColor.Default,
-                    iconRes = kind.iconRes,
-                )
-            }
+            flow {
+                val states = previewStates(cfg, kind)
+                var i = 0
+                while (true) {
+                    emit(states[i++ % states.size])
+                    delay(Delay.PREVIEW.time)
+                }
+            }.flowOn(Dispatchers.IO)
         }
 
     private fun extractSeconds(state: StreamState, fieldKey: String): Long =
         (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)?.toLong() ?: 0L
-
-    private fun previewTimeFlow() =
-        flow {
-                // val steps = listOf(0L, 45L, 150L, 1665L, 5025L, 37425L)
-                val steps = listOf(1665L, 5025L, 37425L)
-
-                var i = 0
-                while (true) {
-                    emit(steps[i++ % steps.size])
-                    delay(Delay.PREVIEW.time)
-                }
-            }
-            .flowOn(Dispatchers.IO)
 }
