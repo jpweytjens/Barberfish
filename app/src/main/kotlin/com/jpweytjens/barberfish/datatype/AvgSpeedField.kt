@@ -172,9 +172,6 @@ class AvgSpeedField(
         }
     }
 
-    private fun toFieldState(rawMs: Double, cfg: AvgSpeedConfig, profile: UserProfile) =
-        avgSpeedFieldState(rawMs, cfg, profile, includePaused)
-
     companion object {
         fun previewStates(
             cfg: AvgSpeedConfig,
