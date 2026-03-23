@@ -59,6 +59,15 @@ internal fun HUDConfigSection(
 ) {
     var selectedSlot by remember { mutableStateOf<Int?>(0) }
 
+    ColumnCountToggle(
+        columns = hudConfig.columns,
+        onSelect = { cols ->
+            if (cols != hudConfig.columns) {
+                selectedSlot = 0
+                onUpdate(hudConfig.copy(columns = cols))
+            }
+        },
+    )
     Text(
         "Tap a column to configure it.",
         fontSize = 12.sp,
@@ -75,6 +84,7 @@ internal fun HUDConfigSection(
         0 -> hudConfig.leftSlot
         1 -> hudConfig.middleSlot
         2 -> hudConfig.rightSlot
+        3 -> if (hudConfig.columns == 4) hudConfig.fourthSlot else null
         else -> null
     }
     if (slot != null) {
@@ -85,7 +95,8 @@ internal fun HUDConfigSection(
                     when (selectedSlot) {
                         0 -> hudConfig.copy(leftSlot = updated)
                         1 -> hudConfig.copy(middleSlot = updated)
-                        else -> hudConfig.copy(rightSlot = updated)
+                        2 -> hudConfig.copy(rightSlot = updated)
+                        else -> hudConfig.copy(fourthSlot = updated)
                     }
                 )
             },
@@ -100,6 +111,7 @@ private fun HUDPreview(
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
 ) {
+    val sizeConfig = if (hudConfig.columns == 4) PreviewSizeConfig.HUD_FOUR else PreviewSizeConfig.HUD
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -107,16 +119,21 @@ private fun HUDPreview(
                 .background(Color.Black)
                 .height(80.dp)
     ) {
-        listOf(hudConfig.leftSlot, hudConfig.middleSlot, hudConfig.rightSlot)
-            .forEachIndexed { idx, slotCfg ->
-                HUDPreviewCell(
-                    field = slotPreviewFieldState(slotCfg, zoneConfig),
-                    colorMode = slotCfg.colorMode,
-                    selected = selectedSlot == idx,
-                    onClick = { onSlotSelected(idx) },
-                    modifier = Modifier.weight(1f),
-                )
-            }
+        buildList {
+            add(hudConfig.leftSlot)
+            add(hudConfig.middleSlot)
+            add(hudConfig.rightSlot)
+            if (hudConfig.columns == 4) add(hudConfig.fourthSlot)
+        }.forEachIndexed { idx, slotCfg ->
+            HUDPreviewCell(
+                field = slotPreviewFieldState(slotCfg, zoneConfig),
+                colorMode = slotCfg.colorMode,
+                selected = selectedSlot == idx,
+                onClick = { onSlotSelected(idx) },
+                modifier = Modifier.weight(1f),
+                sizeConfig = sizeConfig,
+            )
+        }
     }
 }
 
@@ -127,6 +144,7 @@ private fun HUDPreviewCell(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    sizeConfig: PreviewSizeConfig = PreviewSizeConfig.HUD,
 ) {
     Box(
         modifier =
@@ -148,8 +166,46 @@ private fun HUDPreviewCell(
             alignment = ViewConfig.Alignment.RIGHT,
             colorMode = colorMode,
             modifier = Modifier.fillMaxSize(),
-            sizeConfig = PreviewSizeConfig.HUD,
+            sizeConfig = sizeConfig,
         )
+    }
+}
+
+@Composable
+private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFD5D5D5))
+                .padding(3.dp)
+                .pointerInput(columns, onSelect) {
+                    val slotWidthPx = size.width.toFloat() / 2
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val idx = (down.position.x / slotWidthPx).toInt().coerceIn(0, 1)
+                        onSelect(if (idx == 0) 3 else 4)
+                    }
+                }
+    ) {
+        listOf(3 to "3 columns", 4 to "4 columns").forEach { (cols, label) ->
+            val isSelected = columns == cols
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Color(0xFF9E9E9E) else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
     }
 }
 
