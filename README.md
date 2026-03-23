@@ -41,11 +41,11 @@ All field settings are configured in the Barberfish app on your Karoo. Changes u
 
 ### Grade color palettes
 
-| Palette    | Bands (flat → steep)                                                                                            |
-| ---------- | --------------------------------------------------------------------------------------------------------------- |
-| Karoo  | ![](docs/palette-grade-karoo.svg)<br><sub>0–5% · 5–8% · 8–13% · 13–16% · 16–20% · 20–24% · ≥24%</sub>    |
-| Wahoo  | ![](docs/palette-grade-wahoo.svg)<br><sub>0–4% · 4–8% · 8–12% · 12–20% · ≥20%</sub>                      |
-| Garmin | ![](docs/palette-grade-garmin.svg)<br><sub>0–3% · 3–6% · 6–9% · 9–12% · ≥12%</sub>                       |
+| Palette | Bands (flat → steep)                                                                                  |
+| ------- | ----------------------------------------------------------------------------------------------------- |
+| Karoo   | ![](docs/palette-grade-karoo.svg)<br><sub>0–5% · 5–8% · 8–13% · 13–16% · 16–20% · 20–24% · ≥24%</sub> |
+| Wahoo   | ![](docs/palette-grade-wahoo.svg)<br><sub>0–4% · 4–8% · 8–12% · 12–20% · ≥20%</sub>                   |
+| Garmin  | ![](docs/palette-grade-garmin.svg)<br><sub>0–3% · 3–6% · 6–9% · 9–12% · ≥12%</sub>                    |
 
 ### Time formatting
 
@@ -61,7 +61,7 @@ Complete list of data fields provided by Barberfish.
 
 ### HUD
 
-- HUD — configurable 3 or 4 columns; each slot selectable from speed, HR, power, cadence, avg power, NP, or grade
+- HUD (configurable 3 or 4 columns; each slot accepts any of the data fields below)
 
 ### Power & Heart Rate
 
@@ -107,14 +107,13 @@ Complete list of data fields provided by Barberfish.
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <img width="180" src="docs/hud.jpg">              | HUD using the Wahoo palette for text zone coloring and [RouteGraph](https://github.com/timklge/karoo-routegraph) in the second row.                                                                                   |
 | <img width="180" src="docs/hud_fill.jpg">         | HUD with background-fill zone coloring.                                                                                                                                                                               |
+| <img width="180" src="docs/hud_four.jpg">         | 4-column HUD showing speed, HR, power, and cadence.                                                                                                                                                                   |
 | <img width="180" src="docs/comparison.jpg">       | Comparing 4 reimplemented fields: Text-color power vs background-fill power and HR. Moving average speed in red above the configurable 30 km/h threshold. Paused time in clock format showing the difference between. |
 | <img width="180" src="docs/config.jpg">           | Karoo-style config screen with collapsible sections.                                                                                                                                                                  |
 | <img width="180" src="docs/config_fieldcard.jpg"> | FieldCard with live preview showing the smoothing-aware label and zone color mode selector.                                                                                                                           |
 | <img width="180" src="docs/config_threshold.jpg"> | Threshold configuration for average speed: single threshold or min/max range with configurable warning bands.                                                                                                         |
-| <img width="180" src="docs/hud_four.jpg">         | 4-column HUD showing speed, HR, power, and cadence.                                                                                                                                                                   |
-| <img width="180" src="docs/hud_configurable.gif"> | Configurable HUD slot picker — tapping a column opens the field selector.                                                                                                                                             |
+| <img width="180" src="docs/hud_configurable.gif"> | Configurable HUD slot picker: tapping a column opens the field selector.                                                                                                                                              |
 | <img width="180" src="docs/grade.jpg">            | Grade field with gradient coloring.                                                                                                                                                                                   |
-|                                                   |                                                                                                                                                                                                                       |
 
 ## Use cases
 ### Map page HUD
@@ -138,8 +137,10 @@ Ideas that may or may not be implemented
 
 - Day mode support
   fields are currently only tested in night mode; day mode rendering needs verification and adjustments
-- ETA data field  
+- ETA data field
    estimated time of arrival at destination, gradient- and paused-time aware for more accurate predictions on hilly routes
+- Workout target field
+   continuous deviation from the workout target (power, HR, pace) rather than the native discrete below/on target/above states; zone coloring reflects how far off target you are, not just which side you're on
 
 ## Compatibility
 
@@ -160,7 +161,7 @@ Tested on a Karoo 3 running firmware 1.618.2377.20 using metric units and dark m
 
 ## Contributing
 
-Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish).
+Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish). Suggestions for new HUD data fields are especially welcome — open an issue describing the metric and how you'd use it on the bike.
 
 ### For extension developers
 
