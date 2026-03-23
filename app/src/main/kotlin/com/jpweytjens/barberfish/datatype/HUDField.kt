@@ -9,13 +9,22 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.GradeFieldConfig
+import com.jpweytjens.barberfish.extension.HRFieldConfig
+import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
+import com.jpweytjens.barberfish.extension.NPFieldConfig
+import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
+import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedThresholdMode
+import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
@@ -81,18 +90,15 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, zones, profile)
             }
             .flatMapLatest { (cfg, zones, profile) ->
-                previewHudFlow().map { (speedKph, hrBpm, powerW) ->
-                    HUDState(
-                        columns = cfg.columns,
-                        leftSlot = previewSlotState(cfg.leftSlot, zones, profile, speedKph, hrBpm, powerW),
-                        leftColorMode = cfg.leftSlot.colorMode,
-                        middleSlot = previewSlotState(cfg.middleSlot, zones, profile, speedKph, hrBpm, powerW),
-                        middleColorMode = cfg.middleSlot.colorMode,
-                        rightSlot = previewSlotState(cfg.rightSlot, zones, profile, speedKph, hrBpm, powerW),
-                        rightColorMode = cfg.rightSlot.colorMode,
-                        fourthSlot = previewSlotState(cfg.fourthSlot, zones, profile, speedKph, hrBpm, powerW),
-                        fourthColorMode = cfg.fourthSlot.colorMode,
-                    )
+                context.streamTimeConfig().flatMapLatest { timeCfg ->
+                    flow {
+                        val states = previewStates(cfg, timeCfg, profile, zones)
+                        var i = 0
+                        while (true) {
+                            emit(states[i++ % states.size])
+                            delay(Delay.PREVIEW.time)
+                        }
+                    }.flowOn(Dispatchers.IO)
                 }
             }
 
@@ -433,108 +439,49 @@ class HUDField(private val karooSystem: KarooSystemService) :
     private fun extractSeconds(state: StreamState, fieldKey: String): Long =
         (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)?.toLong() ?: 0L
 
-    // --- Preview helpers ---
-
-    private fun previewSlotState(
-        slot: HUDSlotConfig,
-        zones: ZoneConfig,
-        profile: UserProfile,
-        speedKph: Double,
-        hrBpm: Int,
-        powerW: Int,
-    ): FieldState =
-        when (slot.field) {
-            HUDSlotField.Speed -> {
-                val label =
-                    if (slot.speedSmoothing == SpeedSmoothingStream.S0) "Speed"
-                    else "${slot.speedSmoothing.label} Speed"
-                FieldState(
-                    "%.1f".format(ConvertType.SPEED.apply(speedKph / 3.6, profile)),
-                    label,
-                    FieldColor.Default,
-                    R.drawable.ic_col_speed,
+    companion object {
+        fun previewStates(
+            hudConfig: HUDConfig,
+            timeCfg: TimeConfig,
+            profile: UserProfile,
+            zones: ZoneConfig,
+        ): List<HUDState> {
+            fun slot(slotCfg: HUDSlotConfig): List<FieldState> = when (val field = slotCfg.field) {
+                HUDSlotField.Power ->
+                    PowerField.previewStates(
+                        PowerFieldConfig(slotCfg.powerSmoothing, slotCfg.colorMode), profile, zones
+                    )
+                HUDSlotField.HR ->
+                    HRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.Speed ->
+                    SpeedField.previewStates(SpeedFieldConfig(slotCfg.speedSmoothing), profile)
+                HUDSlotField.Cadence ->
+                    CadenceField.previewStates(CadenceFieldConfig(slotCfg.cadenceSmoothing))
+                is HUDSlotField.AvgSpeed ->
+                    AvgSpeedField.previewStates(slotCfg.avgSpeedConfig, profile, field.includePaused)
+                HUDSlotField.AvgPower ->
+                    AvgPowerField.previewStates(AvgPowerFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.NP ->
+                    NPField.previewStates(NPFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.Grade ->
+                    GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
+                is HUDSlotField.Time ->
+                    TimeField.previewStates(timeCfg, field.kind)
+            }
+            val l = slot(hudConfig.leftSlot)
+            val m = slot(hudConfig.middleSlot)
+            val r = slot(hudConfig.rightSlot)
+            val f = slot(hudConfig.fourthSlot)
+            val n = minOf(l.size, m.size, r.size, f.size)
+            return (0 until n).map { i ->
+                HUDState(
+                    columns = hudConfig.columns,
+                    leftSlot = l[i],   leftColorMode = hudConfig.leftSlot.colorMode,
+                    middleSlot = m[i], middleColorMode = hudConfig.middleSlot.colorMode,
+                    rightSlot = r[i],  rightColorMode = hudConfig.rightSlot.colorMode,
+                    fourthSlot = f[i], fourthColorMode = hudConfig.fourthSlot.colorMode,
                 )
-            }
-            HUDSlotField.HR -> {
-                val zone = hrZone(hrBpm.toDouble(), profile.heartRateZones)
-                FieldState(
-                    hrBpm.toString(),
-                    "HR",
-                    FieldColor.Zone(
-                        zone,
-                        profile.heartRateZones.size.coerceAtLeast(1),
-                        zones.hrPalette,
-                        isHr = true,
-                    ),
-                    R.drawable.ic_col_hr,
-                )
-            }
-            HUDSlotField.Power -> {
-                val label =
-                    if (slot.powerSmoothing == PowerSmoothingStream.S0) "Power"
-                    else "${slot.powerSmoothing.label} Power"
-                val zone = powerZone(powerW.toDouble(), profile.powerZones)
-                FieldState(
-                    powerW.toString(),
-                    label,
-                    FieldColor.Zone(
-                        zone,
-                        profile.powerZones.size.coerceAtLeast(1),
-                        zones.powerPalette,
-                        isHr = false,
-                    ),
-                    R.drawable.ic_col_power,
-                )
-            }
-            HUDSlotField.Cadence -> {
-                val label = if (slot.cadenceSmoothing == CadenceSmoothingStream.S0) "Cadence"
-                            else "${slot.cadenceSmoothing.label} Cad"
-                FieldState("87", label, FieldColor.Default, R.drawable.ic_cadence)
-            }
-            HUDSlotField.AvgPower -> {
-                val zone = powerZone(220.0, profile.powerZones)
-                FieldState(
-                    "220", "Avg Power",
-                    FieldColor.Zone(zone, profile.powerZones.size.coerceAtLeast(1), zones.powerPalette, isHr = false),
-                    R.drawable.ic_avg_power,
-                )
-            }
-            HUDSlotField.NP -> {
-                val zone = powerZone(247.0, profile.powerZones)
-                FieldState(
-                    "247", "NP",
-                    FieldColor.Zone(zone, profile.powerZones.size.coerceAtLeast(1), zones.powerPalette, isHr = false),
-                    R.drawable.ic_col_power,
-                )
-            }
-            HUDSlotField.Grade ->
-                FieldState("6.2%", "Grade", FieldColor.Grade(6.2, zones.gradePalette), R.drawable.ic_grade)
-            is HUDSlotField.AvgSpeed -> {
-                val includePaused = (slot.field as HUDSlotField.AvgSpeed).includePaused
-                val label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving"
-                toAvgSpeedFieldState(speedKph / 3.6, slot.avgSpeedConfig, profile, label)
-            }
-            is HUDSlotField.Time -> {
-                val kind = (slot.field as HUDSlotField.Time).kind
-                FieldState("0:23:45", kind.label, FieldColor.Default, kind.iconRes)
             }
         }
-
-    private fun previewHudFlow() =
-        flow {
-                val steps =
-                    listOf(
-                        Triple(28.5, 130, 180),
-                        Triple(35.2, 152, 240),
-                        Triple(42.1, 168, 320),
-                        Triple(58.7, 187, 247),
-                        Triple(31.0, 145, 200),
-                    )
-                var i = 0
-                while (true) {
-                    emit(steps[i++ % steps.size])
-                    delay(Delay.PREVIEW.time)
-                }
-            }
-            .flowOn(Dispatchers.IO)
+    }
 }
