@@ -29,8 +29,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             val label = cadenceLabel(cfg.smoothing)
             karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
                 val raw =
-                    (state as? StreamState.Streaming)
-                        ?.dataPoint?.values?.get(cfg.smoothing.fieldId)
+                    (state as? StreamState.Streaming)?.dataPoint?.values?.get(cfg.smoothing.fieldId)
                         ?: return@map FieldState.unavailable(label)
                 FieldState(
                     raw.toInt().toString(),
@@ -44,22 +43,22 @@ class CadenceField(private val karooSystem: KarooSystemService) :
     override fun previewFlow(context: Context): Flow<FieldState> =
         context.streamCadenceFieldConfig().flatMapLatest { cfg ->
             flow {
-                val states = previewStates(cfg)
-                var i = 0
-                while (true) {
-                    emit(states[i++ % states.size])
-                    delay(Delay.PREVIEW.time)
+                    val states = previewStates(cfg)
+                    var i = 0
+                    while (true) {
+                        emit(states[i++ % states.size])
+                        delay(Delay.PREVIEW.time)
+                    }
                 }
-            }.flowOn(Dispatchers.IO)
+                .flowOn(Dispatchers.IO)
         }
 
     companion object {
         fun cadenceLabel(smoothing: CadenceSmoothingStream) =
-            if (smoothing == CadenceSmoothingStream.S0) "Cadence"
-            else "${smoothing.label} Cad"
+            if (smoothing == CadenceSmoothingStream.S0) "Cadence" else "${smoothing.label} Cad"
 
         fun previewStates(cfg: CadenceFieldConfig): List<FieldState> =
-            listOf(82, 87, 91, 78, 95).map { rpm ->
+            listOf(82, 87, 91, 78, 95, 45, 120).map { rpm ->
                 FieldState(
                     rpm.toString(),
                     label = cadenceLabel(cfg.smoothing),

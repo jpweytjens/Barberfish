@@ -42,7 +42,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
                 if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
             flow.collect { state ->
                 val colSpanOverride = if (state.columns == 4) 15 else 20
-                val sizeConfig = config.toViewSizeConfig(colSpanOverride = colSpanOverride, textSizeOverride = 36)
+                val sizeConfig = config.toViewSizeConfig(colSpanOverride = colSpanOverride, textSizeOverride = if (state.columns == 4) 30 else 36)
                 val layoutRes = if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
                 val rv = RemoteViews(context.packageName, layoutRes)
                 // 2dp top/bottom padding

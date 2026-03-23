@@ -41,14 +41,13 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                         (state as? StreamState.Streaming)
                             ?.dataPoint
                             ?.values
-                            ?.get(cfg.smoothing.fieldId)
-                            ?: return@map FieldState.unavailable(label)
+                            ?.get(cfg.smoothing.fieldId) ?: return@map FieldState.unavailable(label)
                     val converted = ConvertType.SPEED.apply(raw, profile)
                     FieldState(
                         "%.1f".format(converted),
                         label = label,
                         color = FieldColor.Default,
-                        iconRes = R.drawable.ic_col_speed
+                        iconRes = R.drawable.ic_col_speed,
                     )
                 }
             }
@@ -59,13 +58,14 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile) ->
                 flow {
-                    val states = previewStates(cfg, profile)
-                    var i = 0
-                    while (true) {
-                        emit(states[i++ % states.size])
-                        delay(Delay.PREVIEW.time)
+                        val states = previewStates(cfg, profile)
+                        var i = 0
+                        while (true) {
+                            emit(states[i++ % states.size])
+                            delay(Delay.PREVIEW.time)
+                        }
                     }
-                }.flowOn(Dispatchers.IO)
+                    .flowOn(Dispatchers.IO)
             }
 
     companion object {
@@ -74,7 +74,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
                 else "${cfg.smoothing.label} Speed"
             // values in m/s: 30, 35, 40, 27, 38 km/h
-            return listOf(8.33, 9.72, 11.11, 7.50, 10.56).map { rawMs ->
+            return listOf(8.33, 9.72, 11.11, 7.50, 10.56, 12.50, 6.23).map { rawMs ->
                 FieldState(
                     "%.1f".format(ConvertType.SPEED.apply(rawMs, profile)),
                     label = label,

@@ -40,7 +40,11 @@ fun ViewConfig.toViewSizeConfig(
     // Wide (1-col) cells have short labels that fit on one line; colSpan=20 HUD slots also use 1.
     val labelMaxLines = if (colSpan != 30) 1 else 2
     // Wide cells have more horizontal space; scale font only beyond 6 chars (vs 4 for narrow).
-    val baseChars = if (colSpan == 60) 6 else 4
+    val baseChars = when {
+        colSpan == 60 -> 6
+        colSpan == 15 -> 3
+        else -> 4
+    }
     // Move value up in FrameLayout
     val translationYPx: Float =
         when {

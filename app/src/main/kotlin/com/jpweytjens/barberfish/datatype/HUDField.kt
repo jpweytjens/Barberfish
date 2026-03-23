@@ -471,7 +471,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
             val m = slot(hudConfig.middleSlot)
             val r = slot(hudConfig.rightSlot)
             val f = slot(hudConfig.fourthSlot)
-            val n = minOf(l.size, m.size, r.size, f.size)
+            val n = if (hudConfig.columns == 4) minOf(l.size, m.size, r.size, f.size)
+                    else minOf(l.size, m.size, r.size)
             return (0 until n).map { i ->
                 HUDState(
                     columns = hudConfig.columns,
