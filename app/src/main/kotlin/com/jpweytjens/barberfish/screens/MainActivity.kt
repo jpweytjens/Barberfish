@@ -69,6 +69,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.AvgPowerField
+import com.jpweytjens.barberfish.datatype.AvgSpeedField
+import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.GradeField
+import com.jpweytjens.barberfish.datatype.HRField
+import com.jpweytjens.barberfish.datatype.NPField
+import com.jpweytjens.barberfish.datatype.PowerField
+import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
@@ -127,15 +135,22 @@ import com.jpweytjens.barberfish.extension.streamNPFieldConfig
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
+import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var karooSystem: KarooSystemService
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        karooSystem = KarooSystemService(applicationContext)
+        karooSystem.connect {}
         actionBar?.title =
             android.text.SpannableString(getString(R.string.extension_name)).also {
                 it.setSpan(
@@ -146,6 +161,11 @@ class MainActivity : ComponentActivity() {
                 )
             }
         setContent { MaterialTheme { ConfigScreen() } }
+    }
+
+    override fun onDestroy() {
+        karooSystem.disconnect()
+        super.onDestroy()
     }
 
     @Composable
@@ -162,6 +182,25 @@ class MainActivity : ComponentActivity() {
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
+        var userProfile by remember {
+            mutableStateOf(
+                UserProfile(
+                    weight = 70f,
+                    preferredUnit =
+                        UserProfile.PreferredUnit(
+                            distance = UserProfile.PreferredUnit.UnitType.METRIC,
+                            elevation = UserProfile.PreferredUnit.UnitType.METRIC,
+                            temperature = UserProfile.PreferredUnit.UnitType.METRIC,
+                            weight = UserProfile.PreferredUnit.UnitType.METRIC,
+                        ),
+                    maxHr = 190,
+                    restingHr = 60,
+                    heartRateZones = emptyList(),
+                    ftp = 250,
+                    powerZones = emptyList(),
+                )
+            )
+        }
 
         var fieldsExpanded by remember { mutableStateOf(false) }
         var thresholdsExpanded by remember { mutableStateOf(false) }
@@ -181,6 +220,7 @@ class MainActivity : ComponentActivity() {
             launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
             launch { streamTimeConfig().collect { timeConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
+            launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -195,40 +235,10 @@ class MainActivity : ComponentActivity() {
                     expanded = fieldsExpanded,
                     onToggle = { fieldsExpanded = !fieldsExpanded },
                 ) {
-                    val powerLabel =
-                        if (powerFieldConfig.smoothing == PowerSmoothingStream.S0) "Power"
-                        else "${powerFieldConfig.smoothing.label} Power"
                     FieldCard(
                         title = "POWER",
                         description = "Power output in W.",
-                        previewFields =
-                            listOf(
-                                    180 to 2,
-                                    240 to 3,
-                                    320 to 5,
-                                    400 to 6,
-                                    807 to 6,
-                                    1203 to 7,
-                                    254 to 3,
-                                    120 to 1,
-                                )
-                                .map { (watts, zone) ->
-                                    FieldState(
-                                        watts.toString(),
-                                        label = powerLabel,
-                                        color =
-                                            if (powerFieldConfig.colorMode == ZoneColorMode.NONE)
-                                                FieldColor.Default
-                                            else
-                                                FieldColor.Zone(
-                                                    zone,
-                                                    7,
-                                                    zoneConfig.powerPalette,
-                                                    isHr = false,
-                                                ),
-                                        iconRes = R.drawable.ic_col_power,
-                                    )
-                                },
+                        previewFields = PowerField.previewStates(powerFieldConfig, userProfile, zoneConfig),
                         colorMode = powerFieldConfig.colorMode,
                     ) {
                         Text(
@@ -259,33 +269,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "HEART RATE",
                         description = "Heart rate in bpm.",
-                        previewFields =
-                            listOf(
-                                    98 to 1,
-                                    130 to 2,
-                                    152 to 3,
-                                    165 to 4,
-                                    172 to 4,
-                                    187 to 5,
-                                    145 to 2,
-                                )
-                                .map { (bpm, zone) ->
-                                    FieldState(
-                                        bpm.toString(),
-                                        label = "HR",
-                                        color =
-                                            if (hrFieldConfig.colorMode == ZoneColorMode.NONE)
-                                                FieldColor.Default
-                                            else
-                                                FieldColor.Zone(
-                                                    zone,
-                                                    5,
-                                                    zoneConfig.hrPalette,
-                                                    isHr = true,
-                                                ),
-                                        iconRes = R.drawable.ic_col_hr,
-                                    )
-                                },
+                        previewFields = HRField.previewStates(hrFieldConfig, userProfile, zoneConfig),
                         colorMode = hrFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -300,18 +284,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "SPEED",
                         description = "Speed in km/h.",
-                        previewFields =
-                            listOf(
-                                FieldState(
-                                    "37.5",
-                                    label =
-                                        if (speedFieldConfig.smoothing == SpeedSmoothingStream.S0)
-                                            "Speed"
-                                        else "${speedFieldConfig.smoothing.label} Speed",
-                                    color = FieldColor.Default,
-                                    iconRes = R.drawable.ic_col_speed,
-                                )
-                            ),
+                        previewFields = SpeedField.previewStates(speedFieldConfig, userProfile),
                         colorMode = ZoneColorMode.NONE,
                     ) {
                         Text(
@@ -335,18 +308,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "CADENCE",
                         description = "Cadence in rpm.",
-                        previewFields =
-                            listOf(
-                                FieldState(
-                                    "87",
-                                    label =
-                                        if (cadenceFieldConfig.smoothing == CadenceSmoothingStream.S0)
-                                            "Cadence"
-                                        else "${cadenceFieldConfig.smoothing.label} Cad",
-                                    color = FieldColor.Default,
-                                    iconRes = R.drawable.ic_cadence,
-                                )
-                            ),
+                        previewFields = CadenceField.previewStates(cadenceFieldConfig),
                         colorMode = ZoneColorMode.NONE,
                     ) {
                         Text(
@@ -370,22 +332,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "AVG POWER",
                         description = "Average power in W with zone coloring.",
-                        previewFields =
-                            listOf(195, 210, 220, 185, 230).mapIndexed { i, watts ->
-                                FieldState(
-                                    watts.toString(),
-                                    label = "Avg Power",
-                                    color =
-                                        if (avgPowerFieldConfig.colorMode == ZoneColorMode.NONE)
-                                            FieldColor.Default
-                                        else
-                                            FieldColor.Zone(
-                                                listOf(2, 3, 3, 2, 3)[i], 7,
-                                                zoneConfig.powerPalette, isHr = false,
-                                            ),
-                                    iconRes = R.drawable.ic_avg_power,
-                                )
-                            },
+                        previewFields = AvgPowerField.previewStates(avgPowerFieldConfig, userProfile, zoneConfig),
                         colorMode = avgPowerFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -400,22 +347,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "NP",
                         description = "Normalized power in W with zone coloring.",
-                        previewFields =
-                            listOf(240, 255, 247, 262, 238).mapIndexed { i, watts ->
-                                FieldState(
-                                    watts.toString(),
-                                    label = "NP",
-                                    color =
-                                        if (npFieldConfig.colorMode == ZoneColorMode.NONE)
-                                            FieldColor.Default
-                                        else
-                                            FieldColor.Zone(
-                                                listOf(3, 4, 3, 4, 3)[i], 7,
-                                                zoneConfig.powerPalette, isHr = false,
-                                            ),
-                                    iconRes = R.drawable.ic_col_power,
-                                )
-                            },
+                        previewFields = NPField.previewStates(npFieldConfig, userProfile, zoneConfig),
                         colorMode = npFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -430,18 +362,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "GRADE",
                         description = "Road gradient with palette-based coloring.",
-                        previewFields =
-                            listOf(0.0, 3.0, 6.0, 9.0, 14.0, 6.2, 1.5).map { pct ->
-                                FieldState(
-                                    "%.1f%%".format(pct),
-                                    label = "Grade",
-                                    color =
-                                        if (gradeFieldConfig.colorMode == ZoneColorMode.NONE)
-                                            FieldColor.Default
-                                        else FieldColor.Grade(pct, zoneConfig.gradePalette),
-                                    iconRes = R.drawable.ic_grade,
-                                )
-                            },
+                        previewFields = GradeField.previewStates(gradeFieldConfig, zoneConfig),
                         colorMode = gradeFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -483,7 +404,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "AVG SPEED (TOTAL)",
                         description = "Average speed including paused time.",
-                        previewFields = avgSpeedPreviewFields(avgTotalConfig),
+                        previewFields = AvgSpeedField.previewStates(avgTotalConfig, userProfile, includePaused = true),
                         colorMode = ZoneColorMode.TEXT,
                     ) {
                         AvgSpeedThresholdControls(
@@ -500,7 +421,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "AVG SPEED (MOVING)",
                         description = "Average speed excluding paused time.",
-                        previewFields = avgSpeedPreviewFields(avgMovingConfig),
+                        previewFields = AvgSpeedField.previewStates(avgMovingConfig, userProfile, includePaused = false),
                         colorMode = ZoneColorMode.TEXT,
                     ) {
                         AvgSpeedThresholdControls(
@@ -1169,57 +1090,6 @@ internal fun AvgSpeedThresholdControls(
     }
 }
 
-private fun previewColorForKph(speedKph: Double, cfg: AvgSpeedConfig): FieldColor =
-    when (cfg.mode) {
-        SpeedThresholdMode.SINGLE -> {
-            if (cfg.thresholdKph <= 0.0) FieldColor.Default
-            else {
-                val rangePercent =
-                    if (speedKph >= cfg.thresholdKph) cfg.rangePercentAbove
-                    else cfg.rangePercentBelow
-                val factor =
-                    ((speedKph - cfg.thresholdKph) / cfg.thresholdKph * 100.0 / rangePercent)
-                        .coerceIn(-1.0, 1.0)
-                        .toFloat()
-                FieldColor.Threshold(factor)
-            }
-        }
-        SpeedThresholdMode.MIN_MAX -> {
-            val min = cfg.minKph
-            val max = cfg.maxKph
-            if (min == null && max == null) FieldColor.Default
-            else {
-                val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
-                val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
-                val hasSafeZone = min != null && max != null
-                when {
-                    min != null && speedKph < min ->
-                        FieldColor.DangerZone(
-                            ((min - speedKph) / bandBelow).coerceIn(0.0, 1.0).toFloat(),
-                            1f,
-                            hasSafeZone,
-                        )
-                    max != null && speedKph > max ->
-                        FieldColor.DangerZone(
-                            ((speedKph - max) / bandAbove).coerceIn(0.0, 1.0).toFloat(),
-                            1f,
-                            hasSafeZone,
-                        )
-                    else -> {
-                        val nearMin =
-                            if (min != null && bandBelow > 0.0)
-                                (1.0 - (speedKph - min) / bandBelow).coerceIn(0.0, 1.0).toFloat()
-                            else 0f
-                        val nearMax =
-                            if (max != null && bandAbove > 0.0)
-                                (1.0 - (max - speedKph) / bandAbove).coerceIn(0.0, 1.0).toFloat()
-                            else 0f
-                        FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
-                    }
-                }
-            }
-        }
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1274,58 +1144,6 @@ private fun GradeBandBar(palette: GradePalette) {
 
 private fun formatGradePct(d: Double) = "%.0f".format(d)
 
-private fun avgSpeedPreviewFields(cfg: AvgSpeedConfig): List<FieldState> {
-    val disabled =
-        listOf(FieldState("30.0", "Avg Speed", FieldColor.Default, R.drawable.ic_speed_average))
-    // 6 steps per side (5 within range + 1 outside) + midpoint = 13 preview fields
-    val n = 5
-    val speeds: List<Double> =
-        when (cfg.mode) {
-            SpeedThresholdMode.SINGLE -> {
-                val t = cfg.thresholdKph
-                if (t <= 0.0) return disabled
-                val stepBelow = t * cfg.rangePercentBelow / (n * 100.0)
-                val stepAbove = t * cfg.rangePercentAbove / (n * 100.0)
-                (n + 1 downTo 1).map { i -> t - i * stepBelow } +
-                    listOf(t) +
-                    (1..n + 1).map { i -> t + i * stepAbove }
-            }
-            SpeedThresholdMode.MIN_MAX -> {
-                val min = cfg.minKph
-                val max = cfg.maxKph
-                if (min == null && max == null) return disabled
-                when {
-                    min != null && max != null -> {
-                        val stepBelow = min * cfg.rangePercentBelow / (n * 100.0)
-                        val stepAbove = max * cfg.rangePercentAbove / (n * 100.0)
-                        (n + 1 downTo 1).map { i -> min - i * stepBelow } +
-                            listOf((min + max) / 2.0) +
-                            (1..n + 1).map { i -> max + i * stepAbove }
-                    }
-                    min != null -> {
-                        val step = min * cfg.rangePercentBelow / (n * 100.0)
-                        (n + 1 downTo 1).map { i -> min - i * step } +
-                            listOf(min) +
-                            (1..n + 1).map { i -> min + i * step }
-                    }
-                    else -> {
-                        val step = max!! * cfg.rangePercentAbove / (n * 100.0)
-                        (n + 1 downTo 1).map { i -> max - i * step } +
-                            listOf(max) +
-                            (1..n + 1).map { i -> max + i * step }
-                    }
-                }
-            }
-        }
-    return speeds.map { speed ->
-        FieldState(
-            "%.1f".format(speed),
-            "Avg Speed",
-            previewColorForKph(speed, cfg),
-            R.drawable.ic_speed_average,
-        )
-    }
-}
 
 @Composable
 internal fun BarberfishPreviewCell(
