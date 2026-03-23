@@ -38,5 +38,16 @@ data class PreviewSizeConfig(
                 valueFontSize = 32.sp,
                 valueBottomPadding = 4.dp,
             )
+        val HUD_FOUR =
+            PreviewSizeConfig(
+                paddingStart = 2.dp,
+                paddingEnd = 2.dp,
+                paddingTop = 4.dp,
+                headerIconSize = 10.dp,
+                headerIconLabelGap = 2.dp,
+                headerFontSize = 9.sp,
+                valueFontSize = 26.sp,
+                valueBottomPadding = 2.dp,
+            )
     }
 }
