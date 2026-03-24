@@ -13,21 +13,15 @@ import io.hammerhead.karooext.models.UpdateGraphicConfig
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
-@OptIn(FlowPreview::class)
 abstract class HUDDataType(extensionId: String, typeId: String) :
     DataTypeImpl(extensionId, typeId) {
 
-    /** Throttle applied to [liveFlow] emissions. */
-    open val sampleMs: Long = 400L
-
-    /** Emits HUDState from real sensor streams. Must not sample internally. */
+    /** Emits HUDState from real sensor streams. */
     abstract fun liveFlow(context: Context): Flow<HUDState>
 
     /** Emits HUDState for the Karoo config-screen preview carousel. */
@@ -39,7 +33,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         emitter.setCancellable { scope.cancel() }
         scope.launch {
             val flow =
-                if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
+                if (config.preview) previewFlow(context) else liveFlow(context)
             flow.collect { state ->
                 val colSpanOverride = if (state.columns == 4) 15 else 20
                 val sizeConfig = config.toViewSizeConfig(colSpanOverride = colSpanOverride, textSizeOverride = if (state.columns == 4) 30 else 36)

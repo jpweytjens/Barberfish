@@ -11,21 +11,16 @@ import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 abstract class BarberfishDataType(extensionId: String, typeId: String) :
     DataTypeImpl(extensionId, typeId) {
 
-    /** Throttle applied to [liveFlow] emissions. Override for slower fields (e.g. 1000L). */
-    open val sampleMs: Long = 400L
-
-    /** Emits FieldStates from real sensor streams. Must not sample internally. */
+    /** Emits FieldStates from real sensor streams. */
     abstract fun liveFlow(context: Context): Flow<FieldState>
 
     /** Emits FieldStates for the Karoo config-screen preview carousel. */
@@ -42,7 +37,7 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
         emitter.setCancellable { scope.cancel() }
         scope.launch {
             val flow =
-                if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
+                if (config.preview) previewFlow(context) else liveFlow(context)
             flow.collect { field ->
                 val rv = barberfishFieldRemoteViews(
                     field = field,

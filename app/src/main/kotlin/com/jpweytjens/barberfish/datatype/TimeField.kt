@@ -90,8 +90,6 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
             }
     }
 
-    override val sampleMs = 1000L
-
     override fun liveFlow(context: Context): Flow<FieldState> {
         if (kind == TimeKind.TIME_OF_ARRIVAL) {
             return karooSystem.streamDataFlow(DataType.Type.TIME_OF_ARRIVAL).map { state ->
