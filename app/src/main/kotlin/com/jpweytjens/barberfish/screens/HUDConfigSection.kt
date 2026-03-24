@@ -355,6 +355,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
 
 @Composable
 private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
         selected = slot.speedSmoothing,
@@ -366,6 +367,7 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 
 @Composable
 private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
     SmoothingSlider(
         options = PowerSmoothingStream.entries,
         selected = slot.powerSmoothing,
@@ -426,6 +428,7 @@ private fun HUDAvgSpeedCard(
 
 @Composable
 private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
     SmoothingSlider(
         options = CadenceSmoothingStream.entries,
         selected = slot.cadenceSmoothing,
