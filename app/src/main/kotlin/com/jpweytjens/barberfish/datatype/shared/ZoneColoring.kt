@@ -159,16 +159,16 @@ internal val zwiftPowerColors =
 // Zwift HR zones (5 zones — first 5 of Zwift palette)
 internal val zwiftHrColors = zwiftPowerColors.take(5)
 
-// HSLuv power zones: L=65, S=100, hue starts at 260° with steps of -50° (Z1: S=10)
+// HSLuv power zones: L=62, S=100, hue starts at 260° with steps of -50° (Z1: S=10)
 internal val hsluvPowerColors =
     listOf(
-        Color(0xFF9C9DA8), // Z1 Recovery      (h=260° s=10  l=65)
-        Color(0xFF00AEC2), // Z2 Endurance      (h=210° s=100 l=65)
-        Color(0xFF00B38D), // Z3 Tempo          (h=160° s=100 l=65)
-        Color(0xFF77AE00), // Z4 Threshold      (h=110° s=100 l=65)
-        Color(0xFFC59700), // Z5 VO₂max         (h= 60° s=100 l=65)
-        Color(0xFFFF6F77), // Z6 Anaerobic      (h= 10° s=100 l=65)
-        Color(0xFFFF5AE1), // Z7 Neuromuscular  (h=320° s=100 l=65)
+        Color(0xFF9395A1), // Z1 Recovery       (h=260° s=10  l=62)
+        Color(0xFF00A5B8), // Z2 Endurance      (h=210° s=100 l=62)
+        Color(0xFF00AA86), // Z3 Tempo          (h=160° s=100 l=62)
+        Color(0xFF71A500), // Z4 Threshold      (h=110° s=100 l=62)
+        Color(0xFFBB9000), // Z5 VO₂max         (h= 60° s=100 l=62)
+        Color(0xFFFF5F68), // Z6 Anaerobic      (h= 10° s=100 l=62)
+        Color(0xFFFF41DF), // Z7 Neuromuscular  (h=320° s=100 l=62)
     )
 
 // HSLuv HR zones: Z1, Z2, Z4, Z6, Z7 from the power palette (Wahoo-style selection)
