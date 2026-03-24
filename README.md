@@ -21,6 +21,7 @@ Zone coloring supports both background-fill and text-color styles across four pa
 | Zone color palettes | Karoo only                                                                                                                                                         | Karoo, Wahoo, Zwift, and Intervals.icu                                                                                                                     |
 | Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                                                                                                              |
 | Grade coloring      | Not available                                                                                                                                                      | Color-coded by road gradient steepness; Karoo, Wahoo, and Garmin palettes                                                                                  |
+| Grade smoothing     | Unknown                                                                                                                                                            | [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) with α=0.15 (~6 s time constant) to reduce noise from GPS elevation changes                                                                           |
 | Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                                                                                                          |
 | Avg speed threshold | Not available                                                                                                                                                      | Configurable single threshold or min/max range with warning bands                                                                                          |
 | Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                                                                                                     |
@@ -82,7 +83,7 @@ Complete list of data fields provided by Barberfish.
 
 ### Grade
 
-- Grade
+- Grade ([EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) smoothing, α=0.15, ~6 s time constant)
 
 ### Time
 
