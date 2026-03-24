@@ -159,27 +159,20 @@ internal val zwiftPowerColors =
 // Zwift HR zones (5 zones — first 5 of Zwift palette)
 internal val zwiftHrColors = zwiftPowerColors.take(5)
 
-// HSLuv power zones: L=66, hue 250°→200°→150°→100°→50°→0°→310°, S=90 (Z1: S=30)
+// HSLuv power zones: L=65, S=100, hue starts at 260° with steps of -50° (Z1: S=10)
 internal val hsluvPowerColors =
     listOf(
-        Color(0xFF92A1BE), // Z1 Recovery      (h=250° s=30 l=66)
-        Color(0xFF36B0B8), // Z2 Endurance      (h=200° s=90 l=66)
-        Color(0xFF33B582), // Z3 Tempo          (h=150° s=90 l=66)
-        Color(0xFF91AB31), // Z4 Threshold      (h=100° s=90 l=66)
-        Color(0xFFD29531), // Z5 VO₂max         (h= 50° s=90 l=66)
-        Color(0xFFF87795), // Z6 Anaerobic      (h=  0° s=90 l=66)
-        Color(0xFFF666F0), // Z7 Neuromuscular  (h=310° s=90 l=66)
+        Color(0xFF9C9DA8), // Z1 Recovery      (h=260° s=10  l=65)
+        Color(0xFF00AEC2), // Z2 Endurance      (h=210° s=100 l=65)
+        Color(0xFF00B38D), // Z3 Tempo          (h=160° s=100 l=65)
+        Color(0xFF77AE00), // Z4 Threshold      (h=110° s=100 l=65)
+        Color(0xFFC59700), // Z5 VO₂max         (h= 60° s=100 l=65)
+        Color(0xFFFF6F77), // Z6 Anaerobic      (h= 10° s=100 l=65)
+        Color(0xFFFF5AE1), // Z7 Neuromuscular  (h=320° s=100 l=65)
     )
 
-// HSLuv HR zones: Wahoo-inspired hue sequence (grey, blue, green, orange, red) at L=66
-internal val hsluvHrColors =
-    listOf(
-        Color(0xFF9C9C9C), // Z1 Recovery  (grey)
-        Color(0xFF829AE2), // Z2 Endurance (blue)
-        Color(0xFF44B352), // Z3 Tempo     (green)
-        Color(0xFFCE9038), // Z4 Threshold (orange)
-        Color(0xFFE06E6E), // Z5 VO₂max    (red)
-    )
+// HSLuv HR zones: Z1, Z2, Z4, Z6, Z7 from the power palette (Wahoo-style selection)
+internal val hsluvHrColors = listOf(0, 1, 3, 5, 6).map { hsluvPowerColors[it] }
 
 // Readable palettes: raw colors lifted to |Lc| ≥ 45 against the Karoo dark background.
 // Colors that already pass are returned unchanged; only lightness is raised, never hue.
