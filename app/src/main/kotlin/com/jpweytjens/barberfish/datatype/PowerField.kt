@@ -60,6 +60,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                                 profile.powerZones.size.coerceAtLeast(1),
                                 zones.powerPalette,
                                 isHr = false,
+                                readable = zones.readableColors,
                             )
                     FieldState(
                         raw.toInt().toString(),
@@ -100,7 +101,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
             val label =
                 if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
                 else "${cfg.smoothing.label} Power"
-            return listOf(180, 240, 320, 400, 531, 647, 1234).map { watts ->
+            return listOf(180, 240, 320, 400, 451, 511, 1234).map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color =
                     if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
@@ -110,6 +111,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                             profile.powerZones.size.coerceAtLeast(1),
                             zones.powerPalette,
                             isHr = false,
+                            readable = zones.readableColors,
                         )
                 FieldState(
                     watts.toString(),

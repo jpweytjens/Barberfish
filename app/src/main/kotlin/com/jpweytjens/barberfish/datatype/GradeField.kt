@@ -48,7 +48,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                     }
                     .filterNotNull()
                     .scan(0.0) { ema, raw -> EMA_ALPHA * raw + (1 - EMA_ALPHA) * ema }
-                    .map { emaPercent -> toGradeFieldState(emaPercent, cfg, zones.gradePalette) }
+                    .map { emaPercent -> toGradeFieldState(emaPercent, cfg, zones.gradePalette, zones.readableColors) }
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
@@ -70,17 +70,18 @@ class GradeField(private val karooSystem: KarooSystemService) :
     companion object {
         fun previewStates(cfg: GradeFieldConfig, zones: ZoneConfig): List<FieldState> =
             listOf(2.0, 5.5, 9.2, 13.0, 6.2, 1.0, -5.2).map { percent ->
-                toGradeFieldState(percent, cfg, zones.gradePalette)
+                toGradeFieldState(percent, cfg, zones.gradePalette, zones.readableColors)
             }
 
         fun toGradeFieldState(
             percent: Double,
             cfg: GradeFieldConfig,
             palette: GradePalette,
+            readable: Boolean = true,
         ): FieldState {
             val color =
                 if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                else FieldColor.Grade(percent, palette)
+                else FieldColor.Grade(percent, palette, readable)
             return FieldState(
                 "%.1f%%".format(percent),
                 label = "Grade",

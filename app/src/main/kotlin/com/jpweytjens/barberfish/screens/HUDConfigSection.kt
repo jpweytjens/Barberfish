@@ -223,7 +223,7 @@ private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): 
             FieldState(
                 "187",
                 "HR",
-                FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true),
+                FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true, readable = zoneConfig.readableColors),
                 R.drawable.ic_col_hr,
             )
         HUDSlotField.Power ->
@@ -231,7 +231,7 @@ private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): 
                 "247",
                 if (slot.powerSmoothing == PowerSmoothingStream.S0) "Power"
                 else "${slot.powerSmoothing.label} Power",
-                FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
+                FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false, readable = zoneConfig.readableColors),
                 R.drawable.ic_col_power,
             )
         HUDSlotField.Cadence ->
@@ -243,11 +243,11 @@ private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): 
                 R.drawable.ic_cadence,
             )
         HUDSlotField.AvgPower ->
-            FieldState("220", "Avg Power", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_avg_power)
+            FieldState("220", "Avg Power", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false, readable = zoneConfig.readableColors), R.drawable.ic_avg_power)
         HUDSlotField.NP ->
-            FieldState("247", "NP", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_col_power)
+            FieldState("247", "NP", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false, readable = zoneConfig.readableColors), R.drawable.ic_col_power)
         HUDSlotField.Grade ->
-            FieldState("6.2%", "Grade", FieldColor.Grade(6.2, zoneConfig.gradePalette), R.drawable.ic_grade)
+            FieldState("6.2%", "Grade", FieldColor.Grade(6.2, zoneConfig.gradePalette, zoneConfig.readableColors), R.drawable.ic_grade)
         is HUDSlotField.AvgSpeed ->
             FieldState(
                 "30.0",

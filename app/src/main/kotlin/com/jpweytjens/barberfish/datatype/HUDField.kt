@@ -175,6 +175,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     profile.heartRateZones.size.coerceAtLeast(1),
                     zones.hrPalette,
                     isHr = true,
+                    readable = zones.readableColors,
                 ),
             iconRes = R.drawable.ic_col_hr,
         )
@@ -200,6 +201,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     profile.powerZones.size.coerceAtLeast(1),
                     zones.powerPalette,
                     isHr = false,
+                    readable = zones.readableColors,
                 ),
             iconRes = R.drawable.ic_col_power,
         )
@@ -231,6 +233,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 profile.powerZones.size.coerceAtLeast(1),
                 zones.powerPalette,
                 isHr = false,
+                readable = zones.readableColors,
             ),
             iconRes = R.drawable.ic_avg_power,
         )
@@ -249,6 +252,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 profile.powerZones.size.coerceAtLeast(1),
                 zones.powerPalette,
                 isHr = false,
+                readable = zones.readableColors,
             ),
             iconRes = R.drawable.ic_col_power,
         )
@@ -267,7 +271,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 FieldState(
                     primary = "%.1f%%".format(percent),
                     label = "Grade",
-                    color = FieldColor.Grade(percent, zones.gradePalette),
+                    color = FieldColor.Grade(percent, zones.gradePalette, zones.readableColors),
                     iconRes = R.drawable.ic_grade,
                 )
             }

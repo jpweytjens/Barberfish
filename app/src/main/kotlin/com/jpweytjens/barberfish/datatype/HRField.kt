@@ -48,6 +48,7 @@ class HRField(private val karooSystem: KarooSystemService) :
                             profile.heartRateZones.size.coerceAtLeast(1),
                             zones.hrPalette,
                             isHr = true,
+                            readable = zones.readableColors,
                         )
                 FieldState(
                     bpm.toString(),
@@ -84,6 +85,7 @@ class HRField(private val karooSystem: KarooSystemService) :
                                 profile.heartRateZones.size.coerceAtLeast(1),
                                 zones.hrPalette,
                                 isHr = true,
+                                readable = zones.readableColors,
                             )
                     FieldState(
                         raw.toInt().toString(),

@@ -26,8 +26,13 @@ sealed interface FieldColor {
     data object Default : FieldColor
 
     // zone: 1-based zone number, total: number of zones (7 for power, 5 for HR)
-    data class Zone(val zone: Int, val total: Int, val palette: ZonePalette, val isHr: Boolean) :
-        FieldColor
+    data class Zone(
+        val zone: Int,
+        val total: Int,
+        val palette: ZonePalette,
+        val isHr: Boolean,
+        val readable: Boolean = true,
+    ) : FieldColor
 
     // factor: -1.0 (fully red) to 0.0 (yellow, at threshold) to +1.0 (fully green) — RdYlGn map
     data class Threshold(val factor: Float) : FieldColor
@@ -46,5 +51,5 @@ sealed interface FieldColor {
     data object Muted : FieldColor // sensor idle, no data flowing — #7D7D7D grey
 
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
-    data class Grade(val percent: Double, val palette: GradePalette) : FieldColor
+    data class Grade(val percent: Double, val palette: GradePalette, val readable: Boolean = true) : FieldColor
 }

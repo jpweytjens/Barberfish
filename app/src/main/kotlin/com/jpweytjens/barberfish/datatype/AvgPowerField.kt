@@ -55,6 +55,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
                                 profile.powerZones.size.coerceAtLeast(1),
                                 zones.powerPalette,
                                 isHr = false,
+                                readable = zones.readableColors,
                             )
                     FieldState(
                         raw.toInt().toString(),
@@ -101,6 +102,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
                             profile.powerZones.size.coerceAtLeast(1),
                             zones.powerPalette,
                             isHr = false,
+                            readable = zones.readableColors,
                         )
                 FieldState(
                     watts.toString(),

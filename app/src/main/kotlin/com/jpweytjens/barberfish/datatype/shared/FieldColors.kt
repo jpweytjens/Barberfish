@@ -57,6 +57,17 @@ private val GARMIN_GRADE_BANDS = listOf(
      0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
 )
 
+// HSLuv grade bands — same colors as HSLuv power zones, Garmin-style spacing
+private val HSLUV_GRADE_BANDS = listOf(
+    18.0 to Color(0xFFF666F0), // >18%       purple
+    15.0 to Color(0xFFF87795), // 15–18%     pink-red
+    12.0 to Color(0xFFD29531), // 12–15%     orange
+     9.0 to Color(0xFF91AB31), //  9–12%     yellow-green
+     6.0 to Color(0xFF33B582), //  6–9%      green
+     3.0 to Color(0xFF36B0B8), //  3–6%      teal
+     0.0 to Color(0xFF92A1BE), //  0–3%      blue-gray
+)
+
 // Reuses Karoo power zone palette (green→yellow→orange→red→purple)
 private val KAROO_GRADE_BANDS = listOf(
     23.6 to karooPowerColors[6], // >23.5%     — purple
@@ -68,11 +79,17 @@ private val KAROO_GRADE_BANDS = listOf(
      0.0 to karooPowerColors[0], //  <4.6%     — dark green
 )
 
-internal fun gradeColor(percent: Double, palette: GradePalette): Color {
+// Readable grade bands — colors lifted to |Lc| ≥ 45 against the Karoo dark background.
+private val WAHOO_GRADE_BANDS_READABLE = WAHOO_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
+private val GARMIN_GRADE_BANDS_READABLE = GARMIN_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
+private val KAROO_GRADE_BANDS_READABLE = KAROO_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
+
+internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color {
     val bands = when (palette) {
-        GradePalette.WAHOO -> WAHOO_GRADE_BANDS
-        GradePalette.GARMIN -> GARMIN_GRADE_BANDS
-        GradePalette.KAROO -> KAROO_GRADE_BANDS
+        GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE else WAHOO_GRADE_BANDS
+        GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
+        GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
+        GradePalette.HSLUV -> HSLUV_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second ?: bands.last().second
 }
@@ -94,8 +111,8 @@ internal fun FieldColor.toBackgroundColor(): Color? =
         is FieldColor.DangerZone ->
             dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
-            if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette)
-        is FieldColor.Grade -> gradeColor(percent, palette)
+            if (isHr) hrZoneColor(zone, palette, readable) else powerZoneColor(zone, palette, readable)
+        is FieldColor.Grade -> gradeColor(percent, palette, readable)
     }
 
 internal fun FieldColor.toColor(): Color? =
@@ -106,8 +123,8 @@ internal fun FieldColor.toColor(): Color? =
         is FieldColor.Threshold -> thresholdColor(factor)
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
-            if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette)
-        is FieldColor.Grade -> gradeColor(percent, palette)
+            if (isHr) hrZoneColor(zone, palette, readable) else powerZoneColor(zone, palette, readable)
+        is FieldColor.Grade -> gradeColor(percent, palette, readable)
     }
 
 internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
