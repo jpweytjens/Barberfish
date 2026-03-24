@@ -132,7 +132,6 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
     val onBg = bg != null
     val valueColor: Color =
         when {
-            onBg -> Color.Black
             // Error/Muted always use their own text color regardless of colorMode
             this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: Color.White
             colorMode == ZoneColorMode.TEXT -> toColor() ?: Color.White
@@ -140,7 +139,7 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
         }
     return ColorConfig(
         valueText = valueColor,
-        headerText = if (onBg) Color.Black else Color.White,
+        headerText = Color.White,
         iconTint = if (onBg) ICON_TINT_BLACK else ICON_TINT_TEAL,
         background = bg,
     )
