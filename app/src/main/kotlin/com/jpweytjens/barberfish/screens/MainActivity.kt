@@ -86,15 +86,25 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_RED
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.datatype.shared.hsluvHrColors
+import com.jpweytjens.barberfish.datatype.shared.hsluvPowerColors
 import com.jpweytjens.barberfish.datatype.shared.intervalsHrColors
+import com.jpweytjens.barberfish.datatype.shared.intervalsHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColors
+import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.karooHrColors
+import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.karooPowerColors
+import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.toColor
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColors
+import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColors
+import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.zwiftHrColors
+import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColors
+import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
@@ -458,8 +468,8 @@ class MainActivity : ComponentActivity() {
                     expanded = globalExpanded,
                     onToggle = { globalExpanded = !globalExpanded },
                 ) {
-                    Text("Time Fields", style = MaterialTheme.typography.titleMedium)
-                    TimeFormatDropdown(
+                    Text("Time fields", style = MaterialTheme.typography.titleMedium)
+                    TimeFormatPills(
                         selected = timeConfig.format,
                         onSelected = { format ->
                             timeConfig = TimeConfig(format)
@@ -468,11 +478,31 @@ class MainActivity : ComponentActivity() {
                     )
                     TimeFormatPreview(format = timeConfig.format)
 
-                    Text("Zone Colors", style = MaterialTheme.typography.titleMedium)
+                    Text("Zone colors", style = MaterialTheme.typography.titleMedium)
+                    ReadabilityToggle(
+                        readable = zoneConfig.readableColors,
+                        onSelected = { readable ->
+                            val newPower =
+                                if (!readable && zoneConfig.powerPalette == ZonePalette.HSLUV)
+                                    ZonePalette.KAROO
+                                else zoneConfig.powerPalette
+                            val newHr =
+                                if (!readable && zoneConfig.hrPalette == ZonePalette.HSLUV)
+                                    ZonePalette.KAROO
+                                else zoneConfig.hrPalette
+                            zoneConfig =
+                                zoneConfig.copy(
+                                    readableColors = readable,
+                                    powerPalette = newPower,
+                                    hrPalette = newHr,
+                                )
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
                     Text("Power zones", style = MaterialTheme.typography.labelMedium)
-                    ZonePaletteDropdown(
-                        label = "Power zone palette",
+                    ZonePalettePills(
                         selected = zoneConfig.powerPalette,
+                        readable = zoneConfig.readableColors,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(powerPalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
@@ -481,17 +511,26 @@ class MainActivity : ComponentActivity() {
                     ZoneColorBar(
                         colors =
                             when (zoneConfig.powerPalette) {
-                                ZonePalette.KAROO -> karooPowerColors.map { it }
-                                ZonePalette.WAHOO -> wahooPowerColors.map { it }
-                                ZonePalette.INTERVALS -> intervalsPowerColors.map { it }
-                                ZonePalette.ZWIFT -> zwiftPowerColors.map { it }
+                                ZonePalette.KAROO ->
+                                    if (zoneConfig.readableColors) karooPowerColorsReadable
+                                    else karooPowerColors
+                                ZonePalette.WAHOO ->
+                                    if (zoneConfig.readableColors) wahooPowerColorsReadable
+                                    else wahooPowerColors
+                                ZonePalette.INTERVALS ->
+                                    if (zoneConfig.readableColors) intervalsPowerColorsReadable
+                                    else intervalsPowerColors
+                                ZonePalette.ZWIFT ->
+                                    if (zoneConfig.readableColors) zwiftPowerColorsReadable
+                                    else zwiftPowerColors
+                                ZonePalette.HSLUV -> hsluvPowerColors
                             }
                     )
 
                     Text("HR zones", style = MaterialTheme.typography.labelMedium)
-                    ZonePaletteDropdown(
-                        label = "HR zone palette",
+                    ZonePalettePills(
                         selected = zoneConfig.hrPalette,
+                        readable = zoneConfig.readableColors,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(hrPalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
@@ -500,23 +539,39 @@ class MainActivity : ComponentActivity() {
                     ZoneColorBar(
                         colors =
                             when (zoneConfig.hrPalette) {
-                                ZonePalette.KAROO -> karooHrColors.map { it }
-                                ZonePalette.WAHOO -> wahooHrColors.map { it }
-                                ZonePalette.INTERVALS -> intervalsHrColors.map { it }
-                                ZonePalette.ZWIFT -> zwiftHrColors.map { it }
+                                ZonePalette.KAROO ->
+                                    if (zoneConfig.readableColors) karooHrColorsReadable
+                                    else karooHrColors
+                                ZonePalette.WAHOO ->
+                                    if (zoneConfig.readableColors) wahooHrColorsReadable
+                                    else wahooHrColors
+                                ZonePalette.INTERVALS ->
+                                    if (zoneConfig.readableColors) intervalsHrColorsReadable
+                                    else intervalsHrColors
+                                ZonePalette.ZWIFT ->
+                                    if (zoneConfig.readableColors) zwiftHrColorsReadable
+                                    else zwiftHrColors
+                                ZonePalette.HSLUV -> hsluvHrColors
                             }
                     )
 
                     Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
+                    ReadabilityToggle(
+                        readable = zoneConfig.readableColors,
+                        onSelected = { readable ->
+                            zoneConfig = zoneConfig.copy(readableColors = readable)
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
                     Text("Grade", style = MaterialTheme.typography.labelMedium)
-                    GradePaletteDropdown(
+                    GradePalettePills(
                         selected = zoneConfig.gradePalette,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(gradePalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
-                    GradeBandBar(palette = zoneConfig.gradePalette)
+                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
             }
@@ -831,61 +886,165 @@ internal fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneCol
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimeFormatDropdown(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = selected.label,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Time display format") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            TimeFormat.entries.forEach { format ->
-                DropdownMenuItem(
-                    text = { Text(format.label) },
-                    onClick = {
-                        onSelected(format)
-                        expanded = false
-                    },
+private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {
+    val options = TimeFormat.entries
+    val grey = Color(0xFF9E9E9E)
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFEEEEEE))
+                .padding(3.dp)
+                .pointerInput(options, onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { format ->
+            val isSelected = format == selected
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) grey else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = format.label,
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ZonePaletteDropdown(
-    label: String,
-    selected: ZonePalette,
-    onSelected: (ZonePalette) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = selected.label,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            ZonePalette.entries.forEach { palette ->
-                DropdownMenuItem(
-                    text = { Text(palette.label) },
-                    onClick = {
-                        onSelected(palette)
-                        expanded = false
-                    },
+private fun ReadabilityToggle(readable: Boolean, onSelected: (Boolean) -> Unit) {
+    val options = listOf(false, true)
+    val grey = Color(0xFF9E9E9E)
+    Text("Color adjustment", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFEEEEEE))
+                .padding(3.dp)
+                .pointerInput(readable, onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { opt ->
+            val isSelected = opt == readable
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) grey else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = if (opt) "Readable" else "Original",
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ZonePalettePills(
+    selected: ZonePalette,
+    readable: Boolean,
+    onSelected: (ZonePalette) -> Unit,
+) {
+    val options =
+        if (readable) ZonePalette.entries
+        else ZonePalette.entries.filter { it != ZonePalette.HSLUV }
+    val grey = Color(0xFF9E9E9E)
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFEEEEEE))
+                .padding(3.dp)
+                .pointerInput(options, onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { palette ->
+            val isSelected = palette == selected
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) grey else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text =
+                        when (palette) {
+                            ZonePalette.KAROO -> "Karoo"
+                            ZonePalette.WAHOO -> "Wahoo"
+                            ZonePalette.INTERVALS -> "Intervals"
+                            ZonePalette.ZWIFT -> "Zwift"
+                            ZonePalette.HSLUV -> "HSLuv"
+                        },
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+    if (readable) {
+        Text(
+            "HSLuv is designed for Karoo's dark screen",
+            fontSize = 10.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -1091,27 +1250,47 @@ internal fun AvgSpeedThresholdControls(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GradePaletteDropdown(selected: GradePalette, onSelected: (GradePalette) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = selected.label,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Grade palette") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            GradePalette.entries.forEach { palette ->
-                DropdownMenuItem(
-                    text = { Text(palette.label) },
-                    onClick = {
-                        onSelected(palette)
-                        expanded = false
-                    },
+private fun GradePalettePills(selected: GradePalette, onSelected: (GradePalette) -> Unit) {
+    val options = GradePalette.entries
+    val grey = Color(0xFF9E9E9E)
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color(0xFFEEEEEE))
+                .padding(3.dp)
+                .pointerInput(options, onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { palette ->
+            val isSelected = palette == selected
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) grey else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = palette.label,
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
         }
@@ -1119,15 +1298,16 @@ private fun GradePaletteDropdown(selected: GradePalette, onSelected: (GradePalet
 }
 
 @Composable
-private fun GradeBandBar(palette: GradePalette) {
+private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
     val thresholds = when (palette) {
         GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
         GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
         GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
+        GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
     }
     Row(modifier = Modifier.fillMaxWidth()) {
         thresholds.forEachIndexed { i, lower ->
-            val color = gradeColor(lower, palette)
+            val color = gradeColor(lower, palette, readable)
             val label =
                 if (i == thresholds.lastIndex) "${formatGradePct(lower)}%+"
                 else "${formatGradePct(lower)}-${formatGradePct(thresholds[i + 1])}%"
