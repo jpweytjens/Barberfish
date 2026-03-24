@@ -303,7 +303,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         ?.dataPoint?.values?.get(DataType.Field.PAUSED_TIME) ?: 0.0
                 }
             combine(distanceFlow, elapsedFlow, pausedFlow) { distanceM, elapsed, paused ->
-                val movingSeconds = elapsed - paused
+                val movingSeconds = ConvertType.TIME.apply(elapsed) - ConvertType.TIME.apply(paused)
                 val rawMs = if (movingSeconds > 0) distanceM / movingSeconds else 0.0
                 toAvgSpeedFieldState(rawMs, slot.avgSpeedConfig, profile, label)
             }
@@ -390,7 +390,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
             return karooSystem.streamDataFlow(DataType.Type.TIME_OF_ARRIVAL).map { state ->
                 val seconds =
                     (state as? StreamState.Streaming)
-                        ?.dataPoint?.values?.get(DataType.Field.TIME_OF_ARRIVAL)?.toLong() ?: 0L
+                        ?.dataPoint?.values?.get(DataType.Field.TIME_OF_ARRIVAL)
+                        ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
                 timeFieldState(formatClockTime(seconds), kind)
             }
         }
@@ -440,7 +441,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
         )
 
     private fun extractSeconds(state: StreamState, fieldKey: String): Long =
-        (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)?.toLong() ?: 0L
+        (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
+            ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
 
     companion object {
         fun previewStates(

@@ -7,13 +7,23 @@ import io.hammerhead.karooext.models.UserProfile
 // SDK has no .speed sub-property on PreferredUnit; .distance drives the system choice.
 enum class ConvertType {
     NONE,
+    TIME,
     SPEED,
     DISTANCE,
     ELEVATION;
 
+    // For conversions that don't vary by unit system (TIME, NONE)
+    fun apply(raw: Double): Double =
+        when (this) {
+            NONE -> raw
+            TIME -> raw / 1000.0
+            else -> error("$this requires a UserProfile")
+        }
+
     fun apply(raw: Double, profile: UserProfile): Double =
         when (this) {
             NONE -> raw
+            TIME -> raw / 1000.0
             SPEED ->
                 when (profile.preferredUnit.distance) { // m/s → km/h or mph
                     UserProfile.PreferredUnit.UnitType.IMPERIAL -> raw * 2.237
@@ -34,6 +44,7 @@ enum class ConvertType {
     fun unit(profile: UserProfile): String =
         when (this) {
             NONE -> ""
+            TIME -> "s"
             SPEED ->
                 if (profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL)
                     "mph"

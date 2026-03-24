@@ -165,7 +165,7 @@ class AvgSpeedField(
                 distanceM: Double,
                 elapsed: Double,
                 paused: Double ->
-                val movingSeconds = elapsed - paused
+                val movingSeconds = ConvertType.TIME.apply(elapsed) - ConvertType.TIME.apply(paused)
                 val rawMs = if (movingSeconds > 0) distanceM / movingSeconds else 0.0
                 avgSpeedFieldState(rawMs, cfg, profile, includePaused)
             }

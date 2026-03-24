@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -170,5 +171,6 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
         }
 
     private fun extractSeconds(state: StreamState, fieldKey: String): Long =
-        (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)?.toLong() ?: 0L
+        (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
+            ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
 }
