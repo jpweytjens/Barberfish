@@ -2,6 +2,88 @@ package com.jpweytjens.barberfish.datatype.shared
 
 import androidx.compose.ui.graphics.Color
 import io.hammerhead.karooext.models.UserProfile
+import kotlin.math.abs
+import kotlin.math.pow
+
+// APCA-W3 (SAPC-0.98G-4g) Accessible Perceptual Contrast Algorithm.
+// Returns Lc value: |Lc| ≥ 50 is the minimum for readable large text (~18 sp+).
+// Positive = normal polarity (dark text on light bg); negative = reverse (light text on dark bg).
+// Reference: https://github.com/Myndex/SAPC-APCA
+internal fun apcaContrast(textColor: Color, bgColor: Color): Double {
+    // APCA-W3 v0.1.7: luminance uses simple ^2.4 power (not piecewise sRGB linearization).
+    fun luminance(c: Color): Double =
+        c.red.toDouble().pow(2.4) * 0.2126729 +
+            c.green.toDouble().pow(2.4) * 0.7151522 +
+            c.blue.toDouble().pow(2.4) * 0.0721750
+    // Soft clamp for near-black levels (no scaling factor in v0.1.7).
+    fun softClamp(y: Double) = if (y < 0.022) y + (0.022 - y).pow(1.414) else y
+
+    val yt = softClamp(luminance(textColor))
+    val yb = softClamp(luminance(bgColor))
+    if (abs(yb - yt) < 0.0005) return 0.0
+    val sapc =
+        when {
+            yt < yb -> (yb.pow(0.56) - yt.pow(0.57)) * 1.14 // normal: dark text on light bg
+            else -> (yb.pow(0.65) - yt.pow(0.62)) * 1.14    // reverse: light text on dark bg
+        }
+    return when {
+        abs(sapc) < 0.1 -> 0.0
+        sapc > 0 -> (sapc - 0.027) * 100
+        else -> (sapc + 0.027) * 100
+    }
+}
+
+// The Karoo dark ride screen background color.
+internal val karooDark = Color(0xFF1B2D2D)
+
+// True when this color meets minimum APCA contrast on the Karoo dark ride screen.
+internal fun Color.isReadableOnKaroo(minLc: Double = 45.0) =
+    abs(apcaContrast(this, karooDark)) >= minLc
+
+// Raise HSL lightness via binary search until |Lc| ≥ minLc against bg.
+// Returns the original color unchanged if it already passes.
+internal fun Color.adjustedForReadability(bg: Color = karooDark, minLc: Double = 45.0): Color {
+    if (abs(apcaContrast(this, bg)) >= minLc) return this
+    val hsl = toHsl()
+    var lo = hsl[2]
+    var hi = 1f
+    repeat(20) {
+        val mid = (lo + hi) / 2f
+        if (abs(apcaContrast(hslToColor(hsl[0], hsl[1], mid), bg)) >= minLc) hi = mid else lo = mid
+    }
+    return hslToColor(hsl[0], hsl[1], hi)
+}
+
+private fun Color.toHsl(): FloatArray {
+    val r = red; val g = green; val b = blue
+    val max = maxOf(r, g, b); val min = minOf(r, g, b)
+    val l = (max + min) / 2f
+    if (max == min) return floatArrayOf(0f, 0f, l)
+    val d = max - min
+    val s = if (l > 0.5f) d / (2f - max - min) else d / (max + min)
+    val h = when (max) {
+        r -> ((g - b) / d + if (g < b) 6f else 0f) / 6f
+        g -> ((b - r) / d + 2f) / 6f
+        else -> ((r - g) / d + 4f) / 6f
+    }
+    return floatArrayOf(h, s, l)
+}
+
+private fun hslToColor(h: Float, s: Float, l: Float): Color {
+    if (s == 0f) return Color(l, l, l)
+    fun hue2rgb(p: Float, q: Float, t0: Float): Float {
+        val t = if (t0 < 0f) t0 + 1f else if (t0 > 1f) t0 - 1f else t0
+        return when {
+            t < 1f / 6 -> p + (q - p) * 6f * t
+            t < 1f / 2 -> q
+            t < 2f / 3 -> p + (q - p) * (2f / 3 - t) * 6f
+            else -> p
+        }
+    }
+    val q = if (l < 0.5f) l * (1f + s) else l + s - l * s
+    val p = 2f * l - q
+    return Color(hue2rgb(p, q, h + 1f / 3), hue2rgb(p, q, h), hue2rgb(p, q, h - 1f / 3))
+}
 
 // Karoo power zones (7 zones, low to high)
 internal val karooPowerColors =
@@ -77,24 +159,59 @@ internal val zwiftPowerColors =
 // Zwift HR zones (5 zones — first 5 of Zwift palette)
 internal val zwiftHrColors = zwiftPowerColors.take(5)
 
-fun powerZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO): Color {
+// HSLuv power zones: L=66, hue 250°→200°→150°→100°→50°→0°→310°, S=90 (Z1: S=30)
+internal val hsluvPowerColors =
+    listOf(
+        Color(0xFF92A1BE), // Z1 Recovery      (h=250° s=30 l=66)
+        Color(0xFF36B0B8), // Z2 Endurance      (h=200° s=90 l=66)
+        Color(0xFF33B582), // Z3 Tempo          (h=150° s=90 l=66)
+        Color(0xFF91AB31), // Z4 Threshold      (h=100° s=90 l=66)
+        Color(0xFFD29531), // Z5 VO₂max         (h= 50° s=90 l=66)
+        Color(0xFFF87795), // Z6 Anaerobic      (h=  0° s=90 l=66)
+        Color(0xFFF666F0), // Z7 Neuromuscular  (h=310° s=90 l=66)
+    )
+
+// HSLuv HR zones: Wahoo-inspired hue sequence (grey, blue, green, orange, red) at L=66
+internal val hsluvHrColors =
+    listOf(
+        Color(0xFF9C9C9C), // Z1 Recovery  (grey)
+        Color(0xFF829AE2), // Z2 Endurance (blue)
+        Color(0xFF44B352), // Z3 Tempo     (green)
+        Color(0xFFCE9038), // Z4 Threshold (orange)
+        Color(0xFFE06E6E), // Z5 VO₂max    (red)
+    )
+
+// Readable palettes: raw colors lifted to |Lc| ≥ 45 against the Karoo dark background.
+// Colors that already pass are returned unchanged; only lightness is raised, never hue.
+internal val karooPowerColorsReadable = karooPowerColors.map { it.adjustedForReadability() }
+internal val karooHrColorsReadable = karooHrColors.map { it.adjustedForReadability() }
+internal val wahooPowerColorsReadable = wahooPowerColors.map { it.adjustedForReadability() }
+internal val wahooHrColorsReadable = wahooHrColors.map { it.adjustedForReadability() }
+internal val intervalsPowerColorsReadable = intervalsPowerColors.map { it.adjustedForReadability() }
+internal val intervalsHrColorsReadable = intervalsHrColors.map { it.adjustedForReadability() }
+internal val zwiftPowerColorsReadable = zwiftPowerColors.map { it.adjustedForReadability() }
+internal val zwiftHrColorsReadable = zwiftHrColors.map { it.adjustedForReadability() }
+
+fun powerZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO, readable: Boolean = true): Color {
     val colors =
         when (palette) {
-            ZonePalette.KAROO -> karooPowerColors
-            ZonePalette.WAHOO -> wahooPowerColors
-            ZonePalette.INTERVALS -> intervalsPowerColors
-            ZonePalette.ZWIFT -> zwiftPowerColors
+            ZonePalette.KAROO -> if (readable) karooPowerColorsReadable else karooPowerColors
+            ZonePalette.WAHOO -> if (readable) wahooPowerColorsReadable else wahooPowerColors
+            ZonePalette.INTERVALS -> if (readable) intervalsPowerColorsReadable else intervalsPowerColors
+            ZonePalette.ZWIFT -> if (readable) zwiftPowerColorsReadable else zwiftPowerColors
+            ZonePalette.HSLUV -> hsluvPowerColors
         }
     return colors.getOrElse(zone - 1) { Color.White }
 }
 
-fun hrZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO): Color {
+fun hrZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO, readable: Boolean = true): Color {
     val colors =
         when (palette) {
-            ZonePalette.KAROO -> karooHrColors
-            ZonePalette.WAHOO -> wahooHrColors
-            ZonePalette.INTERVALS -> intervalsHrColors
-            ZonePalette.ZWIFT -> zwiftHrColors
+            ZonePalette.KAROO -> if (readable) karooHrColorsReadable else karooHrColors
+            ZonePalette.WAHOO -> if (readable) wahooHrColorsReadable else wahooHrColors
+            ZonePalette.INTERVALS -> if (readable) intervalsHrColorsReadable else intervalsHrColors
+            ZonePalette.ZWIFT -> if (readable) zwiftHrColorsReadable else zwiftHrColors
+            ZonePalette.HSLUV -> hsluvHrColors
         }
     return colors.getOrElse(zone - 1) { Color.White }
 }

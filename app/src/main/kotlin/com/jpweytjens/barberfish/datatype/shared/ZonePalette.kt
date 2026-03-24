@@ -8,4 +8,5 @@ enum class ZonePalette(val label: String) {
     WAHOO("Wahoo"),
     INTERVALS("Intervals.icu"),
     ZWIFT("Zwift"),
+    HSLUV("HSLuv"),
 }

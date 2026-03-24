@@ -220,6 +220,7 @@ data class ZoneConfig(
     val hrPalette: ZonePalette = ZonePalette.KAROO,
     val powerPalette: ZonePalette = ZonePalette.KAROO,
     val gradePalette: GradePalette = GradePalette.WAHOO,
+    val readableColors: Boolean = true,
 )
 
 fun Context.streamZoneConfig(): Flow<ZoneConfig> =
@@ -306,6 +307,7 @@ enum class GradePalette(val label: String) {
     KAROO("Karoo"),
     WAHOO("Wahoo"),
     GARMIN("Garmin"),
+    HSLUV("HSLuv"),
 }
 
 @Serializable data class GradeFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
