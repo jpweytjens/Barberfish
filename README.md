@@ -21,7 +21,7 @@ Zone coloring supports both background-fill and text-color styles across four pa
 | Zone color palettes | Karoo only                                                                                                                                                         | Karoo, Wahoo, Zwift, and Intervals.icu                                                                                                                     |
 | Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                                                                                                              |
 | Grade coloring      | Not available                                                                                                                                                      | Color-coded by road gradient steepness; Karoo, Wahoo, and Garmin palettes                                                                                  |
-| Grade smoothing     | Unknown                                                                                                                                                            | [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) with α=0.15 (~6 s time constant) to reduce noise from GPS elevation changes                                                                           |
+| Grade smoothing     | Unknown                                                                                                                                                            | [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) with α=0.15 (~6 s time constant) to reduce noise from GPS elevation changes                    |
 | Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                                                                                                          |
 | Avg speed threshold | Not available                                                                                                                                                      | Configurable single threshold or min/max range with warning bands                                                                                          |
 | Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                                                                                                     |
@@ -31,22 +31,38 @@ Zone coloring supports both background-fill and text-color styles across four pa
 
 All field settings are configured in the Barberfish app on your Karoo. Changes update live in the settings and take effect immediately without restarting your ride.
 
+### Color palettes
+
+The Karoo ride screen uses a dark background (`#1B2D2D`). Palettes from other platforms were designed for white or light backgrounds, so several of their zone colors are too dark to read as text on the Karoo screen. Wahoo's navy Z2 (`#253070`) e.g. is [very hard to read](https://apcacontrast.com/?BG=1b2d2d&TXT=253070&DEV=G4g&BUF=A22).
+
+#### APCA adjustment
+
+Barberfish adjusts each palette using [APCA](https://apcacontrast.com/), the Accessible Perceptual Contrast Algorithm. Colors below Lc 45 (the minimum for large bold text) have their HSL lightness raised until they pass, keeping the original hue and saturation intact. Colors that already pass are left unchanged.
+
+A known limitation: two colors with the same hue but different dark shades can converge to the same readable color, since their distinction was encoded entirely in darkness. The Wahoo and Garmin grade palettes are affected, e.g. their steepest two bands map to the same readable color.
+
+#### HSLuv palette
+
+The [HSLuv](https://www.hsluv.org/) palette is inspired by the perceptually uniform colormaps available in [seaborn](https://seaborn.pydata.org/tutorial/color_palettes.html). It was designed from the start with equidistant lightness steps across all zones such that every color is already readable on the Karoo screen without modification. The hue and saturation were tuned to produce a color progression that follows the Wahoo palette's character from cool grey to green to redish pink.
+
 ### Zone color palettes
 
-| Palette       | Power zones (Z1 – Z7)           | Heart rate zones (Z1 – Z5)         |
-| ------------- | ------------------------------- | ---------------------------------- |
-| Karoo         | ![](docs/palette-karoo.svg)     | ![](docs/palette-karoo-hr.svg)     |
-| Wahoo         | ![](docs/palette-wahoo.svg)     | ![](docs/palette-wahoo-hr.svg)     |
-| Zwift         | ![](docs/palette-zwift.svg)     | ![](docs/palette-zwift-hr.svg)     |
-| Intervals.icu | ![](docs/palette-intervals.svg) | ![](docs/palette-intervals-hr.svg) |
+| Palette       | Power zones (Z1 – Z7) Original  | Power zones (Z1 – Z7) Readable           | HR zones (Z1 – Z5) Original        | HR zones (Z1 – Z5) Readable                 |
+| ------------- | ------------------------------- | ---------------------------------------- | ---------------------------------- | ------------------------------------------- |
+| Karoo         | ![](docs/palette-karoo.svg)     | ![](docs/palette-karoo-readable.svg)     | ![](docs/palette-karoo-hr.svg)     | ![](docs/palette-karoo-hr-readable.svg)     |
+| Wahoo         | ![](docs/palette-wahoo.svg)     | ![](docs/palette-wahoo-readable.svg)     | ![](docs/palette-wahoo-hr.svg)     | ![](docs/palette-wahoo-hr-readable.svg)     |
+| Zwift         | ![](docs/palette-zwift.svg)     | ![](docs/palette-zwift-readable.svg)     | ![](docs/palette-zwift-hr.svg)     | ![](docs/palette-zwift-hr-readable.svg)     |
+| Intervals.icu | ![](docs/palette-intervals.svg) | ![](docs/palette-intervals-readable.svg) | ![](docs/palette-intervals-hr.svg) | ![](docs/palette-intervals-hr-readable.svg) |
+| HSLuv         |                                 | ![](docs/palette-hsluv.svg)              |                                    | ![](docs/palette-hsluv-hr.svg)              |
 
 ### Grade color palettes
 
-| Palette | Bands (flat → steep)                                                                                  |
-| ------- | ----------------------------------------------------------------------------------------------------- |
-| Karoo   | ![](docs/palette-grade-karoo.svg)<br><sub>0–5% · 5–8% · 8–13% · 13–16% · 16–20% · 20–24% · ≥24%</sub> |
-| Wahoo   | ![](docs/palette-grade-wahoo.svg)<br><sub>0–4% · 4–8% · 8–12% · 12–20% · ≥20%</sub>                   |
-| Garmin  | ![](docs/palette-grade-garmin.svg)<br><sub>0–3% · 3–6% · 6–9% · 9–12% · ≥12%</sub>                    |
+| Palette | Bands (flat → steep)                                  | Original                           | Readable                                    |
+| ------- | ----------------------------------------------------- | ---------------------------------- | ------------------------------------------- |
+| Karoo   | 0–5% · 5–8% · 8–13% · 13–16% · 16–20% · 20–24% · ≥24% | ![](docs/palette-grade-karoo.svg)  | ![](docs/palette-grade-karoo-readable.svg)  |
+| Wahoo   | 0–4% · 4–8% · 8–12% · 12–20% · ≥20%                   | ![](docs/palette-grade-wahoo.svg)  | ![](docs/palette-grade-wahoo-readable.svg)  |
+| Garmin  | 0–3% · 3–6% · 6–9% · 9–12% · ≥12%                     | ![](docs/palette-grade-garmin.svg) | ![](docs/palette-grade-garmin-readable.svg) |
+| HSLuv   | 0–3% · 3–6% · 6–9% · 9–12% · 12–15% · 15–18% · ≥18%   |                                    | ![](docs/palette-grade-hsluv.svg)           |
 
 ### Time formatting
 
