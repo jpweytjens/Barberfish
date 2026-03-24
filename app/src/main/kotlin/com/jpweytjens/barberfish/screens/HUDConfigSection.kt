@@ -309,7 +309,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
     val fieldLabel =
         when (slot.field) {
             HUDSlotField.Speed -> "Speed"
-            HUDSlotField.HR -> "HR"
+            HUDSlotField.HR -> "Heart rate"
             HUDSlotField.Power -> "Power"
             HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.AvgPower -> "Avg Power"
@@ -331,7 +331,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             listOf(
                     "Speed" to HUDSlotField.Speed,
-                    "HR" to HUDSlotField.HR,
+                    "Heart rate" to HUDSlotField.HR,
                     "Power" to HUDSlotField.Power,
                     "Cadence" to HUDSlotField.Cadence,
                     "Avg Power" to HUDSlotField.AvgPower,
