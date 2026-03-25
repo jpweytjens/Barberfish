@@ -2,35 +2,51 @@
 <!--
     Four-column HUD container. Each slot is filled via RemoteViews.removeAllViews() +
     addView() with a barberfish_field.xml RemoteViews instance.
+    hud_elevation_strip is GONE in Phase 1 (reserved for Phase 2 elevation sparkline).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hud_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal">
+    android:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/hud_slot_left"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
-    <FrameLayout
-        android:id="@+id/hud_slot_middle"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        <FrameLayout
+            android:id="@+id/hud_slot_left"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
 
-    <FrameLayout
-        android:id="@+id/hud_slot_right"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        <FrameLayout
+            android:id="@+id/hud_slot_middle"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
 
-    <FrameLayout
-        android:id="@+id/hud_slot_fourth"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        <FrameLayout
+            android:id="@+id/hud_slot_right"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:id="@+id/hud_slot_fourth"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/hud_elevation_strip"
+        android:layout_width="match_parent"
+        android:layout_height="16dp"
+        android:scaleType="fitXY"
+        android:visibility="gone" />
 
 </LinearLayout>

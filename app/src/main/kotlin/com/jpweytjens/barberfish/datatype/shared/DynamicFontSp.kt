@@ -23,7 +23,8 @@ fun dynamicFontSp(
         text.fold(0f) { acc, c ->
             acc +
                 when (c) {
-                    in ":.'\"" -> 0.15f
+                    '.' -> 0.4f
+                    in ":'\""  -> 0.15f
                     in "hms" -> 0.25f
                     else -> 1.0f
                 }

@@ -53,8 +53,10 @@ fun ViewConfig.toViewSizeConfig(
             colSpan == 60 && rowSpan >= 12 -> 10f
             colSpan == 30 && rowSpan >= 15 -> 27f
             colSpan == 30 && rowSpan >= 12 -> 24f
+            colSpan == 20 && rowSpan >= 18 -> 55f
             colSpan == 20 && rowSpan >= 15 -> 27f
             colSpan == 20 && rowSpan >= 12 -> 24f
+            colSpan == 15 && rowSpan >= 18 -> 60f
             colSpan == 15 && rowSpan >= 15 -> 22f
             colSpan == 15 && rowSpan >= 12 -> 20f
             else -> 0f

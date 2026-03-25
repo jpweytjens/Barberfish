@@ -73,8 +73,8 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             val label =
                 if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
                 else "${cfg.smoothing.label} Speed"
-            // values in m/s: 30, 35, 40, 27, 38 km/h
-            return listOf(8.33, 9.72, 11.11, 7.50, 10.56, 12.50, 6.23).map { rawMs ->
+            // values in m/s: 30, 35, 40, 27, 38, 45, 123.4 km/h
+            return listOf(8.33, 9.72, 11.11, 7.50, 10.56, 12.50, 34.28).map { rawMs ->
                 FieldState(
                     "%.1f".format(ConvertType.SPEED.apply(rawMs, profile)),
                     label = label,
