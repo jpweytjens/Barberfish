@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.extension
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.KarooEvent
+import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.OnStreamState
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
@@ -25,6 +26,8 @@ inline fun <reified T : KarooEvent> KarooSystemService.consumerFlow(): Flow<T> =
 }
 
 fun KarooSystemService.streamUserProfile(): Flow<UserProfile> = consumerFlow()
+
+fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consumerFlow()
 
 /**
  * Returns a [FieldState] for non-Streaming states, or null if the state is [StreamState.Streaming].
