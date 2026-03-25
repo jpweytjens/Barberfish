@@ -73,12 +73,20 @@ data class HUDSlotConfig(
 )
 
 @Serializable
+data class SparklineConfig(
+    val enabled: Boolean = true,
+    val lookaheadKm: Int = 10,
+    val skipBands: Int = 1,
+)
+
+@Serializable
 data class HUDConfig(
     val columns: Int = 3,
     val leftSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Speed),
     val middleSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
     val rightSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Power),
     val fourthSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Cadence),
+    val sparkline: SparklineConfig = SparklineConfig(),
 )
 
 fun Context.streamHUDConfig(): Flow<HUDConfig> =
