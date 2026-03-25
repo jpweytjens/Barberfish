@@ -1,14 +1,18 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import android.view.View
+import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
@@ -28,17 +32,26 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.internal.ViewEmitter
 import io.hammerhead.karooext.models.DataType
+import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
+import io.hammerhead.karooext.models.UpdateGraphicConfig
 import io.hammerhead.karooext.models.UserProfile
+import io.hammerhead.karooext.models.ViewConfig
 import kotlin.math.max
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -47,13 +60,64 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.scan
+import kotlinx.coroutines.launch
 
 private const val EMA_ALPHA = 0.15
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HUDField(private val karooSystem: KarooSystemService) :
     HUDDataType("barberfish", "three-column") {
+
+    @OptIn(FlowPreview::class)
+    override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
+        if (config.gridSize.second < 18 || config.preview) {
+            super.startView(context, config, emitter)
+            return
+        }
+        emitter.onNext(UpdateGraphicConfig(showHeader = false))
+        val scope = CoroutineScope(Dispatchers.IO + Job())
+        emitter.setCancellable { scope.cancel() }
+        scope.launch {
+            combine(
+                liveFlow(context).sample(1000L),
+                karooSystem.streamNavigationState().sample(1000L),
+                karooSystem.streamDataFlow(DataType.Type.DISTANCE).sample(1000L),
+                context.streamZoneConfig(),
+            ) { hudState, navState, distState, zoneConfig ->
+                val rv = buildHudRemoteViews(hudState, config, context)
+                val positionM =
+                    (distState as? StreamState.Streaming)
+                        ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
+                        ?.toFloat() ?: 0f
+                val route =
+                    navState.state as? OnNavigationState.NavigationState.NavigatingRoute
+                val elevPoints: List<Pair<Float, Float>> = when {
+                    route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
+                    BuildConfig.DEBUG -> debugElevationFixture()
+                    else -> emptyList()
+                }
+                val dm = context.resources.displayMetrics
+                val bitmap = renderElevationSparkline(
+                    elevationPoints = elevPoints,
+                    positionM       = positionM,
+                    widthPx         = dm.widthPixels,
+                    heightPx        = (16f * dm.density).toInt(),
+                    density         = dm.density,
+                    palette         = zoneConfig.gradePalette,
+                    readable        = zoneConfig.readableColors,
+                )
+                if (bitmap != null) {
+                    rv.setImageViewBitmap(R.id.hud_elevation_sparkline, bitmap)
+                    rv.setViewVisibility(R.id.hud_elevation_sparkline, View.VISIBLE)
+                } else {
+                    rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
+                }
+                rv
+            }.collect { rv -> emitter.updateView(rv) }
+        }
+    }
 
     override fun liveFlow(context: Context): Flow<HUDState> =
         combine(
@@ -443,6 +507,30 @@ class HUDField(private val karooSystem: KarooSystemService) :
     private fun extractSeconds(state: StreamState, fieldKey: String): Long =
         (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
             ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
+
+    // Debug-only: synthetic 20km mountainous profile used when no real route is loaded.
+    // Gives 7% climbs (above all palette thresholds) and descents so all rendering layers fire.
+    private fun debugElevationFixture(): List<Pair<Float, Float>> {
+        val points = mutableListOf<Pair<Float, Float>>()
+        var dist = 0f
+        var elev = 150f
+        val step = 30f
+        // 0–1 km: flat
+        while (dist <= 1000f) { points.add(dist to elev); dist += step }
+        // 1–4 km: 7% climb (+210m)
+        val climbRate1 = 210f / (3000f / step)
+        while (dist <= 4000f) { elev += climbRate1; points.add(dist to elev); dist += step }
+        // 4–6 km: descent (–120m)
+        val descentRate = -120f / (2000f / step)
+        while (dist <= 6000f) { elev += descentRate; points.add(dist to elev); dist += step }
+        // 6–9 km: 7% climb (+210m)
+        val climbRate2 = 210f / (3000f / step)
+        while (dist <= 9000f) { elev += climbRate2; points.add(dist to elev); dist += step }
+        // 9–20 km: gradual descent and flat
+        val tailRate = -100f / (11000f / step)
+        while (dist <= 20000f) { elev += tailRate; points.add(dist to elev); dist += step }
+        return points
+    }
 
     companion object {
         fun previewStates(
