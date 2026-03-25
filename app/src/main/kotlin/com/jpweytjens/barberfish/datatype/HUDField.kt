@@ -85,8 +85,10 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 karooSystem.streamNavigationState().sample(1000L),
                 karooSystem.streamDataFlow(DataType.Type.DISTANCE).sample(1000L),
                 context.streamZoneConfig(),
-            ) { hudState, navState, distState, zoneConfig ->
+                context.streamHUDConfig(),
+            ) { hudState, navState, distState, zoneConfig, hudConfig ->
                 val dm = context.resources.displayMetrics
+                val sparkCfg = hudConfig.sparkline
                 val positionM = if (BuildConfig.DEBUG) 2500f
                     else (distState as? StreamState.Streaming)
                         ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
@@ -99,7 +101,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     else -> emptyList()
                 }
                 val sparklineHeightPx = (28f * dm.density).toInt()
-                val bitmap = renderElevationSparkline(
+                val bitmap = if (sparkCfg.enabled) renderElevationSparkline(
                     elevationPoints = elevPoints,
                     positionM       = positionM,
                     widthPx         = dm.widthPixels,
@@ -107,7 +109,9 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     density         = dm.density,
                     palette         = zoneConfig.gradePalette,
                     readable        = zoneConfig.readableColors,
-                )
+                    lookaheadM      = sparkCfg.lookaheadKm * 1000f,
+                    skipBands       = sparkCfg.skipBands,
+                ) else null
                 val rv = buildHudRemoteViews(
                     hudState,
                     config,

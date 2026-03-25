@@ -115,17 +115,21 @@ internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolea
 }
 
 /**
- * Returns the minimum grade (%) that receives a colour fill in the elevation sparkline —
- * the lower boundary of the second-lowest band (first band above the floor).
+ * Returns the minimum grade (%) that receives a colour fill in the elevation sparkline.
+ *
+ * [skipBands] controls how many of the lowest-grade bands are suppressed (0 = colour
+ * everything including flat terrain, 1 = skip the lowest band (default), 2 = skip the
+ * two lowest, etc.). Clamped so it never exceeds the band count.
  */
-internal fun gradeThreshold(palette: GradePalette): Double {
+internal fun gradeThreshold(palette: GradePalette, skipBands: Int = 1): Double {
     val bands = when (palette) {
         GradePalette.WAHOO  -> WAHOO_GRADE_BANDS
         GradePalette.GARMIN -> GARMIN_GRADE_BANDS
         GradePalette.HSLUV  -> HSLUV_GRADE_BANDS
         GradePalette.KAROO  -> KAROO_GRADE_BANDS
     }
-    return bands[bands.lastIndex - 1].first
+    val idx = (bands.lastIndex - skipBands).coerceAtLeast(0)
+    return bands[idx].first
 }
 
 data class ColorConfig(

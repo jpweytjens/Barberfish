@@ -46,7 +46,6 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
     return result
 }
 
-private const val LOOKAHEAD_M = 10_000f
 private const val POSITION_FRACTION = 0.25f
 private const val MIN_FILL_PX = 4f        // skip colour fills narrower than this many pixels
 private const val MIN_ELEV_RANGE_M = 200f // floor for y-axis so flat terrain doesn't inflate
@@ -71,6 +70,8 @@ internal fun renderElevationSparkline(
     density: Float,
     palette: GradePalette,
     readable: Boolean,
+    lookaheadM: Float = 10_000f,
+    skipBands: Int = 1,
 ): Bitmap? {
     if (elevationPoints.isEmpty()) return null
 
@@ -78,9 +79,9 @@ internal fun renderElevationSparkline(
     // The dot migrates from the left edge to the 25% position as you accumulate past distance.
     val firstDist = elevationPoints.first().first
     val lastDist  = elevationPoints.last().first
-    val rawEnd    = positionM - LOOKAHEAD_M * POSITION_FRACTION + LOOKAHEAD_M
+    val rawEnd    = positionM - lookaheadM * POSITION_FRACTION + lookaheadM
     val windowEnd = rawEnd.coerceAtMost(lastDist)
-    val windowStart = (windowEnd - LOOKAHEAD_M).coerceAtLeast(firstDist)
+    val windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
 
     val visible = elevationPoints
         .filter { (d, _) -> d in windowStart..windowEnd }
@@ -90,7 +91,7 @@ internal fun renderElevationSparkline(
     val elevMax   = visible.maxOf { it.second }
     val elevRange = (elevMax - elevMin).coerceAtLeast(MIN_ELEV_RANGE_M)
 
-    fun toX(d: Float) = ((d - windowStart) / LOOKAHEAD_M * widthPx).coerceIn(0f, widthPx.toFloat())
+    fun toX(d: Float) = ((d - windowStart) / lookaheadM * widthPx).coerceIn(0f, widthPx.toFloat())
     fun toY(e: Float) = (heightPx - (e - elevMin) / elevRange * (heightPx - 2) - 1f).coerceIn(0f, heightPx.toFloat())
 
     val dotX = toX(positionM)
@@ -122,7 +123,7 @@ internal fun renderElevationSparkline(
     }
 
     // 2. Climb fills — merge consecutive same-color segments into one polygon to eliminate seams.
-    val threshold = gradeThreshold(palette)
+    val threshold = gradeThreshold(palette, skipBands)
     paint.style = Paint.Style.FILL
     run {
         var runColor: Int? = null
@@ -198,13 +199,18 @@ internal fun renderElevationSparkline(
         canvas.drawPath(aheadPath, paint)
     }
 
-    // 5. Distance labels at 5 km intervals ahead — adaptive placement, no tick lines
+    // 5. Distance labels ahead — interval adapts to lookahead window size
+    val tickIntervalM = when {
+        lookaheadM <= 6_000f  -> 2_000f
+        lookaheadM <= 12_000f -> 5_000f
+        else                  -> 10_000f
+    }
     paint.style = Paint.Style.FILL
     paint.textSize = 8f * density
     paint.color = android.graphics.Color.argb(220, 255, 255, 255)
     val labelGap = 4f * density
-    var tickDist = (kotlin.math.ceil((positionM + 1f) / 5_000f) * 5_000f)
-    while (tickDist <= positionM + LOOKAHEAD_M) {
+    var tickDist = (kotlin.math.ceil((positionM + 1f) / tickIntervalM) * tickIntervalM)
+    while (tickDist <= positionM + lookaheadM) {
         val tickX = toX(tickDist)
         if (tickX in 0f..widthPx.toFloat()) {
             val elevAtTick = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - tickDist) }
@@ -218,7 +224,7 @@ internal fun renderElevationSparkline(
                 yAtTick + labelGap + paint.textSize     // profile high → label below
             canvas.drawText(label, tickX - labelW / 2f, labelY.coerceIn(paint.textSize, heightPx.toFloat()), paint)
         }
-        tickDist += 5_000f
+        tickDist += tickIntervalM
     }
 
     // 6. Position dot
