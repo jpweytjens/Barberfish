@@ -37,13 +37,17 @@ The Karoo ride screen uses a dark background (`#1B2D2D`). Palettes from other pl
 
 #### APCA adjustment
 
-Barberfish adjusts each palette using [APCA](https://apcacontrast.com/), the Accessible Perceptual Contrast Algorithm. Colors below Lc 45 (the minimum for large bold text) have their HSL lightness raised until they pass, keeping the original hue and saturation intact. Colors that already pass are left unchanged.
+Barberfish adjusts each palette using [APCA](https://apcacontrast.com/), the Accessible Perceptual Contrast Algorithm. Colors below Lc 45 (the minimum for large bold text) have their [HSLuv](https://www.hsluv.org/) lightness raised until they pass, keeping the original hue and saturation intact. HSLuv is perceptually uniform, so raising lightness does not shift the apparent hue. Colors that already pass are left unchanged. Readable values are pre-computed via `scripts/apca_hsluv.py`.
+
+APCA correction is most important for the text zone coloring mode, where colored text appears on the fixed dark Karoo background. In background-fill mode the text is always white, and white on a saturated color is generally easier to read than that same color as text on a dark background.
 
 A known limitation: two colors with the same hue but different dark shades can converge to the same readable color, since their distinction was encoded entirely in darkness. The Wahoo and Garmin grade palettes are affected, e.g. their steepest two bands map to the same readable color.
 
 #### HSLuv palette
 
 The [HSLuv](https://www.hsluv.org/) palette is inspired by the perceptually uniform colormaps available in [seaborn](https://seaborn.pydata.org/tutorial/color_palettes.html). It was designed from the start with equidistant lightness steps across all zones such that every color is already readable on the Karoo screen without modification. The hue and saturation were tuned to produce a color progression that follows the Wahoo palette's character from cool grey to green to redish pink.
+
+The HSLuv grade palette uses the same colors as the HSLuv power palette, assigned to grade bands with Garmin-style spacing (seven bands from flat to steep).
 
 ### Zone color palettes
 
