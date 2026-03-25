@@ -78,9 +78,9 @@ internal fun renderElevationSparkline(
     // The dot migrates from the left edge to the 25% position as you accumulate past distance.
     val firstDist = elevationPoints.first().first
     val lastDist  = elevationPoints.last().first
-    var windowStart = positionM - LOOKAHEAD_M * POSITION_FRACTION
-    if (windowStart < firstDist) windowStart = firstDist
-    val windowEnd = (windowStart + LOOKAHEAD_M).coerceAtMost(lastDist)
+    val rawEnd    = positionM - LOOKAHEAD_M * POSITION_FRACTION + LOOKAHEAD_M
+    val windowEnd = rawEnd.coerceAtMost(lastDist)
+    val windowStart = (windowEnd - LOOKAHEAD_M).coerceAtLeast(firstDist)
 
     val visible = elevationPoints
         .filter { (d, _) -> d in windowStart..windowEnd }
