@@ -83,14 +83,15 @@ private val WAHOO_GRADE_BANDS_READABLE = WAHOO_GRADE_BANDS.map { (t, c) -> t to 
 private val GARMIN_GRADE_BANDS_READABLE = GARMIN_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
 private val KAROO_GRADE_BANDS_READABLE = KAROO_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
 
-internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color {
+internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
+    if (percent < 0) return null
     val bands = when (palette) {
         GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE else WAHOO_GRADE_BANDS
         GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
         GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
     }
-    return bands.firstOrNull { percent >= it.first }?.second ?: bands.last().second
+    return bands.firstOrNull { percent >= it.first }?.second
 }
 
 data class ColorConfig(

@@ -1315,7 +1315,7 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(color))
+                Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(color ?: Color.Transparent))
                 Text(text = label, fontSize = 7.sp, color = Color(0xFF1B2D2D))
             }
         }
