@@ -2,7 +2,7 @@
 <!--
     Four-column HUD container. Each slot is filled via RemoteViews.removeAllViews() +
     addView() with a barberfish_field.xml RemoteViews instance.
-    hud_elevation_strip is GONE in Phase 1 (reserved for Phase 2 elevation sparkline).
+    hud_elevation_sparkline is GONE in Phase 1 (reserved for Phase 2 elevation sparkline).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hud_root"
@@ -43,7 +43,7 @@
     </LinearLayout>
 
     <ImageView
-        android:id="@+id/hud_elevation_strip"
+        android:id="@+id/hud_elevation_sparkline"
         android:layout_width="match_parent"
         android:layout_height="16dp"
         android:scaleType="fitXY"
