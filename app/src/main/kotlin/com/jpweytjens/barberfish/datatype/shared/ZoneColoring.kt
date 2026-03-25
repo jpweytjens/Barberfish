@@ -40,51 +40,6 @@ internal val karooDark = Color(0xFF1B2D2D)
 internal fun Color.isReadableOnKaroo(minLc: Double = 45.0) =
     abs(apcaContrast(this, karooDark)) >= minLc
 
-// Raise HSL lightness via binary search until |Lc| ≥ minLc against bg.
-// Returns the original color unchanged if it already passes.
-internal fun Color.adjustedForReadability(bg: Color = karooDark, minLc: Double = 45.0): Color {
-    if (abs(apcaContrast(this, bg)) >= minLc) return this
-    val hsl = toHsl()
-    var lo = hsl[2]
-    var hi = 1f
-    repeat(20) {
-        val mid = (lo + hi) / 2f
-        if (abs(apcaContrast(hslToColor(hsl[0], hsl[1], mid), bg)) >= minLc) hi = mid else lo = mid
-    }
-    return hslToColor(hsl[0], hsl[1], hi)
-}
-
-private fun Color.toHsl(): FloatArray {
-    val r = red; val g = green; val b = blue
-    val max = maxOf(r, g, b); val min = minOf(r, g, b)
-    val l = (max + min) / 2f
-    if (max == min) return floatArrayOf(0f, 0f, l)
-    val d = max - min
-    val s = if (l > 0.5f) d / (2f - max - min) else d / (max + min)
-    val h = when (max) {
-        r -> ((g - b) / d + if (g < b) 6f else 0f) / 6f
-        g -> ((b - r) / d + 2f) / 6f
-        else -> ((r - g) / d + 4f) / 6f
-    }
-    return floatArrayOf(h, s, l)
-}
-
-private fun hslToColor(h: Float, s: Float, l: Float): Color {
-    if (s == 0f) return Color(l, l, l)
-    fun hue2rgb(p: Float, q: Float, t0: Float): Float {
-        val t = if (t0 < 0f) t0 + 1f else if (t0 > 1f) t0 - 1f else t0
-        return when {
-            t < 1f / 6 -> p + (q - p) * 6f * t
-            t < 1f / 2 -> q
-            t < 2f / 3 -> p + (q - p) * (2f / 3 - t) * 6f
-            else -> p
-        }
-    }
-    val q = if (l < 0.5f) l * (1f + s) else l + s - l * s
-    val p = 2f * l - q
-    return Color(hue2rgb(p, q, h + 1f / 3), hue2rgb(p, q, h), hue2rgb(p, q, h - 1f / 3))
-}
-
 // Karoo power zones (7 zones, low to high)
 internal val karooPowerColors =
     listOf(
@@ -174,16 +129,51 @@ internal val hsluvPowerColors =
 // HSLuv HR zones: Z1, Z2, Z4, Z6, Z7 from the power palette (Wahoo-style selection)
 internal val hsluvHrColors = listOf(0, 1, 3, 5, 6).map { hsluvPowerColors[it] }
 
-// Readable palettes: raw colors lifted to |Lc| ≥ 45 against the Karoo dark background.
-// Colors that already pass are returned unchanged; only lightness is raised, never hue.
-internal val karooPowerColorsReadable = karooPowerColors.map { it.adjustedForReadability() }
-internal val karooHrColorsReadable = karooHrColors.map { it.adjustedForReadability() }
-internal val wahooPowerColorsReadable = wahooPowerColors.map { it.adjustedForReadability() }
-internal val wahooHrColorsReadable = wahooHrColors.map { it.adjustedForReadability() }
-internal val intervalsPowerColorsReadable = intervalsPowerColors.map { it.adjustedForReadability() }
-internal val intervalsHrColorsReadable = intervalsHrColors.map { it.adjustedForReadability() }
-internal val zwiftPowerColorsReadable = zwiftPowerColors.map { it.adjustedForReadability() }
-internal val zwiftHrColorsReadable = zwiftHrColors.map { it.adjustedForReadability() }
+// Readable palettes: HSLuv-corrected to |Lc| ≥ 45 against the Karoo dark background.
+// Pre-computed via scripts/apca_hsluv.py. HR palettes are index subsets of their power palette.
+internal val karooPowerColorsReadable = listOf(
+    Color(0xFF24B34C), // Zone 1 – Active Recovery   (dark green)
+    Color(0xFF40D078), // Zone 2 – Endurance         (mint green)
+    Color(0xFFF0D800), // Zone 3 – Tempo             (yellow)
+    Color(0xFFF08868), // Zone 4 – Lactate Threshold (salmon)
+    Color(0xFFFB7142), // Zone 5 – VO2 Max           (orange)
+    Color(0xFFFC6D71), // Zone 6 – Anaerobic         (red)
+    Color(0xFFE06BF4), // Zone 7 – Neuromuscular     (purple)
+)
+internal val karooHrColorsReadable = listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadable[it] }
+
+internal val wahooPowerColorsReadable = listOf(
+    Color(0xFFC0C0C0), // Zone 1 – Recovery Miles    (grey)
+    Color(0xFF8F97DF), // Zone 2 – Foundation Miles  (navy)
+    Color(0xFF58A1E3), // Zone 3 – Endurance Miles   (blue)
+    Color(0xFF48B830), // Zone 4 – Tempo             (green)
+    Color(0xFFF0D818), // Zone 5 – Steady State      (yellow)
+    Color(0xFFF9741C), // Zone 6 – Climbing Repeats  (orange)
+    Color(0xFFF9706A), // Zone 7 – Power Intervals   (red)
+)
+internal val wahooHrColorsReadable = listOf(0, 1, 3, 5, 6).map { wahooPowerColorsReadable[it] }
+
+internal val intervalsPowerColorsReadable = listOf(
+    Color(0xFF3DB39F), // Zone 1 – Active Recovery   (teal)
+    Color(0xFF3DB33F), // Zone 2 – Endurance         (green)
+    Color(0xFFFCD549), // Zone 3 – Tempo             (yellow)
+    Color(0xFFFC9C49), // Zone 4 – Lactate Threshold (orange)
+    Color(0xFFEC7693), // Zone 5 – VO2 Max           (pink)
+    Color(0xFFA78FE4), // Zone 6 – Anaerobic         (purple)
+    Color(0xFF9F9AAA), // Zone 7 – Neuromuscular     (grey-purple)
+)
+internal val intervalsHrColorsReadable = intervalsPowerColorsReadable.take(5)
+
+internal val zwiftPowerColorsReadable = listOf(
+    Color(0xFF999D9F), // Zone 1 – Active Recovery   (grey)
+    Color(0xFF669CF6), // Zone 2 – Endurance         (blue)
+    Color(0xFF59B962), // Zone 3 – Tempo             (green)
+    Color(0xFFF0C649), // Zone 4 – Lactate Threshold (yellow)
+    Color(0xFFF1785B), // Zone 5 – VO2 Max           (orange)
+    Color(0xFFFA7062), // Zone 6 – Anaerobic         (red)
+    Color(0xFFFA7062), // Zone 7 – Neuromuscular     (red, same as zone 6)
+)
+internal val zwiftHrColorsReadable = zwiftPowerColorsReadable.take(5)
 
 fun powerZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO, readable: Boolean = true): Color {
     val colors =
