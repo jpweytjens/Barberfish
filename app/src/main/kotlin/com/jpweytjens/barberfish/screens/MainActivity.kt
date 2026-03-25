@@ -455,6 +455,8 @@ class MainActivity : ComponentActivity() {
                     HUDConfigSection(
                         hudConfig = hudConfig,
                         zoneConfig = zoneConfig,
+                        timeCfg = timeConfig,
+                        profile = userProfile,
                         onUpdate = { updated ->
                             hudConfig = updated
                             lifecycleScope.launch { saveHUDConfig(updated) }

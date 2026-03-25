@@ -27,6 +27,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -35,8 +37,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.TimeKind
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
+import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
@@ -47,14 +50,19 @@ import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HUDConfigSection(
     hudConfig: HUDConfig,
     zoneConfig: ZoneConfig,
+    timeCfg: TimeConfig,
+    profile: UserProfile,
     onUpdate: (HUDConfig) -> Unit,
 ) {
     var selectedSlot by remember { mutableStateOf<Int?>(0) }
@@ -76,6 +84,8 @@ internal fun HUDConfigSection(
     HUDPreview(
         hudConfig = hudConfig,
         zoneConfig = zoneConfig,
+        timeCfg = timeCfg,
+        profile = profile,
         selectedSlot = selectedSlot,
         onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
     )
@@ -108,9 +118,23 @@ internal fun HUDConfigSection(
 private fun HUDPreview(
     hudConfig: HUDConfig,
     zoneConfig: ZoneConfig,
+    timeCfg: TimeConfig,
+    profile: UserProfile,
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
 ) {
+    val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
+        HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
+    }
+    var index by remember { mutableIntStateOf(0) }
+    LaunchedEffect(states) {
+        index = 0
+        while (true) {
+            delay(Delay.PREVIEW.time)
+            index = (index + 1) % states.size
+        }
+    }
+    val current = states[index]
     val sizeConfig = if (hudConfig.columns == 4) PreviewSizeConfig.HUD_FOUR else PreviewSizeConfig.HUD
     Row(
         modifier =
@@ -120,14 +144,14 @@ private fun HUDPreview(
                 .height(80.dp)
     ) {
         buildList {
-            add(hudConfig.leftSlot)
-            add(hudConfig.middleSlot)
-            add(hudConfig.rightSlot)
-            if (hudConfig.columns == 4) add(hudConfig.fourthSlot)
-        }.forEachIndexed { idx, slotCfg ->
+            add(Triple(0, current.leftSlot, current.leftColorMode))
+            add(Triple(1, current.middleSlot, current.middleColorMode))
+            add(Triple(2, current.rightSlot, current.rightColorMode))
+            if (hudConfig.columns == 4) add(Triple(3, current.fourthSlot, current.fourthColorMode))
+        }.forEach { (idx, field, colorMode) ->
             HUDPreviewCell(
-                field = slotPreviewFieldState(slotCfg, zoneConfig),
-                colorMode = slotCfg.colorMode,
+                field = field,
+                colorMode = colorMode,
                 selected = selectedSlot == idx,
                 onClick = { onSlotSelected(idx) },
                 modifier = Modifier.weight(1f),
@@ -209,60 +233,6 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): FieldState =
-    when (slot.field) {
-        HUDSlotField.Speed ->
-            FieldState(
-                "42.1",
-                if (slot.speedSmoothing == SpeedSmoothingStream.S0) "Speed"
-                else "${slot.speedSmoothing.label} Speed",
-                FieldColor.Default,
-                R.drawable.ic_col_speed,
-            )
-        HUDSlotField.HR ->
-            FieldState(
-                "187",
-                "HR",
-                FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true, readable = zoneConfig.readableColors),
-                R.drawable.ic_col_hr,
-            )
-        HUDSlotField.Power ->
-            FieldState(
-                "247",
-                if (slot.powerSmoothing == PowerSmoothingStream.S0) "Power"
-                else "${slot.powerSmoothing.label} Power",
-                FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false, readable = zoneConfig.readableColors),
-                R.drawable.ic_col_power,
-            )
-        HUDSlotField.Cadence ->
-            FieldState(
-                "87",
-                if (slot.cadenceSmoothing == CadenceSmoothingStream.S0) "Cadence"
-                else "${slot.cadenceSmoothing.label} Cad",
-                FieldColor.Default,
-                R.drawable.ic_cadence,
-            )
-        HUDSlotField.AvgPower ->
-            FieldState("220", "Avg Power", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false, readable = zoneConfig.readableColors), R.drawable.ic_avg_power)
-        HUDSlotField.NP ->
-            FieldState("247", "NP", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false, readable = zoneConfig.readableColors), R.drawable.ic_col_power)
-        HUDSlotField.Grade ->
-            FieldState("6.2%", "Grade", FieldColor.Grade(6.2, zoneConfig.gradePalette, zoneConfig.readableColors), R.drawable.ic_grade)
-        is HUDSlotField.AvgSpeed ->
-            FieldState(
-                "30.0",
-                if (slot.field.includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
-                FieldColor.Default,
-                R.drawable.ic_speed_average,
-            )
-        is HUDSlotField.Time ->
-            FieldState(
-                "23'45\"",
-                slot.field.kind.label,
-                FieldColor.Default,
-                slot.field.kind.iconRes,
-            )
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
