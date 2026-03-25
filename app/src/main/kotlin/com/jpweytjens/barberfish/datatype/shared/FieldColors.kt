@@ -56,15 +56,15 @@ private val GARMIN_GRADE_BANDS = listOf(
      0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
 )
 
-// HSLuv grade bands — same colors as HSLuv power zones, Garmin-style spacing
+// HSLuv grade bands — aliased to HSLuv power palette, Garmin-style grade spacing
 private val HSLUV_GRADE_BANDS = listOf(
-    18.0 to Color(0xFFF666F0), // >18%       purple
-    15.0 to Color(0xFFF87795), // 15–18%     pink-red
-    12.0 to Color(0xFFD29531), // 12–15%     orange
-     9.0 to Color(0xFF91AB31), //  9–12%     yellow-green
-     6.0 to Color(0xFF33B582), //  6–9%      green
-     3.0 to Color(0xFF36B0B8), //  3–6%      teal
-     0.0 to Color(0xFF92A1BE), //  0–3%      blue-gray
+    18.0 to hsluvPowerColors[6], // >18%       purple/neuromuscular
+    15.0 to hsluvPowerColors[5], // 15–18%     red/anaerobic
+    12.0 to hsluvPowerColors[4], // 12–15%     yellow/VO₂max
+     9.0 to hsluvPowerColors[3], //  9–12%     yellow-green/threshold
+     6.0 to hsluvPowerColors[2], //  6–9%      green/tempo
+     3.0 to hsluvPowerColors[1], //  3–6%      teal/endurance
+     0.0 to hsluvPowerColors[0], //  <3%       blue-gray/recovery
 )
 
 // Reuses Karoo power zone palette (green→yellow→orange→red→purple)
@@ -78,10 +78,30 @@ private val KAROO_GRADE_BANDS = listOf(
      0.0 to karooPowerColors[0], //  <4.6%     — dark green
 )
 
-// Readable grade bands — colors lifted to |Lc| ≥ 45 against the Karoo dark background.
-private val WAHOO_GRADE_BANDS_READABLE = WAHOO_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
-private val GARMIN_GRADE_BANDS_READABLE = GARMIN_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
-private val KAROO_GRADE_BANDS_READABLE = KAROO_GRADE_BANDS.map { (t, c) -> t to c.adjustedForReadability() }
+// Readable grade bands — HSLuv-corrected to |Lc| ≥ 45. Pre-computed via scripts/apca_hsluv.py.
+private val WAHOO_GRADE_BANDS_READABLE = listOf(
+    20.0 to Color(0xFFFF6A6A), // 20%+
+    12.0 to Color(0xFFFF6A6A), // 12–19.9%
+     8.0 to Color(0xFFFF6D49), //  8–11.9%
+     4.0 to Color(0xFFFEFF00), //  4–7.9%
+     0.0 to Color(0xFF04FE00), //  0–3.9%
+)
+private val GARMIN_GRADE_BANDS_READABLE = listOf(
+    12.0 to Color(0xFFFA6F71), // >12%  HC
+     9.0 to Color(0xFFF37479), //  9–12% Cat 1
+     6.0 to Color(0xFFFBAD41), //  6–9%  Cat 2
+     3.0 to Color(0xFFF9EE44), //  3–6%  Cat 3
+     0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
+)
+private val KAROO_GRADE_BANDS_READABLE = listOf(
+    23.6 to karooPowerColorsReadable[6], // >23.5%     — purple
+    19.6 to karooPowerColorsReadable[5], // 19.6–23.5% — red
+    15.6 to karooPowerColorsReadable[4], // 15.6–19.5% — orange
+    12.6 to karooPowerColorsReadable[3], // 12.6–15.5% — salmon
+     7.6 to karooPowerColorsReadable[2], //  7.6–12.5% — yellow
+     4.6 to karooPowerColorsReadable[1], //  4.6–7.5%  — mint green
+     0.0 to karooPowerColorsReadable[0], //  <4.6%     — dark green
+)
 
 internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
     if (percent < 0) return null
