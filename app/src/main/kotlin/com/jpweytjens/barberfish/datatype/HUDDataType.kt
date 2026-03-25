@@ -31,19 +31,25 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         state: HUDState,
         config: ViewConfig,
         context: Context,
+        sparklineHeightPx: Int = 0,
     ): RemoteViews {
         val colSpanOverride = if (state.columns == 4) 15 else 20
         val textSizeOverride = if (state.columns == 4) 37 else 42
         val sizeConfig = config.toViewSizeConfig(
             colSpanOverride  = colSpanOverride,
             textSizeOverride = textSizeOverride,
-        )
+        ).let { cfg ->
+            if (sparklineHeightPx > 0)
+                cfg.copy(valueTranslationY = (cfg.valueTranslationY - sparklineHeightPx / 2f).coerceAtLeast(0f))
+            else cfg
+        }
         val layoutRes =
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
         val rv = RemoteViews(context.packageName, layoutRes)
-        // 2dp top/bottom padding
+        // 2dp top padding; drop bottom padding when sparkline fills the bottom edge
         val paddingPx = (2f * context.resources.displayMetrics.density).toInt()
-        rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, paddingPx)
+        val bottomPaddingPx = if (sparklineHeightPx > 0) 0 else paddingPx
+        rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, bottomPaddingPx)
         // Preview corner radius
         if (config.preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             rv.setViewOutlinePreferredRadius(R.id.hud_root, 12f, TypedValue.COMPLEX_UNIT_DIP)

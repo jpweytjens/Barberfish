@@ -86,27 +86,33 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 karooSystem.streamDataFlow(DataType.Type.DISTANCE).sample(1000L),
                 context.streamZoneConfig(),
             ) { hudState, navState, distState, zoneConfig ->
-                val rv = buildHudRemoteViews(hudState, config, context)
-                val positionM =
-                    (distState as? StreamState.Streaming)
+                val dm = context.resources.displayMetrics
+                val positionM = if (BuildConfig.DEBUG) 2500f
+                    else (distState as? StreamState.Streaming)
                         ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
                         ?.toFloat() ?: 0f
                 val route =
                     navState.state as? OnNavigationState.NavigationState.NavigatingRoute
                 val elevPoints: List<Pair<Float, Float>> = when {
-                    route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
                     BuildConfig.DEBUG -> debugElevationFixture()
+                    route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
                     else -> emptyList()
                 }
-                val dm = context.resources.displayMetrics
+                val sparklineHeightPx = (28f * dm.density).toInt()
                 val bitmap = renderElevationSparkline(
                     elevationPoints = elevPoints,
                     positionM       = positionM,
                     widthPx         = dm.widthPixels,
-                    heightPx        = (16f * dm.density).toInt(),
+                    heightPx        = sparklineHeightPx,
                     density         = dm.density,
                     palette         = zoneConfig.gradePalette,
                     readable        = zoneConfig.readableColors,
+                )
+                val rv = buildHudRemoteViews(
+                    hudState,
+                    config,
+                    context,
+                    sparklineHeightPx = if (bitmap != null) sparklineHeightPx else 0,
                 )
                 if (bitmap != null) {
                     rv.setImageViewBitmap(R.id.hud_elevation_sparkline, bitmap)
@@ -508,27 +514,32 @@ class HUDField(private val karooSystem: KarooSystemService) :
         (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
             ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
 
-    // Debug-only: synthetic 20km mountainous profile used when no real route is loaded.
-    // Gives 7% climbs (above all palette thresholds) and descents so all rendering layers fire.
+    // Debug-only: synthetic 18 km profile with multiple grade bands so all colour levels fire.
     private fun debugElevationFixture(): List<Pair<Float, Float>> {
         val points = mutableListOf<Pair<Float, Float>>()
         var dist = 0f
-        var elev = 150f
+        var elev = 80f
         val step = 30f
-        // 0–1 km: flat
-        while (dist <= 1000f) { points.add(dist to elev); dist += step }
-        // 1–4 km: 7% climb (+210m)
-        val climbRate1 = 210f / (3000f / step)
-        while (dist <= 4000f) { elev += climbRate1; points.add(dist to elev); dist += step }
-        // 4–6 km: descent (–120m)
-        val descentRate = -120f / (2000f / step)
-        while (dist <= 6000f) { elev += descentRate; points.add(dist to elev); dist += step }
-        // 6–9 km: 7% climb (+210m)
-        val climbRate2 = 210f / (3000f / step)
-        while (dist <= 9000f) { elev += climbRate2; points.add(dist to elev); dist += step }
-        // 9–20 km: gradual descent and flat
-        val tailRate = -100f / (11000f / step)
-        while (dist <= 20000f) { elev += tailRate; points.add(dist to elev); dist += step }
+
+        fun section(lengthM: Float, gradePercent: Float) {
+            val elevPerStep = gradePercent / 100f * step
+            val end = dist + lengthM
+            while (dist <= end) { points.add(dist to elev); dist += step; elev += elevPerStep }
+        }
+
+        section(600f,   0f)   // flat start
+        section(800f,   5f)   // moderate climb — mid band
+        section(400f,   9f)   // steep
+        section(300f,  14f)   // very steep — top band
+        section(700f,  -8f)   // descent
+        section(400f,   0f)   // flat valley
+        section(500f,   4.5f) // gentle — lowest coloured band
+        section(600f,  10f)   // steep ramp
+        section(400f,  16f)   // near-max pitch — top band again
+        section(400f,  -6f)   // short descent
+        section(1200f,  0f)   // flat ahead
+        section(8000f, -1f)   // gradual tail descent
+
         return points
     }
 
