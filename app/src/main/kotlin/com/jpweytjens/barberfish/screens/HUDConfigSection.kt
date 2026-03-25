@@ -24,6 +24,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.HUDField
@@ -43,6 +48,8 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
+import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
+import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -144,26 +151,53 @@ private fun HUDPreview(
     }
     val current = states[index]
     val sizeConfig = if (hudConfig.columns == 4) PreviewSizeConfig.HUD_FOUR else PreviewSizeConfig.HUD
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black)
-                .height(80.dp)
+
+    val density = LocalDensity.current.density
+    val screenWidthPx = (LocalConfiguration.current.screenWidthDp * density).toInt()
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, screenWidthPx) {
+        if (!hudConfig.sparkline.enabled) null
+        else renderElevationSparkline(
+            elevationPoints = previewElevationFixture(),
+            positionM       = 2_500f,
+            widthPx         = screenWidthPx,
+            heightPx        = (28f * density).toInt(),
+            density         = density,
+            palette         = zoneConfig.gradePalette,
+            readable        = zoneConfig.readableColors,
+            lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
+            skipBands       = hudConfig.sparkline.skipBands,
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black)
     ) {
-        buildList {
-            add(Triple(0, current.leftSlot, current.leftColorMode))
-            add(Triple(1, current.middleSlot, current.middleColorMode))
-            add(Triple(2, current.rightSlot, current.rightColorMode))
-            if (hudConfig.columns == 4) add(Triple(3, current.fourthSlot, current.fourthColorMode))
-        }.forEach { (idx, field, colorMode) ->
-            HUDPreviewCell(
-                field = field,
-                colorMode = colorMode,
-                selected = selectedSlot == idx,
-                onClick = { onSlotSelected(idx) },
-                modifier = Modifier.weight(1f),
-                sizeConfig = sizeConfig,
+        Row(Modifier.fillMaxWidth().height(80.dp)) {
+            buildList {
+                add(Triple(0, current.leftSlot, current.leftColorMode))
+                add(Triple(1, current.middleSlot, current.middleColorMode))
+                add(Triple(2, current.rightSlot, current.rightColorMode))
+                if (hudConfig.columns == 4) add(Triple(3, current.fourthSlot, current.fourthColorMode))
+            }.forEach { (idx, field, colorMode) ->
+                HUDPreviewCell(
+                    field = field,
+                    colorMode = colorMode,
+                    selected = selectedSlot == idx,
+                    onClick = { onSlotSelected(idx) },
+                    modifier = Modifier.weight(1f),
+                    sizeConfig = sizeConfig,
+                )
+            }
+        }
+        if (sparklineBitmap != null) {
+            Image(
+                bitmap = sparklineBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(28.dp),
+                contentScale = ContentScale.FillBounds,
             )
         }
     }

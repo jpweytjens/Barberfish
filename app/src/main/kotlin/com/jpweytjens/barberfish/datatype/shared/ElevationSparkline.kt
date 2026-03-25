@@ -234,3 +234,18 @@ internal fun renderElevationSparkline(
 
     return bitmap
 }
+
+/** Synthetic 18 km elevation profile used for previews and debug builds. */
+internal fun previewElevationFixture(): List<Pair<Float, Float>> {
+    val points = mutableListOf<Pair<Float, Float>>()
+    var dist = 0f; var elev = 80f; val step = 30f
+    fun section(lengthM: Float, gradePercent: Float) {
+        val elevPerStep = gradePercent / 100f * step
+        val end = dist + lengthM
+        while (dist <= end) { points.add(dist to elev); dist += step; elev += elevPerStep }
+    }
+    section(600f,   0f); section(800f,   5f); section(400f,   9f); section(300f,  14f)
+    section(700f,  -8f); section(400f,   0f); section(500f,   4.5f); section(600f,  10f)
+    section(400f,  16f); section(400f,  -6f); section(1200f,  0f); section(8000f, -1f)
+    return points
+}

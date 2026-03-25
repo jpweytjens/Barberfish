@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
+import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -518,34 +519,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
         (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
             ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
 
-    // Debug-only: synthetic 18 km profile with multiple grade bands so all colour levels fire.
-    private fun debugElevationFixture(): List<Pair<Float, Float>> {
-        val points = mutableListOf<Pair<Float, Float>>()
-        var dist = 0f
-        var elev = 80f
-        val step = 30f
-
-        fun section(lengthM: Float, gradePercent: Float) {
-            val elevPerStep = gradePercent / 100f * step
-            val end = dist + lengthM
-            while (dist <= end) { points.add(dist to elev); dist += step; elev += elevPerStep }
-        }
-
-        section(600f,   0f)   // flat start
-        section(800f,   5f)   // moderate climb — mid band
-        section(400f,   9f)   // steep
-        section(300f,  14f)   // very steep — top band
-        section(700f,  -8f)   // descent
-        section(400f,   0f)   // flat valley
-        section(500f,   4.5f) // gentle — lowest coloured band
-        section(600f,  10f)   // steep ramp
-        section(400f,  16f)   // near-max pitch — top band again
-        section(400f,  -6f)   // short descent
-        section(1200f,  0f)   // flat ahead
-        section(8000f, -1f)   // gradual tail descent
-
-        return points
-    }
+    private fun debugElevationFixture() = previewElevationFixture()
 
     companion object {
         fun previewStates(
