@@ -9,7 +9,7 @@ import kotlin.math.sqrt
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
 private val MUTED_GREY = Color(0xFF7D7D7D)
-private val ICON_TINT_TEAL = Color(0xFF31E09A)
+internal val ICON_TINT_TEAL = Color(0xFF31E09A)
 
 // RdYlGn color map (single threshold) — neutral center is white
 internal val RDYLGN_RED = Color(0xFFD73027)
@@ -112,6 +112,20 @@ internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolea
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second
+}
+
+/**
+ * Returns the minimum grade (%) that receives a colour fill in the elevation sparkline —
+ * the lower boundary of the second-lowest band (first band above the floor).
+ */
+internal fun gradeThreshold(palette: GradePalette): Double {
+    val bands = when (palette) {
+        GradePalette.WAHOO  -> WAHOO_GRADE_BANDS
+        GradePalette.GARMIN -> GARMIN_GRADE_BANDS
+        GradePalette.HSLUV  -> HSLUV_GRADE_BANDS
+        GradePalette.KAROO  -> KAROO_GRADE_BANDS
+    }
+    return bands[bands.lastIndex - 1].first
 }
 
 data class ColorConfig(
