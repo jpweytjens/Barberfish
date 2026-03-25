@@ -42,12 +42,15 @@ import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
+import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -112,6 +115,11 @@ internal fun HUDConfigSection(
             },
         )
     }
+    SparklineConfigSection(
+        config = hudConfig.sparkline,
+        palette = zoneConfig.gradePalette,
+        onUpdate = { onUpdate(hudConfig.copy(sparkline = it)) },
+    )
 }
 
 @Composable
@@ -406,6 +414,106 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
         onSelected = { onUpdate(slot.copy(cadenceSmoothing = it)) },
         thumbIcon = R.drawable.ic_cadence,
     )
+}
+
+@Composable
+private fun SparklineConfigSection(
+    config: SparklineConfig,
+    palette: GradePalette,
+    onUpdate: (SparklineConfig) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFFD5D5D5))
+                .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            "ELEVATION SPARKLINE",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1B2D2D),
+        )
+        SegmentedRow(
+            options = listOf(true to "On", false to "Off"),
+            selected = config.enabled,
+            onSelect = { onUpdate(config.copy(enabled = it)) },
+        )
+        if (config.enabled) {
+            Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+            SegmentedRow(
+                options = listOf(5 to "5 km", 10 to "10 km", 20 to "20 km"),
+                selected = config.lookaheadKm,
+                onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+            )
+            val threshold = gradeThreshold(palette, config.skipBands)
+            Text("GRADE BANDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SegmentedRow(
+                    options = listOf(0 to "0", 1 to "1", 2 to "2", 3 to "3"),
+                    selected = config.skipBands,
+                    onSelect = { onUpdate(config.copy(skipBands = it)) },
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "≥${"%.0f".format(threshold)}%",
+                    fontSize = 11.sp,
+                    color = Color(0xFF1B2D2D),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> SegmentedRow(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(options, onSelect) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val idx =
+                            (down.position.x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
+                        onSelect(options[idx].first)
+                    }
+                }
+    ) {
+        options.forEach { (value, label) ->
+            val isSelected = selected == value
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Color(0xFF9E9E9E) else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = Color(0xFF1B2D2D),
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
