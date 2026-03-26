@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
 import android.util.TypedValue
@@ -75,6 +76,10 @@ private fun makeFieldRemoteViews(
         else android.graphics.Color.WHITE
     val hGravity = alignment.toHorizontalGravity()
     val cellWidthPx = dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx
+    val iconWidthPx = if (field.iconRes != null)
+        (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
+    else 0f
+    val labelAvailableWidthPx = cellWidthPx - iconWidthPx
     val (fontSp, maxLines) = fontSizeForCell(
         field.primary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
         wrapThresholdSp = sizeConfig.wrapThresholdSp,
@@ -99,19 +104,30 @@ private fun makeFieldRemoteViews(
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
 
-    // Label
+    // Label — HUD slots: dynamic sizing from headerFontSize base using DEFAULT typeface.
+    // Regular (1/2-col): font and line count stay fixed from sizeConfig.
+    val labelFontSp: Float
+    val labelLines: Int
+    if (sizeConfig.colSpan < 30) {
+        val (sp, _) = fontSizeForCell(
+            displayLabel,
+            sizeConfig.headerFontSize.value.toInt(),
+            labelAvailableWidthPx,
+            density,
+            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+            typeface = Typeface.DEFAULT,
+        )
+        labelFontSp = sp.toFloat()
+        labelLines = 2  // all HUD slots always reserve 2-line height for consistent alignment
+    } else {
+        labelFontSp = sizeConfig.headerFontSize.value
+        labelLines = sizeConfig.labelMaxLines
+    }
     rv.setTextViewText(R.id.field_label, displayLabel)
     rv.setTextColor(R.id.field_label, labelArgb)
-    rv.setTextViewTextSize(
-        R.id.field_label,
-        TypedValue.COMPLEX_UNIT_SP,
-        sizeConfig.headerFontSize.value,
-    )
-    // Wide cells: collapse to 1 line (setLines overrides android:lines="2" from XML).
-    // Narrow cells: XML lines="2" stays, preserving 2-line reserved height for long labels.
-    if (sizeConfig.labelMaxLines == 1) {
-        rv.setInt(R.id.field_label, "setLines", 1)
-    }
+    rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
+    // XML default is android:lines="2"; only override when 1 line is needed.
+    if (labelLines == 1) rv.setInt(R.id.field_label, "setLines", 1)
     rv.setInt(R.id.field_label, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
 
     // Icon
