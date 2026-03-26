@@ -144,7 +144,8 @@ internal fun FieldColor.toBackgroundColor(): Color? =
     when (this) {
         is FieldColor.Default,
         is FieldColor.Error,
-        is FieldColor.Muted -> null
+        is FieldColor.Muted,
+        is FieldColor.StreamState -> null
         is FieldColor.Threshold -> thresholdColor(factor)
         is FieldColor.DangerZone ->
             dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
@@ -158,6 +159,7 @@ internal fun FieldColor.toColor(): Color? =
         is FieldColor.Default -> null
         is FieldColor.Error -> ERROR_RED
         is FieldColor.Muted -> MUTED_GREY
+        is FieldColor.StreamState -> null
         is FieldColor.Threshold -> thresholdColor(factor)
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
@@ -170,15 +172,16 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
     val onBg = bg != null
     val valueColor: Color =
         when {
-            // Error/Muted always use their own text color regardless of colorMode
-            this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: Color.White
+            // Error/Muted always use their own text color regardless of colorMode.
+            // StreamState goes to stream_state_tv (white in XML); valueText unused but set white.
+            this is FieldColor.Error || this is FieldColor.Muted || this is FieldColor.StreamState -> toColor() ?: Color.White
             colorMode == ZoneColorMode.TEXT -> toColor() ?: Color.White
             else -> Color.White
         }
     return ColorConfig(
         valueText = valueColor,
         headerText = Color.White,
-        iconTint = if (onBg) Color.White else ICON_TINT_TEAL,
+        iconTint = if (onBg || this is FieldColor.StreamState) Color.White else ICON_TINT_TEAL,
         background = bg,
     )
 }

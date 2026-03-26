@@ -11,13 +11,13 @@ data class FieldState(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
-        fun unavailable(label: String) = FieldState("---", label, FieldColor.Default)
+        fun unavailable(label: String) = FieldState("—", label, FieldColor.Error)
 
-        fun noSensor(label: String = "") = FieldState("No sensor", label, FieldColor.Error)
+        fun searching(label: String = "") = FieldState("Searching...", label, FieldColor.StreamState)
 
-        fun notAvailable(label: String = "") = FieldState("Not available", label, FieldColor.Error)
+        fun notAvailable(label: String = "") = FieldState("Not available", label, FieldColor.StreamState)
 
-        fun noData(label: String = "") = FieldState("No data", label, FieldColor.Muted)
+        fun idle(label: String = "") = FieldState("No data", label, FieldColor.StreamState)
     }
 }
 
@@ -46,9 +46,11 @@ sealed interface FieldColor {
         val hasSafeZone: Boolean,
     ) : FieldColor
 
-    data object Error : FieldColor // sensor missing or unavailable — #FF5252 red
+    data object Error : FieldColor // null value in a live stream — #FF5252 red in field_value
 
-    data object Muted : FieldColor // sensor idle, no data flowing — #7D7D7D grey
+    data object Muted : FieldColor // reserved — #7D7D7D grey
+
+    data object StreamState : FieldColor // SDK non-Streaming state — white ibm-plex-sans-condensed in stream_state_tv
 
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
     data class Grade(val percent: Double, val palette: GradePalette, val readable: Boolean = true) : FieldColor

@@ -35,7 +35,7 @@ fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consum
 fun StreamState.toErrorFieldState(label: String = ""): FieldState? =
     when (this) {
         is StreamState.Streaming -> null
-        is StreamState.Searching -> FieldState.noSensor(label)
+        is StreamState.Searching -> FieldState.searching(label)
         is StreamState.NotAvailable -> FieldState.notAvailable(label)
-        else -> FieldState.noData(label) // Idle: sensor stopped emitting data
+        else -> FieldState.idle(label) // Idle: sensor stopped emitting data
     }
