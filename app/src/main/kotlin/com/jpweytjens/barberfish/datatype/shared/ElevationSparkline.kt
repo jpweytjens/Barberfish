@@ -199,24 +199,23 @@ internal fun renderElevationSparkline(
         canvas.drawPath(aheadPath, paint)
     }
 
-    // 5. Distance labels ahead — interval adapts to lookahead window size
-    val tickIntervalM = when {
-        lookaheadM <= 6_000f  -> 2_000f
-        lookaheadM <= 12_000f -> 5_000f
-        else                  -> 10_000f
-    }
+    // 5. Distance labels ahead — interval is half the lookahead window
+    val tickIntervalM = lookaheadM / 2f
     paint.style = Paint.Style.FILL
     paint.textSize = 10f * density
     paint.color = android.graphics.Color.WHITE
     val labelGap = 4f * density
-    var tickDist = (kotlin.math.ceil((positionM + 1f) / tickIntervalM) * tickIntervalM)
+    var tickDist = positionM + tickIntervalM
     while (tickDist <= positionM + lookaheadM) {
         val tickX = toX(tickDist)
         if (tickX in 0f..widthPx.toFloat()) {
             val elevAtTick = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - tickDist) }
                 ?.second ?: visible.last().second
             val yAtTick = toY(elevAtTick)
-            val label = ((tickDist - positionM) / 1_000f).toInt().toString()
+            val label = if (tickIntervalM % 1_000f != 0f)
+                "%.1f".format((tickDist - positionM) / 1_000f)
+            else
+                ((tickDist - positionM) / 1_000f).toInt().toString()
             val labelW = paint.measureText(label)
             val labelY = if (yAtTick > heightPx / 2f)
                 yAtTick - labelGap                      // profile low → label above
