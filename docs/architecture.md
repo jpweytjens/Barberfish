@@ -96,7 +96,7 @@ All spacing and sizing constants for one rendering context live in a single `Vie
 ```
 Cell level   paddingH
 Header       headerIconSize, headerIconLabelGap, headerFontSize, labelMaxLines
-Value        valueFontSizeBase, baseChars, valueTranslationY
+Value        valueFontSizeBase, wrapThresholdSp, valueTranslationY
 ```
 
 One preset ships out of the box:
@@ -124,56 +124,48 @@ For HUD slots the SDK `textSize` is meaningless, so `textSizeOverride` is used i
 
 | HUD columns | `colSpanOverride` | `textSizeOverride` |
 | ----------- | ----------------- | ------------------ |
-| 3-col       | 20                | 36 sp              |
-| 4-col       | 15                | 30 sp              |
+| 3-col       | 20                | 42 sp              |
+| 4-col       | 15                | 37 sp              |
 
-### Dynamic shrinking: `dynamicFontSp`
+### Dynamic shrinking: `fontSizeForCell`
 
-`valueFontSizeBase` is the *ceiling* — the size used when the value is short. For longer strings, `dynamicFontSp()` shrinks the font proportionally:
+`valueFontSizeBase` is the *ceiling* — the size used when the value is short. For longer strings, `fontSizeForCell()` shrinks the font using exact glyph measurements:
 
 ```
-dynamicFontSp(text, fontSizeBase, baseChars, k = 1.05)
+fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 ```
 
-1. Compute the effective character count of `text` using weighted widths:
+1. Measure text width at `fontSizeBaseSp` using `Paint.measureText()`.
+2. If it fits in `cellWidthPx` → return `fontSizeBaseSp` unchanged.
+3. Otherwise → scale proportionally: `floor(fontSizeBaseSp × cellWidthPx / measuredWidth)`.
+4. If the scaled result drops below `wrapThresholdSp` → attempt 2-line split at the word boundary
+   nearest the midpoint; size to the longer half.
 
-   | Characters      | Weight |
-   | --------------- | ------ |
-   | digits, letters | 1.0    |
-   | `h` `m` `s`     | 0.25   |
-   | `: . ' "`       | 0.15   |
+### `wrapThresholdSp` per layout
 
-2. If `effective ≤ baseChars` → return `fontSizeBase` unchanged.
-3. Otherwise → `floor(fontSizeBase × k × baseChars / effective)`, capped at `fontSizeBase`.
-
-The `k = 1.05` factor increases the font to take up as much of the width as possible, to reduce abrupt font size changes.
-
-### `baseChars` per layout
-
-`baseChars` controls how aggressively the font shrinks and is derived from `colSpan` in `ViewConfig.toViewSizeConfig()`:
-
-| `colSpan` | Layout context | `baseChars` | Starts shrinking at… |
-| --------- | -------------- | ----------- | -------------------- |
-| 60        | 1-column field | 6           | 7th effective char   |
-| 30        | 2-column field | 4           | 5th effective char   |
-| 20        | HUD 3-col slot | 4           | 5th effective char   |
-| 15        | HUD 4-col slot | 3           | 4th effective char   |
+| `colSpan` | Layout context | `wrapThresholdSp` |
+| --------- | -------------- | ----------------- |
+| 60        | 1-column field | 22                |
+| 30        | 2-column field | 18                |
+| 20        | HUD 3-col slot | 14                |
+| 15        | HUD 4-col slot | 12                |
 
 ### End-to-end flow
 
 ```
 ViewConfig.textSize  (SDK, sp, layout-aware)
-  │  or textSizeOverride (HUD slots: 36 for 3-col, 30 for 4-col)
+  │  or textSizeOverride (HUD slots: 42 for 3-col, 37 for 4-col)
   ▼
 ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig()
-ViewSizeConfig.baseChars                  ← derived from colSpan (6 / 4 / 3)
+ViewSizeConfig.wrapThresholdSp            ← derived from colSpan
 
-  ▼ at render time, in BarberfishValue
-dynamicFontSp(value, valueFontSizeBase, baseChars)
+  ▼ at render time, in makeFieldRemoteViews (BarberfishView.kt)
+fontSizeForCell(value, valueFontSizeBase, cellWidthPx, density, wrapThresholdSp)
   └─► actual sp applied to field_value TextView via RemoteViews.setTextViewTextSize()
 ```
 
-`BarberfishValue` is the only place `dynamicFontSp` is called. All scaling parameters flow in through `ViewSizeConfig`; the view layer makes no sizing decisions of its own.
+`makeFieldRemoteViews` is the only place `fontSizeForCell` is called for values. All sizing
+parameters flow in through `ViewSizeConfig`; the view layer makes no sizing decisions of its own.
 
 ---
 

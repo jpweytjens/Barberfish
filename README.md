@@ -74,7 +74,7 @@ The HSLuv grade palette uses the same colors as the HSLuv power palette, assigne
 | -------- | ------------- | ------------ |
 | Racing   | `23'45"`      | `1h23'45"`   |
 | Clock    | `0:23:45`     | `1:23:45`    |
-| Segments | `23m 45s`     | `1h 23m 45s` |
+| Segments | `23m45s`      | `1h23m45s`   |
 
 ## Data fields
 
@@ -82,7 +82,8 @@ Complete list of data fields provided by Barberfish.
 
 ### HUD
 
-- HUD (configurable 3 or 4 columns; each slot accepts any of the data fields below)
+- HUD  
+  configurable 3 or 4 columns; each slot accepts any of the data fields below
 
 ### Power & Heart Rate
 
