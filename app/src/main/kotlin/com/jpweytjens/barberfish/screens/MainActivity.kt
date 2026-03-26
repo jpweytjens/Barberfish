@@ -105,6 +105,7 @@ import com.jpweytjens.barberfish.datatype.shared.zwiftHrColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
+import com.jpweytjens.barberfish.datatype.shared.fontSizeSpForPreview
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
@@ -233,15 +234,35 @@ class MainActivity : ComponentActivity() {
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF4F4F4))) {
             Column(
                 modifier =
                     Modifier.fillMaxSize().padding(6.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CollapsibleSection(
+                    title = "HUD",
+                    description = "Configure the data fields in the heads-up display (HUD).",
+                    icon = R.drawable.ic_section_hud,
+                    expanded = hudExpanded,
+                    onToggle = { hudExpanded = !hudExpanded },
+                ) {
+                    HUDConfigSection(
+                        hudConfig = hudConfig,
+                        zoneConfig = zoneConfig,
+                        timeCfg = timeConfig,
+                        profile = userProfile,
+                        onUpdate = { updated ->
+                            hudConfig = updated
+                            lifecycleScope.launch { saveHUDConfig(updated) }
+                        },
+                    )
+                } // end HUD
+
+                CollapsibleSection(
                     title = "Data fields",
                     description = "Configure the standalone data fields.",
+                    icon = R.drawable.ic_section_fields,
                     expanded = fieldsExpanded,
                     onToggle = { fieldsExpanded = !fieldsExpanded },
                 ) {
@@ -389,6 +410,7 @@ class MainActivity : ComponentActivity() {
                     title = "Speed thresholds",
                     description =
                         "Color average speed fields by distance from a target speed or zone.",
+                    icon = R.drawable.ic_section_speed,
                     expanded = thresholdsExpanded,
                     onToggle = { thresholdsExpanded = !thresholdsExpanded },
                 ) {
@@ -447,26 +469,9 @@ class MainActivity : ComponentActivity() {
                 } // end Speed Thresholds
 
                 CollapsibleSection(
-                    title = "HUD",
-                    description = "Configure the data fields in the heads-up display (HUD).",
-                    expanded = hudExpanded,
-                    onToggle = { hudExpanded = !hudExpanded },
-                ) {
-                    HUDConfigSection(
-                        hudConfig = hudConfig,
-                        zoneConfig = zoneConfig,
-                        timeCfg = timeConfig,
-                        profile = userProfile,
-                        onUpdate = { updated ->
-                            hudConfig = updated
-                            lifecycleScope.launch { saveHUDConfig(updated) }
-                        },
-                    )
-                } // end HUD
-
-                CollapsibleSection(
                     title = "Global",
                     description = "Zone color palettes and time format shared across all fields.",
+                    icon = R.drawable.ic_section_global,
                     expanded = globalExpanded,
                     onToggle = { globalExpanded = !globalExpanded },
                 ) {
@@ -696,6 +701,7 @@ internal fun <T> SmoothingSlider(
 private fun CollapsibleSection(
     title: String,
     description: String,
+    icon: Int,
     expanded: Boolean,
     onToggle: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
@@ -703,23 +709,38 @@ private fun CollapsibleSection(
     Column(
         modifier =
             Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .border(1.dp, Color(0xFFCCCCCC), RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(6.dp))
+                .border(1.dp, Color(0xFFCCCCCC), RoundedCornerShape(6.dp))
                 .background(Color.White)
     ) {
         Row(
             modifier =
                 Modifier.fillMaxWidth()
                     .pointerInput(onToggle) { detectTapGestures(onTap = { onToggle() }) }
-                    .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(icon),
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        title.uppercase(),
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                    )
+                }
                 Text(
                     description,
                     style = MaterialTheme.typography.bodySmall,
@@ -735,7 +756,7 @@ private fun CollapsibleSection(
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_down),
                 contentDescription = if (expanded) "Collapse" else "Expand",
-                modifier = Modifier.size(24.dp).rotate(rotation),
+                modifier = Modifier.size(32.dp).rotate(rotation),
             )
         }
         AnimatedVisibility(
@@ -744,7 +765,7 @@ private fun CollapsibleSection(
             exit = shrinkVertically(animationSpec = tween(200)),
         ) {
             Column(
-                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 content = content,
             )
@@ -788,7 +809,7 @@ private fun FieldCard(
                     modifier =
                         Modifier.width(120.dp)
                             .height(80.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(6.dp))
                             .background(Color.Black)
                 ) {
                     BarberfishPreviewCell(
@@ -1064,7 +1085,7 @@ private fun TimeFormatPreview(format: TimeFormat) {
     Box(
         modifier =
             Modifier.fillMaxWidth()
-                .background(Color.Black, RoundedCornerShape(8.dp))
+                .background(Color.Black, RoundedCornerShape(6.dp))
                 .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -1399,14 +1420,20 @@ internal fun BarberfishPreviewCell(
             )
         }
         Spacer(Modifier.weight(1f))
-        Text(
-            field.primary,
-            modifier = Modifier.fillMaxWidth(),
-            fontSize = sizeConfig.valueFontSize,
-            fontWeight = FontWeight.Bold,
-            color = valueColor,
-            textAlign = textAlign,
-            fontFamily = FontFamily.Monospace,
-        )
+        val density = LocalDensity.current.density
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val cellWidthPx = maxWidth.value * density
+            Text(
+                field.primary,
+                modifier = Modifier.fillMaxWidth(),
+                fontSize = fontSizeSpForPreview(
+                    field.primary, sizeConfig.valueFontSize.value.toInt(), cellWidthPx, density
+                ),
+                fontWeight = FontWeight.Bold,
+                color = valueColor,
+                textAlign = textAlign,
+                fontFamily = FontFamily.Monospace,
+            )
+        }
     }
 }
