@@ -5,6 +5,23 @@ These are not documented in the official SDK AFAIK.
 
 ---
 
+## StreamState semantics
+
+`OnStreamState` delivers one of four `StreamState` variants. Barberfish maps each to a `FieldState`:
+
+| Variant        | Barberfish factory       | Display text    | Meaning                                                      |
+| -------------- | ------------------------ | --------------- | ------------------------------------------------------------ |
+| `Streaming`    | happy path               | live value      | Sensor actively emitting data; `DataPoint` is valid          |
+| `Searching`    | `FieldState.searching()`    | "Searching"     | Sensor is paired but offline / reconnecting                  |
+| `NotAvailable` | `FieldState.notAvailable()` | "Not available" | Feature not supported on this device (permanent)            |
+| `Idle`         | `FieldState.idle()`         | "No data"       | Sensor connected but silent (ride paused, movement stopped)  |
+
+All three use `FieldColor.StreamState` → rendered white in `stream_state_tv` (ibm-plex-sans-condensed).
+`FieldState.unavailable()` ("—") is different — `FieldColor.Error` (red) in `field_value`, meaning
+the stream is `Streaming` but a specific `DataPoint.values` key is `null`.
+
+---
+
 ## Time field semantics: ELAPSED_TIME vs RIDE_TIME
 
 Confirmed from `DataType.kt` source in [karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext)
