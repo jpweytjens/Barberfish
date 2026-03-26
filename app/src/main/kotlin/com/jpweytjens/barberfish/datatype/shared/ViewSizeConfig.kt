@@ -14,8 +14,8 @@ import io.hammerhead.karooext.models.ViewConfig
 //   60       ≥ 12     33 px    17.6 sp  1-col 5-row      55
 //   30       ≥ 15     33 px    17.6 sp  2-col 4-row      50
 //   30       ≥ 12     29 px    15.5 sp  2-col 5-row      47
-//   20       ≥ 12     —        12.0 sp  HUD slot (1/3 of 60-wide cell)
-//   15       ≥ 12     —        10.0 sp  4-col HUD slot (1/4 of 60-wide cell)
+//   20       ≥ 12     —        12.0 sp  HUD slot (1/3 of 60-wide cell)  [dynamic base]
+//   15       ≥ 12     —        11.0 sp  4-col HUD slot (1/4 of 60-wide cell)  [dynamic base]
 //
 // Icon size equals labelSize in the native app (same px value, width = height).
 // Native root cell padding is 0dp. Header wraps content; value fills remaining space, centered.
@@ -33,18 +33,12 @@ fun ViewConfig.toViewSizeConfig(
             colSpan == 30 && rowSpan >= 15 -> 17.6f // 33 px
             colSpan == 30 && rowSpan >= 12 -> 15.5f // 29 px
             colSpan == 20 && rowSpan >= 12 -> 12.0f // HUD slot (1/3)
-            colSpan == 15 && rowSpan >= 12 -> 10.0f // 4-col HUD slot (1/4)
+            colSpan == 15 && rowSpan >= 12 -> 11.0f // 4-col HUD slot (1/4)
             else -> 15.5f
         }
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
     // Wide (1-col) cells have short labels that fit on one line; colSpan=20 HUD slots also use 1.
     val labelMaxLines = if (colSpan != 30) 1 else 2
-    // Wide cells have more horizontal space; scale font only beyond 6 chars (vs 4 for narrow).
-    val baseChars = when {
-        colSpan == 60 -> 6
-        colSpan == 15 -> 3
-        else -> 4
-    }
     // Threshold below which single-line shrinks enough to warrant 2-line wrapping.
     // Lower for narrow HUD slots (small font is acceptable there).
     val wrapThresholdSp = when {
@@ -76,7 +70,6 @@ fun ViewConfig.toViewSizeConfig(
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
         labelMaxLines = labelMaxLines,
-        baseChars = baseChars,
         wrapThresholdSp = wrapThresholdSp,
         valueTranslationY = translationYPx,
     )
@@ -89,7 +82,6 @@ data class ViewSizeConfig(
     val headerIconLabelGap: Dp,
     val headerFontSize: TextUnit,
     val labelMaxLines: Int,
-    val baseChars: Int,
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,
     val valueTranslationY: Float,
@@ -103,7 +95,6 @@ data class ViewSizeConfig(
                 headerIconLabelGap = 6.dp,
                 headerFontSize = 17.sp,
                 labelMaxLines = 2,
-                baseChars = 4,
                 wrapThresholdSp = 18,
                 valueFontSizeBase = 49,
                 valueTranslationY = 0f,
