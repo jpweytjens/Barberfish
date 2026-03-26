@@ -45,6 +45,14 @@ fun ViewConfig.toViewSizeConfig(
         colSpan == 15 -> 3
         else -> 4
     }
+    // Threshold below which single-line shrinks enough to warrant 2-line wrapping.
+    // Lower for narrow HUD slots (small font is acceptable there).
+    val wrapThresholdSp = when {
+        colSpan == 60 -> 22
+        colSpan == 30 -> 18
+        colSpan == 20 -> 14
+        else          -> 12  // 4-col HUD
+    }
     // Move value up in FrameLayout
     val translationYPx: Float =
         when {
@@ -62,35 +70,41 @@ fun ViewConfig.toViewSizeConfig(
             else -> 0f
         }
     return ViewSizeConfig.STANDARD.copy(
+        colSpan = colSpan,
         valueFontSizeBase = textSizeEff.coerceAtLeast(20),
         headerFontSize = labelSp.sp,
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
         labelMaxLines = labelMaxLines,
         baseChars = baseChars,
+        wrapThresholdSp = wrapThresholdSp,
         valueTranslationY = translationYPx,
     )
 }
 
 data class ViewSizeConfig(
+    val colSpan: Int,
     val paddingH: Dp,
     val headerIconSize: Dp,
     val headerIconLabelGap: Dp,
     val headerFontSize: TextUnit,
     val labelMaxLines: Int,
     val baseChars: Int,
+    val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,
     val valueTranslationY: Float,
 ) {
     companion object {
         val STANDARD =
             ViewSizeConfig(
+                colSpan = 30,
                 paddingH = 4.dp,
                 headerIconSize = 17.dp,
                 headerIconLabelGap = 6.dp,
                 headerFontSize = 17.sp,
                 labelMaxLines = 2,
                 baseChars = 4,
+                wrapThresholdSp = 18,
                 valueFontSizeBase = 49,
                 valueTranslationY = 0f,
             )

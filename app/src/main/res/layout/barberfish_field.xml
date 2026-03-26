@@ -21,7 +21,7 @@
         android:includeFontPadding="false"
         android:maxLines="1"
         android:ellipsize="end"
-        android:fontFamily="relative"
+        android:fontFamily="monospace"
         android:letterSpacing="-0.04" />
 
     <!-- Header row: overlays at top. Mirrors native DataHeaderView. -->

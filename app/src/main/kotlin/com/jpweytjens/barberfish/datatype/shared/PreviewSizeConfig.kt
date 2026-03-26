@@ -35,7 +35,7 @@ data class PreviewSizeConfig(
                 headerIconSize = 12.dp,
                 headerIconLabelGap = 4.dp,
                 headerFontSize = 10.sp,
-                valueFontSize = 32.sp,
+                valueFontSize = 28.sp,
                 valueBottomPadding = 4.dp,
             )
         val HUD_FOUR =
@@ -46,7 +46,7 @@ data class PreviewSizeConfig(
                 headerIconSize = 10.dp,
                 headerIconLabelGap = 2.dp,
                 headerFontSize = 9.sp,
-                valueFontSize = 26.sp,
+                valueFontSize = 24.sp,
                 valueBottomPadding = 2.dp,
             )
     }

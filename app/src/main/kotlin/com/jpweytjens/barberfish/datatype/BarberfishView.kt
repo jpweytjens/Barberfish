@@ -9,9 +9,10 @@ import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
+import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
-import com.jpweytjens.barberfish.datatype.shared.dynamicFontSp
+import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
@@ -67,13 +68,17 @@ private fun makeFieldRemoteViews(
     paddingHPx: Int,
     context: Context,
 ): RemoteViews {
-    val density = context.resources.displayMetrics.density
+    val dm = context.resources.displayMetrics
+    val density = dm.density
     val labelArgb =
         if (colors.background != null) android.graphics.Color.BLACK
         else android.graphics.Color.WHITE
     val hGravity = alignment.toHorizontalGravity()
-    val fontSp =
-        dynamicFontSp(field.primary, sizeConfig.valueFontSizeBase, sizeConfig.baseChars).value
+    val cellWidthPx = dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx
+    val (fontSp, maxLines) = fontSizeForCell(
+        field.primary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
+        wrapThresholdSp = sizeConfig.wrapThresholdSp,
+    )
 
     if (DEBUG_LAYOUT) {
         Log.d(
