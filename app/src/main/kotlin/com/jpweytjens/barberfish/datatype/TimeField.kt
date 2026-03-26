@@ -13,7 +13,6 @@ import com.jpweytjens.barberfish.extension.streamTimeConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -106,23 +105,16 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
         val secondsFlow =
             when (kind) {
                 TimeKind.TOTAL ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
-                        extractSeconds(state, DataType.Field.ELAPSED_TIME)
+                    karooSystem.streamDataFlow(DataType.Type.RIDE_TIME).map { state ->
+                        extractSeconds(state, DataType.Field.RIDE_TIME)
                     }
                 TimeKind.PAUSED ->
                     karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME).map { state ->
                         extractSeconds(state, DataType.Field.PAUSED_TIME)
                     }
                 TimeKind.RIDING ->
-                    combine(
-                        karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
-                            extractSeconds(state, DataType.Field.ELAPSED_TIME)
-                        },
-                        karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME).map { state ->
-                            extractSeconds(state, DataType.Field.PAUSED_TIME)
-                        },
-                    ) { elapsed, paused ->
-                        max(0L, elapsed - paused)
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
+                        extractSeconds(state, DataType.Field.ELAPSED_TIME)
                     }
                 TimeKind.TIME_TO_DESTINATION ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_DESTINATION).map { state ->
