@@ -11,6 +11,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
+import com.jpweytjens.barberfish.datatype.shared.rvvElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -90,7 +91,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
             ) { hudState, navState, distState, zoneConfig, hudConfig ->
                 val dm = context.resources.displayMetrics
                 val sparkCfg = hudConfig.sparkline
-                val positionM = if (BuildConfig.DEBUG) 2500f
+                val positionM = if (BuildConfig.DEBUG) 1000f
                     else (distState as? StreamState.Streaming)
                         ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
                         ?.toFloat() ?: 0f
@@ -519,7 +520,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
         (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
             ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
 
-    private fun debugElevationFixture() = previewElevationFixture()
+    private fun debugElevationFixture() = rvvElevationFixture()
 
     companion object {
         fun previewStates(

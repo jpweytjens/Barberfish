@@ -47,7 +47,7 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
 }
 
 private const val POSITION_FRACTION = 0.25f
-private const val MIN_FILL_PX = 4f        // skip colour fills narrower than this many pixels
+private const val MIN_FILL_PX = 1f        // skip colour fills narrower than this many pixels
 private const val MIN_ELEV_RANGE_M = 200f // floor for y-axis so flat terrain doesn't inflate
 
 /**
@@ -235,17 +235,52 @@ internal fun renderElevationSparkline(
     return bitmap
 }
 
-/** Synthetic 18 km elevation profile used for previews and debug builds. */
-internal fun previewElevationFixture(): List<Pair<Float, Float>> {
-    val points = mutableListOf<Pair<Float, Float>>()
-    var dist = 0f; var elev = 80f; val step = 30f
-    fun section(lengthM: Float, gradePercent: Float) {
-        val elevPerStep = gradePercent / 100f * step
-        val end = dist + lengthM
-        while (dist <= end) { points.add(dist to elev); dist += step; elev += elevPerStep }
-    }
-    section(600f,   0f); section(800f,   5f); section(400f,   9f); section(300f,  14f)
-    section(700f,  -8f); section(400f,   0f); section(500f,   4.5f); section(600f,  10f)
-    section(400f,  16f); section(400f,  -6f); section(1200f,  0f); section(13700f, -1f)
-    return points
-}
+/** Last 20 km of Tour of Flanders 2025 (RvV). Used for config-screen previews and debug builds. */
+internal fun previewElevationFixture(): List<Pair<Float, Float>> = rvvElevationFixture()
+
+/** Last 20 km of Tour of Flanders 2025 (RvV). Used for debug builds. */
+internal fun rvvElevationFixture(): List<Pair<Float, Float>> = listOf(
+    97.1f to 13.0f, 171.4f to 13.0f, 213.6f to 14.0f, 247.8f to 14.0f, 300.6f to 14.0f, 399.5f to 14.0f,
+    459.4f to 14.0f, 510.7f to 14.0f, 566.5f to 14.0f, 663.8f to 13.0f, 723.0f to 13.0f, 785.2f to 12.0f,
+    877.7f to 11.0f, 917.6f to 11.0f, 974.9f to 11.0f, 1021.6f to 11.0f, 1101.8f to 10.0f, 1141.7f to 10.0f,
+    1209.3f to 12.0f, 1271.6f to 13.0f, 1386.9f to 15.0f, 1432.1f to 17.0f, 1465.4f to 20.0f, 1547.5f to 23.0f,
+    1577.6f to 25.0f, 1627.9f to 29.0f, 1718.7f to 33.0f, 1792.1f to 36.0f, 1845.5f to 40.0f, 1879.4f to 44.0f,
+    1997.0f to 51.0f, 2029.7f to 58.0f, 2133.1f to 65.0f, 2167.5f to 69.0f, 2206.9f to 72.0f, 2257.6f to 75.0f,
+    2313.2f to 79.0f, 2428.8f to 81.0f, 2483.3f to 82.0f, 2515.5f to 82.0f, 2601.2f to 82.0f, 2644.8f to 83.0f,
+    2718.8f to 83.0f, 2749.7f to 84.0f, 2892.7f to 87.0f, 2973.4f to 91.0f, 3060.5f to 95.0f, 3153.2f to 99.0f,
+    3210.5f to 99.0f, 3270.3f to 100.0f, 3302.1f to 100.0f, 3344.3f to 99.0f, 3399.8f to 98.0f, 3437.0f to 98.0f,
+    3478.6f to 98.0f, 3590.1f to 98.0f, 3828.9f to 100.0f, 3940.6f to 102.0f, 4107.1f to 107.0f, 4159.2f to 109.0f,
+    4257.8f to 111.0f, 4301.1f to 111.0f, 4340.9f to 112.0f, 4379.5f to 111.0f, 4428.2f to 109.0f, 4474.5f to 107.0f,
+    4515.7f to 104.0f, 4576.6f to 103.0f, 4686.4f to 100.0f, 4739.3f to 96.0f, 4782.9f to 94.0f, 4827.4f to 93.0f,
+    4885.6f to 91.0f, 4943.2f to 89.0f, 4995.9f to 86.0f, 5159.5f to 84.0f, 5218.9f to 83.0f, 5254.9f to 81.0f,
+    5332.3f to 81.0f, 5383.5f to 80.0f, 5514.9f to 78.0f, 5572.7f to 75.0f, 5605.3f to 70.0f, 5672.0f to 65.0f,
+    5719.9f to 59.0f, 5773.0f to 56.0f, 5893.5f to 51.0f, 5943.1f to 47.0f, 5986.4f to 44.0f, 6027.5f to 42.0f,
+    6150.8f to 37.0f, 6197.0f to 35.0f, 6234.0f to 34.0f, 6269.5f to 33.0f, 6315.5f to 33.0f, 6371.3f to 33.0f,
+    6410.0f to 34.0f, 6568.6f to 42.0f, 6606.8f to 52.0f, 6662.6f to 55.0f, 6712.7f to 61.0f, 6749.9f to 67.0f,
+    6815.9f to 71.0f, 6874.6f to 73.0f, 6912.2f to 72.0f, 6952.4f to 70.0f, 7032.5f to 68.0f, 7080.3f to 65.0f,
+    7169.3f to 60.0f, 7224.6f to 56.0f, 7273.5f to 54.0f, 7312.9f to 50.0f, 7426.2f to 44.0f, 7542.4f to 39.0f,
+    7609.5f to 34.0f, 7656.6f to 29.0f, 7694.7f to 26.0f, 7730.6f to 23.0f, 7771.5f to 22.0f, 7801.6f to 20.0f,
+    7831.9f to 19.0f, 7968.1f to 17.0f, 8011.6f to 15.0f, 8176.2f to 14.0f, 8225.6f to 14.0f, 8256.1f to 14.0f,
+    8298.5f to 14.0f, 8372.2f to 14.0f, 8410.2f to 14.0f, 8452.4f to 13.0f, 8493.0f to 13.0f, 8662.7f to 13.0f,
+    8698.9f to 12.0f, 8781.3f to 12.0f, 8813.2f to 12.0f, 8923.8f to 12.0f, 9012.2f to 12.0f, 9050.3f to 12.0f,
+    9103.3f to 12.0f, 9155.4f to 12.0f, 9186.3f to 13.0f, 9437.0f to 13.0f, 9495.8f to 13.0f, 9550.8f to 14.0f,
+    9597.1f to 14.0f, 9662.4f to 15.0f, 9695.7f to 15.0f, 9746.9f to 15.0f, 9833.1f to 14.0f, 9872.0f to 13.0f,
+    9973.6f to 13.0f, 10080.0f to 13.0f, 10310.0f to 12.0f, 10415.2f to 12.0f, 10472.5f to 12.0f, 10563.2f to 11.0f,
+    10610.3f to 11.0f, 10651.1f to 11.0f, 10696.3f to 11.0f, 10726.3f to 11.0f, 10772.7f to 11.0f, 10811.1f to 11.0f,
+    10890.1f to 11.0f, 10974.8f to 12.0f, 11061.1f to 12.0f, 11166.2f to 13.0f, 11225.9f to 14.0f, 11356.9f to 14.0f,
+    11504.0f to 13.0f, 11539.2f to 12.0f, 11600.9f to 12.0f, 11667.9f to 13.0f, 11704.8f to 13.0f, 11889.1f to 14.0f,
+    11957.0f to 14.0f, 12021.2f to 14.0f, 12230.7f to 14.0f, 12322.0f to 15.0f, 12442.7f to 18.0f, 12506.2f to 18.0f,
+    12557.7f to 19.0f, 12932.8f to 18.0f, 13177.1f to 18.0f, 13302.3f to 17.0f, 13527.7f to 17.0f, 13626.1f to 17.0f,
+    13770.6f to 16.0f, 13954.5f to 16.0f, 14086.2f to 16.0f, 14169.7f to 16.0f, 14274.3f to 16.0f, 14361.6f to 15.0f,
+    14422.6f to 14.0f, 14601.7f to 14.0f, 14739.0f to 14.0f, 14804.6f to 14.0f, 14866.4f to 14.0f, 14902.9f to 14.0f,
+    14937.3f to 14.0f, 15187.2f to 14.0f, 15226.4f to 14.0f, 15264.7f to 14.0f, 15303.9f to 14.0f, 15343.9f to 14.0f,
+    15520.2f to 14.0f, 15606.0f to 14.0f, 15636.3f to 14.0f, 15699.2f to 14.0f, 15796.2f to 14.0f, 15843.0f to 14.0f,
+    15980.9f to 14.0f, 16039.1f to 14.0f, 16179.4f to 14.0f, 16250.8f to 15.0f, 16285.9f to 15.0f, 16413.0f to 16.0f,
+    16447.3f to 16.0f, 16582.4f to 17.0f, 16652.6f to 17.0f, 16686.4f to 17.0f, 16721.3f to 18.0f, 16761.3f to 18.0f,
+    16816.0f to 18.0f, 16851.5f to 18.0f, 16915.3f to 19.0f, 17040.2f to 19.0f, 17118.4f to 19.0f, 17185.6f to 19.0f,
+    17286.5f to 19.0f, 17328.1f to 19.0f, 17402.4f to 19.0f, 17498.7f to 19.0f, 17599.4f to 19.0f, 17632.7f to 18.0f,
+    17753.2f to 18.0f, 17797.4f to 18.0f, 17830.1f to 18.0f, 18092.5f to 18.0f, 18221.9f to 18.0f, 18336.5f to 16.0f,
+    18378.7f to 15.0f, 18478.0f to 14.0f, 18550.5f to 14.0f, 18620.4f to 13.0f, 18675.1f to 12.0f, 18728.0f to 12.0f,
+    18847.3f to 11.0f, 18907.7f to 10.0f, 19176.3f to 11.0f, 19478.3f to 11.0f, 19712.0f to 10.0f, 19772.7f to 9.0f,
+    19869.4f to 9.0f, 19947.3f to 9.0f, 20000.0f to 10.0f,
+)
