@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.screens
 
+import android.graphics.Typeface
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -63,6 +64,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -105,6 +107,7 @@ import com.jpweytjens.barberfish.datatype.shared.zwiftHrColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
+import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.fontSizeSpForPreview
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
@@ -717,7 +720,7 @@ private fun CollapsibleSection(
             modifier =
                 Modifier.fillMaxWidth()
                     .pointerInput(onToggle) { detectTapGestures(onTap = { onToggle() }) }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(
@@ -765,7 +768,7 @@ private fun CollapsibleSection(
             exit = shrinkVertically(animationSpec = tween(200)),
         ) {
             Column(
-                modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 content = content,
             )
@@ -1393,47 +1396,88 @@ internal fun BarberfishPreviewCell(
             ViewConfig.Alignment.RIGHT -> TextAlign.Right
         }
 
-    Column(modifier = cellModifier.fillMaxSize(), verticalArrangement = Arrangement.Top) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            field.iconRes?.let { res ->
-                Box(
-                    modifier = Modifier.size(sizeConfig.headerIconSize),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painterResource(res),
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(sizeConfig.headerIconSize),
-                    )
-                }
-                Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
-            }
-            Text(
-                field.label.uppercase(),
-                modifier = Modifier.weight(2f),
-                fontSize = sizeConfig.headerFontSize,
-                color = labelColor,
-                textAlign = textAlign,
-                fontFamily = FontFamily.Monospace,
-                maxLines = 1,
-            )
-        }
-        Spacer(Modifier.weight(1f))
+    Box(modifier = cellModifier.fillMaxSize()) {
         val density = LocalDensity.current.density
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        // Value: fills full cell height, centered vertically — mirrors field_value in barberfish_field.xml
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize().offset(y = sizeConfig.valueTranslationY),
+            contentAlignment = Alignment.Center,
+        ) {
             val cellWidthPx = maxWidth.value * density
             Text(
                 field.primary,
                 modifier = Modifier.fillMaxWidth(),
                 fontSize = fontSizeSpForPreview(
-                    field.primary, sizeConfig.valueFontSize.value.toInt(), cellWidthPx, density
+                    field.primary, sizeConfig.valueFontSize.value.toInt(), cellWidthPx, density,
+                    bold = true,
                 ),
                 fontWeight = FontWeight.Bold,
                 color = valueColor,
                 textAlign = textAlign,
                 fontFamily = FontFamily.Monospace,
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
             )
+        }
+        // Header: overlays at top — mirrors field_header in barberfish_field.xml
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val labelDensity = LocalDensity.current.density
+            val iconWidthPx = if (field.iconRes != null)
+                (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * labelDensity
+            else 0f
+            val labelAvailWidthPx = maxWidth.value * labelDensity - iconWidthPx
+            val (labelFontSpInt, labelLines) = fontSizeForCell(
+                field.label.uppercase(),
+                sizeConfig.headerFontSize.value.toInt(),
+                labelAvailWidthPx,
+                labelDensity,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                typeface = Typeface.DEFAULT,
+            )
+            val labelFontSp = labelFontSpInt.sp
+            // Label box height = labelMaxLines × lineHeight, matching android:lines="2" on device.
+            // Text is centered within the box so a 1-line label has its center aligned with the
+            // icon center, and a 2-line label has the midpoint between lines aligned with the icon.
+            val labelBoxHeight = with(LocalDensity.current) {
+                (labelFontSp.value * sizeConfig.labelMaxLines).sp.toDp() + 2.dp
+            }
+            val labelContentAlignment = when (textAlign) {
+                TextAlign.Right -> Alignment.CenterEnd
+                TextAlign.Center -> Alignment.Center
+                else -> Alignment.CenterStart
+            }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                field.iconRes?.let { res ->
+                    Box(
+                        modifier = Modifier.size(sizeConfig.headerIconSize),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painterResource(res),
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(sizeConfig.headerIconSize),
+                        )
+                    }
+                    Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
+                }
+                Box(
+                    modifier = Modifier.weight(2f).height(labelBoxHeight),
+                    contentAlignment = labelContentAlignment,
+                ) {
+                    Text(
+                        field.label.uppercase(),
+                        fontSize = labelFontSp,
+                        lineHeight = labelFontSp,
+                        color = labelColor,
+                        textAlign = textAlign,
+                        fontFamily = FontFamily.Default,
+                        maxLines = sizeConfig.labelMaxLines,
+                        softWrap = labelLines > 1,
+                        overflow = TextOverflow.Clip,
+                    )
+                }
+            }
         }
     }
 }
