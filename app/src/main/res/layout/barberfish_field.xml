@@ -12,6 +12,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Stream state (Searching/NotAvailable/Idle): ibm-plex-sans-condensed, white, centered. GONE by default. -->
+    <TextView
+        android:id="@+id/stream_state_tv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:fontWeight="500"
+        android:textColor="@android:color/white"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:lineSpacingMultiplier="0.6"
+        android:visibility="gone" />
+
     <!-- Value: fills full cell, text centered vertically (drawn first = behind header). -->
     <TextView
         android:id="@+id/field_value"

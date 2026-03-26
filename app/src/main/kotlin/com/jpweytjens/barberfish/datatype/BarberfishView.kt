@@ -143,12 +143,39 @@ private fun makeFieldRemoteViews(
     // here.
     rv.setTextViewText(R.id.field_value, field.primary)
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
-    rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp)
+    rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
+    if (maxLines == 2) {
+        rv.setInt(R.id.field_value, "setMaxLines", 2)
+        rv.setFloat(R.id.field_value, "setLineSpacingMultiplier", 0.8f)
+    }
     rv.setInt(R.id.field_value, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
+
+    // Stream state overlay: ibm-plex-sans-condensed, white, centered — replaces field_value for
+    // SDK non-Streaming states (Searching / NotAvailable / Idle).
+    // Font capped at 19sp (matching native); same valueTranslationY as field_value for alignment.
+    if (field.color is FieldColor.StreamState) {
+        rv.setViewVisibility(R.id.field_value, View.GONE)
+        rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
+        rv.setTextViewText(R.id.stream_state_tv, field.primary)
+        rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, fontSp.coerceAtMost(19).toFloat())
+        if (maxLines == 2) {
+            rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
+        }
+        rv.setInt(R.id.stream_state_tv, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
+        if (sizeConfig.valueTranslationY != 0f) {
+            rv.setFloat(R.id.stream_state_tv, "setTranslationY", sizeConfig.valueTranslationY)
+        }
+    } else {
+        rv.setViewVisibility(R.id.field_value, View.VISIBLE)
+        rv.setViewVisibility(R.id.stream_state_tv, View.GONE)
+    }
+
     if (sizeConfig.valueTranslationY != 0f) {
+        // For 2-line, skip the per-char scaling — the taller block needs less downward nudge
+        // to stay within the cell.
         val scaledTranslationY =
-            sizeConfig.valueTranslationY + (sizeConfig.valueFontSizeBase - fontSp) * 0.80f
-        // header when scaled
+            if (maxLines == 2) sizeConfig.valueTranslationY
+            else sizeConfig.valueTranslationY + (sizeConfig.valueFontSizeBase - fontSp) * 0.80f
         rv.setFloat(R.id.field_value, "setTranslationY", scaledTranslationY)
     }
 
