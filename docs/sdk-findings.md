@@ -5,6 +5,35 @@ These are not documented in the official SDK AFAIK.
 
 ---
 
+## Time field semantics: ELAPSED_TIME vs RIDE_TIME
+
+Confirmed from `DataType.kt` source in [karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext)
+and decompiled SDK in `docs/karoo-ext_decompiled/DataType.kt`.
+
+| Type constant                | SDK description                                                  | Meaning                                                |
+| ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `DataType.Type.ELAPSED_TIME` | "Ride Time — Time spent recording this ride"                     | Moving time, excluding paused time                     |
+| `DataType.Type.RIDE_TIME`    | "Total Time — Time since this ride began, including paused time" | Wall-clock time from ride start, including paused time |
+| `DataType.Type.PAUSED_TIME`  | "Paused Time — Time spent paused this ride"                      | Cumulative pause duration                              |
+
+The relationship is: `RIDE_TIME = ELAPSED_TIME + PAUSED_TIME`.
+
+"Recording" in the ELAPSED_TIME description means the timer only advances while the ride is
+actively recording (not paused). This is confirmed by the observed bug: computing
+`movingSeconds = ELAPSED_TIME - PAUSED_TIME` produces a value that shrinks while paused
+(ELAPSED stays constant, PAUSED grows), causing avg-speed-moving to grow — the wrong behavior.
+
+Correct formulas:
+
+| Metric                  | Formula                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| Moving time             | `ELAPSED_TIME` directly                                                 |
+| Total (wall-clock) time | `RIDE_TIME`, or `ELAPSED_TIME + PAUSED_TIME`                            |
+| Avg speed (moving)      | `DISTANCE / ELAPSED_TIME`                                               |
+| Avg speed (total)       | `DISTANCE / RIDE_TIME` (or native `AVERAGE_SPEED` field if it is total) |
+
+
+
 ## DataPoint field units
 
 `DataPoint.values` delivers raw `Double` values in these base units.
