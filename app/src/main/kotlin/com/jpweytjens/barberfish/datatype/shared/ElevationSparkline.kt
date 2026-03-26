@@ -246,6 +246,6 @@ internal fun previewElevationFixture(): List<Pair<Float, Float>> {
     }
     section(600f,   0f); section(800f,   5f); section(400f,   9f); section(300f,  14f)
     section(700f,  -8f); section(400f,   0f); section(500f,   4.5f); section(600f,  10f)
-    section(400f,  16f); section(400f,  -6f); section(1200f,  0f); section(8000f, -1f)
+    section(400f,  16f); section(400f,  -6f); section(1200f,  0f); section(13700f, -1f)
     return points
 }

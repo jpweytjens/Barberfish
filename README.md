@@ -59,7 +59,7 @@ The HSLuv grade palette uses the same colors as the HSLuv power palette, assigne
 | Intervals.icu | ![](docs/palette-intervals.svg) | ![](docs/palette-intervals-readable.svg) | ![](docs/palette-intervals-hr.svg) | ![](docs/palette-intervals-hr-readable.svg) |
 | HSLuv         |                                 | ![](docs/palette-hsluv.svg)              |                                    | ![](docs/palette-hsluv-hr.svg)              |
 
-### Grade color palettes
+### Grade color palettes 
 
 | Palette | Bands (flat → steep)                                  | Original                           | Readable                                    |
 | ------- | ----------------------------------------------------- | ---------------------------------- | ------------------------------------------- |
