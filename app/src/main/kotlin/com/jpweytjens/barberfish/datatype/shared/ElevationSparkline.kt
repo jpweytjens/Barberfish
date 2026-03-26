@@ -199,29 +199,47 @@ internal fun renderElevationSparkline(
         canvas.drawPath(aheadPath, paint)
     }
 
-    // 5. Distance labels ahead — interval is half the lookahead window
+    // 5. Distance labels ahead — interval adapts to lookahead window size
     val tickIntervalM = lookaheadM / 2f
     paint.style = Paint.Style.FILL
     paint.textSize = 10f * density
     paint.color = android.graphics.Color.WHITE
     val labelGap = 4f * density
+
+    fun drawTickLabel(distM: Float, clampX: Boolean) {
+        val tickX = toX(distM)
+        if (tickX !in 0f..widthPx.toFloat()) return
+        val elevAtTick = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - distM) }
+            ?.second ?: visible.last().second
+        val yAtTick = toY(elevAtTick)
+        val label = if (tickIntervalM % 1_000f != 0f)
+            "%.1f".format((distM - positionM) / 1_000f)
+        else
+            ((distM - positionM) / 1_000f).toInt().toString()
+        val labelW = paint.measureText(label)
+        val labelX = if (clampX)
+            (tickX - labelW / 2f).coerceIn(0f, widthPx - labelW)
+        else {
+            if (tickX - labelW / 2f < 0f || tickX + labelW / 2f > widthPx) return
+            tickX - labelW / 2f
+        }
+        val labelY = if (yAtTick > heightPx / 2f)
+            yAtTick - labelGap                      // profile low → label above
+        else
+            yAtTick + labelGap + paint.textSize     // profile high → label below
+        canvas.drawText(label, labelX, labelY.coerceIn(paint.textSize, heightPx.toFloat()), paint)
+    }
+
+    // Route endpoint label — always shown (clamped inward), only when visible in window
+    val endpointMinSpacingM = tickIntervalM * 0.4f
+    val showEndpoint = lastDist in windowStart..windowEnd
+    if (showEndpoint) drawTickLabel(lastDist, clampX = true)
+
+    // Interval ticks — skip any that would overlap the endpoint label
     var tickDist = positionM + tickIntervalM
     while (tickDist <= positionM + lookaheadM) {
-        val tickX = toX(tickDist)
-        if (tickX in 0f..widthPx.toFloat()) {
-            val elevAtTick = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - tickDist) }
-                ?.second ?: visible.last().second
-            val yAtTick = toY(elevAtTick)
-            val label = if (tickIntervalM % 1_000f != 0f)
-                "%.1f".format((tickDist - positionM) / 1_000f)
-            else
-                ((tickDist - positionM) / 1_000f).toInt().toString()
-            val labelW = paint.measureText(label)
-            val labelY = if (yAtTick > heightPx / 2f)
-                yAtTick - labelGap                      // profile low → label above
-            else
-                yAtTick + labelGap + paint.textSize     // profile high → label below
-            canvas.drawText(label, tickX - labelW / 2f, labelY.coerceIn(paint.textSize, heightPx.toFloat()), paint)
+        if (!showEndpoint || kotlin.math.abs(tickDist - lastDist) >= endpointMinSpacingM) {
+            drawTickLabel(tickDist, clampX = false)
         }
         tickDist += tickIntervalM
     }
