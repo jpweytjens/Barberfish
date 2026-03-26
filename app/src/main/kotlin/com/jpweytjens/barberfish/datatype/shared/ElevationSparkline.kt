@@ -206,8 +206,8 @@ internal fun renderElevationSparkline(
         else                  -> 10_000f
     }
     paint.style = Paint.Style.FILL
-    paint.textSize = 8f * density
-    paint.color = android.graphics.Color.argb(220, 255, 255, 255)
+    paint.textSize = 10f * density
+    paint.color = android.graphics.Color.WHITE
     val labelGap = 4f * density
     var tickDist = (kotlin.math.ceil((positionM + 1f) / tickIntervalM) * tickIntervalM)
     while (tickDist <= positionM + lookaheadM) {
