@@ -114,7 +114,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         ?.toFloat() ?: 0f
                 val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
                 lastPositionM = positionM
-                val sparklineHeightPx = (36f * dm.density).toInt()
+                val sparklineHeightPx = (44f * dm.density).toInt()
                 val (bitmap, updatedRange) = if (sparkCfg.enabled)
                     renderElevationSparkline(
                         elevationPoints = elevPoints,
