@@ -186,18 +186,18 @@ suspend fun Context.saveSpeedFieldConfig(config: SpeedFieldConfig) {
 // --- AvgSpeedConfig ---
 
 // All speed values stored in km/h; converted to the user's preferred unit at display time.
-// SINGLE mode: thresholdKph = 0.0 means disabled.
+// TARGET mode: thresholdKph = 0.0 means disabled.
 // MIN_MAX mode: null means that boundary is disabled (only-min or only-max behavior).
 // rangePercentAbove/Below: % of threshold speed that maps to the fully-orange gradient edge.
 @Serializable
 enum class SpeedThresholdMode {
-    SINGLE,
+    TARGET,
     MIN_MAX,
 }
 
 @Serializable
 data class AvgSpeedConfig(
-    val mode: SpeedThresholdMode = SpeedThresholdMode.SINGLE,
+    val mode: SpeedThresholdMode = SpeedThresholdMode.TARGET,
     val thresholdKph: Double = 0.0,
     val rangePercentAbove: Double = 10.0,
     val rangePercentBelow: Double = 10.0,

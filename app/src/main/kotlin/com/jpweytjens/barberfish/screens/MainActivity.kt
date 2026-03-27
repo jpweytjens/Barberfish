@@ -465,9 +465,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Text(
                         buildAnnotatedString {
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Single:\n") }
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Target\n") }
                             withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
-                            append(" · thr · ")
+                            append(" · target · ")
                             withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -1206,7 +1206,7 @@ private fun ThresholdInput(value: Double, onValueChange: (Double) -> Unit) {
         },
         placeholder = {
             Text(
-                "Threshold (km/h)",
+                "Target (km/h)",
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1260,7 +1260,7 @@ internal fun AvgSpeedThresholdControls(
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
     val modeOptions =
-        listOf(SpeedThresholdMode.SINGLE to "Single", SpeedThresholdMode.MIN_MAX to "Min / Max")
+        listOf(SpeedThresholdMode.TARGET to "Target", SpeedThresholdMode.MIN_MAX to "Min / Max")
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -1307,9 +1307,9 @@ internal fun AvgSpeedThresholdControls(
             }
         }
     }
-    if (config.mode == SpeedThresholdMode.SINGLE) {
+    if (config.mode == SpeedThresholdMode.TARGET) {
         Text(
-            "THRESHOLD (KM/H)",
+            "TARGET (KM/H)",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF1B2D2D),

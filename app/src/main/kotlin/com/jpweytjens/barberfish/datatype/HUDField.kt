@@ -430,7 +430,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
             profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
         val color =
             when (cfg.mode) {
-                SpeedThresholdMode.SINGLE -> {
+                SpeedThresholdMode.TARGET -> {
                     if (cfg.thresholdKph <= 0.0) {
                         FieldColor.Default
                     } else {
