@@ -36,12 +36,13 @@ class ZoneColoringTest {
     @Test fun `APCA ref F06020 on 1B2D2D is -38 7`() = assertApca("#F06020", Color(0xFFF06020), -38.7)
     @Test fun `APCA ref 253070 on 1B2D2D is 0`()    = assertApca("#253070", Color(0xFF253070),   0.0)
 
-    // --- Readability audit: APCA-adjusted palettes + HSLuv vs Karoo dark background ---
+    // --- Readability audit: APCA-adjusted palettes vs black (#000000) datafield background ---
     // Adjusted palettes must achieve |Lc| ≥ 45 (minimum for large bold text).
     // HSLuv palette uses |Lc| ≥ 43 (colors are designed for this target, not post-adjusted).
 
+    private val black = Color(0xFF000000)
     private fun assertReadable(name: String, color: Color, threshold: Double = 45.0) {
-        val lc = abs(apcaContrast(color, karooDark))
+        val lc = abs(apcaContrast(color, black))
         assertTrue("$name hex=${color.value.toString(16).uppercase()} Lc=${"%.1f".format(lc)} < $threshold", lc >= threshold)
     }
 

@@ -98,17 +98,17 @@ private val ZWIFT_GRADE_BANDS = listOf(
      0.0 to Color(0xFF39A7D6), //  0–3%   — blue
 )
 
-// Readable grade bands — HSLuv-corrected to |Lc| ≥ 45. Pre-computed via scripts/apca_hsluv.py.
+// Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against black. Pre-computed via scripts/apca_hsluv.py.
 private val WAHOO_GRADE_BANDS_READABLE = listOf(
-    20.0 to Color(0xFFFF6A6A), // 20%+
-    12.0 to Color(0xFFFF6A6A), // 12–19.9%
-     8.0 to Color(0xFFFF6D49), //  8–11.9%
+    20.0 to Color(0xFFFF5959), // 20%+
+    12.0 to Color(0xFFFF5958), // 12–19.9%
+     8.0 to Color(0xFFFF5C23), //  8–11.9%
      4.0 to Color(0xFFFEFF00), //  4–7.9%
      0.0 to Color(0xFF04FE00), //  0–3.9%
 )
 private val GARMIN_GRADE_BANDS_READABLE = listOf(
-    12.0 to Color(0xFFFA6F71), // >12%  HC
-     9.0 to Color(0xFFF37479), //  9–12% Cat 1
+    12.0 to Color(0xFFFA5E60), // >12%  HC
+     9.0 to Color(0xFFF36C72), //  9–12% Cat 1
      6.0 to Color(0xFFFBAD41), //  6–9%  Cat 2
      3.0 to Color(0xFFF9EE44), //  3–6%  Cat 3
      0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
