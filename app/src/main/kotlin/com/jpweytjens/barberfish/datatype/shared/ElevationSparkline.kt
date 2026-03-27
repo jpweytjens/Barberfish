@@ -56,7 +56,7 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
  *  3. Past outline (left of dot): 22% white, strokeWidth 1.5px
  *  4. Ahead outline (right of dot): 72% white, strokeWidth 1.5px
  *  5. Distance tick at +5 km ahead: 1px stroke, "5" label, 30% white
- *  6. Position dot: circle radius 2.5px, ICON_TINT_TEAL (#31E09A)
+ *  6. Position dot: circle radius 2.5px, color from [dotColor] (default ICON_TINT_TEAL)
  */
 
 private const val POSITION_FRACTION = 0.05f
@@ -80,6 +80,7 @@ internal fun renderElevationSparkline(
     skipBands: Int = 1,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
+    dotColor: Int = ICON_TINT_TEAL.toArgb(),
 ): Pair<Bitmap?, Float> {
     if (elevationPoints.isEmpty()) return Pair(null, displayedRange)
 
@@ -241,7 +242,7 @@ internal fun renderElevationSparkline(
 
     // 5. Position dot
     paint.style = Paint.Style.FILL
-    paint.color = ICON_TINT_TEAL.toArgb()
+    paint.color = dotColor
     canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
     return Pair(bitmap, newDisplayedRange)

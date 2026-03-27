@@ -10,6 +10,8 @@ import kotlin.math.sqrt
 private val ERROR_RED = Color(0xFFFF5252)
 private val MUTED_GREY = Color(0xFF7D7D7D)
 internal val ICON_TINT_TEAL = Color(0xFF31E09A)
+internal val KAROO_RED    = Color(0xFFfc292b)
+internal val KAROO_PURPLE = Color(0xFFddacfa)
 
 // RdYlGn color map (single threshold) — neutral center is white
 internal val RDYLGN_RED = Color(0xFFD73027)

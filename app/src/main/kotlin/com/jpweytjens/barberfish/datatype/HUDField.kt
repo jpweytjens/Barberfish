@@ -9,6 +9,10 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import androidx.compose.ui.graphics.toArgb
+import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
+import com.jpweytjens.barberfish.datatype.shared.KAROO_RED
+import com.jpweytjens.barberfish.datatype.shared.KAROO_PURPLE
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.hrZone
@@ -89,6 +93,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
             val hudStateFlow = if (config.preview) previewFlow(context) else liveFlow(context)
             var ratchetRange = 0f
             var lastPositionM = 0f
+            var lastOnRoutePositionM = 0f
             combine(
                 hudStateFlow.sample(1000L),
                 karooSystem.streamNavigationState().sample(1000L),
@@ -98,10 +103,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
             ) { hudState, navState, distState, zoneConfig, hudConfig ->
                 val dm = context.resources.displayMetrics
                 val sparkCfg = hudConfig.sparkline
-                val route =
-                    navState.state as? OnNavigationState.NavigationState.NavigatingRoute
+                val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
+                val dest  = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
                 val elevPoints: List<Pair<Float, Float>> = when {
                     route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
+                    dest  != null -> decodeElevationPolyline(dest.elevationPolyline ?: "")
                     BuildConfig.DEBUG || config.preview -> previewElevationFixture()
                     else -> emptyList()
                 }
@@ -112,13 +118,22 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     else (distState as? StreamState.Streaming)
                         ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
                         ?.toFloat() ?: 0f
+                val isOffRoute = route != null &&
+                    (route.rejoinPolyline != null || route.rejoinDistance != null)
+                if (!isOffRoute) lastOnRoutePositionM = positionM
+                val sparklinePositionM = if (isOffRoute) lastOnRoutePositionM else positionM
+                val dotColor = when {
+                    isOffRoute  -> KAROO_RED.toArgb()
+                    dest != null -> KAROO_PURPLE.toArgb()
+                    else        -> ICON_TINT_TEAL.toArgb()
+                }
                 val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
                 lastPositionM = positionM
                 val sparklineHeightPx = (44f * dm.density).toInt()
                 val (bitmap, updatedRange) = if (sparkCfg.enabled)
                     renderElevationSparkline(
                         elevationPoints = elevPoints,
-                        positionM       = positionM,
+                        positionM       = sparklinePositionM,
                         widthPx         = dm.widthPixels,
                         heightPx        = sparklineHeightPx,
                         density         = dm.density,
@@ -128,6 +143,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         skipBands       = sparkCfg.skipBands,
                         displayedRange  = ratchetRange,
                         distanceDeltaM  = distanceDeltaM,
+                        dotColor        = dotColor,
                     )
                 else Pair(null, ratchetRange)
                 ratchetRange = updatedRange
