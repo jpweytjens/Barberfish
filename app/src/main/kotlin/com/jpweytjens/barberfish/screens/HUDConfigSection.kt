@@ -155,7 +155,10 @@ private fun HUDPreview(
         }
     }
     val current = states[index]
-    val sizeConfig = if (hudConfig.columns == 4) PreviewSizeConfig.HUD_FOUR else PreviewSizeConfig.HUD
+    val baseConfig = if (hudConfig.columns == 4) PreviewSizeConfig.HUD_FOUR else PreviewSizeConfig.HUD
+    val sizeConfig = if (!hudConfig.sparkline.enabled)
+        baseConfig.copy(valueTranslationY = 20.dp)
+    else baseConfig
 
     val density = LocalDensity.current.density
     val screenWidthPx = (LocalConfiguration.current.screenWidthDp * density).toInt()
