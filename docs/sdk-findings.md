@@ -163,6 +163,22 @@ directly.
 
 ---
 
+## Route polyline simplification
+
+Two separate pipelines; only one applies simplification.
+
+Map display: the ride app uses Visvalingam-Whyatt (`SimplifyVW`) and Douglas-Peucker
+(`SimplifyDP`) from `org.oscim.utils.geom` to simplify route geometry for vector tile
+rendering. This is why the route line looks simpler at lower zoom levels on the Route
+selection screen — it is a purely visual effect on the map geometry.
+
+`routeElevationPolyline` (what the SDK exposes): a separate encoded string that is passed
+through to navigation state without simplification. The ride app's own decoder reads it
+with the same precision=1 call and no further filtering. Its resolution is fixed at route
+creation time (server-side or GPX import) and is unaffected by zoom level.
+
+---
+
 ## Native label font sizes
 
 The `DataElementConstraints` factory.
