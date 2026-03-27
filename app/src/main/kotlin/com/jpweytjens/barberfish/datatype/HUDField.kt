@@ -11,8 +11,8 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
-import com.jpweytjens.barberfish.datatype.shared.KAROO_RED
-import com.jpweytjens.barberfish.datatype.shared.KAROO_PURPLE
+import com.jpweytjens.barberfish.datatype.shared.KAROO_REJOIN_RED
+import com.jpweytjens.barberfish.datatype.shared.KAROO_DESTINATION_PURPLE
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.hrZone
@@ -123,8 +123,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 if (!isOffRoute) lastOnRoutePositionM = positionM
                 val sparklinePositionM = if (isOffRoute) lastOnRoutePositionM else positionM
                 val dotColor = when {
-                    isOffRoute  -> KAROO_RED.toArgb()
-                    dest != null -> KAROO_PURPLE.toArgb()
+                    isOffRoute  -> KAROO_REJOIN_RED.toArgb()
+                    dest != null -> KAROO_DESTINATION_PURPLE.toArgb()
                     else        -> ICON_TINT_TEAL.toArgb()
                 }
                 val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)

@@ -61,6 +61,10 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.TimeConfig
+import com.jpweytjens.barberfish.datatype.shared.Grey200
+import com.jpweytjens.barberfish.datatype.shared.Grey400
+import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
+import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
@@ -89,7 +93,7 @@ internal fun HUDConfigSection(
     Text(
         "Tap a column to configure it.",
         fontSize = 12.sp,
-        color = Color(0xFF1B2D2D),
+        color = TextDark,
     )
     HUDPreview(
         hudConfig = hudConfig,
@@ -223,7 +227,7 @@ private fun HUDPreviewCell(
                 }
                 .then(
                     if (selected)
-                        Modifier.border(2.dp, Color(0xFF31E09A), RoundedCornerShape(6.dp))
+                        Modifier.border(2.dp, ICON_TINT_TEAL, RoundedCornerShape(6.dp))
                     else Modifier
                 )
     ) {
@@ -243,7 +247,7 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFD5D5D5))
+                .background(Grey200)
                 .padding(3.dp)
                 .pointerInput(columns, onSelect) {
                     val slotWidthPx = size.width.toFloat() / 2
@@ -260,14 +264,14 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Color(0xFF9E9E9E) else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label,
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -286,7 +290,7 @@ private fun HUDSlotFieldCard(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFD5D5D5))
+                .background(Grey200)
                 .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -367,7 +371,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
 
 @Composable
 private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
         selected = slot.speedSmoothing,
@@ -379,7 +383,7 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 
 @Composable
 private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     SmoothingSlider(
         options = PowerSmoothingStream.entries,
         selected = slot.powerSmoothing,
@@ -418,7 +422,7 @@ private fun HUDAvgSpeedCard(
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
                         .background(
-                            if (isSelected) Color(0xFF9E9E9E) else Color.Transparent
+                            if (isSelected) Grey400 else Color.Transparent
                         )
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
@@ -426,7 +430,7 @@ private fun HUDAvgSpeedCard(
                 Text(
                     text = label,
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -440,7 +444,7 @@ private fun HUDAvgSpeedCard(
 
 @Composable
 private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     SmoothingSlider(
         options = CadenceSmoothingStream.entries,
         selected = slot.cadenceSmoothing,
@@ -460,7 +464,7 @@ private fun SparklineConfigSection(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFD5D5D5))
+                .background(Grey200)
                 .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -468,7 +472,7 @@ private fun SparklineConfigSection(
             "ELEVATION SPARKLINE",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1B2D2D),
+            color = TextDark,
         )
         SegmentedRow(
             options = listOf(true to "On", false to "Off"),
@@ -476,14 +480,14 @@ private fun SparklineConfigSection(
             onSelect = { onUpdate(config.copy(enabled = it)) },
         )
         if (config.enabled) {
-            Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+            Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             SegmentedRow(
                 options = listOf(5 to "5 km", 10 to "10 km", 20 to "20 km"),
                 selected = config.lookaheadKm,
                 onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
             )
             val threshold = gradeThreshold(palette, config.skipBands)
-            Text("GRADE BANDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+            Text("GRADE BANDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -498,7 +502,7 @@ private fun SparklineConfigSection(
                 Text(
                     "≥${"%.0f".format(threshold)}%",
                     fontSize = 11.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                 )
             }
         }
@@ -535,14 +539,14 @@ private fun <T> SegmentedRow(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Color(0xFF9E9E9E) else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label,
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }

@@ -6,12 +6,22 @@ import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import kotlin.math.sqrt
 
+// UI grey palette (Design Guide scale: 100=lightest, 600=darkest)
+internal val Grey100 = Color(0xFFF4F4F4)
+internal val Grey200 = Color(0xFFDDDDDD)
+// internal val Grey300 = Color(0xFFBCBCBC)   // reserved — not yet used
+internal val Grey400 = Color(0xFF979797)
+internal val Grey500 = Color(0xFF7D7D7D)
+// internal val Grey600 = Color(0xFF636363)   // reserved — not yet used
+
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
-private val MUTED_GREY = Color(0xFF7D7D7D)
 internal val ICON_TINT_TEAL = Color(0xFF31E09A)
-internal val KAROO_RED    = Color(0xFFfc292b)
-internal val KAROO_PURPLE = Color(0xFFddacfa)
+internal val KAROO_REJOIN_RED         = Color(0xFFfc292b)
+internal val KAROO_DESTINATION_PURPLE = Color(0xFFddacfa)
+internal val TextDark      = Color(0xFF1B2D2D)
+internal val LemonYellow   = Color(0xFFFFE900)
+internal val BackButtonTint = Color(0xFFA0B4BE)
 
 // RdYlGn color map (single threshold) — neutral center is white
 internal val RDYLGN_RED = Color(0xFFD73027)
@@ -160,7 +170,7 @@ internal fun FieldColor.toColor(): Color? =
     when (this) {
         is FieldColor.Default -> null
         is FieldColor.Error -> ERROR_RED
-        is FieldColor.Muted -> MUTED_GREY
+        is FieldColor.Muted -> Grey500
         is FieldColor.StreamState -> null
         is FieldColor.Threshold -> thresholdColor(factor)
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)

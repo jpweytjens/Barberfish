@@ -111,6 +111,12 @@ import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.fontSizeSpForPreview
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
+import com.jpweytjens.barberfish.datatype.shared.Grey100
+import com.jpweytjens.barberfish.datatype.shared.Grey200
+import com.jpweytjens.barberfish.datatype.shared.Grey400
+import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
+import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
@@ -238,7 +244,7 @@ class MainActivity : ComponentActivity() {
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 
-        Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF4F4F4))) {
+        Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
             Column(
                 modifier =
                     Modifier.fillMaxSize().padding(6.dp).verticalScroll(rememberScrollState()),
@@ -306,7 +312,7 @@ class MainActivity : ComponentActivity() {
                             "SMOOTHING",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
+                            color = TextDark,
                         )
                         SmoothingSlider(
                             options = PowerSmoothingStream.entries,
@@ -373,7 +379,7 @@ class MainActivity : ComponentActivity() {
                             "SMOOTHING",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
+                            color = TextDark,
                         )
                         SmoothingSlider(
                             options = SpeedSmoothingStream.entries,
@@ -416,7 +422,7 @@ class MainActivity : ComponentActivity() {
                             "SMOOTHING",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B2D2D),
+                            color = TextDark,
                         )
                         SmoothingSlider(
                             options = CadenceSmoothingStream.entries,
@@ -656,7 +662,7 @@ class MainActivity : ComponentActivity() {
                         .offset(x = (-8).dp)
                         .size(width = 54.dp, height = 50.dp)
                         .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
-                        .background(Color(0xFFA0B4BE))
+                        .background(BackButtonTint)
                         .clickable { finish() },
                 contentAlignment = Alignment.Center,
             ) {
@@ -678,7 +684,6 @@ internal fun <T> SmoothingSlider(
     val thumbSizeDp = 40.dp
     val dotSizeDp = 10.dp
     val trackHeightDp = 18.dp // slightly taller than dotSizeDp
-    val grey = Color(0xFF9E9E9E)
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         BoxWithConstraints(
@@ -724,7 +729,7 @@ internal fun <T> SmoothingSlider(
                             .align(Alignment.CenterStart)
                             .offset { IntOffset((cx - dotSizePx / 2).toInt(), 0) }
                             .clip(CircleShape)
-                            .background(grey)
+                            .background(Grey400)
                 )
             }
             // Thumb on top
@@ -734,7 +739,7 @@ internal fun <T> SmoothingSlider(
                         .align(Alignment.CenterStart)
                         .offset { IntOffset((thumbCenterX - thumbSizePx / 2).toInt(), 0) }
                         .clip(CircleShape)
-                        .background(grey),
+                        .background(Grey400),
                 contentAlignment = Alignment.Center,
             ) {
                 if (thumbIcon != null) {
@@ -777,7 +782,7 @@ private fun CollapsibleSection(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
-                .border(1.dp, Color(0xFFCCCCCC), RoundedCornerShape(6.dp))
+                .border(1.dp, Grey200, RoundedCornerShape(6.dp))
                 .background(Color.White)
     ) {
         Row(
@@ -881,16 +886,16 @@ private fun FieldCard(
     Column(
         modifier = Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
-            .border(1.dp, Color(0xFFE3E3E3), RoundedCornerShape(6.dp)),
+            .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
     ) {
         if (selected) {
             Column(
-                modifier = Modifier.fillMaxWidth().background(Color(0xFFDDDDDD))
+                modifier = Modifier.fillMaxWidth().background(Grey200)
                     .padding(12.dp)
                     .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -899,7 +904,7 @@ private fun FieldCard(
                         description,
                         modifier = Modifier.weight(1f),
                         fontSize = 12.sp,
-                        color = Color(0xFF1B2D2D),
+                        color = TextDark,
                     )
                     FieldPreviewBox(previewFields, colorMode)
                 }
@@ -910,18 +915,18 @@ private fun FieldCard(
                 exit = shrinkVertically(animationSpec = tween(200)),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().background(Color(0xFFD5D5D5)).padding(12.dp),
+                    modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     content = controls,
                 )
             }
         } else {
             Row(
-                modifier = Modifier.fillMaxWidth().background(Color(0xFFF4F4F4)).padding(12.dp)
+                modifier = Modifier.fillMaxWidth().background(Grey100).padding(12.dp)
                     .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             }
         }
     }
@@ -930,8 +935,7 @@ private fun FieldCard(
 @Composable
 internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
     val options = ZoneColorMode.entries
-    val grey = Color(0xFF9E9E9E)
-    Text("ZONE COLOR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("ZONE COLOR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -960,7 +964,7 @@ internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) grey else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -972,7 +976,7 @@ internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode
                             ZoneColorMode.BACKGROUND -> "Fill"
                         },
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -1010,12 +1014,11 @@ internal fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneCol
 @Composable
 private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {
     val options = TimeFormat.entries
-    val grey = Color(0xFF9E9E9E)
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFEEEEEE))
+                .background(Grey100)
                 .padding(3.dp)
                 .pointerInput(options, onSelected) {
                     val slotWidthPx = size.width.toFloat() / options.size
@@ -1039,14 +1042,14 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) grey else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = format.label,
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -1057,13 +1060,12 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
 @Composable
 private fun ReadabilityToggle(readable: Boolean, onSelected: (Boolean) -> Unit) {
     val options = listOf(false, true)
-    val grey = Color(0xFF9E9E9E)
-    Text("Color adjustment", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("Color adjustment", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFEEEEEE))
+                .background(Grey100)
                 .padding(3.dp)
                 .pointerInput(readable, onSelected) {
                     val slotWidthPx = size.width.toFloat() / options.size
@@ -1087,14 +1089,14 @@ private fun ReadabilityToggle(readable: Boolean, onSelected: (Boolean) -> Unit) 
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) grey else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = if (opt) "Readable" else "Original",
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -1111,12 +1113,11 @@ private fun ZonePalettePills(
     val options =
         if (readable) ZonePalette.entries
         else ZonePalette.entries.filter { it != ZonePalette.HSLUV }
-    val grey = Color(0xFF9E9E9E)
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFEEEEEE))
+                .background(Grey100)
                 .padding(3.dp)
                 .pointerInput(options, onSelected) {
                     val slotWidthPx = size.width.toFloat() / options.size
@@ -1140,7 +1141,7 @@ private fun ZonePalettePills(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) grey else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1154,7 +1155,7 @@ private fun ZonePalettePills(
                             ZonePalette.HSLUV -> "HSLuv"
                         },
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -1294,14 +1295,14 @@ internal fun AvgSpeedThresholdControls(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Color(0xFF9E9E9E) else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label,
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -1312,7 +1313,7 @@ internal fun AvgSpeedThresholdControls(
             "TARGET (KM/H)",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1B2D2D),
+            color = TextDark,
         )
         ThresholdInput(
             value = config.thresholdKph,
@@ -1323,7 +1324,7 @@ internal fun AvgSpeedThresholdControls(
             "MIN SPEED (KM/H)",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1B2D2D),
+            color = TextDark,
         )
         NullableThresholdInput(
             value = config.minKph,
@@ -1334,7 +1335,7 @@ internal fun AvgSpeedThresholdControls(
             "MAX SPEED (KM/H)",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1B2D2D),
+            color = TextDark,
         )
         NullableThresholdInput(
             value = config.maxKph,
@@ -1348,7 +1349,7 @@ internal fun AvgSpeedThresholdControls(
                 "RANGE BELOW (%)",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B2D2D),
+                color = TextDark,
             )
             RangeInput(
                 value = config.rangePercentBelow,
@@ -1360,7 +1361,7 @@ internal fun AvgSpeedThresholdControls(
                 "RANGE ABOVE (%)",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1B2D2D),
+                color = TextDark,
             )
             RangeInput(
                 value = config.rangePercentAbove,
@@ -1374,12 +1375,11 @@ internal fun AvgSpeedThresholdControls(
 @Composable
 private fun GradePalettePills(selected: GradePalette, onSelected: (GradePalette) -> Unit) {
     val options = GradePalette.entries
-    val grey = Color(0xFF9E9E9E)
     Row(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFEEEEEE))
+                .background(Grey100)
                 .padding(3.dp)
                 .pointerInput(options, onSelected) {
                     val slotWidthPx = size.width.toFloat() / options.size
@@ -1403,14 +1403,14 @@ private fun GradePalettePills(selected: GradePalette, onSelected: (GradePalette)
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) grey else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = palette.label,
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -1437,7 +1437,7 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(color ?: Color.Transparent))
-                Text(text = label, fontSize = 7.sp, color = Color(0xFF1B2D2D))
+                Text(text = label, fontSize = 7.sp, color = TextDark)
             }
         }
     }
@@ -1465,7 +1465,7 @@ internal fun BarberfishPreviewCell(
             else -> Color.White
         }
     val labelColor = if (hasZoneBg) Color.Black else Color.White
-    val iconTint = if (hasZoneBg) Color.Black else Color(0xFF31E09A)
+    val iconTint = if (hasZoneBg) Color.Black else ICON_TINT_TEAL
 
     val cellModifier =
         if (hasZoneBg)
