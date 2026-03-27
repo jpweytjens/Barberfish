@@ -287,16 +287,20 @@ class MainActivity : ComponentActivity() {
 
                 CollapsibleSection(
                     title = "Data fields",
-                    description = "Configure the standalone data fields.",
+                    description = "Configure standalone data fields",
                     icon = R.drawable.ic_section_fields,
                     expanded = fieldsExpanded,
                     onToggle = { fieldsExpanded = !fieldsExpanded },
                 ) {
+                    var selectedDataField by remember { mutableStateOf<String?>(null) }
+
                     FieldCard(
                         title = "POWER",
-                        description = "Power output in W.",
+                        description = "Current power output",
                         previewFields = powerPreviewStates,
                         colorMode = powerFieldConfig.colorMode,
+                        selected = selectedDataField == "POWER",
+                        onSelect = { selectedDataField = if (selectedDataField == "POWER") null else "POWER" },
                     ) {
                         Text(
                             "SMOOTHING",
@@ -324,25 +328,46 @@ class MainActivity : ComponentActivity() {
                     }
 
                     FieldCard(
-                        title = "HEART RATE",
-                        description = "Heart rate in bpm.",
-                        previewFields = hrPreviewStates,
-                        colorMode = hrFieldConfig.colorMode,
+                        title = "AVG POWER",
+                        description = "Average power with zone coloring.",
+                        previewFields = avgPowerPreviewStates,
+                        colorMode = avgPowerFieldConfig.colorMode,
+                        selected = selectedDataField == "AVG POWER",
+                        onSelect = { selectedDataField = if (selectedDataField == "AVG POWER") null else "AVG POWER" },
                     ) {
                         ZoneColorSlider(
-                            selected = hrFieldConfig.colorMode,
+                            selected = avgPowerFieldConfig.colorMode,
                             onSelected = { mode ->
-                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                                avgPowerFieldConfig = avgPowerFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveAvgPowerFieldConfig(avgPowerFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "NP",
+                        description = "Normalized power with zone coloring.",
+                        previewFields = npPreviewStates,
+                        colorMode = npFieldConfig.colorMode,
+                        selected = selectedDataField == "NP",
+                        onSelect = { selectedDataField = if (selectedDataField == "NP") null else "NP" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = npFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
                             },
                         )
                     }
 
                     FieldCard(
                         title = "SPEED",
-                        description = "Speed in km/h.",
+                        description = "Current speed",
                         previewFields = speedPreviewStates,
                         colorMode = ZoneColorMode.NONE,
+                        selected = selectedDataField == "SPEED",
+                        onSelect = { selectedDataField = if (selectedDataField == "SPEED") null else "SPEED" },
                     ) {
                         Text(
                             "SMOOTHING",
@@ -363,10 +388,29 @@ class MainActivity : ComponentActivity() {
                     }
 
                     FieldCard(
+                        title = "HEART RATE",
+                        description = "Current heart rate",
+                        previewFields = hrPreviewStates,
+                        colorMode = hrFieldConfig.colorMode,
+                        selected = selectedDataField == "HEART RATE",
+                        onSelect = { selectedDataField = if (selectedDataField == "HEART RATE") null else "HEART RATE" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = hrFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
                         title = "CADENCE",
-                        description = "Cadence in rpm.",
+                        description = "Current cadence",
                         previewFields = cadencePreviewStates,
                         colorMode = ZoneColorMode.NONE,
+                        selected = selectedDataField == "CADENCE",
+                        onSelect = { selectedDataField = if (selectedDataField == "CADENCE") null else "CADENCE" },
                     ) {
                         Text(
                             "SMOOTHING",
@@ -387,40 +431,12 @@ class MainActivity : ComponentActivity() {
                     }
 
                     FieldCard(
-                        title = "AVG POWER",
-                        description = "Average power in W with zone coloring.",
-                        previewFields = avgPowerPreviewStates,
-                        colorMode = avgPowerFieldConfig.colorMode,
-                    ) {
-                        ZoneColorSlider(
-                            selected = avgPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                avgPowerFieldConfig = avgPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveAvgPowerFieldConfig(avgPowerFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "NP",
-                        description = "Normalized power in W with zone coloring.",
-                        previewFields = npPreviewStates,
-                        colorMode = npFieldConfig.colorMode,
-                    ) {
-                        ZoneColorSlider(
-                            selected = npFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
                         title = "GRADE",
-                        description = "Road gradient with palette-based coloring.",
+                        description = "Road gradient with color coding.",
                         previewFields = gradePreviewStates,
                         colorMode = gradeFieldConfig.colorMode,
+                        selected = selectedDataField == "GRADE",
+                        onSelect = { selectedDataField = if (selectedDataField == "GRADE") null else "GRADE" },
                     ) {
                         ZoneColorSlider(
                             selected = gradeFieldConfig.colorMode,
@@ -442,35 +458,51 @@ class MainActivity : ComponentActivity() {
                 CollapsibleSection(
                     title = "Speed thresholds",
                     description =
-                        "Color average speed fields by distance from a target speed or zone.",
+                        "Color average speed by distance from a target speed or zone",
                     icon = R.drawable.ic_section_speed,
                     expanded = thresholdsExpanded,
                     onToggle = { thresholdsExpanded = !thresholdsExpanded },
                 ) {
                     Text(
                         buildAnnotatedString {
-                            append("Single: ")
-                            withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
-                            append(" above and ")
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Single:\n") }
                             withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
-                            append(" below the threshold.\n")
-                            append("Min/Max: ")
+                            append(" · thr · ")
                             withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
-                            append(" inside the zone, ")
-                            withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
-                            append(" near the boundaries, ")
-                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
-                            append(" outside.\n")
-                            append("Leave fields empty to disable.")
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Min / Max:\n") }
+                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
+                            append(" · ")
+                            withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
+                            append(" · min · ")
+                            withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
+                            append(" · max · ")
+                            withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
+                            append(" · ")
+                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "Leave fields empty to disable.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    var selectedThresholdField by remember { mutableStateOf<String?>(null) }
+
                     FieldCard(
                         title = "AVG SPEED (TOTAL)",
-                        description = "Average speed including paused time.",
+                        description = "Average speed including paused time",
                         previewFields = avgTotalPreviewStates,
                         colorMode = ZoneColorMode.TEXT,
+                        selected = selectedThresholdField == "AVG SPEED (TOTAL)",
+                        onSelect = { selectedThresholdField = if (selectedThresholdField == "AVG SPEED (TOTAL)") null else "AVG SPEED (TOTAL)" },
                     ) {
                         AvgSpeedThresholdControls(
                             config = avgTotalConfig,
@@ -485,9 +517,11 @@ class MainActivity : ComponentActivity() {
 
                     FieldCard(
                         title = "AVG SPEED (MOVING)",
-                        description = "Average speed excluding paused time.",
+                        description = "Average speed excluding paused time",
                         previewFields = avgMovingPreviewStates,
                         colorMode = ZoneColorMode.TEXT,
+                        selected = selectedThresholdField == "AVG SPEED (MOVING)",
+                        onSelect = { selectedThresholdField = if (selectedThresholdField == "AVG SPEED (MOVING)") null else "AVG SPEED (MOVING)" },
                     ) {
                         AvgSpeedThresholdControls(
                             config = avgMovingConfig,
@@ -811,13 +845,7 @@ private fun CollapsibleSection(
 }
 
 @Composable
-private fun FieldCard(
-    title: String,
-    description: String,
-    previewFields: List<FieldState>,
-    colorMode: ZoneColorMode,
-    controls: @Composable ColumnScope.() -> Unit,
-) {
+private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColorMode) {
     var index by remember { mutableIntStateOf(0) }
     LaunchedEffect(previewFields) {
         index = 0
@@ -826,43 +854,76 @@ private fun FieldCard(
             index = (index + 1) % previewFields.size
         }
     }
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))) {
-        Column(
-            modifier = Modifier.fillMaxWidth().background(Color(0xFFDDDDDD)).padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+    Box(
+        modifier = Modifier.width(120.dp).height(80.dp)
+            .clip(RoundedCornerShape(6.dp)).background(Color.Black)
+    ) {
+        BarberfishPreviewCell(
+            previewFields[index.coerceAtMost(previewFields.size - 1)],
+            ViewConfig.Alignment.RIGHT,
+            colorMode,
+            Modifier.fillMaxSize(),
+            cellWidthDp = 120.dp,
+        )
+    }
+}
+
+@Composable
+private fun FieldCard(
+    title: String,
+    description: String,
+    previewFields: List<FieldState>,
+    colorMode: ZoneColorMode,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    controls: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .border(1.dp, Color(0xFFE3E3E3), RoundedCornerShape(6.dp)),
+    ) {
+        if (selected) {
+            Column(
+                modifier = Modifier.fillMaxWidth().background(Color(0xFFDDDDDD))
+                    .padding(12.dp)
+                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    description,
-                    modifier = Modifier.weight(1f),
-                    fontSize = 12.sp,
-                    color = Color(0xFF1B2D2D),
-                )
-                Box(
-                    modifier =
-                        Modifier.width(120.dp)
-                            .height(80.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color.Black)
+                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    BarberfishPreviewCell(
-                        previewFields[index.coerceAtMost(previewFields.size - 1)],
-                        ViewConfig.Alignment.RIGHT,
-                        colorMode,
-                        Modifier.fillMaxSize(),
+                    Text(
+                        description,
+                        modifier = Modifier.weight(1f),
+                        fontSize = 12.sp,
+                        color = Color(0xFF1B2D2D),
                     )
+                    FieldPreviewBox(previewFields, colorMode)
                 }
             }
+            AnimatedVisibility(
+                visible = selected,
+                enter = expandVertically(animationSpec = tween(200)),
+                exit = shrinkVertically(animationSpec = tween(200)),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFFD5D5D5)).padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    content = controls,
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth().background(Color(0xFFF4F4F4)).padding(12.dp)
+                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+            }
         }
-        Column(
-            modifier = Modifier.fillMaxWidth().background(Color(0xFFD5D5D5)).padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = controls,
-        )
     }
 }
 
