@@ -18,6 +18,7 @@ Zone coloring supports both background-fill and text-color styles across four pa
 | Feature             | Default Karoo                                                                                                                                                      | Barberfish                                                                                                                                                 |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | HUD                 | Not available                                                                                                                                                      | Configurable 3- or 4-column layout; each slot independently selectable from Speed, HR, Power, Cadence, Avg Power, NP, or Grade with per-slot zone coloring |
+| Elevation sparkline | Not available                                                                                                                                                      | Tufte-inspired strip below the HUD; non-linear zoom around current position; shows recent terrain, immediate climb, and upcoming profile at a glance       |
 | Zone color palettes | Karoo only                                                                                                                                                         | Karoo, Wahoo, Zwift, and Intervals.icu                                                                                                                     |
 | Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                                                                                                              |
 | Grade coloring      | Not available                                                                                                                                                      | Color-coded by road gradient steepness; Karoo, Wahoo, and Garmin palettes                                                                                  |
@@ -82,8 +83,18 @@ Complete list of data fields provided by Barberfish.
 
 ### HUD
 
-- HUD  
+- HUD
   configurable 3 or 4 columns; each slot accepts any of the data fields below
+
+#### Elevation sparkline
+
+The HUD includes an optional elevation sparkline, inspired by [Edward Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/).
+
+The sparkline has three sections: the terrain you just rode as reference, the section immediately ahead at and a compressed preview of what's further up the road. The horizontal axis is non-linearly warped to give the most space to the terrain closest to your current position. 
+
+The goal is to capture *perceived* elevation, not a geometrically accurate profile. If you need a full, 1:1 elevation chart, [RouteGraph](https://github.com/timklge/karoo-routegraph) is the right tool.
+
+When a route is loaded on your Karoo, the preview in the field picker shows your actual route rather than a placeholder, so you can check the climb profile before the ride starts. If no route is loaded, the spacing of the data fields will adjust automatically.
 
 ### Power & Heart Rate
 
