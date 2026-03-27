@@ -890,7 +890,7 @@ private fun FieldCard(
     ) {
         if (selected) {
             Column(
-                modifier = Modifier.fillMaxWidth().background(Grey200)
+                modifier = Modifier.fillMaxWidth().background(Grey100)
                     .padding(12.dp)
                     .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
                 verticalArrangement = Arrangement.spacedBy(8.dp),
