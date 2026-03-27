@@ -66,6 +66,7 @@ private const val FLAT_SCALE_FACTOR = 2.0f
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val LOG_WARP_K = 8f
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
+private const val DOT_RADIUS_PX = 5f
 
 internal fun renderElevationSparkline(
     elevationPoints: List<Pair<Float, Float>>, // (distanceM, elevationM)
@@ -131,7 +132,7 @@ internal fun renderElevationSparkline(
             interpolationFraction * (pixelDensityCumulative[lowerStep + 1] - pixelDensityCumulative[lowerStep])
         return ((budgetConsumed / totalWarpedBudget) * widthPx).coerceIn(0f, widthPx.toFloat())
     }
-    fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2) - 1f).coerceIn(0f, heightPx.toFloat())
+    fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * DOT_RADIUS_PX) - DOT_RADIUS_PX).coerceIn(0f, heightPx.toFloat())
 
     val dotX = toX(positionM)
     val dotY = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - positionM) }
@@ -241,7 +242,7 @@ internal fun renderElevationSparkline(
     // 5. Position dot
     paint.style = Paint.Style.FILL
     paint.color = ICON_TINT_TEAL.toArgb()
-    canvas.drawCircle(dotX, dotY, 5f, paint)
+    canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
     return Pair(bitmap, newDisplayedRange)
 }
