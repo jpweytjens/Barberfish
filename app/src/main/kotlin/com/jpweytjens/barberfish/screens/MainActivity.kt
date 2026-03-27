@@ -262,6 +262,28 @@ class MainActivity : ComponentActivity() {
                     )
                 } // end HUD
 
+                val powerPreviewStates = remember(powerFieldConfig, userProfile, zoneConfig) {
+                    PowerField.previewStates(powerFieldConfig, userProfile, zoneConfig)
+                }
+                val hrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
+                    HRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                }
+                val speedPreviewStates = remember(speedFieldConfig, userProfile) {
+                    SpeedField.previewStates(speedFieldConfig, userProfile)
+                }
+                val cadencePreviewStates = remember(cadenceFieldConfig) {
+                    CadenceField.previewStates(cadenceFieldConfig)
+                }
+                val avgPowerPreviewStates = remember(avgPowerFieldConfig, userProfile, zoneConfig) {
+                    AvgPowerField.previewStates(avgPowerFieldConfig, userProfile, zoneConfig)
+                }
+                val npPreviewStates = remember(npFieldConfig, userProfile, zoneConfig) {
+                    NPField.previewStates(npFieldConfig, userProfile, zoneConfig)
+                }
+                val gradePreviewStates = remember(gradeFieldConfig, zoneConfig) {
+                    GradeField.previewStates(gradeFieldConfig, zoneConfig)
+                }
+
                 CollapsibleSection(
                     title = "Data fields",
                     description = "Configure the standalone data fields.",
@@ -272,7 +294,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "POWER",
                         description = "Power output in W.",
-                        previewFields = PowerField.previewStates(powerFieldConfig, userProfile, zoneConfig),
+                        previewFields = powerPreviewStates,
                         colorMode = powerFieldConfig.colorMode,
                     ) {
                         Text(
@@ -303,7 +325,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "HEART RATE",
                         description = "Heart rate in bpm.",
-                        previewFields = HRField.previewStates(hrFieldConfig, userProfile, zoneConfig),
+                        previewFields = hrPreviewStates,
                         colorMode = hrFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -318,7 +340,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "SPEED",
                         description = "Speed in km/h.",
-                        previewFields = SpeedField.previewStates(speedFieldConfig, userProfile),
+                        previewFields = speedPreviewStates,
                         colorMode = ZoneColorMode.NONE,
                     ) {
                         Text(
@@ -342,7 +364,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "CADENCE",
                         description = "Cadence in rpm.",
-                        previewFields = CadenceField.previewStates(cadenceFieldConfig),
+                        previewFields = cadencePreviewStates,
                         colorMode = ZoneColorMode.NONE,
                     ) {
                         Text(
@@ -366,7 +388,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "AVG POWER",
                         description = "Average power in W with zone coloring.",
-                        previewFields = AvgPowerField.previewStates(avgPowerFieldConfig, userProfile, zoneConfig),
+                        previewFields = avgPowerPreviewStates,
                         colorMode = avgPowerFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -381,7 +403,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "NP",
                         description = "Normalized power in W with zone coloring.",
-                        previewFields = NPField.previewStates(npFieldConfig, userProfile, zoneConfig),
+                        previewFields = npPreviewStates,
                         colorMode = npFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -396,7 +418,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "GRADE",
                         description = "Road gradient with palette-based coloring.",
-                        previewFields = GradeField.previewStates(gradeFieldConfig, zoneConfig),
+                        previewFields = gradePreviewStates,
                         colorMode = gradeFieldConfig.colorMode,
                     ) {
                         ZoneColorSlider(
@@ -408,6 +430,13 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 } // end Fields
+
+                val avgTotalPreviewStates = remember(avgTotalConfig, userProfile) {
+                    AvgSpeedField.previewStates(avgTotalConfig, userProfile, includePaused = true)
+                }
+                val avgMovingPreviewStates = remember(avgMovingConfig, userProfile) {
+                    AvgSpeedField.previewStates(avgMovingConfig, userProfile, includePaused = false)
+                }
 
                 CollapsibleSection(
                     title = "Speed thresholds",
@@ -439,7 +468,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "AVG SPEED (TOTAL)",
                         description = "Average speed including paused time.",
-                        previewFields = AvgSpeedField.previewStates(avgTotalConfig, userProfile, includePaused = true),
+                        previewFields = avgTotalPreviewStates,
                         colorMode = ZoneColorMode.TEXT,
                     ) {
                         AvgSpeedThresholdControls(
@@ -456,7 +485,7 @@ class MainActivity : ComponentActivity() {
                     FieldCard(
                         title = "AVG SPEED (MOVING)",
                         description = "Average speed excluding paused time.",
-                        previewFields = AvgSpeedField.previewStates(avgMovingConfig, userProfile, includePaused = false),
+                        previewFields = avgMovingPreviewStates,
                         colorMode = ZoneColorMode.TEXT,
                     ) {
                         AvgSpeedThresholdControls(
