@@ -65,7 +65,7 @@ private const val MIN_MEANINGFUL_GRADE = 0.03f
 private const val FLAT_SCALE_FACTOR = 2.0f
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val LOG_WARP_K = 8f
-private const val WARP_INTEGRATION_STEPS = 600
+private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
 
 internal fun renderElevationSparkline(
     elevationPoints: List<Pair<Float, Float>>, // (distanceM, elevationM)
@@ -109,22 +109,23 @@ internal fun renderElevationSparkline(
     // Builds a cumulative pixel-density integral over the display window.
     // Points near positionM receive more pixels; distant points receive fewer.
     // mag(d) = 1 + K·exp(-normalised_distance · K/2) — peaks at dot, falls off exponentially.
-    val pixelDensityCumulative = FloatArray(WARP_INTEGRATION_STEPS + 1)
-    val integrationStepM = (windowEnd - windowStart) / WARP_INTEGRATION_STEPS
-    for (step in 0 until WARP_INTEGRATION_STEPS) {
+    val warpIntegrationSteps = (lookaheadM / WARP_STEP_TARGET_M).toInt()
+    val pixelDensityCumulative = FloatArray(warpIntegrationSteps + 1)
+    val integrationStepM = (windowEnd - windowStart) / warpIntegrationSteps
+    for (step in 0 until warpIntegrationSteps) {
         val routeDistanceM = windowStart + step * integrationStepM
         val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
         val pixelsPerMetre = 1f + LOG_WARP_K * kotlin.math.exp(-normalisedDistanceFromDot * LOG_WARP_K * 0.5f).toFloat()
         pixelDensityCumulative[step + 1] = pixelDensityCumulative[step] + pixelsPerMetre * integrationStepM
     }
-    val totalWarpedBudget = pixelDensityCumulative[WARP_INTEGRATION_STEPS]
+    val totalWarpedBudget = pixelDensityCumulative[warpIntegrationSteps]
 
     // Maps a route distance to a screen x-coordinate by looking up its share
     // of the total pixel budget accumulated up to that point.
     fun toX(routeDistanceM: Float): Float {
         val windowFraction = ((routeDistanceM - windowStart) / (windowEnd - windowStart)).coerceIn(0f, 1f)
-        val lookupIndex = windowFraction * WARP_INTEGRATION_STEPS
-        val lowerStep = lookupIndex.toInt().coerceIn(0, WARP_INTEGRATION_STEPS - 1)
+        val lookupIndex = windowFraction * warpIntegrationSteps
+        val lowerStep = lookupIndex.toInt().coerceIn(0, warpIntegrationSteps - 1)
         val interpolationFraction = lookupIndex - lowerStep
         val budgetConsumed = pixelDensityCumulative[lowerStep] +
             interpolationFraction * (pixelDensityCumulative[lowerStep + 1] - pixelDensityCumulative[lowerStep])
