@@ -11,7 +11,6 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
-import com.jpweytjens.barberfish.datatype.shared.rvvElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -75,7 +74,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     @OptIn(FlowPreview::class)
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        if (config.gridSize.second < 18 || config.preview) {
+        if (!config.preview && config.gridSize.second < 18) {
             super.startView(context, config, emitter)
             return
         }
@@ -83,14 +82,15 @@ class HUDField(private val karooSystem: KarooSystemService) :
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
         scope.launch {
-            val distFlow: Flow<StreamState> = if (BuildConfig.DEBUG)
+            val distFlow: Flow<StreamState> = if (BuildConfig.DEBUG || config.preview)
                 flow { while (true) { emit(StreamState.NotAvailable); delay(1000L) } }
             else
                 karooSystem.streamDataFlow(DataType.Type.DISTANCE).sample(1000L)
+            val hudStateFlow = if (config.preview) previewFlow(context) else liveFlow(context)
             var ratchetRange = 0f
             var lastPositionM = 0f
             combine(
-                liveFlow(context).sample(1000L),
+                hudStateFlow.sample(1000L),
                 karooSystem.streamNavigationState().sample(1000L),
                 distFlow,
                 context.streamZoneConfig(),
@@ -102,12 +102,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     navState.state as? OnNavigationState.NavigationState.NavigatingRoute
                 val elevPoints: List<Pair<Float, Float>> = when {
                     route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
-                    BuildConfig.DEBUG -> debugElevationFixture()
+                    BuildConfig.DEBUG || config.preview -> previewElevationFixture()
                     else -> emptyList()
                 }
                 val routeLengthM = route?.routeDistance?.toFloat()
                     ?: elevPoints.lastOrNull()?.first ?: 20_000f
-                val positionM = if (BuildConfig.DEBUG)
+                val positionM = if (BuildConfig.DEBUG || config.preview)
                     (System.currentTimeMillis() % 180_000L).toFloat() / 180_000f * routeLengthM
                     else (distState as? StreamState.Streaming)
                         ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
@@ -536,8 +536,6 @@ class HUDField(private val karooSystem: KarooSystemService) :
     private fun extractSeconds(state: StreamState, fieldKey: String): Long =
         (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
             ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
-
-    private fun debugElevationFixture() = rvvElevationFixture()
 
     companion object {
         fun previewStates(
