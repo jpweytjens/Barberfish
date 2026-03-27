@@ -660,13 +660,18 @@ class MainActivity : ComponentActivity() {
                     Modifier.align(Alignment.BottomStart)
                         .padding(bottom = 16.dp)
                         .offset(x = (-8).dp)
-                        .size(width = 54.dp, height = 50.dp)
+                        .size(width = 62.dp, height = 50.dp)
                         .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
                         .background(BackButtonTint)
                         .clickable { finish() },
                 contentAlignment = Alignment.Center,
             ) {
-                Text("←", fontSize = 20.sp, color = Color.Black)
+                Icon(
+                    painter = painterResource(R.drawable.ic_arrow_back),
+                    contentDescription = "Back",
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.Black,
+                )
             }
         } // end Box
     }
