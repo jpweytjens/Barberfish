@@ -61,6 +61,7 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.TimeConfig
+import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
@@ -79,13 +80,13 @@ internal fun HUDConfigSection(
     profile: UserProfile,
     onUpdate: (HUDConfig) -> Unit,
 ) {
-    var selectedSlot by remember { mutableStateOf<Int?>(0) }
+    var selectedSlot by remember { mutableStateOf<Int?>(null) }
 
     ColumnCountToggle(
         columns = hudConfig.columns,
         onSelect = { cols ->
             if (cols != hudConfig.columns) {
-                selectedSlot = 0
+                selectedSlot = null
                 onUpdate(hudConfig.copy(columns = cols))
             }
         },
@@ -287,34 +288,43 @@ private fun HUDSlotFieldCard(
     onUpdate: (HUDSlotConfig) -> Unit,
 ) {
     Column(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .background(Grey100)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            HUDFieldTypeDropdown(slot = slot, onUpdate = onUpdate)
+        }
+        Column(
+            modifier = Modifier.fillMaxWidth()
                 .background(Grey200)
                 .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        HUDFieldTypeDropdown(slot = slot, onUpdate = onUpdate)
-
-        when (val f = slot.field) {
-            HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
-            HUDSlotField.HR -> {}
-            HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
-            HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
-            HUDSlotField.AvgPower -> {}
-            HUDSlotField.NP -> {}
-            HUDSlotField.Grade -> {}
-            is HUDSlotField.AvgSpeed -> HUDAvgSpeedCard(slot, f, onUpdate)
-            is HUDSlotField.Time -> HUDTimeDropdown(slot, f, onUpdate)
-        }
-
-        if (slot.field == HUDSlotField.HR || slot.field == HUDSlotField.Power ||
-            slot.field == HUDSlotField.AvgPower || slot.field == HUDSlotField.NP ||
-            slot.field == HUDSlotField.Grade) {
-            ZoneColorSlider(
-                selected = slot.colorMode,
-                onSelected = { onUpdate(slot.copy(colorMode = it)) },
-            )
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            when (val f = slot.field) {
+                HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
+                HUDSlotField.HR -> {}
+                HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
+                HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
+                HUDSlotField.AvgPower -> {}
+                HUDSlotField.NP -> {}
+                HUDSlotField.Grade -> {}
+                is HUDSlotField.AvgSpeed -> HUDAvgSpeedCard(slot, f, onUpdate)
+                is HUDSlotField.Time -> HUDTimeDropdown(slot, f, onUpdate)
+            }
+            if (slot.field == HUDSlotField.HR || slot.field == HUDSlotField.Power ||
+                slot.field == HUDSlotField.AvgPower || slot.field == HUDSlotField.NP ||
+                slot.field == HUDSlotField.Grade) {
+                ZoneColorSlider(
+                    selected = slot.colorMode,
+                    onSelected = { onUpdate(slot.copy(colorMode = it)) },
+                )
+            }
         }
     }
 }
