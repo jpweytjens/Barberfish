@@ -5,6 +5,8 @@ Reads palette colors from ZoneColoring.kt, raises HSLuv L (keeping H and S
 fixed) via binary search until |Lc| >= 45 against the Karoo dark background,
 and prints corrected *ColorsReadable = listOf(...) blocks ready to paste back.
 
+Background is pitch black (#000000) — confirmed as the actual datafield background.
+
 Usage
 -----
 uv run scripts/apca_hsluv.py
@@ -30,7 +32,7 @@ FIELD_COLORS_KT = _SHARED / "FieldColors.kt"
 # APCA-W3 v0.1.7
 # ---------------------------------------------------------------------------
 
-KAROO_DARK = "#1B2D2D"
+KAROO_DARK = "#000000"
 
 
 def _luminance(r: float, g: float, b: float) -> float:
