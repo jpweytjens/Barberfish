@@ -246,7 +246,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 CollapsibleSection(
                     title = "HUD",
-                    description = "Configure the data fields in the heads-up display (HUD).",
+                    description = "Configure the heads-up display",
                     icon = R.drawable.ic_section_hud,
                     expanded = hudExpanded,
                     onToggle = { hudExpanded = !hudExpanded },
@@ -475,7 +475,7 @@ class MainActivity : ComponentActivity() {
                     )
                     Text(
                         buildAnnotatedString {
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Min / Max:\n") }
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Min / Max\n") }
                             withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
                             append(" · ")
                             withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
@@ -537,7 +537,7 @@ class MainActivity : ComponentActivity() {
 
                 CollapsibleSection(
                     title = "Global",
-                    description = "Zone color palettes and time format shared across all fields.",
+                    description = "Color palettes and time format shared across all data fields",
                     icon = R.drawable.ic_section_global,
                     expanded = globalExpanded,
                     onToggle = { globalExpanded = !globalExpanded },
