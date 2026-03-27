@@ -237,57 +237,7 @@ internal fun renderElevationSparkline(
         canvas.drawPath(aheadPath, paint)
     }
 
-    // 5. Distance labels ahead — interval adapts to lookahead window size
-    val tickIntervalM = lookaheadM / 2f
-    paint.style = Paint.Style.FILL
-    paint.textSize = 10f * density
-    paint.color = android.graphics.Color.WHITE
-    val labelGap = 8f * density
-
-    fun drawTickLabel(distM: Float, clampX: Boolean) {
-        val tickX = toX(distM)
-        if (tickX !in 0f..widthPx.toFloat()) return
-        val elevAtTick = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - distM) }
-            ?.second ?: visible.last().second
-        val yAtTick = toY(elevAtTick)
-        val label = if (tickIntervalM % 1_000f != 0f)
-            "%.1f".format(distM / 1_000f)
-        else
-            (distM / 1_000f).toInt().toString()
-        val labelW = paint.measureText(label)
-        val labelX = if (clampX)
-            (tickX - labelW / 2f).coerceIn(0f, widthPx - labelW)
-        else {
-            if (tickX - labelW / 2f < 0f || tickX + labelW / 2f > widthPx) return
-            tickX - labelW / 2f
-        }
-        val labelY = if (yAtTick > heightPx / 2f)
-            yAtTick - labelGap                      // profile low → label above
-        else
-            yAtTick + labelGap + paint.textSize     // profile high → label below
-        canvas.drawText(label, labelX, labelY.coerceIn(paint.textSize, heightPx.toFloat()), paint)
-    }
-
-    // Route endpoint label — always shown (clamped inward), only when visible in window
-    val endpointMinSpacingM = tickIntervalM * 0.4f
-    val showEndpoint = lastDist in windowStart..windowEnd
-    if (showEndpoint) drawTickLabel(lastDist, clampX = true)
-
-    // Interval ticks — anchored to absolute route distances so they scroll past as you advance
-    val firstTick = (kotlin.math.ceil(windowStart.toDouble() / tickIntervalM) * tickIntervalM).toFloat()
-    var tickDist = firstTick
-    while (tickDist <= windowEnd) {
-        if (!showEndpoint || kotlin.math.abs(tickDist - lastDist) >= endpointMinSpacingM) {
-            paint.color = if (tickDist <= positionM)
-                android.graphics.Color.argb(77, 255, 255, 255)
-            else
-                android.graphics.Color.WHITE
-            drawTickLabel(tickDist, clampX = false)
-        }
-        tickDist += tickIntervalM
-    }
-
-    // 6. Position dot
+    // 5. Position dot
     paint.style = Paint.Style.FILL
     paint.color = ICON_TINT_TEAL.toArgb()
     canvas.drawCircle(dotX, dotY, 5f, paint)
