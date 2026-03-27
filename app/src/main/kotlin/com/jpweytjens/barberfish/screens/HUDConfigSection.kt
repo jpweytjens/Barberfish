@@ -126,7 +126,7 @@ internal fun HUDConfigSection(
             },
         )
     }
-    SparklineConfigSection(
+    SparklineCard(
         config = hudConfig.sparkline,
         palette = zoneConfig.gradePalette,
         onUpdate = { onUpdate(hudConfig.copy(sparkline = it)) },
@@ -455,7 +455,7 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 }
 
 @Composable
-private fun SparklineConfigSection(
+private fun SparklineCard(
     config: SparklineConfig,
     palette: GradePalette,
     onUpdate: (SparklineConfig) -> Unit,
@@ -468,12 +468,8 @@ private fun SparklineConfigSection(
                 .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(
-            "ELEVATION SPARKLINE",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        Text("ELEVATION SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+        Text("Shows elevation ahead when a route is loaded.", fontSize = 12.sp, color = TextDark)
         SegmentedRow(
             options = listOf(true to "On", false to "Off"),
             selected = config.enabled,
@@ -481,13 +477,15 @@ private fun SparklineConfigSection(
         )
         if (config.enabled) {
             Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(
                 options = listOf(5 to "5 km", 10 to "10 km", 20 to "20 km"),
                 selected = config.lookaheadKm,
                 onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
             )
             val threshold = gradeThreshold(palette, config.skipBands)
-            Text("GRADE BANDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Grades below this band stay uncolored.", fontSize = 12.sp, color = TextDark)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
