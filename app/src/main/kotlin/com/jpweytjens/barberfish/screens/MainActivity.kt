@@ -66,6 +66,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -1391,6 +1392,7 @@ internal fun BarberfishPreviewCell(
     colorMode: ZoneColorMode,
     modifier: Modifier = Modifier,
     sizeConfig: PreviewSizeConfig = PreviewSizeConfig.SINGLE,
+    cellWidthDp: Dp? = null,
 ) {
     val zoneColor = field.color.toColor()
     val hasZoneBg = colorMode == ZoneColorMode.BACKGROUND && zoneColor != null
@@ -1431,46 +1433,37 @@ internal fun BarberfishPreviewCell(
 
     Box(modifier = cellModifier.fillMaxSize()) {
         val density = LocalDensity.current.density
-        // Value: fills full cell height, centered vertically — mirrors field_value in barberfish_field.xml
-        BoxWithConstraints(
-            modifier = Modifier.fillMaxSize().offset(y = sizeConfig.valueTranslationY),
-            contentAlignment = Alignment.Center,
-        ) {
-            val cellWidthPx = maxWidth.value * density
-            Text(
-                field.primary,
-                modifier = Modifier.fillMaxWidth(),
-                fontSize = fontSizeSpForPreview(
-                    field.primary, sizeConfig.valueFontSize.value.toInt(), cellWidthPx, density,
+        val knownWidthPx = cellWidthDp?.let { with(LocalDensity.current) { it.toPx() } }
+
+        if (knownWidthPx != null) {
+            // Fast path: width is known at call site — no SubcomposeLayout needed.
+            // Subtract horizontal padding to match the available width seen by BoxWithConstraints
+            // in the fallback path (which measures the already-padded inner Box).
+            val paddedWidthPx = knownWidthPx -
+                (sizeConfig.paddingStart.value + sizeConfig.paddingEnd.value) * density
+            val valueFontSize = remember(field.primary, sizeConfig.valueFontSize, paddedWidthPx) {
+                fontSizeSpForPreview(
+                    field.primary, sizeConfig.valueFontSize.value.toInt(), paddedWidthPx, density,
                     bold = true,
-                ),
-                fontWeight = FontWeight.Bold,
-                color = valueColor,
-                textAlign = textAlign,
-                fontFamily = FontFamily.Monospace,
-                maxLines = 1,
-                overflow = TextOverflow.Clip,
-            )
-        }
-        // Header: overlays at top — mirrors field_header in barberfish_field.xml
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val labelDensity = LocalDensity.current.density
+                )
+            }
             val iconWidthPx = if (field.iconRes != null)
-                (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * labelDensity
+                (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
             else 0f
-            val labelAvailWidthPx = maxWidth.value * labelDensity - iconWidthPx
-            val (labelFontSpInt, labelLines) = fontSizeForCell(
-                field.label.uppercase(),
-                sizeConfig.headerFontSize.value.toInt(),
-                labelAvailWidthPx,
-                labelDensity,
-                wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                typeface = Typeface.DEFAULT,
-            )
+            val labelAvailWidthPx = paddedWidthPx - iconWidthPx
+            val (labelFontSpInt, labelLines) = remember(
+                field.label, sizeConfig.headerFontSize, labelAvailWidthPx,
+            ) {
+                fontSizeForCell(
+                    field.label.uppercase(),
+                    sizeConfig.headerFontSize.value.toInt(),
+                    labelAvailWidthPx,
+                    density,
+                    wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                    typeface = Typeface.DEFAULT,
+                )
+            }
             val labelFontSp = labelFontSpInt.sp
-            // Label box height = labelMaxLines × lineHeight, matching android:lines="2" on device.
-            // Text is centered within the box so a 1-line label has its center aligned with the
-            // icon center, and a 2-line label has the midpoint between lines aligned with the icon.
             val labelBoxHeight = with(LocalDensity.current) {
                 (labelFontSp.value * sizeConfig.labelMaxLines).sp.toDp() + 2.dp
             }
@@ -1479,6 +1472,24 @@ internal fun BarberfishPreviewCell(
                 TextAlign.Center -> Alignment.Center
                 else -> Alignment.CenterStart
             }
+            // Value
+            Box(
+                modifier = Modifier.fillMaxSize().offset(y = sizeConfig.valueTranslationY),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    field.primary,
+                    modifier = Modifier.fillMaxWidth(),
+                    fontSize = valueFontSize,
+                    fontWeight = FontWeight.Bold,
+                    color = valueColor,
+                    textAlign = textAlign,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                )
+            }
+            // Header
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 field.iconRes?.let { res ->
                     Box(
@@ -1509,6 +1520,89 @@ internal fun BarberfishPreviewCell(
                         softWrap = labelLines > 1,
                         overflow = TextOverflow.Clip,
                     )
+                }
+            }
+        } else {
+            // Fallback: measure via SubcomposeLayout (used by HUD preview cells).
+            // Value: fills full cell height, centered vertically — mirrors field_value in barberfish_field.xml
+            BoxWithConstraints(
+                modifier = Modifier.fillMaxSize().offset(y = sizeConfig.valueTranslationY),
+                contentAlignment = Alignment.Center,
+            ) {
+                val cellWidthPx = maxWidth.value * density
+                Text(
+                    field.primary,
+                    modifier = Modifier.fillMaxWidth(),
+                    fontSize = fontSizeSpForPreview(
+                        field.primary, sizeConfig.valueFontSize.value.toInt(), cellWidthPx, density,
+                        bold = true,
+                    ),
+                    fontWeight = FontWeight.Bold,
+                    color = valueColor,
+                    textAlign = textAlign,
+                    fontFamily = FontFamily.Monospace,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip,
+                )
+            }
+            // Header: overlays at top — mirrors field_header in barberfish_field.xml
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val labelDensity = LocalDensity.current.density
+                val iconWidthPx = if (field.iconRes != null)
+                    (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * labelDensity
+                else 0f
+                val labelAvailWidthPx = maxWidth.value * labelDensity - iconWidthPx
+                val (labelFontSpInt, labelLines) = fontSizeForCell(
+                    field.label.uppercase(),
+                    sizeConfig.headerFontSize.value.toInt(),
+                    labelAvailWidthPx,
+                    labelDensity,
+                    wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                    typeface = Typeface.DEFAULT,
+                )
+                val labelFontSp = labelFontSpInt.sp
+                // Label box height = labelMaxLines × lineHeight, matching android:lines="2" on device.
+                // Text is centered within the box so a 1-line label has its center aligned with the
+                // icon center, and a 2-line label has the midpoint between lines aligned with the icon.
+                val labelBoxHeight = with(LocalDensity.current) {
+                    (labelFontSp.value * sizeConfig.labelMaxLines).sp.toDp() + 2.dp
+                }
+                val labelContentAlignment = when (textAlign) {
+                    TextAlign.Right -> Alignment.CenterEnd
+                    TextAlign.Center -> Alignment.Center
+                    else -> Alignment.CenterStart
+                }
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    field.iconRes?.let { res ->
+                        Box(
+                            modifier = Modifier.size(sizeConfig.headerIconSize),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painterResource(res),
+                                contentDescription = null,
+                                tint = iconTint,
+                                modifier = Modifier.size(sizeConfig.headerIconSize),
+                            )
+                        }
+                        Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
+                    }
+                    Box(
+                        modifier = Modifier.weight(2f).height(labelBoxHeight),
+                        contentAlignment = labelContentAlignment,
+                    ) {
+                        Text(
+                            field.label.uppercase(),
+                            fontSize = labelFontSp,
+                            lineHeight = labelFontSp,
+                            color = labelColor,
+                            textAlign = textAlign,
+                            fontFamily = FontFamily.Default,
+                            maxLines = sizeConfig.labelMaxLines,
+                            softWrap = labelLines > 1,
+                            overflow = TextOverflow.Clip,
+                        )
+                    }
                 }
             }
         }
