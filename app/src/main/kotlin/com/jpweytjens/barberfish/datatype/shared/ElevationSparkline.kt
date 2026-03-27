@@ -59,7 +59,7 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
  *  6. Position dot: circle radius 2.5px, ICON_TINT_TEAL (#31E09A)
  */
 
-private const val POSITION_FRACTION = 0.15f
+private const val POSITION_FRACTION = 0.05f
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
 private const val MIN_MEANINGFUL_GRADE = 0.03f
 private const val FLAT_SCALE_FACTOR = 2.0f
