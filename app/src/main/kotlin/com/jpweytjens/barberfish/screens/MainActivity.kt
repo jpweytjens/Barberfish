@@ -1118,7 +1118,7 @@ private fun ZonePaletteDropdown(
     fun ZonePalette.displayName() = when (this) {
         ZonePalette.KAROO -> "Karoo"
         ZonePalette.WAHOO -> "Wahoo"
-        ZonePalette.INTERVALS -> "Intervals"
+        ZonePalette.INTERVALS -> "Intervals.icu"
         ZonePalette.ZWIFT -> "Zwift"
         ZonePalette.HSLUV -> "HSLuv"
     }
