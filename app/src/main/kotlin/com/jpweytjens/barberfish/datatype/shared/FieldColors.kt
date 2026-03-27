@@ -90,6 +90,14 @@ private val KAROO_GRADE_BANDS = listOf(
      0.0 to karooPowerColors[0], //  <4.6%     — dark green
 )
 
+// Zwift grade bands — official Zwift climb colors, designed for dark backgrounds
+private val ZWIFT_GRADE_BANDS = listOf(
+     9.0 to Color(0xFFEA5147), //  9%+    — red
+     6.0 to Color(0xFFFE8253), //  6–9%   — orange
+     3.0 to Color(0xFFF2C510), //  3–6%   — yellow
+     0.0 to Color(0xFF39A7D6), //  0–3%   — blue
+)
+
 // Readable grade bands — HSLuv-corrected to |Lc| ≥ 45. Pre-computed via scripts/apca_hsluv.py.
 private val WAHOO_GRADE_BANDS_READABLE = listOf(
     20.0 to Color(0xFFFF6A6A), // 20%+
@@ -122,6 +130,7 @@ internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolea
         GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
         GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
+        GradePalette.ZWIFT -> ZWIFT_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second
 }
@@ -139,6 +148,7 @@ internal fun gradeThreshold(palette: GradePalette, skipBands: Int = 1): Double {
         GradePalette.GARMIN -> GARMIN_GRADE_BANDS
         GradePalette.HSLUV  -> HSLUV_GRADE_BANDS
         GradePalette.KAROO  -> KAROO_GRADE_BANDS
+        GradePalette.ZWIFT  -> ZWIFT_GRADE_BANDS
     }
     val idx = (bands.lastIndex - skipBands).coerceAtLeast(0)
     return bands[idx].first

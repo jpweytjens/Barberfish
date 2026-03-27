@@ -316,6 +316,7 @@ enum class GradePalette(val label: String) {
     WAHOO("Wahoo"),
     GARMIN("Garmin"),
     HSLUV("HSLuv"),
+    ZWIFT("Zwift"),
 }
 
 @Serializable data class GradeFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)

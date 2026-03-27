@@ -579,8 +579,8 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
-                    Text("Power zones", style = MaterialTheme.typography.labelMedium)
-                    ZonePalettePills(
+                    ZonePaletteDropdown(
+                        title = "Power zones",
                         selected = zoneConfig.powerPalette,
                         readable = zoneConfig.readableColors,
                         onSelected = { palette ->
@@ -607,8 +607,8 @@ class MainActivity : ComponentActivity() {
                             }
                     )
 
-                    Text("HR zones", style = MaterialTheme.typography.labelMedium)
-                    ZonePalettePills(
+                    ZonePaletteDropdown(
+                        title = "HR zones",
                         selected = zoneConfig.hrPalette,
                         readable = zoneConfig.readableColors,
                         onSelected = { palette ->
@@ -643,8 +643,8 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
-                    Text("Grade", style = MaterialTheme.typography.labelMedium)
-                    GradePalettePills(
+                    GradePaletteDropdown(
+                        title = "Grade",
                         selected = zoneConfig.gradePalette,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(gradePalette = palette)
@@ -1105,7 +1105,9 @@ private fun ReadabilityToggle(readable: Boolean, onSelected: (Boolean) -> Unit) 
 }
 
 @Composable
-private fun ZonePalettePills(
+@OptIn(ExperimentalMaterial3Api::class)
+private fun ZonePaletteDropdown(
+    title: String,
     selected: ZonePalette,
     readable: Boolean,
     onSelected: (ZonePalette) -> Unit,
@@ -1113,50 +1115,28 @@ private fun ZonePalettePills(
     val options =
         if (readable) ZonePalette.entries
         else ZonePalette.entries.filter { it != ZonePalette.HSLUV }
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Grey100)
-                .padding(3.dp)
-                .pointerInput(options, onSelected) {
-                    val slotWidthPx = size.width.toFloat() / options.size
-                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onSelected(options[idxAt(down.position.x)])
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onSelected(options[idxAt(change.position.x)])
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        options.forEach { palette ->
-            val isSelected = palette == selected
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text =
-                        when (palette) {
-                            ZonePalette.KAROO -> "Karoo"
-                            ZonePalette.WAHOO -> "Wahoo"
-                            ZonePalette.INTERVALS -> "Intervals"
-                            ZonePalette.ZWIFT -> "Zwift"
-                            ZonePalette.HSLUV -> "HSLuv"
-                        },
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+    fun ZonePalette.displayName() = when (this) {
+        ZonePalette.KAROO -> "Karoo"
+        ZonePalette.WAHOO -> "Wahoo"
+        ZonePalette.INTERVALS -> "Intervals"
+        ZonePalette.ZWIFT -> "Zwift"
+        ZonePalette.HSLUV -> "HSLuv"
+    }
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selected.displayName(),
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(title) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { palette ->
+                DropdownMenuItem(
+                    text = { Text(palette.displayName()) },
+                    onClick = { onSelected(palette); expanded = false },
                 )
             }
         }
@@ -1373,45 +1353,23 @@ internal fun AvgSpeedThresholdControls(
 
 
 @Composable
-private fun GradePalettePills(selected: GradePalette, onSelected: (GradePalette) -> Unit) {
-    val options = GradePalette.entries
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Grey100)
-                .padding(3.dp)
-                .pointerInput(options, onSelected) {
-                    val slotWidthPx = size.width.toFloat() / options.size
-                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onSelected(options[idxAt(down.position.x)])
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onSelected(options[idxAt(change.position.x)])
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        options.forEach { palette ->
-            val isSelected = palette == selected
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = palette.label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+@OptIn(ExperimentalMaterial3Api::class)
+private fun GradePaletteDropdown(title: String, selected: GradePalette, onSelected: (GradePalette) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selected.label,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(title) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            GradePalette.entries.forEach { palette ->
+                DropdownMenuItem(
+                    text = { Text(palette.label) },
+                    onClick = { onSelected(palette); expanded = false },
                 )
             }
         }
@@ -1425,6 +1383,7 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
         GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
         GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
         GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
+        GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
     }
     Row(modifier = Modifier.fillMaxWidth()) {
         thresholds.forEachIndexed { i, lower ->
