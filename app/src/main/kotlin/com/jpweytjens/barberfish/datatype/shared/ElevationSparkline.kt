@@ -46,10 +46,6 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
     return result
 }
 
-private const val POSITION_FRACTION = 0.25f
-private const val MIN_FILL_PX = 1f        // skip colour fills narrower than this many pixels
-private const val MIN_ELEV_RANGE_M = 200f // floor for y-axis so flat terrain doesn't inflate
-
 /**
  * Renders a Tufte-style elevation sparkline strip.
  * Returns null if [elevationPoints] is empty.
@@ -62,6 +58,15 @@ private const val MIN_ELEV_RANGE_M = 200f // floor for y-axis so flat terrain do
  *  5. Distance tick at +5 km ahead: 1px stroke, "5" label, 30% white
  *  6. Position dot: circle radius 2.5px, ICON_TINT_TEAL (#31E09A)
  */
+
+private const val POSITION_FRACTION = 0.15f
+private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
+private const val MIN_MEANINGFUL_GRADE = 0.03f
+private const val FLAT_SCALE_FACTOR = 2.0f
+private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
+private const val LOG_WARP_K = 8f
+private const val WARP_INTEGRATION_STEPS = 600
+
 internal fun renderElevationSparkline(
     elevationPoints: List<Pair<Float, Float>>, // (distanceM, elevationM)
     positionM: Float,
@@ -72,8 +77,10 @@ internal fun renderElevationSparkline(
     readable: Boolean,
     lookaheadM: Float = 10_000f,
     skipBands: Int = 1,
-): Bitmap? {
-    if (elevationPoints.isEmpty()) return null
+    displayedRange: Float = 0f,
+    distanceDeltaM: Float = 0f,
+): Pair<Bitmap?, Float> {
+    if (elevationPoints.isEmpty()) return Pair(null, displayedRange)
 
     // Clamp window to route bounds so the sparkline fills full width even at the start.
     // The dot migrates from the left edge to the 25% position as you accumulate past distance.
@@ -85,14 +92,45 @@ internal fun renderElevationSparkline(
 
     val visible = elevationPoints
         .filter { (d, _) -> d in windowStart..windowEnd }
-        .ifEmpty { return null }
+        .ifEmpty { return Pair(null, displayedRange) }
 
-    val elevMin   = visible.minOf { it.second }
-    val elevMax   = visible.maxOf { it.second }
-    val elevRange = (elevMax - elevMin).coerceAtLeast(MIN_ELEV_RANGE_M)
+    // Y-axis: range from ±50% extended lookahead window (double window).
+    val rangeStart = (windowStart - lookaheadM * 0.5f).coerceAtLeast(firstDist)
+    val rangeEnd   = (windowEnd   + lookaheadM * 0.5f).coerceAtMost(lastDist)
+    val rangePoints = elevationPoints.filter { (d, _) -> d in rangeStart..rangeEnd }
+    val elevMin   = rangePoints.minOfOrNull { it.second } ?: visible.minOf { it.second }
+    val elevMax   = rangePoints.maxOfOrNull { it.second } ?: visible.maxOf { it.second }
+    val elevRange = (elevMax - elevMin).coerceAtLeast(MIN_MEANINGFUL_GRADE * FLAT_SCALE_FACTOR * 5_000f)
 
-    fun toX(d: Float) = ((d - windowStart) / lookaheadM * widthPx).coerceIn(0f, widthPx.toFloat())
-    fun toY(e: Float) = (heightPx - (e - elevMin) / elevRange * (heightPx - 2) - 1f).coerceIn(0f, heightPx.toFloat())
+    // Ratchet: grow instantly, decay slowly as distance is ridden.
+    val newDisplayedRange = if (elevRange > displayedRange) elevRange
+        else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
+
+    // Builds a cumulative pixel-density integral over the display window.
+    // Points near positionM receive more pixels; distant points receive fewer.
+    // mag(d) = 1 + K·exp(-normalised_distance · K/2) — peaks at dot, falls off exponentially.
+    val pixelDensityCumulative = FloatArray(WARP_INTEGRATION_STEPS + 1)
+    val integrationStepM = (windowEnd - windowStart) / WARP_INTEGRATION_STEPS
+    for (step in 0 until WARP_INTEGRATION_STEPS) {
+        val routeDistanceM = windowStart + step * integrationStepM
+        val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
+        val pixelsPerMetre = 1f + LOG_WARP_K * kotlin.math.exp(-normalisedDistanceFromDot * LOG_WARP_K * 0.5f).toFloat()
+        pixelDensityCumulative[step + 1] = pixelDensityCumulative[step] + pixelsPerMetre * integrationStepM
+    }
+    val totalWarpedBudget = pixelDensityCumulative[WARP_INTEGRATION_STEPS]
+
+    // Maps a route distance to a screen x-coordinate by looking up its share
+    // of the total pixel budget accumulated up to that point.
+    fun toX(routeDistanceM: Float): Float {
+        val windowFraction = ((routeDistanceM - windowStart) / (windowEnd - windowStart)).coerceIn(0f, 1f)
+        val lookupIndex = windowFraction * WARP_INTEGRATION_STEPS
+        val lowerStep = lookupIndex.toInt().coerceIn(0, WARP_INTEGRATION_STEPS - 1)
+        val interpolationFraction = lookupIndex - lowerStep
+        val budgetConsumed = pixelDensityCumulative[lowerStep] +
+            interpolationFraction * (pixelDensityCumulative[lowerStep + 1] - pixelDensityCumulative[lowerStep])
+        return ((budgetConsumed / totalWarpedBudget) * widthPx).coerceIn(0f, widthPx.toFloat())
+    }
+    fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2) - 1f).coerceIn(0f, heightPx.toFloat())
 
     val dotX = toX(positionM)
     val dotY = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - positionM) }
@@ -204,7 +242,7 @@ internal fun renderElevationSparkline(
     paint.style = Paint.Style.FILL
     paint.textSize = 10f * density
     paint.color = android.graphics.Color.WHITE
-    val labelGap = 4f * density
+    val labelGap = 8f * density
 
     fun drawTickLabel(distM: Float, clampX: Boolean) {
         val tickX = toX(distM)
@@ -213,9 +251,9 @@ internal fun renderElevationSparkline(
             ?.second ?: visible.last().second
         val yAtTick = toY(elevAtTick)
         val label = if (tickIntervalM % 1_000f != 0f)
-            "%.1f".format((distM - positionM) / 1_000f)
+            "%.1f".format(distM / 1_000f)
         else
-            ((distM - positionM) / 1_000f).toInt().toString()
+            (distM / 1_000f).toInt().toString()
         val labelW = paint.measureText(label)
         val labelX = if (clampX)
             (tickX - labelW / 2f).coerceIn(0f, widthPx - labelW)
@@ -235,10 +273,15 @@ internal fun renderElevationSparkline(
     val showEndpoint = lastDist in windowStart..windowEnd
     if (showEndpoint) drawTickLabel(lastDist, clampX = true)
 
-    // Interval ticks — skip any that would overlap the endpoint label
-    var tickDist = positionM + tickIntervalM
-    while (tickDist <= positionM + lookaheadM) {
+    // Interval ticks — anchored to absolute route distances so they scroll past as you advance
+    val firstTick = (kotlin.math.ceil(windowStart.toDouble() / tickIntervalM) * tickIntervalM).toFloat()
+    var tickDist = firstTick
+    while (tickDist <= windowEnd) {
         if (!showEndpoint || kotlin.math.abs(tickDist - lastDist) >= endpointMinSpacingM) {
+            paint.color = if (tickDist <= positionM)
+                android.graphics.Color.argb(77, 255, 255, 255)
+            else
+                android.graphics.Color.WHITE
             drawTickLabel(tickDist, clampX = false)
         }
         tickDist += tickIntervalM
@@ -249,7 +292,7 @@ internal fun renderElevationSparkline(
     paint.color = ICON_TINT_TEAL.toArgb()
     canvas.drawCircle(dotX, dotY, 5f, paint)
 
-    return bitmap
+    return Pair(bitmap, newDisplayedRange)
 }
 
 /** Last 20 km of Tour of Flanders 2025 (RvV). Used for config-screen previews and debug builds. */

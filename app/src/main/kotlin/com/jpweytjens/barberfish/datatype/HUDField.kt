@@ -57,6 +57,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -82,38 +83,54 @@ class HUDField(private val karooSystem: KarooSystemService) :
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
         scope.launch {
+            val distFlow: Flow<StreamState> = if (BuildConfig.DEBUG)
+                flow { while (true) { emit(StreamState.NotAvailable); delay(1000L) } }
+            else
+                karooSystem.streamDataFlow(DataType.Type.DISTANCE).sample(1000L)
+            var ratchetRange = 0f
+            var lastPositionM = 0f
             combine(
                 liveFlow(context).sample(1000L),
                 karooSystem.streamNavigationState().sample(1000L),
-                karooSystem.streamDataFlow(DataType.Type.DISTANCE).sample(1000L),
+                distFlow,
                 context.streamZoneConfig(),
                 context.streamHUDConfig(),
             ) { hudState, navState, distState, zoneConfig, hudConfig ->
                 val dm = context.resources.displayMetrics
                 val sparkCfg = hudConfig.sparkline
-                val positionM = if (BuildConfig.DEBUG) 1000f
-                    else (distState as? StreamState.Streaming)
-                        ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
-                        ?.toFloat() ?: 0f
                 val route =
                     navState.state as? OnNavigationState.NavigationState.NavigatingRoute
                 val elevPoints: List<Pair<Float, Float>> = when {
-                    BuildConfig.DEBUG -> debugElevationFixture()
                     route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
+                    BuildConfig.DEBUG -> debugElevationFixture()
                     else -> emptyList()
                 }
-                val sparklineHeightPx = (28f * dm.density).toInt()
-                val bitmap = if (sparkCfg.enabled) renderElevationSparkline(
-                    elevationPoints = elevPoints,
-                    positionM       = positionM,
-                    widthPx         = dm.widthPixels,
-                    heightPx        = sparklineHeightPx,
-                    density         = dm.density,
-                    palette         = zoneConfig.gradePalette,
-                    readable        = zoneConfig.readableColors,
-                    lookaheadM      = sparkCfg.lookaheadKm * 1000f,
-                    skipBands       = sparkCfg.skipBands,
-                ) else null
+                val routeLengthM = route?.routeDistance?.toFloat()
+                    ?: elevPoints.lastOrNull()?.first ?: 20_000f
+                val positionM = if (BuildConfig.DEBUG)
+                    (System.currentTimeMillis() % 180_000L).toFloat() / 180_000f * routeLengthM
+                    else (distState as? StreamState.Streaming)
+                        ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
+                        ?.toFloat() ?: 0f
+                val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
+                lastPositionM = positionM
+                val sparklineHeightPx = (36f * dm.density).toInt()
+                val (bitmap, updatedRange) = if (sparkCfg.enabled)
+                    renderElevationSparkline(
+                        elevationPoints = elevPoints,
+                        positionM       = positionM,
+                        widthPx         = dm.widthPixels,
+                        heightPx        = sparklineHeightPx,
+                        density         = dm.density,
+                        palette         = zoneConfig.gradePalette,
+                        readable        = zoneConfig.readableColors,
+                        lookaheadM      = sparkCfg.lookaheadKm * 1000f,
+                        skipBands       = sparkCfg.skipBands,
+                        displayedRange  = ratchetRange,
+                        distanceDeltaM  = distanceDeltaM,
+                    )
+                else Pair(null, ratchetRange)
+                ratchetRange = updatedRange
                 val rv = buildHudRemoteViews(
                     hudState,
                     config,

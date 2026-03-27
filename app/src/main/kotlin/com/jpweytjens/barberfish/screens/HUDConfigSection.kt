@@ -166,7 +166,7 @@ private fun HUDPreview(
             readable        = zoneConfig.readableColors,
             lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
             skipBands       = hudConfig.sparkline.skipBands,
-        )
+        ).first
     }
 
     Column(

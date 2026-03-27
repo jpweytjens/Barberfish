@@ -45,7 +45,7 @@
     <ImageView
         android:id="@+id/hud_elevation_sparkline"
         android:layout_width="match_parent"
-        android:layout_height="28dp"
+        android:layout_height="36dp"
         android:scaleType="fitXY"
         android:visibility="gone" />
 
