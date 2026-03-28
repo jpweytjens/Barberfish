@@ -76,8 +76,9 @@ private fun makeFieldRemoteViews(
         else android.graphics.Color.WHITE
     val hGravity = alignment.toHorizontalGravity()
     val cellWidthPx = dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx
-    val iconWidthPx = if (field.iconRes != null)
-        (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
+    val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+    val iconWidthPx = if (numIcons > 0)
+        (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
     else 0f
     val labelAvailableWidthPx = cellWidthPx - iconWidthPx
     val (fontSp, maxLines) = fontSizeForCell(
@@ -130,28 +131,34 @@ private fun makeFieldRemoteViews(
     if (labelLines == 1) rv.setInt(R.id.field_label, "setLines", 1)
     rv.setInt(R.id.field_label, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
 
-    // Icon
+    // Icons
+    val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
     if (field.iconRes != null) {
-        val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
         rv.setViewVisibility(R.id.field_icon, View.VISIBLE)
         rv.setImageViewResource(R.id.field_icon, field.iconRes)
         rv.setInt(R.id.field_icon, "setColorFilter", colors.iconTint.toArgb())
-        rv.setViewPadding(R.id.field_label, gapPx, 0, 0, 0)
-        // setViewLayoutWidth/Height requires API 31; Karoo 3 is API 33
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            rv.setViewLayoutWidth(
-                R.id.field_icon,
-                sizeConfig.headerIconSize.value,
-                TypedValue.COMPLEX_UNIT_DIP,
-            )
-            rv.setViewLayoutHeight(
-                R.id.field_icon,
-                sizeConfig.headerIconSize.value,
-                TypedValue.COMPLEX_UNIT_DIP,
-            )
+            rv.setViewLayoutWidth(R.id.field_icon, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
+            rv.setViewLayoutHeight(R.id.field_icon, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
         }
     } else {
         rv.setViewVisibility(R.id.field_icon, View.GONE)
+    }
+    if (field.secondaryIconRes != null) {
+        rv.setViewVisibility(R.id.field_icon_secondary, View.VISIBLE)
+        rv.setImageViewResource(R.id.field_icon_secondary, field.secondaryIconRes)
+        rv.setInt(R.id.field_icon_secondary, "setColorFilter", colors.iconTint.toArgb())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            rv.setViewLayoutWidth(R.id.field_icon_secondary, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
+            rv.setViewLayoutHeight(R.id.field_icon_secondary, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
+        }
+    } else {
+        rv.setViewVisibility(R.id.field_icon_secondary, View.GONE)
+    }
+    // Gap before label: only when at least one icon is shown
+    if (numIcons > 0) {
+        rv.setViewPadding(R.id.field_label, gapPx, 0, 0, 0)
+    } else {
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 

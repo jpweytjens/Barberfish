@@ -1520,8 +1520,9 @@ internal fun BarberfishPreviewCell(
                     bold = true,
                 )
             }
-            val iconWidthPx = if (field.iconRes != null)
-                (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
+            val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+            val iconWidthPx = if (numIcons > 0)
+                (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
             else 0f
             val labelAvailWidthPx = paddedWidthPx - iconWidthPx
             val (labelFontSpInt, labelLines) = remember(
@@ -1576,8 +1577,21 @@ internal fun BarberfishPreviewCell(
                             modifier = Modifier.size(sizeConfig.headerIconSize),
                         )
                     }
-                    Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
                 }
+                field.secondaryIconRes?.let { res ->
+                    Box(
+                        modifier = Modifier.size(sizeConfig.headerIconSize),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painterResource(res),
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(sizeConfig.headerIconSize),
+                        )
+                    }
+                }
+                if (numIcons > 0) Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
                 Box(
                     modifier = Modifier.weight(2f).height(labelBoxHeight),
                     contentAlignment = labelContentAlignment,
@@ -1621,8 +1635,9 @@ internal fun BarberfishPreviewCell(
             // Header: overlays at top — mirrors field_header in barberfish_field.xml
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                 val labelDensity = LocalDensity.current.density
-                val iconWidthPx = if (field.iconRes != null)
-                    (sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * labelDensity
+                val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+                val iconWidthPx = if (numIcons > 0)
+                    (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * labelDensity
                 else 0f
                 val labelAvailWidthPx = maxWidth.value * labelDensity - iconWidthPx
                 val (labelFontSpInt, labelLines) = fontSizeForCell(
@@ -1658,8 +1673,21 @@ internal fun BarberfishPreviewCell(
                                 modifier = Modifier.size(sizeConfig.headerIconSize),
                             )
                         }
-                        Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
                     }
+                    field.secondaryIconRes?.let { res ->
+                        Box(
+                            modifier = Modifier.size(sizeConfig.headerIconSize),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                painterResource(res),
+                                contentDescription = null,
+                                tint = iconTint,
+                                modifier = Modifier.size(sizeConfig.headerIconSize),
+                            )
+                        }
+                    }
+                    if (numIcons > 0) Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
                     Box(
                         modifier = Modifier.weight(2f).height(labelBoxHeight),
                         contentAlignment = labelContentAlignment,
