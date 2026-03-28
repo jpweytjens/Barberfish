@@ -112,6 +112,18 @@
         description="@string/np_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_lap_power"
+        typeId="lap-power"
+        displayName="@string/lap_power_name"
+        description="@string/lap_power_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap_power"
+        typeId="last-lap-power"
+        displayName="@string/last_lap_power_name"
+        description="@string/last_lap_power_description"
+        graphical="true" />
+    <DataType
         icon="@drawable/ic_grade"
         typeId="grade"
         displayName="@string/grade_name"

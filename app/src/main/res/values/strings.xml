@@ -37,6 +37,10 @@
     <string name="avg_power_description">Average power with zone coloring</string>
     <string name="np_name">NP</string>
     <string name="np_description">Normalized power with zone coloring</string>
+    <string name="lap_power_name">Lap Power</string>
+    <string name="lap_power_description">Lap power with zone coloring</string>
+    <string name="last_lap_power_name">Last Lap Power</string>
+    <string name="last_lap_power_description">Last lap power with zone coloring</string>
     <string name="grade_name">Grade</string>
     <string name="grade_description">Current road gradient with gradient palette coloring</string>
 </resources>

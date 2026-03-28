@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HUDField
+import com.jpweytjens.barberfish.datatype.LapPowerField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
@@ -29,6 +30,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             CadenceField(karooSystem),
             AvgPowerField(karooSystem),
             NPField(karooSystem),
+            LapPowerField(karooSystem, isLastLap = false),
+            LapPowerField(karooSystem, isLastLap = true),
             GradeField(karooSystem),
             AvgSpeedField(karooSystem, includePaused = true),
             AvgSpeedField(karooSystem, includePaused = false),
