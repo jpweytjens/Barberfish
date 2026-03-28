@@ -77,6 +77,7 @@ import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
+import com.jpweytjens.barberfish.datatype.LapPowerField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
@@ -119,6 +120,7 @@ import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
@@ -141,6 +143,7 @@ import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.saveGradeFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.saveLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveNPFieldConfig
 import com.jpweytjens.barberfish.extension.savePowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
@@ -152,6 +155,7 @@ import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamNPFieldConfig
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
@@ -198,6 +202,8 @@ class MainActivity : ComponentActivity() {
         var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
         var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
         var npFieldConfig by remember { mutableStateOf(NPFieldConfig()) }
+        var lapPowerFieldConfig by remember { mutableStateOf(LapPowerFieldConfig()) }
+        var lastLapPowerFieldConfig by remember { mutableStateOf(LapPowerFieldConfig()) }
         var gradeFieldConfig by remember { mutableStateOf(GradeFieldConfig()) }
         var avgTotalConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
@@ -236,6 +242,8 @@ class MainActivity : ComponentActivity() {
             launch { streamCadenceFieldConfig().collect { cadenceFieldConfig = it } }
             launch { streamAvgPowerFieldConfig().collect { avgPowerFieldConfig = it } }
             launch { streamNPFieldConfig().collect { npFieldConfig = it } }
+            launch { streamLapPowerFieldConfig(isLastLap = false).collect { lapPowerFieldConfig = it } }
+            launch { streamLapPowerFieldConfig(isLastLap = true).collect { lastLapPowerFieldConfig = it } }
             launch { streamGradeFieldConfig().collect { gradeFieldConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = true).collect { avgTotalConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
@@ -286,6 +294,12 @@ class MainActivity : ComponentActivity() {
                 }
                 val npPreviewStates = remember(npFieldConfig, userProfile, zoneConfig) {
                     NPField.previewStates(npFieldConfig, userProfile, zoneConfig)
+                }
+                val lapPowerPreviewStates = remember(lapPowerFieldConfig, userProfile, zoneConfig) {
+                    LapPowerField.previewStates(lapPowerFieldConfig, userProfile, zoneConfig, isLastLap = false)
+                }
+                val lastLapPowerPreviewStates = remember(lastLapPowerFieldConfig, userProfile, zoneConfig) {
+                    LapPowerField.previewStates(lastLapPowerFieldConfig, userProfile, zoneConfig, isLastLap = true)
                 }
                 val gradePreviewStates = remember(gradeFieldConfig, zoneConfig) {
                     GradeField.previewStates(gradeFieldConfig, zoneConfig)
@@ -363,6 +377,40 @@ class MainActivity : ComponentActivity() {
                             onSelected = { mode ->
                                 npFieldConfig = npFieldConfig.copy(colorMode = mode)
                                 lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "LAP AVG POWER",
+                        description = "Average power this lap with zone coloring.",
+                        previewFields = lapPowerPreviewStates,
+                        colorMode = lapPowerFieldConfig.colorMode,
+                        selected = selectedDataField == "LAP AVG POWER",
+                        onSelect = { selectedDataField = if (selectedDataField == "LAP AVG POWER") null else "LAP AVG POWER" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = lapPowerFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                lapPowerFieldConfig = lapPowerFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveLapPowerFieldConfig(isLastLap = false, lapPowerFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "LAST LAP AVG POWER",
+                        description = "Average power from the previous lap with zone coloring.",
+                        previewFields = lastLapPowerPreviewStates,
+                        colorMode = lastLapPowerFieldConfig.colorMode,
+                        selected = selectedDataField == "LAST LAP AVG POWER",
+                        onSelect = { selectedDataField = if (selectedDataField == "LAST LAP AVG POWER") null else "LAST LAP AVG POWER" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = lastLapPowerFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                lastLapPowerFieldConfig = lastLapPowerFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveLapPowerFieldConfig(isLastLap = true, lastLapPowerFieldConfig) }
                             },
                         )
                     }

@@ -34,7 +34,7 @@ class LapPowerField(
     private val isLastLap: Boolean,
 ) : BarberfishDataType("barberfish", if (isLastLap) "last-lap-power" else "lap-power") {
 
-    private val label = if (isLastLap) "Last Lap Power" else "Lap Power"
+    private val label = if (isLastLap) "Last Lap Avg Power" else "Lap Avg Power"
     private val sdkType = if (isLastLap) DataType.Type.AVERAGE_POWER_LAST_LAP else DataType.Type.POWER_LAP
     private val iconRes = if (isLastLap) R.drawable.ic_last_lap_power else R.drawable.ic_lap_power
 
@@ -99,7 +99,7 @@ class LapPowerField(
             zones: ZoneConfig,
             isLastLap: Boolean,
         ): List<FieldState> {
-            val label = if (isLastLap) "Last Lap Power" else "Lap Power"
+            val label = if (isLastLap) "Last Lap Avg Power" else "Lap Avg Power"
             val iconRes = if (isLastLap) R.drawable.ic_last_lap_power else R.drawable.ic_lap_power
             return listOf(195, 210, 220, 185, 230).map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
