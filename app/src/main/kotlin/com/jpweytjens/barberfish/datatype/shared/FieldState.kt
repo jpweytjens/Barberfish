@@ -8,6 +8,7 @@ data class FieldState(
     val label: String = "",
     val color: FieldColor,
     val iconRes: Int? = null,
+    val secondaryIconRes: Int? = null,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {

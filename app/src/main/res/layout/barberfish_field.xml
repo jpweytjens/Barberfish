@@ -55,6 +55,13 @@
             android:scaleType="fitCenter"
             android:visibility="gone" />
 
+        <ImageView
+            android:id="@+id/field_icon_secondary"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/field_label"
             android:layout_width="0dp"
