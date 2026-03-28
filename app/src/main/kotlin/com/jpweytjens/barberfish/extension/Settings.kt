@@ -308,6 +308,44 @@ suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) {
     dataStore.edit { it[npFieldConfigKey] = json.encodeToString(config) }
 }
 
+// --- LapPowerFieldConfig ---
+
+@Serializable data class LapPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val lapPowerFieldConfigKey = stringPreferencesKey("lap_power_field_config")
+
+fun Context.streamLapPowerFieldConfig(): Flow<LapPowerFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[lapPowerFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<LapPowerFieldConfig>(it) }.getOrNull()
+            } ?: LapPowerFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveLapPowerFieldConfig(config: LapPowerFieldConfig) {
+    dataStore.edit { it[lapPowerFieldConfigKey] = json.encodeToString(config) }
+}
+
+// --- LastLapPowerFieldConfig ---
+
+@Serializable data class LastLapPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val lastLapPowerFieldConfigKey = stringPreferencesKey("last_lap_power_field_config")
+
+fun Context.streamLastLapPowerFieldConfig(): Flow<LastLapPowerFieldConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[lastLapPowerFieldConfigKey]?.let {
+                runCatching { json.decodeFromString<LastLapPowerFieldConfig>(it) }.getOrNull()
+            } ?: LastLapPowerFieldConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveLastLapPowerFieldConfig(config: LastLapPowerFieldConfig) {
+    dataStore.edit { it[lastLapPowerFieldConfigKey] = json.encodeToString(config) }
+}
+
 // --- GradeFieldConfig ---
 
 @Serializable
