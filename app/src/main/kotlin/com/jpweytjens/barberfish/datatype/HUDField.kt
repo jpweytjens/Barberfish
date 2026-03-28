@@ -1,6 +1,9 @@
 package com.jpweytjens.barberfish.datatype
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.graphics.Color
 import android.view.View
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.R
@@ -19,6 +22,7 @@ import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
+import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
@@ -60,10 +64,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
@@ -84,7 +88,10 @@ class HUDField(private val karooSystem: KarooSystemService) :
         }
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
         val scope = CoroutineScope(Dispatchers.IO + Job())
-        emitter.setCancellable { scope.cancel() }
+        emitter.setCancellable {
+            scope.cancel()
+            SparklineTapReceiver.tapSignal.value = 0L to 10
+        }
         scope.launch {
             val distFlow: Flow<StreamState> = if (BuildConfig.DEBUG || config.preview)
                 flow { while (true) { emit(StreamState.NotAvailable); delay(1000L) } }
@@ -94,72 +101,105 @@ class HUDField(private val karooSystem: KarooSystemService) :
             var ratchetRange = 0f
             var lastPositionM = 0f
             var lastOnRoutePositionM = 0f
-            combine(
-                hudStateFlow.sample(1000L),
-                karooSystem.streamNavigationState().sample(1000L),
-                distFlow,
-                context.streamZoneConfig(),
-                context.streamHUDConfig(),
-            ) { hudState, navState, distState, zoneConfig, hudConfig ->
-                val dm = context.resources.displayMetrics
-                val sparkCfg = hudConfig.sparkline
-                val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
-                val dest  = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
-                val elevPoints: List<Pair<Float, Float>> = when {
-                    route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
-                    dest  != null -> decodeElevationPolyline(dest.elevationPolyline ?: "")
-                    BuildConfig.DEBUG || config.preview -> previewElevationFixture()
-                    else -> emptyList()
+            val transitionFlow: Flow<Int?> = SparklineTapReceiver.tapSignal
+                .flatMapLatest { (ts, km) ->
+                    if (ts == 0L) flowOf(null)
+                    else flow { emit(km); delay(2000L); emit(null) }
                 }
-                val routeLengthM = route?.routeDistance?.toFloat()
-                    ?: elevPoints.lastOrNull()?.first ?: 20_000f
-                val positionM = if (BuildConfig.DEBUG || config.preview)
-                    (System.currentTimeMillis() % 180_000L).toFloat() / 180_000f * routeLengthM
-                    else (distState as? StreamState.Streaming)
-                        ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
-                        ?.toFloat() ?: 0f
-                val isOffRoute = route != null &&
-                    (route.rejoinPolyline != null || route.rejoinDistance != null)
-                if (!isOffRoute) lastOnRoutePositionM = positionM
-                val sparklinePositionM = if (isOffRoute) lastOnRoutePositionM else positionM
-                val dotColor = when {
-                    isOffRoute  -> KAROO_REJOIN_RED.toArgb()
-                    dest != null -> KAROO_DESTINATION_PURPLE.toArgb()
-                    else        -> ICON_TINT_TEAL.toArgb()
-                }
-                val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
-                lastPositionM = positionM
-                val sparklineHeightPx = (44f * dm.density).toInt()
-                val (bitmap, updatedRange) = if (sparkCfg.enabled)
-                    renderElevationSparkline(
-                        elevationPoints = elevPoints,
-                        positionM       = sparklinePositionM,
-                        widthPx         = dm.widthPixels,
-                        heightPx        = sparklineHeightPx,
-                        density         = dm.density,
-                        palette         = zoneConfig.gradePalette,
-                        readable        = zoneConfig.readableColors,
-                        lookaheadM      = sparkCfg.lookaheadKm * 1000f,
-                        skipBands       = sparkCfg.skipBands,
-                        displayedRange  = ratchetRange,
-                        distanceDeltaM  = distanceDeltaM,
-                        dotColor        = dotColor,
+            transitionFlow.flatMapLatest { transitionKm ->
+                combine(
+                    hudStateFlow.sample(1000L),
+                    karooSystem.streamNavigationState().sample(1000L),
+                    distFlow,
+                    context.streamZoneConfig(),
+                    context.streamHUDConfig(),
+                ) { hudState, navState, distState, zoneConfig, hudConfig ->
+                    val dm = context.resources.displayMetrics
+                    val sparkCfg = hudConfig.sparkline
+                    val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
+                    val dest  = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
+                    val elevPoints: List<Pair<Float, Float>> = when {
+                        route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
+                        dest  != null -> decodeElevationPolyline(dest.elevationPolyline ?: "")
+                        BuildConfig.DEBUG || config.preview -> previewElevationFixture()
+                        else -> emptyList()
+                    }
+                    val routeLengthM = route?.routeDistance?.toFloat()
+                        ?: elevPoints.lastOrNull()?.first ?: 20_000f
+                    val positionM = if (BuildConfig.DEBUG || config.preview)
+                        (System.currentTimeMillis() % 180_000L).toFloat() / 180_000f * routeLengthM
+                        else (distState as? StreamState.Streaming)
+                            ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
+                            ?.toFloat() ?: 0f
+                    val isOffRoute = route != null &&
+                        (route.rejoinPolyline != null || route.rejoinDistance != null)
+                    if (!isOffRoute) lastOnRoutePositionM = positionM
+                    val sparklinePositionM = if (isOffRoute) lastOnRoutePositionM else positionM
+                    val dotColor = when {
+                        isOffRoute  -> KAROO_REJOIN_RED.toArgb()
+                        dest != null -> KAROO_DESTINATION_PURPLE.toArgb()
+                        else        -> ICON_TINT_TEAL.toArgb()
+                    }
+                    val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
+                    lastPositionM = positionM
+                    val sparklineHeightPx = (44f * dm.density).toInt()
+                    val (bitmap, updatedRange) = if (sparkCfg.enabled)
+                        renderElevationSparkline(
+                            elevationPoints = elevPoints,
+                            positionM       = sparklinePositionM,
+                            widthPx         = dm.widthPixels,
+                            heightPx        = sparklineHeightPx,
+                            density         = dm.density,
+                            palette         = zoneConfig.gradePalette,
+                            readable        = zoneConfig.readableColors,
+                            lookaheadM      = sparkCfg.lookaheadKm * 1000f,
+                            skipBands       = sparkCfg.skipBands,
+                            displayedRange  = ratchetRange,
+                            distanceDeltaM  = distanceDeltaM,
+                            dotColor        = dotColor,
+                        )
+                    else Pair(null, ratchetRange)
+                    ratchetRange = updatedRange
+                    val showSparklineArea = sparkCfg.enabled && (bitmap != null || transitionKm != null)
+                    val rv = buildHudRemoteViews(
+                        hudState,
+                        config,
+                        context,
+                        sparklineHeightPx = if (showSparklineArea) sparklineHeightPx else 0,
                     )
-                else Pair(null, ratchetRange)
-                ratchetRange = updatedRange
-                val rv = buildHudRemoteViews(
-                    hudState,
-                    config,
-                    context,
-                    sparklineHeightPx = if (bitmap != null) sparklineHeightPx else 0,
-                )
-                if (bitmap != null) {
-                    rv.setImageViewBitmap(R.id.hud_elevation_sparkline, bitmap)
-                    rv.setViewVisibility(R.id.hud_elevation_sparkline, View.VISIBLE)
-                } else {
-                    rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
+                    when {
+                        transitionKm != null && sparkCfg.enabled -> {
+                            rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
+                            rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
+                            rv.setTextViewText(R.id.hud_transition_text, "${transitionKm}km")
+                            rv.setInt(R.id.hud_transition_icon, "setColorFilter", Color.WHITE)
+                        }
+                        bitmap != null -> {
+                            rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
+                            rv.setImageViewBitmap(R.id.hud_elevation_sparkline, bitmap)
+                            rv.setViewVisibility(R.id.hud_elevation_sparkline, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_sparkline_transition, View.GONE)
+                        }
+                        else -> rv.setViewVisibility(R.id.hud_sparkline_container, View.GONE)
+                    }
+                    if (!config.preview && sparkCfg.enabled) {
+                        val layoutRes = if (hudState.columns == 4)
+                            R.layout.barberfish_hud_four else R.layout.barberfish_hud
+                        val intent = Intent(context, SparklineTapReceiver::class.java).apply {
+                            action = SparklineTapReceiver.ACTION
+                            putExtra(SparklineTapReceiver.EXTRA_LOOKAHEAD, sparkCfg.lookaheadKm)
+                        }
+                        val pi = PendingIntent.getBroadcast(
+                            context,
+                            layoutRes,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                        )
+                        rv.setOnClickPendingIntent(R.id.hud_sparkline_container, pi)
+                    }
+                    rv
                 }
-                rv
             }.collect { rv -> emitter.updateView(rv) }
         }
     }
