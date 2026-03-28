@@ -34,5 +34,13 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".extension.SparklineTapReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.jpweytjens.barberfish.SPARKLINE_TAP" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>
