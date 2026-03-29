@@ -45,6 +45,8 @@
     <string name="avg_hr_description">Average heart rate with zone coloring</string>
     <string name="lap_avg_hr_name">Lap Heart Rate</string>
     <string name="lap_avg_hr_description">Average heart rate this lap with zone coloring</string>
+    <string name="last_lap_avg_hr_name">Last Lap Heart Rate</string>
+    <string name="last_lap_avg_hr_description">Average heart rate from the previous lap with zone coloring</string>
     <string name="time_lap_name">Lap Time</string>
     <string name="time_lap_description">Recording duration this lap</string>
     <string name="time_last_lap_name">Last Lap Time</string>

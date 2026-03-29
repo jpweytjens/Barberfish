@@ -59,6 +59,12 @@
         displayName="@string/lap_avg_hr_name"
         description="@string/lap_avg_hr_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap"
+        typeId="last-lap-avg-hr"
+        displayName="@string/last_lap_avg_hr_name"
+        description="@string/last_lap_avg_hr_description"
+        graphical="true" />
     <!-- Speed -->
     <DataType
         icon="@drawable/ic_speed_average"

@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
+import com.jpweytjens.barberfish.datatype.LastLapAvgHRField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
@@ -37,6 +38,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             HRField(karooSystem),
             AvgHRField(karooSystem),
             LapAvgHRField(karooSystem),
+            LastLapAvgHRField(karooSystem),
             // Speed
             SpeedField(karooSystem),
             AvgSpeedField(karooSystem, includePaused = true),
