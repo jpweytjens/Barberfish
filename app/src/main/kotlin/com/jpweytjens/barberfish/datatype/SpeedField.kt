@@ -33,22 +33,8 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 cfg to profile
             }
             .flatMapLatest { (cfg, profile) ->
-                val label =
-                    if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"
-                    else "${cfg.smoothing.label} Speed"
                 karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
-                    val raw =
-                        (state as? StreamState.Streaming)
-                            ?.dataPoint
-                            ?.values
-                            ?.get(cfg.smoothing.fieldId) ?: return@map FieldState.unavailable(label)
-                    val converted = ConvertType.SPEED.apply(raw, profile)
-                    FieldState(
-                        "%.1f".format(converted),
-                        label = label,
-                        color = FieldColor.Default,
-                        iconRes = R.drawable.ic_col_speed,
-                    )
+                    toFieldState(state, profile, cfg.smoothing)
                 }
             }
 
@@ -69,6 +55,28 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             }
 
     companion object {
+        fun toFieldState(
+            state: StreamState,
+            profile: UserProfile,
+            smoothing: SpeedSmoothingStream,
+        ): FieldState {
+            val label =
+                if (smoothing == SpeedSmoothingStream.S0) "Speed"
+                else "${smoothing.label} Speed"
+            val raw =
+                (state as? StreamState.Streaming)
+                    ?.dataPoint
+                    ?.values
+                    ?.get(smoothing.fieldId) ?: return FieldState.unavailable(label)
+            val converted = ConvertType.SPEED.apply(raw, profile)
+            return FieldState(
+                "%.1f".format(converted),
+                label = label,
+                color = FieldColor.Default,
+                iconRes = R.drawable.ic_col_speed,
+            )
+        }
+
         fun previewStates(cfg: SpeedFieldConfig, profile: UserProfile): List<FieldState> {
             val label =
                 if (cfg.smoothing == SpeedSmoothingStream.S0) "Speed"

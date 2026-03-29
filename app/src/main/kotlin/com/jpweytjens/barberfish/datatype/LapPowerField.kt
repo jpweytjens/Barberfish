@@ -49,29 +49,7 @@ class LapPowerField(
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(sdkType).map { state ->
-                    state.toErrorFieldState(label)?.let { return@map it }
-                    val raw =
-                        (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
-                            ?: return@map FieldState.unavailable(label)
-                    val zone = powerZone(raw, profile.powerZones)
-                    val color =
-                        if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                        else
-                            FieldColor.Zone(
-                                zone,
-                                profile.powerZones.size.coerceAtLeast(1),
-                                zones.powerPalette,
-                                isHr = false,
-                                readable = zones.readableColors,
-                            )
-                    FieldState(
-                        raw.toInt().toString(),
-                        label = label,
-                        color = color,
-                        iconRes = iconRes,
-                        secondaryIconRes = secondaryIconRes,
-                        colorMode = cfg.colorMode,
-                    )
+                    toFieldState(state, profile, zones, cfg.colorMode, isLastLap)
                 }
             }
 
@@ -95,6 +73,40 @@ class LapPowerField(
             }
 
     companion object {
+        fun toFieldState(
+            state: StreamState,
+            profile: UserProfile,
+            zones: ZoneConfig,
+            colorMode: ZoneColorMode,
+            isLastLap: Boolean,
+        ): FieldState {
+            val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
+            val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
+            state.toErrorFieldState(label)?.let { return it }
+            val raw =
+                (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
+                    ?: return FieldState.unavailable(label)
+            val zone = powerZone(raw, profile.powerZones)
+            val color =
+                if (colorMode == ZoneColorMode.NONE) FieldColor.Default
+                else
+                    FieldColor.Zone(
+                        zone,
+                        profile.powerZones.size.coerceAtLeast(1),
+                        zones.powerPalette,
+                        isHr = false,
+                        readable = zones.readableColors,
+                    )
+            return FieldState(
+                raw.toInt().toString(),
+                label = label,
+                color = color,
+                iconRes = iconRes,
+                secondaryIconRes = R.drawable.ic_avg_power,
+                colorMode = colorMode,
+            )
+        }
+
         fun previewStates(
             cfg: LapPowerFieldConfig,
             profile: UserProfile,

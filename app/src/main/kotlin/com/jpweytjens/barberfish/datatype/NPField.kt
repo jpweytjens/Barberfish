@@ -42,28 +42,7 @@ class NPField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.NORMALIZED_POWER).map { state ->
-                    state.toErrorFieldState("NP")?.let { return@map it }
-                    val raw =
-                        (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
-                            ?: return@map FieldState.unavailable("NP")
-                    val zone = powerZone(raw, profile.powerZones)
-                    val color =
-                        if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                        else
-                            FieldColor.Zone(
-                                zone,
-                                profile.powerZones.size.coerceAtLeast(1),
-                                zones.powerPalette,
-                                isHr = false,
-                                readable = zones.readableColors,
-                            )
-                    FieldState(
-                        raw.toInt().toString(),
-                        label = "NP",
-                        color = color,
-                        iconRes = R.drawable.ic_col_power,
-                        colorMode = cfg.colorMode,
-                    )
+                    toFieldState(state, profile, zones, cfg.colorMode)
                 }
             }
 
@@ -87,6 +66,36 @@ class NPField(private val karooSystem: KarooSystemService) :
             }
 
     companion object {
+        fun toFieldState(
+            state: StreamState,
+            profile: UserProfile,
+            zones: ZoneConfig,
+            colorMode: ZoneColorMode,
+        ): FieldState {
+            state.toErrorFieldState("NP")?.let { return it }
+            val raw =
+                (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
+                    ?: return FieldState.unavailable("NP")
+            val zone = powerZone(raw, profile.powerZones)
+            val color =
+                if (colorMode == ZoneColorMode.NONE) FieldColor.Default
+                else
+                    FieldColor.Zone(
+                        zone,
+                        profile.powerZones.size.coerceAtLeast(1),
+                        zones.powerPalette,
+                        isHr = false,
+                        readable = zones.readableColors,
+                    )
+            return FieldState(
+                raw.toInt().toString(),
+                label = "NP",
+                color = color,
+                iconRes = R.drawable.ic_col_power,
+                colorMode = colorMode,
+            )
+        }
+
         fun previewStates(
             cfg: NPFieldConfig,
             profile: UserProfile,

@@ -42,28 +42,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.AVERAGE_POWER).map { state ->
-                    state.toErrorFieldState("Avg Power")?.let { return@map it }
-                    val raw =
-                        (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
-                            ?: return@map FieldState.unavailable("Avg Power")
-                    val zone = powerZone(raw, profile.powerZones)
-                    val color =
-                        if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                        else
-                            FieldColor.Zone(
-                                zone,
-                                profile.powerZones.size.coerceAtLeast(1),
-                                zones.powerPalette,
-                                isHr = false,
-                                readable = zones.readableColors,
-                            )
-                    FieldState(
-                        raw.toInt().toString(),
-                        label = "Avg Power",
-                        color = color,
-                        iconRes = R.drawable.ic_avg_power,
-                        colorMode = cfg.colorMode,
-                    )
+                    toFieldState(state, profile, zones, cfg.colorMode)
                 }
             }
 
@@ -87,6 +66,36 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             }
 
     companion object {
+        fun toFieldState(
+            state: StreamState,
+            profile: UserProfile,
+            zones: ZoneConfig,
+            colorMode: ZoneColorMode,
+        ): FieldState {
+            state.toErrorFieldState("Avg Power")?.let { return it }
+            val raw =
+                (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
+                    ?: return FieldState.unavailable("Avg Power")
+            val zone = powerZone(raw, profile.powerZones)
+            val color =
+                if (colorMode == ZoneColorMode.NONE) FieldColor.Default
+                else
+                    FieldColor.Zone(
+                        zone,
+                        profile.powerZones.size.coerceAtLeast(1),
+                        zones.powerPalette,
+                        isHr = false,
+                        readable = zones.readableColors,
+                    )
+            return FieldState(
+                raw.toInt().toString(),
+                label = "Avg Power",
+                color = color,
+                iconRes = R.drawable.ic_avg_power,
+                colorMode = colorMode,
+            )
+        }
+
         fun previewStates(
             cfg: AvgPowerFieldConfig,
             profile: UserProfile,

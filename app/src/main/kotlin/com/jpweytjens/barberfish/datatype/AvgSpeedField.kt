@@ -109,7 +109,7 @@ class AvgSpeedField(
                 profile ->
                 cfg to profile
             }
-            .flatMapLatest { (cfg, profile) -> streamAvgSpeed(cfg, profile) }
+            .flatMapLatest { (cfg, profile) -> streamFlow(karooSystem, cfg, profile, includePaused) }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamAvgSpeedConfig(includePaused), karooSystem.streamUserProfile()) {
@@ -129,31 +129,35 @@ class AvgSpeedField(
                     .flowOn(Dispatchers.IO)
             }
 
-    private fun streamAvgSpeed(cfg: AvgSpeedConfig, profile: UserProfile): Flow<FieldState> {
-        val timeType = if (includePaused) DataType.Type.RIDE_TIME else DataType.Type.ELAPSED_TIME
-        val timeField = if (includePaused) DataType.Field.RIDE_TIME else DataType.Field.ELAPSED_TIME
-        val distanceFlow =
-            karooSystem.streamDataFlow(DataType.Type.DISTANCE).map { state ->
-                (state as? StreamState.Streaming)
-                    ?.dataPoint
-                    ?.values
-                    ?.get(DataType.Field.DISTANCE) ?: 0.0
-            }
-        val timeFlow =
-            karooSystem.streamDataFlow(timeType).map { state ->
-                (state as? StreamState.Streaming)
-                    ?.dataPoint
-                    ?.values
-                    ?.get(timeField) ?: 0.0
-            }
-        return combine(distanceFlow, timeFlow) { distanceM: Double, timeMs: Double ->
-            val seconds = ConvertType.TIME.apply(timeMs)
-            val rawMs = if (seconds > 0) distanceM / seconds else 0.0
-            avgSpeedFieldState(rawMs, cfg, profile, includePaused)
-        }
-    }
-
     companion object {
+        fun streamFlow(
+            karooSystem: KarooSystemService,
+            cfg: AvgSpeedConfig,
+            profile: UserProfile,
+            includePaused: Boolean,
+        ): Flow<FieldState> {
+            val timeType = if (includePaused) DataType.Type.RIDE_TIME else DataType.Type.ELAPSED_TIME
+            val timeField = if (includePaused) DataType.Field.RIDE_TIME else DataType.Field.ELAPSED_TIME
+            val distanceFlow =
+                karooSystem.streamDataFlow(DataType.Type.DISTANCE).map { state ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint
+                        ?.values
+                        ?.get(DataType.Field.DISTANCE) ?: 0.0
+                }
+            val timeFlow =
+                karooSystem.streamDataFlow(timeType).map { state ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint
+                        ?.values
+                        ?.get(timeField) ?: 0.0
+                }
+            return combine(distanceFlow, timeFlow) { distanceM: Double, timeMs: Double ->
+                val seconds = ConvertType.TIME.apply(timeMs)
+                val rawMs = if (seconds > 0) distanceM / seconds else 0.0
+                avgSpeedFieldState(rawMs, cfg, profile, includePaused)
+            }
+        }
         fun previewStates(
             cfg: AvgSpeedConfig,
             profile: UserProfile,

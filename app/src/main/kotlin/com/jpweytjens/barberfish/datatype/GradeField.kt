@@ -27,8 +27,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
 
-private const val EMA_ALPHA = 0.15
-
 @OptIn(ExperimentalCoroutinesApi::class)
 class GradeField(private val karooSystem: KarooSystemService) :
     BarberfishDataType("barberfish", "grade") {
@@ -38,16 +36,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 cfg to zones
             }
             .flatMapLatest { (cfg, zones) ->
-                karooSystem
-                    .streamDataFlow(DataType.Type.ELEVATION_GRADE)
-                    .map { state ->
-                        (state as? StreamState.Streaming)
-                            ?.dataPoint
-                            ?.values
-                            ?.get(DataType.Field.ELEVATION_GRADE)
-                    }
-                    .filterNotNull()
-                    .scan(0.0) { ema, raw -> EMA_ALPHA * raw + (1 - EMA_ALPHA) * ema }
+                gradeEmaFlow(karooSystem)
                     .map { emaPercent -> toGradeFieldState(emaPercent, cfg, zones.gradePalette, zones.readableColors) }
             }
 
@@ -68,6 +57,18 @@ class GradeField(private val karooSystem: KarooSystemService) :
             }
 
     companion object {
+        const val EMA_ALPHA = 0.15
+
+        fun gradeEmaFlow(karooSystem: KarooSystemService): Flow<Double> =
+            karooSystem
+                .streamDataFlow(DataType.Type.ELEVATION_GRADE)
+                .map { state ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint?.values?.get(DataType.Field.ELEVATION_GRADE)
+                }
+                .filterNotNull()
+                .scan(0.0) { ema, raw -> EMA_ALPHA * raw + (1 - EMA_ALPHA) * ema }
+
         fun previewStates(cfg: GradeFieldConfig, zones: ZoneConfig): List<FieldState> =
             listOf(2.0, 5.5, 9.2, 13.0, 6.2, 1.0, -5.2).map { percent ->
                 toGradeFieldState(percent, cfg, zones.gradePalette, zones.readableColors)

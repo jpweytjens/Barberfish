@@ -1122,33 +1122,6 @@ internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ZoneColorModeDropdown(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = selected.label,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Zone color") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            ZoneColorMode.entries.forEach { mode ->
-                DropdownMenuItem(
-                    text = { Text(mode.label) },
-                    onClick = {
-                        onSelected(mode)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
 @Composable
 private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {
     val options = TimeFormat.entries
