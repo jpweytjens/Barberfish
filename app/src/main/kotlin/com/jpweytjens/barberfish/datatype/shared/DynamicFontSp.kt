@@ -2,8 +2,6 @@ package com.jpweytjens.barberfish.datatype.shared
 
 import android.graphics.Paint
 import android.graphics.Typeface
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.sp
 
 /**
  * Returns (fontSizeSp, maxLines).
@@ -63,21 +61,3 @@ private fun longerHalfAfterSplit(text: String): String? {
     val line2 = text.substring(split + 1)
     return if (line1.length >= line2.length) line1 else line2
 }
-
-/**
- * Single-value convenience wrapper for Compose previews where maxLines is not needed.
- *
- * [typeface] defaults to [Typeface.MONOSPACE] for value text; pass [Typeface.DEFAULT] for
- * label text. [bold] must match the [FontWeight] used in the rendered [Text] so that
- * measurement accounts for the wider bold glyphs. [wrapThresholdSp] defaults to 0 so callers
- * that want single-line-only sizing get pure scaling without 2-line fallback.
- */
-fun fontSizeSpForPreview(
-    text: String,
-    fontSizeBaseSp: Int,
-    cellWidthPx: Float,
-    density: Float,
-    wrapThresholdSp: Int = 0,
-    typeface: Typeface = Typeface.MONOSPACE,
-    bold: Boolean = false,
-): TextUnit = fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp, typeface, bold).first.sp

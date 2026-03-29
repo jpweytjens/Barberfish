@@ -1,6 +1,5 @@
 package com.jpweytjens.barberfish.screens
 
-import android.graphics.Typeface
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +8,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -60,11 +60,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -83,7 +81,12 @@ import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
-import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -100,7 +103,6 @@ import com.jpweytjens.barberfish.datatype.shared.karooHrColors
 import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.karooPowerColors
 import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.toColor
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColors
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColors
@@ -109,8 +111,6 @@ import com.jpweytjens.barberfish.datatype.shared.zwiftHrColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColors
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
-import com.jpweytjens.barberfish.datatype.shared.fontSizeSpForPreview
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
 import com.jpweytjens.barberfish.datatype.shared.Grey100
@@ -904,6 +904,16 @@ private fun CollapsibleSection(
 
 @Composable
 private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColorMode) {
+    val context = LocalContext.current
+    val densityValue = LocalDensity.current.density
+    val widthPx = (120.dp.value * densityValue).toInt()
+    val heightPx = (80.dp.value * densityValue).toInt()
+    val sizeConfig = remember {
+        ViewSizeConfig.STANDARD.copy(
+            cellWidthPxOverride = widthPx.toFloat(),
+            valueTranslationY = 27f,
+        )
+    }
     var index by remember { mutableIntStateOf(0) }
     LaunchedEffect(previewFields) {
         index = 0
@@ -912,18 +922,26 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
             index = (index + 1) % previewFields.size
         }
     }
-    Box(
-        modifier = Modifier.width(120.dp).height(80.dp)
-            .clip(RoundedCornerShape(6.dp)).background(Color.Black)
-    ) {
-        BarberfishPreviewCell(
-            previewFields[index.coerceAtMost(previewFields.size - 1)],
-            ViewConfig.Alignment.RIGHT,
-            colorMode,
-            Modifier.fillMaxSize(),
-            cellWidthDp = 120.dp,
+    val field = previewFields[index.coerceAtMost(previewFields.size - 1)]
+    val bitmap = remember(field, colorMode) {
+        val rv = barberfishFieldRemoteViews(
+            field = field,
+            alignment = ViewConfig.Alignment.RIGHT,
+            colorMode = colorMode,
+            sizeConfig = sizeConfig,
+            preview = true,
+            context = context,
         )
+        remoteViewsToBitmap(rv, widthPx, heightPx, context)
     }
+    Image(
+        bitmap = bitmap.asImageBitmap(),
+        contentDescription = null,
+        modifier = Modifier.width(120.dp).height(80.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color.Black),
+        contentScale = ContentScale.FillBounds,
+    )
 }
 
 @Composable
@@ -1456,256 +1474,3 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
 }
 
 private fun formatGradePct(d: Double) = "%.0f".format(d)
-
-
-@Composable
-internal fun BarberfishPreviewCell(
-    field: FieldState,
-    alignment: ViewConfig.Alignment,
-    colorMode: ZoneColorMode,
-    modifier: Modifier = Modifier,
-    sizeConfig: PreviewSizeConfig = PreviewSizeConfig.SINGLE,
-    cellWidthDp: Dp? = null,
-) {
-    val zoneColor = field.color.toColor()
-    val hasZoneBg = colorMode == ZoneColorMode.BACKGROUND && zoneColor != null
-
-    val valueColor =
-        when {
-            hasZoneBg -> Color.Black
-            colorMode == ZoneColorMode.TEXT -> zoneColor ?: Color.White
-            else -> Color.White
-        }
-    val labelColor = if (hasZoneBg) Color.Black else Color.White
-    val iconTint = if (hasZoneBg) Color.Black else ICON_TINT_TEAL
-
-    val cellModifier =
-        if (hasZoneBg)
-            modifier
-                .background(zoneColor!!)
-                .padding(
-                    start = sizeConfig.paddingStart,
-                    end = sizeConfig.paddingEnd,
-                    top = sizeConfig.paddingTop,
-                    bottom = sizeConfig.valueBottomPadding,
-                )
-        else
-            modifier.padding(
-                start = sizeConfig.paddingStart,
-                end = sizeConfig.paddingEnd,
-                top = sizeConfig.paddingTop,
-                bottom = sizeConfig.valueBottomPadding,
-            )
-
-    val textAlign =
-        when (alignment) {
-            ViewConfig.Alignment.LEFT -> TextAlign.Left
-            ViewConfig.Alignment.CENTER -> TextAlign.Center
-            ViewConfig.Alignment.RIGHT -> TextAlign.Right
-        }
-
-    Box(modifier = cellModifier.fillMaxSize()) {
-        val density = LocalDensity.current.density
-        val knownWidthPx = cellWidthDp?.let { with(LocalDensity.current) { it.toPx() } }
-
-        if (knownWidthPx != null) {
-            // Fast path: width is known at call site — no SubcomposeLayout needed.
-            // Subtract horizontal padding to match the available width seen by BoxWithConstraints
-            // in the fallback path (which measures the already-padded inner Box).
-            val paddedWidthPx = knownWidthPx -
-                (sizeConfig.paddingStart.value + sizeConfig.paddingEnd.value) * density
-            val valueFontSize = remember(field.primary, sizeConfig.valueFontSize, paddedWidthPx) {
-                fontSizeSpForPreview(
-                    field.primary, sizeConfig.valueFontSize.value.toInt(), paddedWidthPx, density,
-                    bold = true,
-                )
-            }
-            val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
-            val iconWidthPx = if (numIcons > 0)
-                (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
-            else 0f
-            val labelAvailWidthPx = paddedWidthPx - iconWidthPx
-            val (labelFontSpInt, labelLines) = remember(
-                field.label, sizeConfig.headerFontSize, labelAvailWidthPx,
-            ) {
-                fontSizeForCell(
-                    field.label.uppercase(),
-                    sizeConfig.headerFontSize.value.toInt(),
-                    labelAvailWidthPx,
-                    density,
-                    wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                    typeface = Typeface.DEFAULT,
-                )
-            }
-            val labelFontSp = labelFontSpInt.sp
-            val labelBoxHeight = with(LocalDensity.current) {
-                (labelFontSp.value * sizeConfig.labelMaxLines).sp.toDp() + 2.dp
-            }
-            val labelContentAlignment = when (textAlign) {
-                TextAlign.Right -> Alignment.CenterEnd
-                TextAlign.Center -> Alignment.Center
-                else -> Alignment.CenterStart
-            }
-            // Value
-            Box(
-                modifier = Modifier.fillMaxSize().offset(y = sizeConfig.valueTranslationY),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    field.primary,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = valueFontSize,
-                    fontWeight = FontWeight.Bold,
-                    color = valueColor,
-                    textAlign = textAlign,
-                    fontFamily = FontFamily.Monospace,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                )
-            }
-            // Header
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                field.iconRes?.let { res ->
-                    Box(
-                        modifier = Modifier.size(sizeConfig.headerIconSize),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painterResource(res),
-                            contentDescription = null,
-                            tint = iconTint,
-                            modifier = Modifier.size(sizeConfig.headerIconSize),
-                        )
-                    }
-                }
-                field.secondaryIconRes?.let { res ->
-                    Box(
-                        modifier = Modifier.size(sizeConfig.headerIconSize),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            painterResource(res),
-                            contentDescription = null,
-                            tint = iconTint,
-                            modifier = Modifier.size(sizeConfig.headerIconSize),
-                        )
-                    }
-                }
-                if (numIcons > 0) Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
-                Box(
-                    modifier = Modifier.weight(2f).height(labelBoxHeight),
-                    contentAlignment = labelContentAlignment,
-                ) {
-                    Text(
-                        field.label.uppercase(),
-                        fontSize = labelFontSp,
-                        lineHeight = labelFontSp,
-                        color = labelColor,
-                        textAlign = textAlign,
-                        fontFamily = FontFamily.Default,
-                        maxLines = sizeConfig.labelMaxLines,
-                        softWrap = labelLines > 1,
-                        overflow = TextOverflow.Clip,
-                    )
-                }
-            }
-        } else {
-            // Fallback: measure via SubcomposeLayout (used by HUD preview cells).
-            // Value: fills full cell height, centered vertically — mirrors field_value in barberfish_field.xml
-            BoxWithConstraints(
-                modifier = Modifier.fillMaxSize().offset(y = sizeConfig.valueTranslationY),
-                contentAlignment = Alignment.Center,
-            ) {
-                val cellWidthPx = maxWidth.value * density
-                Text(
-                    field.primary,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontSize = fontSizeSpForPreview(
-                        field.primary, sizeConfig.valueFontSize.value.toInt(), cellWidthPx, density,
-                        bold = true,
-                    ),
-                    fontWeight = FontWeight.Bold,
-                    color = valueColor,
-                    textAlign = textAlign,
-                    fontFamily = FontFamily.Monospace,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                )
-            }
-            // Header: overlays at top — mirrors field_header in barberfish_field.xml
-            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                val labelDensity = LocalDensity.current.density
-                val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
-                val iconWidthPx = if (numIcons > 0)
-                    (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * labelDensity
-                else 0f
-                val labelAvailWidthPx = maxWidth.value * labelDensity - iconWidthPx
-                val (labelFontSpInt, labelLines) = fontSizeForCell(
-                    field.label.uppercase(),
-                    sizeConfig.headerFontSize.value.toInt(),
-                    labelAvailWidthPx,
-                    labelDensity,
-                    wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                    typeface = Typeface.DEFAULT,
-                )
-                val labelFontSp = labelFontSpInt.sp
-                // Label box height = labelMaxLines × lineHeight, matching android:lines="2" on device.
-                // Text is centered within the box so a 1-line label has its center aligned with the
-                // icon center, and a 2-line label has the midpoint between lines aligned with the icon.
-                val labelBoxHeight = with(LocalDensity.current) {
-                    (labelFontSp.value * sizeConfig.labelMaxLines).sp.toDp() + 2.dp
-                }
-                val labelContentAlignment = when (textAlign) {
-                    TextAlign.Right -> Alignment.CenterEnd
-                    TextAlign.Center -> Alignment.Center
-                    else -> Alignment.CenterStart
-                }
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    field.iconRes?.let { res ->
-                        Box(
-                            modifier = Modifier.size(sizeConfig.headerIconSize),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painterResource(res),
-                                contentDescription = null,
-                                tint = iconTint,
-                                modifier = Modifier.size(sizeConfig.headerIconSize),
-                            )
-                        }
-                    }
-                    field.secondaryIconRes?.let { res ->
-                        Box(
-                            modifier = Modifier.size(sizeConfig.headerIconSize),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                painterResource(res),
-                                contentDescription = null,
-                                tint = iconTint,
-                                modifier = Modifier.size(sizeConfig.headerIconSize),
-                            )
-                        }
-                    }
-                    if (numIcons > 0) Spacer(Modifier.width(sizeConfig.headerIconLabelGap))
-                    Box(
-                        modifier = Modifier.weight(2f).height(labelBoxHeight),
-                        contentAlignment = labelContentAlignment,
-                    ) {
-                        Text(
-                            field.label.uppercase(),
-                            fontSize = labelFontSp,
-                            lineHeight = labelFontSp,
-                            color = labelColor,
-                            textAlign = textAlign,
-                            fontFamily = FontFamily.Default,
-                            maxLines = sizeConfig.labelMaxLines,
-                            softWrap = labelLines > 1,
-                            overflow = TextOverflow.Clip,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}

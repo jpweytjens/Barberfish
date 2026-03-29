@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +47,10 @@ import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
-import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
+import androidx.compose.ui.platform.LocalContext
+import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -155,10 +159,6 @@ private fun HUDPreview(
         }
     }
     val current = states[index]
-    val baseConfig = if (hudConfig.columns == 4) PreviewSizeConfig.HUD_FOUR else PreviewSizeConfig.HUD
-    val sizeConfig = if (!hudConfig.sparkline.enabled)
-        baseConfig.copy(valueTranslationY = 20.dp)
-    else baseConfig
 
     val density = LocalDensity.current.density
     val screenWidthPx = (LocalConfiguration.current.screenWidthDp * density).toInt()
@@ -196,7 +196,8 @@ private fun HUDPreview(
                     selected = selectedSlot == idx,
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
-                    sizeConfig = sizeConfig,
+                    columns = hudConfig.columns,
+                    sparklineEnabled = hudConfig.sparkline.enabled,
                 )
             }
         }
@@ -218,9 +219,13 @@ private fun HUDPreviewCell(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    sizeConfig: PreviewSizeConfig = PreviewSizeConfig.HUD,
+    columns: Int = 3,
+    sparklineEnabled: Boolean = true,
 ) {
-    Box(
+    val context = LocalContext.current
+    val baseConfig = if (columns == 4) ViewSizeConfig.PREVIEW_HUD_FOUR
+        else ViewSizeConfig.PREVIEW_HUD_THREE
+    BoxWithConstraints(
         modifier =
             modifier
                 .pointerInput(onClick) {
@@ -235,12 +240,31 @@ private fun HUDPreviewCell(
                     else Modifier
                 )
     ) {
-        BarberfishPreviewCell(
-            field = field,
-            alignment = ViewConfig.Alignment.RIGHT,
-            colorMode = colorMode,
+        val density = LocalDensity.current.density
+        val widthPx = (maxWidth.value * density).toInt()
+        val heightPx = (maxHeight.value * density).toInt()
+        val sizeConfig = remember(baseConfig, sparklineEnabled, widthPx) {
+            val adjusted = if (!sparklineEnabled)
+                baseConfig.copy(valueTranslationY = 37.5f) // 20dp × 1.875 density
+            else baseConfig
+            adjusted.copy(cellWidthPxOverride = widthPx.toFloat())
+        }
+        val bitmap = remember(field, colorMode, sizeConfig, heightPx) {
+            val rv = barberfishFieldRemoteViews(
+                field = field,
+                alignment = ViewConfig.Alignment.RIGHT,
+                colorMode = colorMode,
+                sizeConfig = sizeConfig,
+                preview = true,
+                context = context,
+            )
+            remoteViewsToBitmap(rv, widthPx, heightPx, context)
+        }
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
-            sizeConfig = sizeConfig,
+            contentScale = ContentScale.FillBounds,
         )
     }
 }
