@@ -158,7 +158,7 @@ private fun HUDPreview(
             index = (index + 1) % states.size
         }
     }
-    val current = states[index]
+    val current = states[index.coerceIn(states.indices)]
 
     val density = LocalDensity.current.density
     val screenWidthPx = (LocalConfiguration.current.screenWidthDp * density).toInt()
