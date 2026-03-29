@@ -37,6 +37,8 @@ barberfishFieldRemoteViews(field, alignment, colorMode, sizeConfig, preview, con
 
 `barberfishFieldRemoteViews()` receives a `FieldState` and a `ViewSizeConfig`; it has no access to streams, DataStore, or configuration. All sizing decisions are made by the caller before this function is invoked.
 
+Config-screen previews use the same rendering engine: `remoteViewsToBitmap()` in `RemoteViewsBitmap.kt` renders the `RemoteViews` to a `Bitmap` (via `apply/measure/layout/draw`), displayed in Compose via `Image(bitmap.asImageBitmap())`. `ViewSizeConfig.cellWidthPxOverride` allows preview callers to specify the exact cell width in pixels, bypassing the `dm.widthPixels * colSpan / 60` formula used for on-device rendering.
+
 ---
 
 ## HUD three-column layout
