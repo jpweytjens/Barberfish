@@ -22,6 +22,7 @@ import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
+import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
@@ -283,6 +284,22 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 karooSystem
                     .streamDataFlow(DataType.Type.NORMALIZED_POWER)
                     .map { toNP(it, profile, zones) }
+            HUDSlotField.LapPower ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.POWER_LAP)
+                    .map { toLapPower(it, profile, zones, isLastLap = false) }
+            HUDSlotField.LastLapPower ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.AVERAGE_POWER_LAST_LAP)
+                    .map { toLapPower(it, profile, zones, isLastLap = true) }
+            HUDSlotField.AvgHR ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.AVERAGE_HR)
+                    .map { toAvgHr(it, profile, zones) }
+            HUDSlotField.LapAvgHR ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.AVERAGE_LAP_HR)
+                    .map { toLapAvgHr(it, profile, zones) }
             HUDSlotField.Grade -> gradeSlotFlow(zones)
             is HUDSlotField.AvgSpeed -> avgSpeedSlotFlow(slot, profile)
             is HUDSlotField.Time -> timeSlotFlow(slot, context)
@@ -404,6 +421,72 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 readable = zones.readableColors,
             ),
             iconRes = R.drawable.ic_col_power,
+        )
+    }
+
+    private fun toLapPower(
+        state: StreamState,
+        profile: UserProfile,
+        zones: ZoneConfig,
+        isLastLap: Boolean,
+    ): FieldState {
+        val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
+        val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
+        state.toErrorFieldState(label)?.let { return it }
+        val raw =
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
+                ?: return FieldState.unavailable(label)
+        return FieldState(
+            primary = raw.toInt().toString(),
+            label = label,
+            color = FieldColor.Zone(
+                powerZone(raw, profile.powerZones),
+                profile.powerZones.size.coerceAtLeast(1),
+                zones.powerPalette,
+                isHr = false,
+                readable = zones.readableColors,
+            ),
+            iconRes = iconRes,
+            secondaryIconRes = R.drawable.ic_avg_power,
+        )
+    }
+
+    private fun toAvgHr(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldState {
+        state.toErrorFieldState("Avg HR")?.let { return it }
+        val raw =
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVG_HR]
+                ?: return FieldState.unavailable("Avg HR")
+        return FieldState(
+            primary = raw.toInt().toString(),
+            label = "Avg HR",
+            color = FieldColor.Zone(
+                hrZone(raw, profile.heartRateZones),
+                profile.heartRateZones.size.coerceAtLeast(1),
+                zones.hrPalette,
+                isHr = true,
+                readable = zones.readableColors,
+            ),
+            iconRes = R.drawable.ic_avg_hr,
+        )
+    }
+
+    private fun toLapAvgHr(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldState {
+        state.toErrorFieldState("Lap Avg HR")?.let { return it }
+        val raw =
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVG_HR]
+                ?: return FieldState.unavailable("Lap Avg HR")
+        return FieldState(
+            primary = raw.toInt().toString(),
+            label = "Lap Avg HR",
+            color = FieldColor.Zone(
+                hrZone(raw, profile.heartRateZones),
+                profile.heartRateZones.size.coerceAtLeast(1),
+                zones.hrPalette,
+                isHr = true,
+                readable = zones.readableColors,
+            ),
+            iconRes = R.drawable.ic_lap,
+            secondaryIconRes = R.drawable.ic_avg_hr,
         )
     }
 
@@ -623,6 +706,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     AvgPowerField.previewStates(AvgPowerFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.NP ->
                     NPField.previewStates(NPFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.LapPower ->
+                    LapPowerField.previewStates(LapPowerFieldConfig(slotCfg.colorMode), profile, zones, isLastLap = false)
+                HUDSlotField.LastLapPower ->
+                    LapPowerField.previewStates(LapPowerFieldConfig(slotCfg.colorMode), profile, zones, isLastLap = true)
+                HUDSlotField.AvgHR ->
+                    AvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.LapAvgHR ->
+                    LapAvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.Grade ->
                     GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
                 is HUDSlotField.Time ->
