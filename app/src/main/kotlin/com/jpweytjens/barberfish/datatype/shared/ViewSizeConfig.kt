@@ -86,6 +86,7 @@ data class ViewSizeConfig(
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,
     val valueTranslationY: Float,
+    val cellWidthPxOverride: Float? = null,
 ) {
     companion object {
         val STANDARD =
@@ -99,6 +100,34 @@ data class ViewSizeConfig(
                 wrapThresholdSp = 18,
                 valueFontSizeBase = 49,
                 valueTranslationY = 0f,
+            )
+
+        // Config-screen preview: HUD 3-column slots
+        val PREVIEW_HUD_THREE =
+            ViewSizeConfig(
+                colSpan = 20,
+                paddingH = 4.dp,
+                headerIconSize = 12.dp,
+                headerIconLabelGap = 2.dp,
+                headerFontSize = 12.sp,
+                labelMaxLines = 2,
+                wrapThresholdSp = 14,
+                valueFontSizeBase = 28,
+                valueTranslationY = 7.5f, // 4dp × 1.875 density
+            )
+
+        // Config-screen preview: HUD 4-column slots
+        val PREVIEW_HUD_FOUR =
+            ViewSizeConfig(
+                colSpan = 15,
+                paddingH = 4.dp,
+                headerIconSize = 11.dp,
+                headerIconLabelGap = 2.dp,
+                headerFontSize = 9.sp,
+                labelMaxLines = 2,
+                wrapThresholdSp = 12,
+                valueFontSizeBase = 20,
+                valueTranslationY = 7.5f, // 4dp × 1.875 density
             )
     }
 }

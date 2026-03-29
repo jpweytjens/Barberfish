@@ -75,7 +75,8 @@ private fun makeFieldRemoteViews(
         if (colors.background != null) android.graphics.Color.BLACK
         else android.graphics.Color.WHITE
     val hGravity = alignment.toHorizontalGravity()
-    val cellWidthPx = dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx
+    val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
+        ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
     val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
     val iconWidthPx = if (numIcons > 0)
         (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
