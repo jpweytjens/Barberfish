@@ -427,7 +427,6 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                 ),
                 "Navigation" to listOf(
                     "To destination" to HUDSlotField.Time(TimeKind.TIME_TO_DESTINATION),
-                    "Arrival" to HUDSlotField.Time(TimeKind.TIME_OF_ARRIVAL),
                 ),
                 "Daylight" to listOf(
                     "Sunrise" to HUDSlotField.Time(TimeKind.TIME_TO_SUNRISE),

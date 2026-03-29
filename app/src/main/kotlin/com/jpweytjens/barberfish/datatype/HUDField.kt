@@ -618,15 +618,6 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     private fun timeSlotFlow(slot: HUDSlotConfig, context: Context): Flow<FieldState> {
         val kind = (slot.field as HUDSlotField.Time).kind
-        if (kind == TimeKind.TIME_OF_ARRIVAL) {
-            return karooSystem.streamDataFlow(DataType.Type.TIME_OF_ARRIVAL).map { state ->
-                val seconds =
-                    (state as? StreamState.Streaming)
-                        ?.dataPoint?.values?.get(DataType.Field.TIME_OF_ARRIVAL)
-                        ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
-                timeFieldState(formatClockTime(seconds), kind)
-            }
-        }
         val secondsFlow =
             when (kind) {
                 TimeKind.TOTAL ->
@@ -645,7 +636,6 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 TimeKind.TIME_TO_DESTINATION ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_DESTINATION)
                         .map { extractSeconds(it, DataType.Field.TIME_TO_DESTINATION) }
-                TimeKind.TIME_OF_ARRIVAL -> error("handled above")
                 TimeKind.TIME_TO_SUNRISE ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE)
                         .map { extractSeconds(it, DataType.Field.TIME_TO_SUNRISE) }

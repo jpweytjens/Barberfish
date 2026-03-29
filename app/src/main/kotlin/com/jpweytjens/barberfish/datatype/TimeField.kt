@@ -40,19 +40,11 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
     }
 }
 
-fun formatClockTime(secondsSinceMidnight: Long): String {
-    val t = secondsSinceMidnight % 86400
-    val h = t / 3600
-    val m = (t % 3600) / 60
-    return "%02d:%02d".format(h, m)
-}
-
 enum class TimeKind(val typeId: String, val label: String, val iconRes: Int, val secondaryIconRes: Int? = null) {
     TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
     RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),
     PAUSED("time-paused", "Paused\ntime", R.drawable.ic_stopwatch),
     TIME_TO_DESTINATION("time-to-destination", "To\nDest", R.drawable.ic_time_to_dest),
-    TIME_OF_ARRIVAL("time-of-arrival", "Arrival", R.drawable.ic_time_to_dest),
     TIME_TO_SUNRISE("time-to-sunrise", "Sunrise", R.drawable.ic_sunrise),
     TIME_TO_SUNSET("time-to-sunset", "Sunset", R.drawable.ic_sunset),
     TIME_TO_CIVIL_DAWN("time-to-civil-dawn", "Dawn", R.drawable.ic_sunrise),
@@ -67,46 +59,20 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     companion object {
         private val previewDurationSeconds = listOf(1665L, 5025L, 37425L)
-        private val previewClockTimes = listOf("08:15", "14:32", "19:47")
 
         fun previewStates(cfg: TimeConfig, kind: TimeKind): List<FieldState> =
-            if (kind == TimeKind.TIME_OF_ARRIVAL) {
-                previewClockTimes.map { time ->
-                    FieldState(
-                        time,
-                        label = kind.label,
-                        color = FieldColor.Default,
-                        iconRes = kind.iconRes,
-                        secondaryIconRes = kind.secondaryIconRes,
-                    )
-                }
-            } else {
-                previewDurationSeconds.map { seconds ->
-                    FieldState(
-                        formatTime(seconds, cfg.format),
-                        label = kind.label,
-                        color = FieldColor.Default,
-                        iconRes = kind.iconRes,
-                        secondaryIconRes = kind.secondaryIconRes,
-                    )
-                }
-            }
-    }
-
-    override fun liveFlow(context: Context): Flow<FieldState> {
-        if (kind == TimeKind.TIME_OF_ARRIVAL) {
-            return karooSystem.streamDataFlow(DataType.Type.TIME_OF_ARRIVAL).map { state ->
+            previewDurationSeconds.map { seconds ->
                 FieldState(
-                    primary =
-                        formatClockTime(extractSeconds(state, DataType.Field.TIME_OF_ARRIVAL)),
+                    formatTime(seconds, cfg.format),
                     label = kind.label,
                     color = FieldColor.Default,
                     iconRes = kind.iconRes,
                     secondaryIconRes = kind.secondaryIconRes,
                 )
             }
-        }
+    }
 
+    override fun liveFlow(context: Context): Flow<FieldState> {
         val secondsFlow =
             when (kind) {
                 TimeKind.TOTAL ->
@@ -125,7 +91,6 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_DESTINATION).map { state ->
                         extractSeconds(state, DataType.Field.TIME_TO_DESTINATION)
                     }
-                TimeKind.TIME_OF_ARRIVAL -> error("handled above")
                 TimeKind.TIME_TO_SUNRISE ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE).map { state ->
                         extractSeconds(state, DataType.Field.TIME_TO_SUNRISE)
