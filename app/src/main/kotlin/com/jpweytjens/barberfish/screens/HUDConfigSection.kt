@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -392,22 +393,41 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            listOf(
+            val groups = listOf(
+                "Power" to listOf(
                     "Power" to HUDSlotField.Power,
                     "Avg Power" to HUDSlotField.AvgPower,
                     "NP" to HUDSlotField.NP,
                     "Lap Power" to HUDSlotField.LapPower,
                     "Last Lap Power" to HUDSlotField.LastLapPower,
+                ),
+                "Heart rate" to listOf(
                     "Heart rate" to HUDSlotField.HR,
                     "Avg heart rate" to HUDSlotField.AvgHR,
                     "Lap avg heart rate" to HUDSlotField.LapAvgHR,
+                ),
+                "Speed" to listOf(
                     "Speed" to HUDSlotField.Speed,
                     "Avg Speed" to HUDSlotField.AvgSpeed(),
+                ),
+                "Other" to listOf(
                     "Cadence" to HUDSlotField.Cadence,
                     "Grade" to HUDSlotField.Grade,
+                ),
+                "Time" to listOf(
                     "Time" to HUDSlotField.Time(),
+                ),
+            )
+            groups.forEachIndexed { groupIndex, (groupLabel, fields) ->
+                if (groupIndex > 0) HorizontalDivider()
+                Text(
+                    groupLabel,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Grey400,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                 )
-                .forEach { (label, field) ->
+                fields.forEach { (label, field) ->
                     DropdownMenuItem(
                         text = { Text(label) },
                         onClick = {
@@ -416,6 +436,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                         },
                     )
                 }
+            }
         }
     }
 }
