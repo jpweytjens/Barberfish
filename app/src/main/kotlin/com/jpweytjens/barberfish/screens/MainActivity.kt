@@ -314,6 +314,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var selectedDataField by remember { mutableStateOf<String?>(null) }
 
+                    Text("POWER", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
                     FieldCard(
                         title = "POWER",
                         description = "Current power output",
@@ -415,6 +416,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    Text("SPEED", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "SPEED",
                         description = "Current speed",
@@ -441,6 +443,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    Text("HEART RATE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "HEART RATE",
                         description = "Current heart rate",
@@ -458,6 +461,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    Text("OTHER", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "CADENCE",
                         description = "Current cadence",
