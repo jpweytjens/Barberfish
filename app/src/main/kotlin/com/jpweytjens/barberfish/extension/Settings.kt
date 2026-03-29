@@ -63,6 +63,8 @@ sealed interface HUDSlotField {
 
     @Serializable data object LapAvgHR : HUDSlotField
 
+    @Serializable data object LastLapAvgHR : HUDSlotField
+
     @Serializable data object Grade : HUDSlotField
 
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField

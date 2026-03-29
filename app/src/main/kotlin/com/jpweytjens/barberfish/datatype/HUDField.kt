@@ -300,6 +300,10 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 karooSystem
                     .streamDataFlow(DataType.Type.AVERAGE_LAP_HR)
                     .map { toLapAvgHr(it, profile, zones) }
+            HUDSlotField.LastLapAvgHR ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.AVERAGE_HR_LAST_LAP)
+                    .map { toLastLapAvgHr(it, profile, zones) }
             HUDSlotField.Grade -> gradeSlotFlow(zones)
             is HUDSlotField.AvgSpeed -> avgSpeedSlotFlow(slot, profile)
             is HUDSlotField.Time -> timeSlotFlow(slot, context)
@@ -486,6 +490,26 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 readable = zones.readableColors,
             ),
             iconRes = R.drawable.ic_lap,
+            secondaryIconRes = R.drawable.ic_avg_hr,
+        )
+    }
+
+    private fun toLastLapAvgHr(state: StreamState, profile: UserProfile, zones: ZoneConfig): FieldState {
+        state.toErrorFieldState("LL Avg HR")?.let { return it }
+        val raw =
+            (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVG_HR]
+                ?: return FieldState.unavailable("LL Avg HR")
+        return FieldState(
+            primary = raw.toInt().toString(),
+            label = "LL Avg HR",
+            color = FieldColor.Zone(
+                hrZone(raw, profile.heartRateZones),
+                profile.heartRateZones.size.coerceAtLeast(1),
+                zones.hrPalette,
+                isHr = true,
+                readable = zones.readableColors,
+            ),
+            iconRes = R.drawable.ic_last_lap,
             secondaryIconRes = R.drawable.ic_avg_hr,
         )
     }
@@ -704,6 +728,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     AvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.LapAvgHR ->
                     LapAvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.LastLapAvgHR ->
+                    LastLapAvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.Grade ->
                     GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
                 is HUDSlotField.Time ->

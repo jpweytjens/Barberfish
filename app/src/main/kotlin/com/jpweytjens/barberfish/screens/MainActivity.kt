@@ -70,12 +70,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
+import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
+import com.jpweytjens.barberfish.datatype.LastLapAvgHRField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
@@ -283,6 +286,15 @@ class MainActivity : ComponentActivity() {
                 val hrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
                     HRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
                 }
+                val avgHrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
+                    AvgHRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                }
+                val lapAvgHrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
+                    LapAvgHRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                }
+                val lastLapAvgHrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
+                    LastLapAvgHRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                }
                 val speedPreviewStates = remember(speedFieldConfig, userProfile) {
                     SpeedField.previewStates(speedFieldConfig, userProfile)
                 }
@@ -451,6 +463,57 @@ class MainActivity : ComponentActivity() {
                         colorMode = hrFieldConfig.colorMode,
                         selected = selectedDataField == "HEART RATE",
                         onSelect = { selectedDataField = if (selectedDataField == "HEART RATE") null else "HEART RATE" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = hrFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "AVG HR",
+                        description = "Average heart rate with zone coloring.",
+                        previewFields = avgHrPreviewStates,
+                        colorMode = hrFieldConfig.colorMode,
+                        selected = selectedDataField == "AVG HR",
+                        onSelect = { selectedDataField = if (selectedDataField == "AVG HR") null else "AVG HR" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = hrFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "LAP AVG HR",
+                        description = "Average heart rate this lap with zone coloring.",
+                        previewFields = lapAvgHrPreviewStates,
+                        colorMode = hrFieldConfig.colorMode,
+                        selected = selectedDataField == "LAP AVG HR",
+                        onSelect = { selectedDataField = if (selectedDataField == "LAP AVG HR") null else "LAP AVG HR" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = hrFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "LAST LAP AVG HR",
+                        description = "Average heart rate from the previous lap with zone coloring.",
+                        previewFields = lastLapAvgHrPreviewStates,
+                        colorMode = hrFieldConfig.colorMode,
+                        selected = selectedDataField == "LAST LAP AVG HR",
+                        onSelect = { selectedDataField = if (selectedDataField == "LAST LAP AVG HR") null else "LAST LAP AVG HR" },
                     ) {
                         ZoneColorSlider(
                             selected = hrFieldConfig.colorMode,

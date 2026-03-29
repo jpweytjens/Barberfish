@@ -343,6 +343,7 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.HR -> {}
                 HUDSlotField.AvgHR -> {}
                 HUDSlotField.LapAvgHR -> {}
+                HUDSlotField.LastLapAvgHR -> {}
                 HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
                 is HUDSlotField.AvgSpeed -> AvgSpeedThresholdControls(
                     config = slot.avgSpeedConfig,
@@ -356,7 +357,7 @@ private fun HUDSlotFieldCard(
                 slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
                 slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.HR ||
                 slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR ||
-                slot.field == HUDSlotField.Grade) {
+                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.Grade) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
                     onSelected = { onUpdate(slot.copy(colorMode = it)) },
@@ -379,6 +380,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             HUDSlotField.HR -> "Heart rate"
             HUDSlotField.AvgHR -> "Avg heart rate"
             HUDSlotField.LapAvgHR -> "Lap avg heart rate"
+            HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
             HUDSlotField.Speed -> "Speed"
             is HUDSlotField.AvgSpeed -> if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
             HUDSlotField.Cadence -> "Cadence"
@@ -408,6 +410,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                     "Heart rate" to HUDSlotField.HR,
                     "Avg heart rate" to HUDSlotField.AvgHR,
                     "Lap avg heart rate" to HUDSlotField.LapAvgHR,
+                    "Last lap avg heart rate" to HUDSlotField.LastLapAvgHR,
                 ),
                 "Speed" to listOf(
                     "Speed" to HUDSlotField.Speed,
