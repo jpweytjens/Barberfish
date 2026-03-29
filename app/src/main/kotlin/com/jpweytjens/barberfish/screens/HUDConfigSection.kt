@@ -334,18 +334,24 @@ private fun HUDSlotFieldCard(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (val f = slot.field) {
-                HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
-                HUDSlotField.HR -> {}
                 HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
-                HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.AvgPower -> {}
                 HUDSlotField.NP -> {}
-                HUDSlotField.Grade -> {}
+                HUDSlotField.LapPower -> {}
+                HUDSlotField.LastLapPower -> {}
+                HUDSlotField.HR -> {}
+                HUDSlotField.AvgHR -> {}
+                HUDSlotField.LapAvgHR -> {}
+                HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
                 is HUDSlotField.AvgSpeed -> HUDAvgSpeedCard(slot, f, onUpdate)
+                HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
+                HUDSlotField.Grade -> {}
                 is HUDSlotField.Time -> HUDTimeDropdown(slot, f, onUpdate)
             }
-            if (slot.field == HUDSlotField.HR || slot.field == HUDSlotField.Power ||
-                slot.field == HUDSlotField.AvgPower || slot.field == HUDSlotField.NP ||
+            if (slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower ||
+                slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
+                slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.HR ||
+                slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR ||
                 slot.field == HUDSlotField.Grade) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
@@ -361,14 +367,18 @@ private fun HUDSlotFieldCard(
 private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
     val fieldLabel =
         when (slot.field) {
-            HUDSlotField.Speed -> "Speed"
-            HUDSlotField.HR -> "Heart rate"
             HUDSlotField.Power -> "Power"
-            HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.AvgPower -> "Avg Power"
             HUDSlotField.NP -> "NP"
-            HUDSlotField.Grade -> "Grade"
+            HUDSlotField.LapPower -> "Lap Power"
+            HUDSlotField.LastLapPower -> "Last Lap Power"
+            HUDSlotField.HR -> "Heart rate"
+            HUDSlotField.AvgHR -> "Avg heart rate"
+            HUDSlotField.LapAvgHR -> "Lap avg heart rate"
+            HUDSlotField.Speed -> "Speed"
             is HUDSlotField.AvgSpeed -> "Avg Speed"
+            HUDSlotField.Cadence -> "Cadence"
+            HUDSlotField.Grade -> "Grade"
             is HUDSlotField.Time -> "Time"
         }
     var expanded by remember { mutableStateOf(false) }
@@ -383,14 +393,18 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             listOf(
-                    "Speed" to HUDSlotField.Speed,
-                    "Heart rate" to HUDSlotField.HR,
                     "Power" to HUDSlotField.Power,
-                    "Cadence" to HUDSlotField.Cadence,
                     "Avg Power" to HUDSlotField.AvgPower,
                     "NP" to HUDSlotField.NP,
-                    "Grade" to HUDSlotField.Grade,
+                    "Lap Power" to HUDSlotField.LapPower,
+                    "Last Lap Power" to HUDSlotField.LastLapPower,
+                    "Heart rate" to HUDSlotField.HR,
+                    "Avg heart rate" to HUDSlotField.AvgHR,
+                    "Lap avg heart rate" to HUDSlotField.LapAvgHR,
+                    "Speed" to HUDSlotField.Speed,
                     "Avg Speed" to HUDSlotField.AvgSpeed(),
+                    "Cadence" to HUDSlotField.Cadence,
+                    "Grade" to HUDSlotField.Grade,
                     "Time" to HUDSlotField.Time(),
                 )
                 .forEach { (label, field) ->
