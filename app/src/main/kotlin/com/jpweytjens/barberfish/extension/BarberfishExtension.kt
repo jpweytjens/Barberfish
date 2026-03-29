@@ -1,12 +1,14 @@
 package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.BuildConfig
+import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HUDField
+import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
@@ -26,6 +28,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             HUDField(karooSystem),
             PowerField(karooSystem),
             HRField(karooSystem),
+            AvgHRField(karooSystem),
+            LapAvgHRField(karooSystem),
             SpeedField(karooSystem),
             CadenceField(karooSystem),
             AvgPowerField(karooSystem),
@@ -44,6 +48,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
             TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
             TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK),
+            TimeField(karooSystem, TimeKind.LAP),
+            TimeField(karooSystem, TimeKind.LAST_LAP),
         )
     }
 

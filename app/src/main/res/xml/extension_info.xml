@@ -22,6 +22,18 @@
         description="@string/hr_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_avg_hr"
+        typeId="avg-hr"
+        displayName="@string/avg_hr_name"
+        description="@string/avg_hr_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_lap"
+        typeId="lap-avg-hr"
+        displayName="@string/lap_avg_hr_name"
+        description="@string/lap_avg_hr_description"
+        graphical="true" />
+    <DataType
         icon="@drawable/ic_speed_average"
         typeId="speed"
         displayName="@string/speed_name"
@@ -128,5 +140,17 @@
         typeId="grade"
         displayName="@string/grade_name"
         description="@string/grade_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_lap"
+        typeId="time-lap"
+        displayName="@string/time_lap_name"
+        description="@string/time_lap_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap"
+        typeId="time-last-lap"
+        displayName="@string/time_last_lap_name"
+        description="@string/time_last_lap_description"
         graphical="true" />
 </ExtensionInfo>
