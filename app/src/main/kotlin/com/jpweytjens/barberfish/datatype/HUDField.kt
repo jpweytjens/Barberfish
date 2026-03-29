@@ -575,6 +575,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 TimeKind.TIME_TO_CIVIL_DUSK ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DUSK)
                         .map { extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DUSK) }
+                TimeKind.LAP ->
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAP)
+                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
+                TimeKind.LAST_LAP ->
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAST_LAP)
+                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
             }
         return combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->
             timeFieldState(formatTime(seconds, cfg.format), kind)
