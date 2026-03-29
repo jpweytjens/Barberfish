@@ -344,10 +344,13 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.AvgHR -> {}
                 HUDSlotField.LapAvgHR -> {}
                 HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
-                is HUDSlotField.AvgSpeed -> HUDAvgSpeedCard(slot, f, onUpdate)
+                is HUDSlotField.AvgSpeed -> AvgSpeedThresholdControls(
+                    config = slot.avgSpeedConfig,
+                    onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
+                )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.Grade -> {}
-                is HUDSlotField.Time -> HUDTimeDropdown(slot, f, onUpdate)
+                is HUDSlotField.Time -> {}
             }
             if (slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower ||
                 slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
@@ -367,7 +370,7 @@ private fun HUDSlotFieldCard(
 @Composable
 private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
     val fieldLabel =
-        when (slot.field) {
+        when (val f = slot.field) {
             HUDSlotField.Power -> "Power"
             HUDSlotField.AvgPower -> "Avg Power"
             HUDSlotField.NP -> "NP"
@@ -377,10 +380,10 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             HUDSlotField.AvgHR -> "Avg heart rate"
             HUDSlotField.LapAvgHR -> "Lap avg heart rate"
             HUDSlotField.Speed -> "Speed"
-            is HUDSlotField.AvgSpeed -> "Avg Speed"
+            is HUDSlotField.AvgSpeed -> if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
             HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.Grade -> "Grade"
-            is HUDSlotField.Time -> "Time"
+            is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
         }
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -408,14 +411,29 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                 ),
                 "Speed" to listOf(
                     "Speed" to HUDSlotField.Speed,
-                    "Avg Speed" to HUDSlotField.AvgSpeed(),
+                    "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
+                    "Avg Speed (Total)" to HUDSlotField.AvgSpeed(includePaused = true),
                 ),
                 "Other" to listOf(
                     "Cadence" to HUDSlotField.Cadence,
                     "Grade" to HUDSlotField.Grade,
                 ),
-                "Time" to listOf(
-                    "Time" to HUDSlotField.Time(),
+                "Duration" to listOf(
+                    "Elapsed time" to HUDSlotField.Time(TimeKind.TOTAL),
+                    "Moving time" to HUDSlotField.Time(TimeKind.RIDING),
+                    "Paused time" to HUDSlotField.Time(TimeKind.PAUSED),
+                    "Lap time" to HUDSlotField.Time(TimeKind.LAP),
+                    "Last lap time" to HUDSlotField.Time(TimeKind.LAST_LAP),
+                ),
+                "Navigation" to listOf(
+                    "To destination" to HUDSlotField.Time(TimeKind.TIME_TO_DESTINATION),
+                    "Arrival" to HUDSlotField.Time(TimeKind.TIME_OF_ARRIVAL),
+                ),
+                "Daylight" to listOf(
+                    "Sunrise" to HUDSlotField.Time(TimeKind.TIME_TO_SUNRISE),
+                    "Sunset" to HUDSlotField.Time(TimeKind.TIME_TO_SUNSET),
+                    "Dawn" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DAWN),
+                    "Dusk" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DUSK),
                 ),
             )
             groups.forEachIndexed { groupIndex, (groupLabel, fields) ->
@@ -465,54 +483,6 @@ private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
     )
 }
 
-@Composable
-private fun HUDAvgSpeedCard(
-    slot: HUDSlotConfig,
-    field: HUDSlotField.AvgSpeed,
-    onUpdate: (HUDSlotConfig) -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(field, onUpdate) {
-                    val slotWidthPx = size.width.toFloat() / 2
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        val idx = (down.position.x / slotWidthPx).toInt().coerceIn(0, 1)
-                        val includePaused = idx == 1
-                        onUpdate(slot.copy(field = HUDSlotField.AvgSpeed(includePaused)))
-                    }
-                }
-    ) {
-        listOf(false to "Moving", true to "Total").forEach { (includePaused, label) ->
-            val isSelected = field.includePaused == includePaused
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(
-                            if (isSelected) Grey400 else Color.Transparent
-                        )
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
-    AvgSpeedThresholdControls(
-        config = slot.avgSpeedConfig,
-        onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
-    )
-}
 
 @Composable
 private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
@@ -624,33 +594,3 @@ private fun <T> SegmentedRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun HUDTimeDropdown(
-    slot: HUDSlotConfig,
-    field: HUDSlotField.Time,
-    onUpdate: (HUDSlotConfig) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = field.kind.label.replace("\n", " "),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Time field") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            TimeKind.entries.forEach { kind ->
-                DropdownMenuItem(
-                    text = { Text(kind.label.replace("\n", " ")) },
-                    onClick = {
-                        onUpdate(slot.copy(field = HUDSlotField.Time(kind)))
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
