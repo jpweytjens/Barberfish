@@ -44,7 +44,6 @@ enum class TimeKind(val typeId: String, val label: String, val iconRes: Int, val
     TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
     RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),
     PAUSED("time-paused", "Paused\ntime", R.drawable.ic_stopwatch),
-    TIME_TO_DESTINATION("time-to-destination", "To\nDest", R.drawable.ic_time_to_dest),
     TIME_TO_SUNRISE("time-to-sunrise", "Sunrise", R.drawable.ic_sunrise),
     TIME_TO_SUNSET("time-to-sunset", "Sunset", R.drawable.ic_sunset),
     TIME_TO_CIVIL_DAWN("time-to-civil-dawn", "Dawn", R.drawable.ic_sunrise),
@@ -84,9 +83,6 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                 TimeKind.RIDING ->
                     karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME)
                         .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
-                TimeKind.TIME_TO_DESTINATION ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_DESTINATION)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_DESTINATION) }
                 TimeKind.TIME_TO_SUNRISE ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE)
                         .map { extractSeconds(it, DataType.Field.TIME_TO_SUNRISE) }

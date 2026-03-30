@@ -130,9 +130,21 @@
         graphical="true" />
     <DataType
         icon="@drawable/ic_time_to_dest"
+        typeId="remaining-ride-time"
+        displayName="@string/remaining_ride_time_name"
+        description="@string/remaining_ride_time_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_time_to_dest"
         typeId="time-to-destination"
         displayName="@string/time_to_destination_name"
         description="@string/time_to_destination_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_time_to_dest"
+        typeId="time-of-arrival"
+        displayName="@string/time_of_arrival_name"
+        description="@string/time_of_arrival_description"
         graphical="true" />
     <DataType
         icon="@drawable/ic_sunrise"

@@ -5,6 +5,8 @@ import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.ETAField
+import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HUDField
@@ -52,7 +54,9 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             TimeField(karooSystem, TimeKind.PAUSED),
             TimeField(karooSystem, TimeKind.LAP),
             TimeField(karooSystem, TimeKind.LAST_LAP),
-            TimeField(karooSystem, TimeKind.TIME_TO_DESTINATION),
+            ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME),
+            ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION),
+            ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL),
             TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
             TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
             TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
