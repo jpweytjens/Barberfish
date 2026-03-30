@@ -6,8 +6,8 @@ import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
-import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.HRFieldKind
+import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
