@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
@@ -100,7 +101,7 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         combine(
-                context.streamHRFieldConfig(),
+                context.streamHRFieldConfig(HRFieldKind.AVG),
                 karooSystem.streamUserProfile(),
                 context.streamZoneConfig(),
             ) { cfg, profile, zones ->
@@ -114,7 +115,7 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(
-                context.streamHRFieldConfig(),
+                context.streamHRFieldConfig(HRFieldKind.AVG),
                 karooSystem.streamUserProfile(),
                 context.streamZoneConfig(),
             ) { cfg, profile, zones ->

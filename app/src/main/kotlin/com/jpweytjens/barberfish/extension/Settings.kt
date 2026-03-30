@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import io.hammerhead.karooext.models.DataType
@@ -70,6 +71,8 @@ sealed interface HUDSlotField {
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
 
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
+
+    @Serializable data class ETA(val kind: ETAKind = ETAKind.TIME_TO_DESTINATION) : HUDSlotField
 }
 
 @Serializable
@@ -151,18 +154,28 @@ suspend fun Context.savePowerFieldConfig(config: PowerFieldConfig) {
 @Serializable data class HRFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 private val hrFieldConfigKey = stringPreferencesKey("hr_field_config")
+private val avgHrFieldConfigKey = stringPreferencesKey("avg_hr_field_config")
+private val lapAvgHrFieldConfigKey = stringPreferencesKey("lap_avg_hr_field_config")
+private val lastLapAvgHrFieldConfigKey = stringPreferencesKey("last_lap_avg_hr_field_config")
 
-fun Context.streamHRFieldConfig(): Flow<HRFieldConfig> =
+enum class HRFieldKind(internal val key: Preferences.Key<String>) {
+    HR(hrFieldConfigKey),
+    AVG(avgHrFieldConfigKey),
+    LAP_AVG(lapAvgHrFieldConfigKey),
+    LAST_LAP_AVG(lastLapAvgHrFieldConfigKey),
+}
+
+fun Context.streamHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR): Flow<HRFieldConfig> =
     dataStore.data
         .map { prefs ->
-            prefs[hrFieldConfigKey]?.let {
+            prefs[kind.key]?.let {
                 runCatching { json.decodeFromString<HRFieldConfig>(it) }.getOrNull()
             } ?: HRFieldConfig()
         }
         .distinctUntilChanged()
 
-suspend fun Context.saveHRFieldConfig(config: HRFieldConfig) {
-    dataStore.edit { it[hrFieldConfigKey] = json.encodeToString(config) }
+suspend fun Context.saveHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR, config: HRFieldConfig) {
+    dataStore.edit { it[kind.key] = json.encodeToString(config) }
 }
 
 // --- SpeedFieldConfig ---
@@ -365,6 +378,28 @@ fun Context.streamGradeFieldConfig(): Flow<GradeFieldConfig> =
 
 suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) {
     dataStore.edit { it[gradeFieldConfigKey] = json.encodeToString(config) }
+}
+
+// --- ETAConfig ---
+
+@Serializable
+data class ETAConfig(
+    val priorSpeedKph: Double = 25.0,
+)
+
+private val etaConfigKey = stringPreferencesKey("eta_config")
+
+fun Context.streamETAConfig(): Flow<ETAConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[etaConfigKey]?.let {
+                runCatching { json.decodeFromString<ETAConfig>(it) }.getOrNull()
+            } ?: ETAConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveETAConfig(config: ETAConfig) {
+    dataStore.edit { it[etaConfigKey] = json.encodeToString(config) }
 }
 
 // --- TimeConfig ---

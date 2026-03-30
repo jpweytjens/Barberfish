@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
@@ -42,7 +43,7 @@ class LapAvgHRField(private val karooSystem: KarooSystemService) :
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         combine(
-                context.streamHRFieldConfig(),
+                context.streamHRFieldConfig(HRFieldKind.LAP_AVG),
                 karooSystem.streamUserProfile(),
                 context.streamZoneConfig(),
             ) { cfg, profile, zones ->
@@ -59,7 +60,7 @@ class LapAvgHRField(private val karooSystem: KarooSystemService) :
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(
-                context.streamHRFieldConfig(),
+                context.streamHRFieldConfig(HRFieldKind.LAP_AVG),
                 karooSystem.streamUserProfile(),
                 context.streamZoneConfig(),
             ) { cfg, profile, zones ->

@@ -123,12 +123,14 @@ import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
+import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
@@ -140,6 +142,7 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
@@ -152,6 +155,7 @@ import com.jpweytjens.barberfish.extension.savePowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
+import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
@@ -201,6 +205,9 @@ class MainActivity : ComponentActivity() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
+        var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
+        var lapAvgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
+        var lastLapAvgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
         var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
         var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
@@ -211,6 +218,7 @@ class MainActivity : ComponentActivity() {
         var avgTotalConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
+        var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
         var userProfile by remember {
             mutableStateOf(
@@ -241,6 +249,9 @@ class MainActivity : ComponentActivity() {
             launch { streamHUDConfig().collect { hudConfig = it } }
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
             launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
+            launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
+            launch { streamHRFieldConfig(HRFieldKind.LAP_AVG).collect { lapAvgHrFieldConfig = it } }
+            launch { streamHRFieldConfig(HRFieldKind.LAST_LAP_AVG).collect { lastLapAvgHrFieldConfig = it } }
             launch { streamSpeedFieldConfig().collect { speedFieldConfig = it } }
             launch { streamCadenceFieldConfig().collect { cadenceFieldConfig = it } }
             launch { streamAvgPowerFieldConfig().collect { avgPowerFieldConfig = it } }
@@ -251,6 +262,7 @@ class MainActivity : ComponentActivity() {
             launch { streamAvgSpeedConfig(includePaused = true).collect { avgTotalConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
             launch { streamTimeConfig().collect { timeConfig = it } }
+            launch { streamETAConfig().collect { etaConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
@@ -286,14 +298,14 @@ class MainActivity : ComponentActivity() {
                 val hrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
                     HRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
                 }
-                val avgHrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
-                    AvgHRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                val avgHrPreviewStates = remember(avgHrFieldConfig, userProfile, zoneConfig) {
+                    AvgHRField.previewStates(avgHrFieldConfig, userProfile, zoneConfig)
                 }
-                val lapAvgHrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
-                    LapAvgHRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                val lapAvgHrPreviewStates = remember(lapAvgHrFieldConfig, userProfile, zoneConfig) {
+                    LapAvgHRField.previewStates(lapAvgHrFieldConfig, userProfile, zoneConfig)
                 }
-                val lastLapAvgHrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
-                    LastLapAvgHRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                val lastLapAvgHrPreviewStates = remember(lastLapAvgHrFieldConfig, userProfile, zoneConfig) {
+                    LastLapAvgHRField.previewStates(lastLapAvgHrFieldConfig, userProfile, zoneConfig)
                 }
                 val speedPreviewStates = remember(speedFieldConfig, userProfile) {
                     SpeedField.previewStates(speedFieldConfig, userProfile)
@@ -468,7 +480,7 @@ class MainActivity : ComponentActivity() {
                             selected = hrFieldConfig.colorMode,
                             onSelected = { mode ->
                                 hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                                lifecycleScope.launch { saveHRFieldConfig(config = hrFieldConfig) }
                             },
                         )
                     }
@@ -477,15 +489,15 @@ class MainActivity : ComponentActivity() {
                         title = "AVG HR",
                         description = "Average heart rate with zone coloring.",
                         previewFields = avgHrPreviewStates,
-                        colorMode = hrFieldConfig.colorMode,
+                        colorMode = avgHrFieldConfig.colorMode,
                         selected = selectedDataField == "AVG HR",
                         onSelect = { selectedDataField = if (selectedDataField == "AVG HR") null else "AVG HR" },
                     ) {
                         ZoneColorSlider(
-                            selected = hrFieldConfig.colorMode,
+                            selected = avgHrFieldConfig.colorMode,
                             onSelected = { mode ->
-                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                                avgHrFieldConfig = avgHrFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.AVG, avgHrFieldConfig) }
                             },
                         )
                     }
@@ -494,15 +506,15 @@ class MainActivity : ComponentActivity() {
                         title = "LAP AVG HR",
                         description = "Average heart rate this lap with zone coloring.",
                         previewFields = lapAvgHrPreviewStates,
-                        colorMode = hrFieldConfig.colorMode,
+                        colorMode = lapAvgHrFieldConfig.colorMode,
                         selected = selectedDataField == "LAP AVG HR",
                         onSelect = { selectedDataField = if (selectedDataField == "LAP AVG HR") null else "LAP AVG HR" },
                     ) {
                         ZoneColorSlider(
-                            selected = hrFieldConfig.colorMode,
+                            selected = lapAvgHrFieldConfig.colorMode,
                             onSelected = { mode ->
-                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                                lapAvgHrFieldConfig = lapAvgHrFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.LAP_AVG, lapAvgHrFieldConfig) }
                             },
                         )
                     }
@@ -511,15 +523,15 @@ class MainActivity : ComponentActivity() {
                         title = "LAST LAP AVG HR",
                         description = "Average heart rate from the previous lap with zone coloring.",
                         previewFields = lastLapAvgHrPreviewStates,
-                        colorMode = hrFieldConfig.colorMode,
+                        colorMode = lastLapAvgHrFieldConfig.colorMode,
                         selected = selectedDataField == "LAST LAP AVG HR",
                         onSelect = { selectedDataField = if (selectedDataField == "LAST LAP AVG HR") null else "LAST LAP AVG HR" },
                     ) {
                         ZoneColorSlider(
-                            selected = hrFieldConfig.colorMode,
+                            selected = lastLapAvgHrFieldConfig.colorMode,
                             onSelected = { mode ->
-                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(hrFieldConfig) }
+                                lastLapAvgHrFieldConfig = lastLapAvgHrFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.LAST_LAP_AVG, lastLapAvgHrFieldConfig) }
                             },
                         )
                     }
@@ -672,6 +684,23 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     TimeFormatPreview(format = timeConfig.format)
+
+                    Text("ETA prior speed", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Initial average speed used for ETA until enough ride data is collected. " +
+                            "Set to 0 to disable.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SmoothingSlider(
+                        options = listOf(0.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0),
+                        selected = etaConfig.priorSpeedKph,
+                        label = { if (it == 0.0) "Off" else "${it.toInt()}" },
+                        onSelected = { speed ->
+                            etaConfig = ETAConfig(priorSpeedKph = speed)
+                            lifecycleScope.launch { saveETAConfig(etaConfig) }
+                        },
+                    )
 
                     Text("Zone colors", style = MaterialTheme.typography.titleMedium)
                     ReadabilityToggle(
