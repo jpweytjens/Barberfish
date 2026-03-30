@@ -7,25 +7,13 @@ import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
-import io.hammerhead.karooext.extension.DataTypeImpl
-import io.hammerhead.karooext.internal.ViewEmitter
-import io.hammerhead.karooext.models.UpdateGraphicConfig
 import io.hammerhead.karooext.models.ViewConfig
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.launch
 
 abstract class HUDDataType(extensionId: String, typeId: String) :
-    DataTypeImpl(extensionId, typeId) {
+    BarberfishBase<HUDState>(extensionId, typeId) {
 
-    /** Emits HUDState from real sensor streams. */
-    abstract fun liveFlow(context: Context): Flow<HUDState>
-
-    /** Emits HUDState for the Karoo config-screen preview carousel. */
-    abstract fun previewFlow(context: Context): Flow<HUDState>
+    override fun renderState(state: HUDState, config: ViewConfig, context: Context): RemoteViews =
+        buildHudRemoteViews(state, config, context)
 
     protected fun buildHudRemoteViews(
         state: HUDState,
@@ -79,16 +67,4 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         return rv
     }
 
-    override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        emitter.onNext(UpdateGraphicConfig(showHeader = false))
-        val scope = CoroutineScope(Dispatchers.IO + Job())
-        emitter.setCancellable { scope.cancel() }
-        scope.launch {
-            val flow =
-                if (config.preview) previewFlow(context) else liveFlow(context)
-            flow.collect { state ->
-                emitter.updateView(buildHudRemoteViews(state, config, context))
-            }
-        }
-    }
 }
