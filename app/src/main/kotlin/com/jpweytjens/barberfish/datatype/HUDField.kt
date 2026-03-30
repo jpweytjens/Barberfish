@@ -17,6 +17,7 @@ import com.jpweytjens.barberfish.datatype.shared.KAROO_REJOIN_RED
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
@@ -32,6 +33,7 @@ import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamTimeConfig
@@ -298,6 +300,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 combine(TimeField.secondsFlow(karooSystem, slot.field.kind), context.streamTimeConfig()) { seconds, cfg ->
                     TimeField.toFieldState(seconds, slot.field.kind, cfg.format)
                 }
+            is HUDSlotField.ETA ->
+                combine(context.streamETAConfig(), context.streamTimeConfig()) { etaCfg, timeCfg ->
+                    etaCfg to timeCfg
+                }.flatMapLatest { (etaCfg, timeCfg) ->
+                    ETAField.streamFlow(karooSystem, slot.field.kind, etaCfg, timeCfg.format)
+                }
         }
 
     companion object {
@@ -338,6 +346,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
                 is HUDSlotField.Time ->
                     TimeField.previewStates(timeCfg, field.kind)
+                is HUDSlotField.ETA ->
+                    ETAField.previewStates(field.kind, timeCfg.format)
             }
             val l = slot(hudConfig.leftSlot)
             val m = slot(hudConfig.middleSlot)

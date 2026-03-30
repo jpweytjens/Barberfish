@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.HUDField
+import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -352,6 +353,7 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.Grade -> {}
                 is HUDSlotField.Time -> {}
+                is HUDSlotField.ETA -> {}
             }
             if (slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower ||
                 slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
@@ -386,6 +388,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.Grade -> "Grade"
             is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
+            is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
         }
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -429,7 +432,9 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                     "Last lap time" to HUDSlotField.Time(TimeKind.LAST_LAP),
                 ),
                 "Navigation" to listOf(
-                    "To destination" to HUDSlotField.Time(TimeKind.TIME_TO_DESTINATION),
+                    "Remaining ride time" to HUDSlotField.ETA(ETAKind.REMAINING_RIDE_TIME),
+                    "To destination" to HUDSlotField.ETA(ETAKind.TIME_TO_DESTINATION),
+                    "ETA" to HUDSlotField.ETA(ETAKind.TIME_OF_ARRIVAL),
                 ),
                 "Daylight" to listOf(
                     "Sunrise" to HUDSlotField.Time(TimeKind.TIME_TO_SUNRISE),
