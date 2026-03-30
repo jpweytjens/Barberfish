@@ -11,6 +11,7 @@ import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
+import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
@@ -63,11 +64,10 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             val label =
                 if (smoothing == SpeedSmoothingStream.S0) "Speed"
                 else "${smoothing.label} Speed"
+            state.toErrorFieldState(label)?.let { return it }
             val raw =
-                (state as? StreamState.Streaming)
-                    ?.dataPoint
-                    ?.values
-                    ?.get(smoothing.fieldId) ?: return FieldState.unavailable(label)
+                (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
+                    ?: return FieldState.unavailable(label)
             val converted = ConvertType.SPEED.apply(raw, profile)
             return FieldState(
                 "%.1f".format(converted),
