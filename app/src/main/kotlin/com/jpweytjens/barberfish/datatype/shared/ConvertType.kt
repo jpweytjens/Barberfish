@@ -46,12 +46,14 @@ enum class ConvertType {
         when (this) {
             SPEED ->
                 when (profile.preferredUnit.distance) {
-                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> metricValue * 0.621371
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL ->
+                        Math.round(metricValue * 0.621371 * 100.0) / 100.0
                     else -> metricValue
                 }
             DISTANCE ->
                 when (profile.preferredUnit.distance) {
-                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> metricValue * 0.621371
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL ->
+                        Math.round(metricValue * 0.621371 * 100.0) / 100.0
                     else -> metricValue
                 }
             else -> metricValue
@@ -62,12 +64,14 @@ enum class ConvertType {
         when (this) {
             SPEED ->
                 when (profile.preferredUnit.distance) {
-                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> displayValue / 0.621371
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL ->
+                        Math.round(displayValue / 0.621371 * 100.0) / 100.0
                     else -> displayValue
                 }
             DISTANCE ->
                 when (profile.preferredUnit.distance) {
-                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> displayValue / 0.621371
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL ->
+                        Math.round(displayValue / 0.621371 * 100.0) / 100.0
                     else -> displayValue
                 }
             else -> displayValue
