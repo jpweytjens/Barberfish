@@ -690,7 +690,7 @@ class MainActivity : ComponentActivity() {
 
                     Text("ETA prior speed", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Initial average speed used for ETA until enough ride data is collected. " +
+                        "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
                             "Set to 0 to disable.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -698,7 +698,10 @@ class MainActivity : ComponentActivity() {
                     SmoothingSlider(
                         options = listOf(0.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0),
                         selected = etaConfig.priorSpeedKph,
-                        label = { if (it == 0.0) "Off" else "${it.toInt()}" },
+                        label = { kph ->
+                            if (kph == 0.0) "Off"
+                            else "${ConvertType.SPEED.toDisplay(kph, userProfile).toInt()}"
+                        },
                         onSelected = { speed ->
                             etaConfig = ETAConfig(priorSpeedKph = speed)
                             lifecycleScope.launch { saveETAConfig(etaConfig) }
