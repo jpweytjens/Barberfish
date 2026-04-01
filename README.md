@@ -101,7 +101,12 @@ When a route is loaded on your Karoo, the preview in the field picker shows your
 - Power (Instant, 3s, 5s, 10s, 30s, 20m, 1h smoothing)
 - Avg Power
 - Normalized Power
-- Heart rate
+- Lap Power
+- Last Lap Power
+- Heart Rate
+- Avg Heart Rate
+- Lap Avg Heart Rate
+- Last Lap Avg Heart Rate
 
 ### Speed
 
@@ -122,10 +127,16 @@ When a route is loaded on your Karoo, the preview in the field picker shows your
 - Elapsed time
 - Moving time
 - Paused time
+- Lap Time
+- Last Lap Time
 
-### Navigation
+### Navigation & ETA
 
 - Time to destination
+- Remaining ride time
+- Time of arrival
+
+ETA estimation uses [DEWMA](https://github.com/jpweytjens/godot) (Double Exponentially Weighted Moving Average). See [Godot](https://github.com/jpweytjens/godot) for the ongoing work toward a gradient-aware, forward-looking ETA.
 
 ### Daylight
 
@@ -166,14 +177,14 @@ Racing an event with a target average? Set a single threshold at your goal pace 
 
 ## Roadmap
 
-Ideas that may or may not be implemented
+### v3.0 (in progress)
+- Karoo 2 support
+- Imperial unit support (config UI labels, sparkline distances)
 
-- Day mode support
-  fields are currently only tested in night mode; day mode rendering needs verification and adjustments
-- ETA data field
-   estimated time of arrival at destination, gradient- and paused-time aware for more accurate predictions on hilly routes
-- Workout target field
-   continuous deviation from the workout target (power, HR, pace) rather than the native discrete below/on target/above states; zone coloring reflects how far off target you are, not just which side you're on
+### v4.0 (planned)
+- Day mode support — fields are currently only tested in night mode; needs verification and adjustments for day mode rendering
+- Gradient-aware forward-looking ETA via [Godot](https://github.com/jpweytjens/godot) — replacing the current DEWMA estimator with terrain-aware arrival predictions
+- Workout target field — continuous deviation from the workout target (power, HR, pace) rather than the native discrete below/on target/above states; zone coloring reflects how far off target you are, not just which side you're on
 
 ## Compatibility
 
