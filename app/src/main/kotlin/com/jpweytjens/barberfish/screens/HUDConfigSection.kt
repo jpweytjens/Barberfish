@@ -47,6 +47,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import androidx.compose.ui.platform.LocalContext
@@ -137,6 +138,7 @@ internal fun HUDConfigSection(
     SparklineCard(
         config = hudConfig.sparkline,
         palette = zoneConfig.gradePalette,
+        profile = profile,
         onUpdate = { onUpdate(hudConfig.copy(sparkline = it)) },
     )
 }
@@ -510,6 +512,7 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 private fun SparklineCard(
     config: SparklineConfig,
     palette: GradePalette,
+    profile: UserProfile,
     onUpdate: (SparklineConfig) -> Unit,
 ) {
     Column(
@@ -531,7 +534,10 @@ private fun SparklineCard(
             Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(
-                options = listOf(5 to "5 km", 10 to "10 km", 20 to "20 km"),
+                options = listOf(5, 10, 20).map { km ->
+                    val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                    km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+                },
                 selected = config.lookaheadKm,
                 onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
             )

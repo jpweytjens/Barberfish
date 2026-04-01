@@ -8,6 +8,7 @@ import android.view.View
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.R
 import androidx.compose.ui.graphics.toArgb
+import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
@@ -160,7 +161,9 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
                             rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
                             rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
-                            rv.setTextViewText(R.id.hud_transition_text, "${transitionKm}km")
+                            val displayDist = ConvertType.DISTANCE.toDisplay(transitionKm.toDouble(), hudState.profile).toInt()
+                            val distUnit = ConvertType.DISTANCE.unit(hudState.profile)
+                            rv.setTextViewText(R.id.hud_transition_text, "$displayDist$distUnit")
                             rv.setInt(R.id.hud_transition_icon, "setColorFilter", Color.WHITE)
                         }
                         bitmap != null -> {
@@ -213,6 +216,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         middle, cfg.middleSlot.colorMode,
                         right, cfg.rightSlot.colorMode,
                         fourth, cfg.fourthSlot.colorMode,
+                        profile,
                     )
                 }
             }
@@ -362,6 +366,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     middleSlot = m[i], middleColorMode = hudConfig.middleSlot.colorMode,
                     rightSlot = r[i],  rightColorMode = hudConfig.rightSlot.colorMode,
                     fourthSlot = f[i], fourthColorMode = hudConfig.fourthSlot.colorMode,
+                    profile = profile,
                 )
             }
         }
