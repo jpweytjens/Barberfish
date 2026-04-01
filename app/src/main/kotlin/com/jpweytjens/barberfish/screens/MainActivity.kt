@@ -1530,7 +1530,7 @@ internal fun AvgSpeedThresholdControls(
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "RANGE BELOW (%)",
+                "UNDER (%)",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextDark,
@@ -1542,7 +1542,7 @@ internal fun AvgSpeedThresholdControls(
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "RANGE ABOVE (%)",
+                "OVER (%)",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextDark,
