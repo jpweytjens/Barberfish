@@ -70,6 +70,15 @@ Always convert before display — never treat raw values as display-ready.
 Special case: `TIME_OF_ARRIVAL` delivers milliseconds since midnight (not epoch).
 Divide by 1000, then take modulo 86400 to get seconds since midnight.
 
+Units are always base SI regardless of the user's preferred unit setting. The extension
+is responsible for converting to km/h or mph, km or mi, etc. based on
+`UserProfile.preferredUnit`.
+
+Tentative: native Karoo field previews appear to ignore the unit preference — they show
+the same (metric-looking) demo values in both metric and imperial mode. Barberfish
+previews do convert because `previewFlow()` reads `streamUserProfile()`. To be confirmed
+with an actual ride comparing native vs Barberfish fields in imperial mode.
+
 ---
 
 ## Preview update rate floor
