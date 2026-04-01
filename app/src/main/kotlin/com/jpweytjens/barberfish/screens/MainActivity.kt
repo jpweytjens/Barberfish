@@ -247,6 +247,7 @@ class MainActivity : ComponentActivity() {
         var fieldsExpanded by remember { mutableStateOf(false) }
         var thresholdsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
+        var etaExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
@@ -675,6 +676,30 @@ class MainActivity : ComponentActivity() {
                 } // end Speed Thresholds
 
                 CollapsibleSection(
+                    title = "ETA",
+                    description = "Configure estimated time of arrival fields",
+                    icon = R.drawable.ic_time_to_dest,
+                    expanded = etaExpanded,
+                    onToggle = { etaExpanded = !etaExpanded },
+                ) {
+                    Text("Prior speed", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
+                            "Set to 0 to disable.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ETAPriorSpeedInput(
+                        priorSpeedKph = etaConfig.priorSpeedKph,
+                        profile = userProfile,
+                        onValueChange = { kph ->
+                            etaConfig = ETAConfig(priorSpeedKph = kph)
+                            lifecycleScope.launch { saveETAConfig(etaConfig) }
+                        },
+                    )
+                }
+
+                CollapsibleSection(
                     title = "Global",
                     description = "Color palettes and time format shared across all data fields",
                     icon = R.drawable.ic_section_global,
@@ -690,26 +715,6 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     TimeFormatPreview(format = timeConfig.format)
-
-                    Text("ETA prior speed", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
-                            "Set to 0 to disable.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    SmoothingSlider(
-                        options = listOf(0.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0),
-                        selected = etaConfig.priorSpeedKph,
-                        label = { kph ->
-                            if (kph == 0.0) "Off"
-                            else "${ConvertType.SPEED.toDisplay(kph, userProfile).toInt()}"
-                        },
-                        onSelected = { speed ->
-                            etaConfig = ETAConfig(priorSpeedKph = speed)
-                            lifecycleScope.launch { saveETAConfig(etaConfig) }
-                        },
-                    )
 
                     Text("Zone colors", style = MaterialTheme.typography.titleMedium)
                     ReadabilityToggle(
@@ -1323,6 +1328,36 @@ private fun TimeFormatPreview(format: TimeFormat) {
             textAlign = TextAlign.Center,
         )
     }
+}
+
+@Composable
+private fun ETAPriorSpeedInput(
+    priorSpeedKph: Double,
+    profile: UserProfile,
+    onValueChange: (Double) -> Unit,
+) {
+    val displayValue = ConvertType.SPEED.toDisplay(priorSpeedKph, profile)
+    var text by remember(priorSpeedKph) { mutableStateOf(if (priorSpeedKph == 0.0) "" else displayValue.toString()) }
+    val speedUnit = ConvertType.SPEED.unit(profile)
+    val focusManager = LocalFocusManager.current
+    val commit = {
+        val entered = text.toDoubleOrNull() ?: 0.0
+        onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
+    }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { input -> text = input },
+        placeholder = {
+            Text(
+                "Speed ($speedUnit)",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable
