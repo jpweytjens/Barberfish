@@ -162,8 +162,24 @@ class AvgSpeedField(
             profile: UserProfile,
             includePaused: Boolean,
         ): List<FieldState> {
-            // values in m/s: 15, 22, 26, 28, 32, 40 km/h
-            val rawValues = listOf(4.17, 6.11, 7.22, 7.78, 8.89, 11.11)
+            // Generate values around the configured threshold so color transitions are visible.
+            // Offsets are percentages of the threshold; the range params are typically 10%.
+            val centerKph = when (cfg.mode) {
+                SpeedThresholdMode.TARGET ->
+                    if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
+                SpeedThresholdMode.MIN_MAX -> {
+                    val min = cfg.minKph
+                    val max = cfg.maxKph
+                    when {
+                        min != null && max != null -> (min + max) / 2.0
+                        min != null -> min
+                        max != null -> max
+                        else -> 25.0
+                    }
+                }
+            }
+            val offsets = listOf(-0.15, -0.08, -0.03, 0.03, 0.08, 0.15)
+            val rawValues = offsets.map { pct -> centerKph * (1.0 + pct) / 3.6 }
             return rawValues.map { rawMs -> avgSpeedFieldState(rawMs, cfg, profile, includePaused) }
         }
     }
