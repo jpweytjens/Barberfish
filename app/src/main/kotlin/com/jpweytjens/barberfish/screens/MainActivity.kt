@@ -677,7 +677,7 @@ class MainActivity : ComponentActivity() {
 
                 CollapsibleSection(
                     title = "ETA",
-                    description = "Configure estimated time of arrival fields",
+                    description = "Configure time of arrival estimation",
                     icon = R.drawable.ic_time_to_dest,
                     expanded = etaExpanded,
                     onToggle = { etaExpanded = !etaExpanded },
