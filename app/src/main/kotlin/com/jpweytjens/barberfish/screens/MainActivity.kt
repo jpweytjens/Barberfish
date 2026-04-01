@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuItem
@@ -58,9 +59,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
@@ -1331,6 +1334,7 @@ private fun ThresholdInput(
     val displayValue = ConvertType.SPEED.toDisplay(value, profile)
     var text by remember(value) { mutableStateOf(if (value == 0.0) "" else displayValue.toString()) }
     val speedUnit = ConvertType.SPEED.unit(profile)
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = text,
         onValueChange = { input ->
@@ -1345,7 +1349,8 @@ private fun ThresholdInput(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -1353,6 +1358,7 @@ private fun ThresholdInput(
 @Composable
 private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
     var text by remember(value) { mutableStateOf(value.toString()) }
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = text,
         onValueChange = { input ->
@@ -1362,7 +1368,8 @@ private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
         placeholder = {
             Text("Range (%)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -1376,6 +1383,7 @@ private fun NullableThresholdInput(
 ) {
     val displayValue = value?.let { ConvertType.SPEED.toDisplay(it, profile) }
     var text by remember(value) { mutableStateOf(displayValue?.toString() ?: "") }
+    val focusManager = LocalFocusManager.current
     OutlinedTextField(
         value = text,
         onValueChange = { input ->
@@ -1385,7 +1393,8 @@ private fun NullableThresholdInput(
         placeholder = {
             Text(placeholder, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
         modifier = Modifier.fillMaxWidth(),
     )
 }
