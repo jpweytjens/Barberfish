@@ -121,6 +121,7 @@ internal fun HUDConfigSection(
     if (slot != null) {
         HUDSlotFieldCard(
             slot = slot,
+            profile = profile,
             onUpdate = { updated ->
                 onUpdate(
                     when (selectedSlot) {
@@ -314,6 +315,7 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
 @Composable
 private fun HUDSlotFieldCard(
     slot: HUDSlotConfig,
+    profile: UserProfile,
     onUpdate: (HUDSlotConfig) -> Unit,
 ) {
     Column(
@@ -348,6 +350,7 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
                 is HUDSlotField.AvgSpeed -> AvgSpeedThresholdControls(
                     config = slot.avgSpeedConfig,
+                    profile = profile,
                     onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
                 )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)

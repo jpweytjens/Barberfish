@@ -83,6 +83,7 @@ import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.formatTime
+import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -639,6 +640,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         AvgSpeedThresholdControls(
                             config = avgTotalConfig,
+                            profile = userProfile,
                             onConfigChange = { cfg ->
                                 avgTotalConfig = cfg
                                 lifecycleScope.launch {
@@ -658,6 +660,7 @@ class MainActivity : ComponentActivity() {
                     ) {
                         AvgSpeedThresholdControls(
                             config = avgMovingConfig,
+                            profile = userProfile,
                             onConfigChange = { cfg ->
                                 avgMovingConfig = cfg
                                 lifecycleScope.launch {
@@ -1317,17 +1320,24 @@ private fun TimeFormatPreview(format: TimeFormat) {
 }
 
 @Composable
-private fun ThresholdInput(value: Double, onValueChange: (Double) -> Unit) {
-    var text by remember(value) { mutableStateOf(if (value == 0.0) "" else value.toString()) }
+private fun ThresholdInput(
+    value: Double,
+    profile: UserProfile,
+    onValueChange: (Double) -> Unit,
+) {
+    val displayValue = ConvertType.SPEED.toDisplay(value, profile)
+    var text by remember(value) { mutableStateOf(if (value == 0.0) "" else displayValue.toString()) }
+    val speedUnit = ConvertType.SPEED.unit(profile)
     OutlinedTextField(
         value = text,
         onValueChange = { input ->
             text = input
-            onValueChange(input.toDoubleOrNull() ?: 0.0)
+            val entered = input.toDoubleOrNull() ?: 0.0
+            onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
         },
         placeholder = {
             Text(
-                "Target (km/h)",
+                "Target ($speedUnit)",
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1358,14 +1368,16 @@ private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
 private fun NullableThresholdInput(
     value: Double?,
     placeholder: String,
+    profile: UserProfile,
     onValueChange: (Double?) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value?.toString() ?: "") }
+    val displayValue = value?.let { ConvertType.SPEED.toDisplay(it, profile) }
+    var text by remember(value) { mutableStateOf(displayValue?.toString() ?: "") }
     OutlinedTextField(
         value = text,
         onValueChange = { input ->
             text = input
-            onValueChange(input.toDoubleOrNull())
+            onValueChange(input.toDoubleOrNull()?.let { ConvertType.SPEED.fromDisplay(it, profile) })
         },
         placeholder = {
             Text(placeholder, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1378,6 +1390,7 @@ private fun NullableThresholdInput(
 @Composable
 internal fun AvgSpeedThresholdControls(
     config: AvgSpeedConfig,
+    profile: UserProfile,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
     val modeOptions =
@@ -1428,38 +1441,42 @@ internal fun AvgSpeedThresholdControls(
             }
         }
     }
+    val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
     if (config.mode == SpeedThresholdMode.TARGET) {
         Text(
-            "TARGET (KM/H)",
+            "TARGET ($speedUnit)",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = TextDark,
         )
         ThresholdInput(
             value = config.thresholdKph,
+            profile = profile,
             onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
         )
     } else {
         Text(
-            "MIN SPEED (KM/H)",
+            "MIN SPEED ($speedUnit)",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = TextDark,
         )
         NullableThresholdInput(
             value = config.minKph,
-            placeholder = "Min (km/h)",
+            placeholder = "Min (${ConvertType.SPEED.unit(profile)})",
+            profile = profile,
             onValueChange = { onConfigChange(config.copy(minKph = it)) },
         )
         Text(
-            "MAX SPEED (KM/H)",
+            "MAX SPEED ($speedUnit)",
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = TextDark,
         )
         NullableThresholdInput(
             value = config.maxKph,
-            placeholder = "Max (km/h)",
+            placeholder = "Max (${ConvertType.SPEED.unit(profile)})",
+            profile = profile,
             onValueChange = { onConfigChange(config.copy(maxKph = it)) },
         )
     }
