@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.0
+
+### Elevation sparkline
+
+A tiny mountain profile now lives below your HUD. Past on the left, current suffering in the middle, upcoming elevation on the right. Tap to look 5, 10, or 20 km ahead. When a route is loaded, the field picker preview shows your actual route.
+
+### New fields
+
+(Last) Lap Power, (Last) Lap Time, (Last) Lap HR, Average HR. The field list was starting to feel like it only cared about your current moment. Now it also cares about your recent moments, and your average moments.
+
+### ETA
+
+Three new fields: remaining ride time, time to destination, and clock-on-the-wall arrival time. Powered by [DEWMA](https://github.com/jpweytjens/godot), because "assume you'll hold this exact watt for the next 80 km" was optimistic at best.
+
+### The elapsed/riding time thing
+
+Elapsed time and riding time were swapped. Somebody named the moving-time field `ELAPSED_TIME` and the total-time field `RIDE_TIME` and I got confused.
+
+### Zone colors
+
+Zone colors are now legible on the Karoo screen. Previously they were colorful. There is a difference. Each palette is tuned using [APCA](https://apcacontrast.com/) contrast checking and [HSLuv](https://www.hsluv.org/) lightness correction. A new HSLuv palette was designed from scratch to not need correction in the first place. Zwift grade palette added for your indoor climb sessions.
+
+### Config screen
+
+Tap-to-expand cards, section icons, grouped dropdowns, live previews. It now matches the Karoo UI even better.
+
+### Under the hood
+
+Unified rendering pipeline, glyph-measured font sizing, shared base types. The kind of work that should make the next features take at least half as long.
+
 ## 2.0
 - Configurable HUD slots  
 each column independently selectable from Speed, HR, Power, Cadence, Avg Power, Normalized Power, or Grade; per-slot zone color mode
