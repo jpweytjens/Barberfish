@@ -32,14 +32,13 @@ internal fun avgSpeedFieldState(
     includePaused: Boolean,
 ): FieldState {
     val converted = ConvertType.SPEED.apply(rawMs, profile)
-    val imperial = profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL
     val color =
         when (cfg.mode) {
             SpeedThresholdMode.TARGET -> {
                 if (cfg.thresholdKph <= 0.0) {
                     FieldColor.Default
                 } else {
-                    val thresh = if (imperial) cfg.thresholdKph * 0.621371 else cfg.thresholdKph
+                    val thresh = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile)
                     val rangePercent =
                         if (converted >= thresh) cfg.rangePercentAbove
                         else cfg.rangePercentBelow
@@ -51,8 +50,8 @@ internal fun avgSpeedFieldState(
                 }
             }
             SpeedThresholdMode.MIN_MAX -> {
-                val min = cfg.minKph?.let { if (imperial) it * 0.621371 else it }
-                val max = cfg.maxKph?.let { if (imperial) it * 0.621371 else it }
+                val min = cfg.minKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
+                val max = cfg.maxKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
                 if (min == null && max == null) {
                     FieldColor.Default
                 } else {

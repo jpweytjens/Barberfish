@@ -41,6 +41,38 @@ enum class ConvertType {
                 }
         }
 
+    /** Convert a stored metric display value to the user's display units (km/h → mph, km → mi). */
+    fun toDisplay(metricValue: Double, profile: UserProfile): Double =
+        when (this) {
+            SPEED ->
+                when (profile.preferredUnit.distance) {
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> metricValue * 0.621371
+                    else -> metricValue
+                }
+            DISTANCE ->
+                when (profile.preferredUnit.distance) {
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> metricValue * 0.621371
+                    else -> metricValue
+                }
+            else -> metricValue
+        }
+
+    /** Convert a user-entered display value back to metric (mph → km/h, mi → km). */
+    fun fromDisplay(displayValue: Double, profile: UserProfile): Double =
+        when (this) {
+            SPEED ->
+                when (profile.preferredUnit.distance) {
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> displayValue / 0.621371
+                    else -> displayValue
+                }
+            DISTANCE ->
+                when (profile.preferredUnit.distance) {
+                    UserProfile.PreferredUnit.UnitType.IMPERIAL -> displayValue / 0.621371
+                    else -> displayValue
+                }
+            else -> displayValue
+        }
+
     fun unit(profile: UserProfile): String =
         when (this) {
             NONE -> ""
