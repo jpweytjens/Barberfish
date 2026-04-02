@@ -24,6 +24,23 @@ private val json = Json {
     encodeDefaults = true
 }
 
+private inline fun <reified T> Context.streamConfig(
+    key: Preferences.Key<String>,
+    default: T,
+): Flow<T> =
+    dataStore.data
+        .map { prefs ->
+            prefs[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() } ?: default
+        }
+        .distinctUntilChanged()
+
+private suspend inline fun <reified T> Context.saveConfig(
+    key: Preferences.Key<String>,
+    config: T,
+) {
+    dataStore.edit { it[key] = json.encodeToString(config) }
+}
+
 private val threeColumnConfigKey = stringPreferencesKey("three_column_config")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
@@ -103,17 +120,10 @@ data class HUDConfig(
 )
 
 fun Context.streamHUDConfig(): Flow<HUDConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[threeColumnConfigKey]?.let {
-                runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
-            } ?: HUDConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(threeColumnConfigKey, HUDConfig())
 
-suspend fun Context.saveHUDConfig(config: HUDConfig) {
-    dataStore.edit { it[threeColumnConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveHUDConfig(config: HUDConfig) =
+    saveConfig(threeColumnConfigKey, config)
 
 // --- PowerFieldConfig ---
 
@@ -137,17 +147,10 @@ data class PowerFieldConfig(
 private val powerFieldConfigKey = stringPreferencesKey("power_field_config")
 
 fun Context.streamPowerFieldConfig(): Flow<PowerFieldConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[powerFieldConfigKey]?.let {
-                runCatching { json.decodeFromString<PowerFieldConfig>(it) }.getOrNull()
-            } ?: PowerFieldConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(powerFieldConfigKey, PowerFieldConfig())
 
-suspend fun Context.savePowerFieldConfig(config: PowerFieldConfig) {
-    dataStore.edit { it[powerFieldConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.savePowerFieldConfig(config: PowerFieldConfig) =
+    saveConfig(powerFieldConfigKey, config)
 
 // --- HRFieldConfig ---
 
@@ -166,17 +169,10 @@ enum class HRFieldKind(internal val key: Preferences.Key<String>) {
 }
 
 fun Context.streamHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR): Flow<HRFieldConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[kind.key]?.let {
-                runCatching { json.decodeFromString<HRFieldConfig>(it) }.getOrNull()
-            } ?: HRFieldConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(kind.key, HRFieldConfig())
 
-suspend fun Context.saveHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR, config: HRFieldConfig) {
-    dataStore.edit { it[kind.key] = json.encodeToString(config) }
-}
+suspend fun Context.saveHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR, config: HRFieldConfig) =
+    saveConfig(kind.key, config)
 
 // --- SpeedFieldConfig ---
 
@@ -194,17 +190,10 @@ data class SpeedFieldConfig(val smoothing: SpeedSmoothingStream = SpeedSmoothing
 private val speedFieldConfigKey = stringPreferencesKey("speed_field_config")
 
 fun Context.streamSpeedFieldConfig(): Flow<SpeedFieldConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[speedFieldConfigKey]?.let {
-                runCatching { json.decodeFromString<SpeedFieldConfig>(it) }.getOrNull()
-            } ?: SpeedFieldConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(speedFieldConfigKey, SpeedFieldConfig())
 
-suspend fun Context.saveSpeedFieldConfig(config: SpeedFieldConfig) {
-    dataStore.edit { it[speedFieldConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveSpeedFieldConfig(config: SpeedFieldConfig) =
+    saveConfig(speedFieldConfigKey, config)
 
 // --- AvgSpeedConfig ---
 
@@ -228,21 +217,17 @@ data class AvgSpeedConfig(
     val maxKph: Double? = null,
 )
 
-fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedConfig> {
-    val key = if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey
-    return dataStore.data
-        .map { prefs ->
-            prefs[key]?.let {
-                runCatching { json.decodeFromString<AvgSpeedConfig>(it) }.getOrNull()
-            } ?: AvgSpeedConfig()
-        }
-        .distinctUntilChanged()
-}
+fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedConfig> =
+    streamConfig(
+        if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey,
+        AvgSpeedConfig(),
+    )
 
-suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedConfig) {
-    val key = if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey
-    dataStore.edit { it[key] = json.encodeToString(config) }
-}
+suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedConfig) =
+    saveConfig(
+        if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey,
+        config,
+    )
 
 // --- ZoneConfig ---
 
@@ -255,17 +240,10 @@ data class ZoneConfig(
 )
 
 fun Context.streamZoneConfig(): Flow<ZoneConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[zoneConfigKey]?.let {
-                runCatching { json.decodeFromString<ZoneConfig>(it) }.getOrNull()
-            } ?: ZoneConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(zoneConfigKey, ZoneConfig())
 
-suspend fun Context.saveZoneConfig(config: ZoneConfig) {
-    dataStore.edit { it[zoneConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveZoneConfig(config: ZoneConfig) =
+    saveConfig(zoneConfigKey, config)
 
 // --- CadenceFieldConfig ---
 
@@ -285,51 +263,30 @@ enum class CadenceSmoothingStream(val label: String, val typeId: String, val fie
 data class CadenceFieldConfig(val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0)
 
 fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[cadenceFieldConfigKey]?.let {
-                runCatching { json.decodeFromString<CadenceFieldConfig>(it) }.getOrNull()
-            } ?: CadenceFieldConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(cadenceFieldConfigKey, CadenceFieldConfig())
 
-suspend fun Context.saveCadenceFieldConfig(config: CadenceFieldConfig) {
-    dataStore.edit { it[cadenceFieldConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveCadenceFieldConfig(config: CadenceFieldConfig) =
+    saveConfig(cadenceFieldConfigKey, config)
 
 // --- AvgPowerFieldConfig ---
 
 @Serializable data class AvgPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 fun Context.streamAvgPowerFieldConfig(): Flow<AvgPowerFieldConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[avgPowerFieldConfigKey]?.let {
-                runCatching { json.decodeFromString<AvgPowerFieldConfig>(it) }.getOrNull()
-            } ?: AvgPowerFieldConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(avgPowerFieldConfigKey, AvgPowerFieldConfig())
 
-suspend fun Context.saveAvgPowerFieldConfig(config: AvgPowerFieldConfig) {
-    dataStore.edit { it[avgPowerFieldConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveAvgPowerFieldConfig(config: AvgPowerFieldConfig) =
+    saveConfig(avgPowerFieldConfigKey, config)
 
 // --- NPFieldConfig ---
 
 @Serializable data class NPFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 fun Context.streamNPFieldConfig(): Flow<NPFieldConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[npFieldConfigKey]?.let {
-                runCatching { json.decodeFromString<NPFieldConfig>(it) }.getOrNull()
-            } ?: NPFieldConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(npFieldConfigKey, NPFieldConfig())
 
-suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) {
-    dataStore.edit { it[npFieldConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) =
+    saveConfig(npFieldConfigKey, config)
 
 // --- LapPowerFieldConfig ---
 
@@ -338,21 +295,17 @@ suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) {
 private val lapPowerFieldConfigKey = stringPreferencesKey("lap_power_field_config")
 private val lastLapPowerFieldConfigKey = stringPreferencesKey("last_lap_power_field_config")
 
-fun Context.streamLapPowerFieldConfig(isLastLap: Boolean): Flow<LapPowerFieldConfig> {
-    val key = if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey
-    return dataStore.data
-        .map { prefs ->
-            prefs[key]?.let {
-                runCatching { json.decodeFromString<LapPowerFieldConfig>(it) }.getOrNull()
-            } ?: LapPowerFieldConfig()
-        }
-        .distinctUntilChanged()
-}
+fun Context.streamLapPowerFieldConfig(isLastLap: Boolean): Flow<LapPowerFieldConfig> =
+    streamConfig(
+        if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey,
+        LapPowerFieldConfig(),
+    )
 
-suspend fun Context.saveLapPowerFieldConfig(isLastLap: Boolean, config: LapPowerFieldConfig) {
-    val key = if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey
-    dataStore.edit { it[key] = json.encodeToString(config) }
-}
+suspend fun Context.saveLapPowerFieldConfig(isLastLap: Boolean, config: LapPowerFieldConfig) =
+    saveConfig(
+        if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey,
+        config,
+    )
 
 // --- GradeFieldConfig ---
 
@@ -368,17 +321,10 @@ enum class GradePalette(val label: String) {
 @Serializable data class GradeFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 fun Context.streamGradeFieldConfig(): Flow<GradeFieldConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[gradeFieldConfigKey]?.let {
-                runCatching { json.decodeFromString<GradeFieldConfig>(it) }.getOrNull()
-            } ?: GradeFieldConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(gradeFieldConfigKey, GradeFieldConfig())
 
-suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) {
-    dataStore.edit { it[gradeFieldConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) =
+    saveConfig(gradeFieldConfigKey, config)
 
 // --- ETAConfig ---
 
@@ -390,17 +336,10 @@ data class ETAConfig(
 private val etaConfigKey = stringPreferencesKey("eta_config")
 
 fun Context.streamETAConfig(): Flow<ETAConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[etaConfigKey]?.let {
-                runCatching { json.decodeFromString<ETAConfig>(it) }.getOrNull()
-            } ?: ETAConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(etaConfigKey, ETAConfig())
 
-suspend fun Context.saveETAConfig(config: ETAConfig) {
-    dataStore.edit { it[etaConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveETAConfig(config: ETAConfig) =
+    saveConfig(etaConfigKey, config)
 
 // --- TimeConfig ---
 
@@ -416,14 +355,7 @@ enum class TimeFormat(val label: String) {
 private val timeConfigKey = stringPreferencesKey("time_config")
 
 fun Context.streamTimeConfig(): Flow<TimeConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[timeConfigKey]?.let {
-                runCatching { json.decodeFromString<TimeConfig>(it) }.getOrNull()
-            } ?: TimeConfig()
-        }
-        .distinctUntilChanged()
+    streamConfig(timeConfigKey, TimeConfig())
 
-suspend fun Context.saveTimeConfig(config: TimeConfig) {
-    dataStore.edit { it[timeConfigKey] = json.encodeToString(config) }
-}
+suspend fun Context.saveTimeConfig(config: TimeConfig) =
+    saveConfig(timeConfigKey, config)
