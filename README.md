@@ -9,46 +9,30 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 ## Description
 
-Barberfish reimplements and enhances a core set of Karoo data fields with features the built-in fields don't offer. A configurable 3- or 4-column HUD shows any combination of speed, heart rate, power, cadence, average power, normalized power, or grade side by side with zone coloring.   
+Barberfish reimplements and enhances a core set of Karoo data fields with features the built-in fields don't offer. A configurable 3- or 4-column HUD shows any combination of speed, heart rate, power, cadence, average power, normalized power, or grade side by side with zone coloring. An optional color-coded elevation sparkline below the HUD shows the terrain profile when a route is loaded.
 
 Zone coloring supports both background-fill and text-color styles across four palettes. Time fields use a consistent, unambiguous format across all durations. Average speed fields support a single target or a min/max range with threshold coloring. All fields are styled to match the native Karoo look and feel. Settings are configured through a Karoo-native config screen with live-updating field previews.
 
 ## Data field enhancements
 
-| Feature             | Default Karoo                                                                                                                                                      | Barberfish                                                                                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HUD                 | Not available                                                                                                                                                      | Configurable 3- or 4-column layout; each slot independently selectable from Speed, HR, Power, Cadence, Avg Power, NP, or Grade with per-slot zone coloring |
-| Elevation sparkline | Not available                                                                                                                                                      | Tufte-inspired strip below the HUD; non-linear zoom around current position; shows recent terrain, immediate climb, and upcoming profile at a glance       |
-| Zone color palettes | Karoo only                                                                                                                                                         | Karoo, Wahoo, Zwift, and Intervals.icu                                                                                                                     |
-| Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                                                                                                              |
-| Grade coloring      | Not available                                                                                                                                                      | Color-coded by road gradient steepness; Karoo, Wahoo, and Garmin palettes                                                                                  |
-| Grade smoothing     | Unknown                                                                                                                                                            | [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) with α=0.15 (~6 s time constant) to reduce noise from GPS elevation changes                    |
-| Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                                                                                                          |
-| Avg speed threshold | Not available                                                                                                                                                      | Configurable single threshold or min/max range with warning bands                                                                                          |
-| Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h 23m 45s`, `1h 23' 45"`, or `01:23:45`                                                                                                     |
-| Duration fields     | [Built-in duration fields](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend)  including total time, riding time, paused time, ... | Reimplemented with Barberfish formatting options                                                                                                           |
+| Feature             | Default Karoo                                                                                                                                                      | Barberfish                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HUD                 | Not available                                                                                                                                                      | 3- or 4-column layout; each slot selectable from the Barberfish data field collection with per-slot zone coloring                                    |
+| Elevation sparkline | Not available                                                                                                                                                      | Color-coded strip below the HUD; only appears when a route is loaded; tap to cycle 5/10/20 km lookahead                                              |
+| Zone color palettes | Karoo only                                                                                                                                                         | Karoo, Wahoo, Zwift, and Intervals.icu                                                                                                               |
+| Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                                                                                                        |
+| Grade coloring      | Not available                                                                                                                                                      | Color-coded by road gradient steepness; Karoo, Wahoo, and Garmin palettes                                                                            |
+| Grade smoothing     | Unknown                                                                                                                                                            | [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) with α=0.15 (~6 s time constant) to reduce noise from GPS elevation changes              |
+| Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                                                                                                    |
+| Avg speed threshold | Not available                                                                                                                                                      | Configurable single threshold or min/max range with warning bands                                                                                    |
+| Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h23m45s`, `1h23'45"`, or `01:23:45`                                                                                                   |
+| Duration fields     | [Built-in duration fields](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend)  including total time, riding time, paused time, ... | Reimplemented with Barberfish formatting options                                                                                                     |
 
-### Configuration
-
-All field settings are configured in the Barberfish app on your Karoo. Changes update live in the settings and take effect immediately without restarting your ride.
+All field settings are configured in the Barberfish app on your Karoo. Changes update live and take effect immediately without restarting your ride. When a route is loaded, the sparkline preview in the data page configuration shows your actual route rather than a placeholder.
 
 ### Color palettes
 
-The Karoo ride screen uses a dark background (`#1B2D2D`). Palettes from other platforms were designed for white or light backgrounds, so several of their zone colors are too dark to read as text on the Karoo screen. Wahoo's navy Z2 (`#253070`) e.g. is [very hard to read](https://apcacontrast.com/?BG=1b2d2d&TXT=253070&DEV=G4g&BUF=A22).
-
-#### APCA adjustment
-
-Barberfish adjusts each palette using [APCA](https://apcacontrast.com/), the Accessible Perceptual Contrast Algorithm. Colors below Lc 45 (the minimum for large bold text) have their [HSLuv](https://www.hsluv.org/) lightness raised until they pass, keeping the original hue and saturation intact. HSLuv is perceptually uniform, so raising lightness does not shift the apparent hue. Colors that already pass are left unchanged. Readable values are pre-computed via `scripts/apca_hsluv.py`.
-
-APCA correction is most important for the text zone coloring mode, where colored text appears on the fixed dark Karoo background. In background-fill mode the text is always white, and white on a saturated color is generally easier to read than that same color as text on a dark background.
-
-A known limitation: two colors with the same hue but different dark shades can converge to the same readable color, since their distinction was encoded entirely in darkness. The Wahoo and Garmin grade palettes are affected, e.g. their steepest two bands map to the same readable color.
-
-#### HSLuv palette
-
-The [HSLuv](https://www.hsluv.org/) palette is inspired by the perceptually uniform colormaps available in [seaborn](https://seaborn.pydata.org/tutorial/color_palettes.html). It was designed from the start with equidistant lightness steps across all zones such that every color is already readable on the Karoo screen without modification. The hue and saturation were tuned to produce a color progression that follows the Wahoo palette's character from cool grey to green to redish pink.
-
-The HSLuv grade palette uses the same colors as the HSLuv power palette, assigned to grade bands with Garmin-style spacing (seven bands from flat to steep).
+Zone colors from other platforms (Wahoo, Garmin, Zwift, Intervals.icu) are often too dark to read on the Karoo's dark background. Barberfish adjusts each palette using [APCA](https://apcacontrast.com/) contrast checking and [HSLuv](https://www.hsluv.org/) lightness correction to ensure readability. A custom HSLuv palette is included that needs no correction by design. See [docs/color-palettes.md](docs/color-palettes.md) for the full explanation.
 
 ### Zone color palettes
 
@@ -69,6 +53,14 @@ The HSLuv grade palette uses the same colors as the HSLuv power palette, assigne
 | Garmin  | 0–3% · 3–6% · 6–9% · 9–12% · ≥12%                     | ![](docs/palette-grade-garmin.svg) | ![](docs/palette-grade-garmin-readable.svg) |
 | HSLuv   | 0–3% · 3–6% · 6–9% · 9–12% · 12–15% · 15–18% · ≥18%   |                                    | ![](docs/palette-grade-hsluv.svg)           |
 
+### Elevation sparkline
+
+A [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired strip showing recent terrain, the immediate climb, and upcoming profile with non-linear zoom around your current position. Tap to cycle between 5, 10, and 20 km lookahead. For a full, 1:1 elevation chart with POIs, see [RouteGraph](https://github.com/timklge/karoo-routegraph).
+
+### Smoothing
+
+Grade smoothing uses [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) (Exponentially Weighted Moving Average) to reduce noise from elevation sensor jitter. EWMA smooths using your recent observations while giving more weight to the most recent ones. ETA estimation uses [DEWMA](https://github.com/jpweytjens/godot) (Double EWMA), which combines a fast and slow component to account for both short-term changes like the current gradient and longer-term trends like general fatigue. See [Godot](https://github.com/jpweytjens/godot) for the ongoing work toward a gradient-aware, forward-looking ETA.
+
 ### Time formatting
 
 | Format   | Under an hour | Over an hour |
@@ -83,18 +75,7 @@ Complete list of data fields provided by Barberfish.
 
 ### HUD
 
-- HUD
-  configurable 3 or 4 columns; each slot accepts any of the data fields below
-
-#### Elevation sparkline
-
-The HUD includes an optional elevation sparkline, inspired by [Edward Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/).
-
-The sparkline has three sections: the terrain you just rode as reference, the section immediately ahead at and a compressed preview of what's further up the road. The horizontal axis is non-linearly warped to give the most space to the terrain closest to your current position. 
-
-The goal is to capture *perceived* elevation, not a geometrically accurate profile. If you need a full, 1:1 elevation chart with upcoming POIs, [RouteGraph](https://github.com/timklge/karoo-routegraph) is the right tool.
-
-When a route is loaded on your Karoo, the preview in the data page configuration shows your actual route rather than a placeholder, so you can check the climb profile before the ride starts. If no route is loaded, the spacing of the data fields will adjust automatically.
+- HUD (configurable 3 or 4 columns with optional elevation sparkline)
 
 ### Power & Heart Rate
 
@@ -120,7 +101,7 @@ When a route is loaded on your Karoo, the preview in the data page configuration
 
 ### Grade
 
-- Grade ([EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) smoothing, α=0.15, ~6 s time constant)
+- Grade (EWMA smoothed)
 
 ### Time
 
@@ -135,8 +116,6 @@ When a route is loaded on your Karoo, the preview in the data page configuration
 - Time to destination
 - Remaining ride time
 - Time of arrival
-
-ETA estimation uses [DEWMA](https://github.com/jpweytjens/godot) (Double Exponentially Weighted Moving Average). See [Godot](https://github.com/jpweytjens/godot) for the ongoing work toward a gradient-aware, forward-looking ETA.
 
 ### Daylight
 
