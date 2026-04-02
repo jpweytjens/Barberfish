@@ -8,7 +8,7 @@ A tiny mountain profile now lives below your HUD. Past on the left, current suff
 
 ### New fields
 
-(Last) Lap Power, (Last) Lap Time, (Last) Lap HR, Average HR. The field list was starting to feel like it only cared about your current moment. Now it also cares about your recent moments, and your average moments.
+(Last) Lap Power, (Last) Lap Time, (Last) Lap HR, Average HR. The field list was starting to feel like it only cared about your current moment. Now it also cares about your recent and average moments.
 
 ### ETA
 
@@ -29,6 +29,14 @@ Tap-to-expand cards, section icons, grouped dropdowns, live previews. It now mat
 ### Under the hood
 
 Unified rendering pipeline, glyph-measured font sizing, shared base types. The kind of work that should make the next features take at least half as long.
+
+### Karoo 2 support
+
+Barberfish now runs on the Karoo 2. The old dog gets the new tricks.
+
+### Imperial units
+
+Data fields and the config UI now respect your Karoo's unit preference. Barberfish speaks both imperial and metric.
 
 ## 2.0
 - Configurable HUD slots  
