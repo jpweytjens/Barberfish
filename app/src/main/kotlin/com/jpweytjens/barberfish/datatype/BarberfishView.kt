@@ -21,7 +21,7 @@ import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
-private const val DEBUG_LAYOUT = true
+private const val DEBUG_LAYOUT = false
 
 fun barberfishFieldRemoteViews(
     field: FieldState,
