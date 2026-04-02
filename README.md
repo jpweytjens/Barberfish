@@ -92,9 +92,9 @@ The HUD includes an optional elevation sparkline, inspired by [Edward Tufte](htt
 
 The sparkline has three sections: the terrain you just rode as reference, the section immediately ahead at and a compressed preview of what's further up the road. The horizontal axis is non-linearly warped to give the most space to the terrain closest to your current position. 
 
-The goal is to capture *perceived* elevation, not a geometrically accurate profile. If you need a full, 1:1 elevation chart, [RouteGraph](https://github.com/timklge/karoo-routegraph) is the right tool.
+The goal is to capture *perceived* elevation, not a geometrically accurate profile. If you need a full, 1:1 elevation chart with upcoming POIs, [RouteGraph](https://github.com/timklge/karoo-routegraph) is the right tool.
 
-When a route is loaded on your Karoo, the preview in the field picker shows your actual route rather than a placeholder, so you can check the climb profile before the ride starts. If no route is loaded, the spacing of the data fields will adjust automatically.
+When a route is loaded on your Karoo, the preview in the data page configuration shows your actual route rather than a placeholder, so you can check the climb profile before the ride starts. If no route is loaded, the spacing of the data fields will adjust automatically.
 
 ### Power & Heart Rate
 
@@ -177,18 +177,17 @@ Racing an event with a target average? Set a single threshold at your goal pace 
 
 ## Roadmap
 
-### v3.0 (in progress)
-- Karoo 2 support
-- Imperial unit support (config UI labels, sparkline distances)
-
-### v4.0 (planned)
-- Day mode support — fields are currently only tested in night mode; needs verification and adjustments for day mode rendering
+- Day mode support. Barberfish will currently render white text on a white background.
 - Gradient-aware forward-looking ETA via [Godot](https://github.com/jpweytjens/godot) — replacing the current DEWMA estimator with terrain-aware arrival predictions
 - Workout target field — continuous deviation from the workout target (power, HR, pace) rather than the native discrete below/on target/above states; zone coloring reflects how far off target you are, not just which side you're on
 
 ## Compatibility
 
-Tested on a Karoo 3 running firmware 1.618.2377.20 using metric units and dark mode. Should work on Karoo 2 and other firmware versions, but no guarantees.
+| Device  | Firmware      | Data fields | Metric units | Imperial units | Dark mode | Light mode |
+| ------- | ------------- | ----------- | ------------ | -------------- | --------- | ---------- |
+| Karoo 3 | 1.618.2377.20 | ✔︎           | ✔︎            | ✔︎              | ✔︎         | ❌          |
+| Karoo 2 | 1.613.2351.12 | ✔︎           | ✔︎            | ✔︎              | ✔︎         | ❌          |
+
 
 ## Installation
 
@@ -205,13 +204,13 @@ Tested on a Karoo 3 running firmware 1.618.2377.20 using metric units and dark m
 
 ## Contributing
 
-Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish). Suggestions for new HUD data fields are especially welcome — open an issue describing the metric and how you'd use it on the bike.
+Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish). Suggestions for new HUD data fields are especially welcomed.
 
 ### For extension developers
 
 `BarberfishView` and `BarberfishDataType` are a reimplementation of the native Karoo data field that matches the Hammerhead look and feel, with added support for variable font sizes and control over the fill color behind the label and icon.
 
-See [docs/architecture.md](docs/architecture.md) for the component hierarchy, naming conventions, and the rationale behind using `AndroidRemoteViews` for the label and value rendering. See [docs/sdk-findings.md](docs/sdk-findings.md) for reverse-engineered and empirically discovered SDK behavior (data units, preview rate floor, RemoteViews constraints, container geometry, native font sizes).
+See [docs/architecture.md](docs/architecture.md) for the component hierarchy, naming conventions, and the rationale behind using `AndroidRemoteViews` for the label and value rendering. See [docs/sdk-findings.md](docs/sdk-findings.md) for reverse-engineered and empirically discovered SDK behavior.
 
 ## License
 
