@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Four-column HUD container. Each slot is filled via RemoteViews.removeAllViews() +
-    addView() with a barberfish_field.xml RemoteViews instance.
-    hud_elevation_sparkline is GONE in Phase 1 (reserved for Phase 2 elevation sparkline).
+    Four-column HUD container. FrameLayout root so the sparkline overlays
+    at the bottom without stealing height from the slot row.
+    Each slot is filled via RemoteViews.removeAllViews() + addView()
+    with a barberfish_field.xml RemoteViews instance.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hud_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
         android:orientation="horizontal">
 
         <FrameLayout
@@ -45,7 +44,8 @@
     <FrameLayout
         android:id="@+id/hud_sparkline_container"
         android:layout_width="match_parent"
-        android:layout_height="44dp"
+        android:layout_height="34dp"
+        android:layout_gravity="bottom"
         android:visibility="gone">
 
         <ImageView
@@ -77,4 +77,4 @@
         </LinearLayout>
     </FrameLayout>
 
-</LinearLayout>
+</FrameLayout>
