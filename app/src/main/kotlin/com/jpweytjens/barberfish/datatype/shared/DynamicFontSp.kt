@@ -44,6 +44,25 @@ fun fontSizeForCell(
 }
 
 /**
+ * Header height (px) for an ibm-plex-sans-condensed label at [headerFontSizeSp] with
+ * [lines] lines (lineSpacingMultiplier=0.7), floored at 22 dp.
+ * Used as top padding on the value TextView to clear the header zone.
+ */
+fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
+    val paint = Paint().apply {
+        typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+        textSize = headerFontSizeSp * density
+    }
+    val fm = paint.fontMetrics
+    val lineHeight = fm.descent - fm.ascent // ascent is negative
+    // lineSpacingMultiplier=0.7 only affects inter-line spacing, not single-line height.
+    val factor = if (lines == 1) 1.0f else 1.7f // 1 + 0.7 for 2 lines
+    val textHeight = (factor * lineHeight).toInt()
+    val minHeightPx = (22 * density).toInt()
+    return maxOf(textHeight, minHeightPx)
+}
+
+/**
  * Splits [text] at the space nearest its midpoint and returns the longer of the two halves,
  * or null if there is no space to split on.
  */

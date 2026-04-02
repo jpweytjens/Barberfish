@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Field layout: RIGHT-aligned.
-    FrameLayout root: field_header overlays at top, field_value fills full cell with
-    gravity="top" and dynamic top padding set programmatically.
-    Top padding places baseline at cellH - margin for all font sizes.
-    RemoteViews-safe: only FrameLayout, LinearLayout, ImageView, TextView are used.
-    Horizontal padding and all text/icon properties are set programmatically.
+    Field layout: LEFT-aligned.
+    Same structure as barberfish_field.xml, but icon order is flipped: label first,
+    icon(s) trailing (icon anchors to alignment side).
+    See barberfish_field.xml for documentation.
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Stream state (Searching/NotAvailable/Idle): ibm-plex-sans-condensed, white. GONE by default. -->
     <TextView
         android:id="@+id/stream_state_tv"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="top|end"
+        android:gravity="top|start"
         android:fontFamily="ibm-plex-sans-condensed"
         android:fontWeight="500"
         android:textColor="@android:color/white"
@@ -26,19 +23,17 @@
         android:lineSpacingMultiplier="0.6"
         android:visibility="gone" />
 
-    <!-- Value: fills full cell, text centered vertically. Dynamic top padding set at runtime. -->
     <TextView
         android:id="@+id/field_value"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="top|end"
+        android:gravity="top|start"
         android:includeFontPadding="false"
         android:maxLines="1"
         android:ellipsize="end"
         android:fontFamily="monospace"
         android:letterSpacing="-0.04" />
 
-    <!-- Header row: overlays at top. Mirrors native DataHeaderView. -->
     <LinearLayout
         android:id="@+id/field_header"
         android:layout_width="match_parent"
@@ -47,6 +42,20 @@
         android:minHeight="22dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/field_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:lines="2"
+            android:gravity="center_vertical|start"
+            android:ellipsize="end"
+            android:textAllCaps="true"
+            android:fontFamily="ibm-plex-sans-condensed"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="0.7"
+            android:breakStrategy="simple" />
 
         <ImageView
             android:id="@+id/field_icon"
@@ -61,20 +70,6 @@
             android:layout_height="18dp"
             android:scaleType="fitCenter"
             android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/field_label"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:lines="2"
-            android:gravity="center_vertical|end"
-            android:ellipsize="end"
-            android:textAllCaps="true"
-            android:fontFamily="ibm-plex-sans-condensed"
-            android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.7"
-            android:breakStrategy="simple" />
 
     </LinearLayout>
 

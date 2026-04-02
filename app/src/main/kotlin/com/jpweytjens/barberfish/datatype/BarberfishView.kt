@@ -1,6 +1,8 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import kotlin.math.roundToInt
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
@@ -14,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
+import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
@@ -74,7 +77,7 @@ private fun makeFieldRemoteViews(
     val labelArgb =
         if (colors.background != null) android.graphics.Color.BLACK
         else android.graphics.Color.WHITE
-    val hGravity = alignment.toHorizontalGravity()
+    val layoutRes = alignment.toLayoutRes()
     val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
         ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
     val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
@@ -93,11 +96,11 @@ private fun makeFieldRemoteViews(
             "makeFieldRemoteViews: label='$displayLabel' text='${field.primary}'" +
                 " fontSp=$fontSp valueFontSizeBase=${sizeConfig.valueFontSizeBase}" +
                 " headerFontSp=${sizeConfig.headerFontSize.value} headerIconSizeDp=${sizeConfig.headerIconSize.value}" +
-                " hGravity=$hGravity paddingHPx=$paddingHPx",
+                " alignment=$alignment paddingHPx=$paddingHPx",
         )
     }
 
-    val rv = RemoteViews(context.packageName, R.layout.barberfish_field)
+    val rv = RemoteViews(context.packageName, layoutRes)
 
     if (DEBUG_LAYOUT) {
         rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())
@@ -130,7 +133,6 @@ private fun makeFieldRemoteViews(
     rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
     // XML default is android:lines="2"; only override when 1 line is needed.
     if (labelLines == 1) rv.setInt(R.id.field_label, "setLines", 1)
-    rv.setInt(R.id.field_label, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
 
     // Icons
     val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
@@ -156,59 +158,65 @@ private fun makeFieldRemoteViews(
     } else {
         rv.setViewVisibility(R.id.field_icon_secondary, View.GONE)
     }
-    // Gap before label: only when at least one icon is shown
+    // Gap between icon and label: side depends on alignment (left layout has label before icons)
     if (numIcons > 0) {
-        rv.setViewPadding(R.id.field_label, gapPx, 0, 0, 0)
+        if (alignment == ViewConfig.Alignment.LEFT) {
+            rv.setViewPadding(R.id.field_label, 0, 0, gapPx, 0)
+        } else {
+            rv.setViewPadding(R.id.field_label, gapPx, 0, 0, 0)
+        }
     } else {
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Value — layout_centerVertical in XML handles vertical centering; only horizontal gravity
-    // here.
+    // Value — gravity="top" in XML: text starts at paddingTop, baseline = padTop + |ascent|.
+    // Target baseline position: cellH - 13.5px (matches native positioning).
+    val headerPadPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
+    val valueFm = Paint().apply {
+        typeface = Typeface.MONOSPACE
+        textSize = fontSp * density
+    }.fontMetrics
+    val cellH = sizeConfig.cellHeightPx ?: (dm.heightPixels.toFloat() * 15f / 60f)
+    val valuePadTop = (cellH - 5 + valueFm.ascent).roundToInt().coerceAtLeast(0)
+
+    if (DEBUG_LAYOUT) {
+        val baseline = valuePadTop + (-valueFm.ascent).roundToInt()
+        Log.d("Barberfish", buildString {
+            append("VALUE POS: fontSp=$fontSp")
+            append(" cellH=${cellH.toInt()} valuePadTop=$valuePadTop")
+            append(" baseline=$baseline distFromBottom=${cellH.toInt() - baseline}")
+        })
+    }
+
     rv.setTextViewText(R.id.field_value, field.primary)
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
+    rv.setViewPadding(R.id.field_value, 0, valuePadTop, 0, 0)
     if (maxLines == 2) {
         rv.setInt(R.id.field_value, "setMaxLines", 2)
-        rv.setFloat(R.id.field_value, "setLineSpacingMultiplier", 0.8f)
     }
-    rv.setInt(R.id.field_value, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
-
-    // Stream state overlay: ibm-plex-sans-condensed, white, centered — replaces field_value for
-    // SDK non-Streaming states (Searching / NotAvailable / Idle).
-    // Font capped at 19sp (matching native); same valueTranslationY as field_value for alignment.
+    // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
+    // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
     if (field.color is FieldColor.StreamState) {
         rv.setViewVisibility(R.id.field_value, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, fontSp.coerceAtMost(19).toFloat())
+        rv.setViewPadding(R.id.stream_state_tv, 0, headerPadPx, 0, 0)
         if (maxLines == 2) {
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
-        }
-        rv.setInt(R.id.stream_state_tv, "setGravity", android.view.Gravity.CENTER_VERTICAL or hGravity)
-        if (sizeConfig.valueTranslationY != 0f) {
-            rv.setFloat(R.id.stream_state_tv, "setTranslationY", sizeConfig.valueTranslationY)
         }
     } else {
         rv.setViewVisibility(R.id.field_value, View.VISIBLE)
         rv.setViewVisibility(R.id.stream_state_tv, View.GONE)
     }
 
-    if (sizeConfig.valueTranslationY != 0f) {
-        // For 2-line, skip the per-char scaling — the taller block needs less downward nudge
-        // to stay within the cell.
-        val scaledTranslationY =
-            if (maxLines == 2) sizeConfig.valueTranslationY
-            else sizeConfig.valueTranslationY + (sizeConfig.valueFontSizeBase - fontSp) * 0.80f
-        rv.setFloat(R.id.field_value, "setTranslationY", scaledTranslationY)
-    }
-
     return rv
 }
 
-private fun ViewConfig.Alignment.toHorizontalGravity(): Int =
+private fun ViewConfig.Alignment.toLayoutRes(): Int =
     when (this) {
-        ViewConfig.Alignment.LEFT -> android.view.Gravity.START
-        ViewConfig.Alignment.CENTER -> android.view.Gravity.CENTER_HORIZONTAL
-        ViewConfig.Alignment.RIGHT -> android.view.Gravity.END
+        ViewConfig.Alignment.LEFT -> R.layout.barberfish_field_left
+        ViewConfig.Alignment.CENTER -> R.layout.barberfish_field_center
+        ViewConfig.Alignment.RIGHT -> R.layout.barberfish_field
     }
