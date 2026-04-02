@@ -74,9 +74,7 @@ private fun makeFieldRemoteViews(
 ): RemoteViews {
     val dm = context.resources.displayMetrics
     val density = dm.density
-    val labelArgb =
-        if (colors.background != null) android.graphics.Color.BLACK
-        else android.graphics.Color.WHITE
+    val labelArgb = colors.headerText.toArgb()
     val layoutRes = alignment.toLayoutRes()
     val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
         ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
