@@ -122,7 +122,7 @@ data class ViewSizeConfig(
                 headerFontSize = 11.sp,
                 labelMaxLines = 1,
                 wrapThresholdSp = 12,
-                valueFontSizeBase = 37,
+                valueFontSizeBase = 40,
             )
 
         // Config-screen preview: smaller font sizes to fit the preview composable
