@@ -21,7 +21,7 @@ import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
-private const val DEBUG_LAYOUT = false
+private const val DEBUG_LAYOUT = true
 
 fun barberfishFieldRemoteViews(
     field: FieldState,
@@ -170,14 +170,14 @@ private fun makeFieldRemoteViews(
     }
 
     // Value — gravity="top" in XML: text starts at paddingTop, baseline = padTop + |ascent|.
-    // Target baseline position: cellH - 13.5px (matches native positioning).
+    // Target baseline position: cellH - baselineMarginPx (grid-size dependent).
     val headerPadPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
     val valueFm = Paint().apply {
         typeface = Typeface.MONOSPACE
         textSize = fontSp * density
     }.fontMetrics
     val cellH = sizeConfig.cellHeightPx ?: (dm.heightPixels.toFloat() * 15f / 60f)
-    val valuePadTop = (cellH - 5 + valueFm.ascent).roundToInt().coerceAtLeast(0)
+    val valuePadTop = (cellH - sizeConfig.baselineMarginPx + valueFm.ascent).roundToInt().coerceAtLeast(0)
 
     if (DEBUG_LAYOUT) {
         val baseline = valuePadTop + (-valueFm.ascent).roundToInt()
