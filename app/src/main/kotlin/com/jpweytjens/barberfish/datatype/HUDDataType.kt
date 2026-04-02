@@ -26,12 +26,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         val sizeConfig = config.toViewSizeConfig(
             colSpanOverride  = colSpanOverride,
             textSizeOverride = textSizeOverride,
-            sparklineActive  = sparklineHeightPx > 0,
-        ).let { cfg ->
-            if (sparklineHeightPx > 0)
-                cfg.copy(valueTranslationY = (cfg.valueTranslationY - sparklineHeightPx / 2f).coerceAtLeast(0f))
-            else cfg
-        }
+        ).copy(cellHeightPx = config.viewSize.second.toFloat())
         val layoutRes =
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
         val rv = RemoteViews(context.packageName, layoutRes)

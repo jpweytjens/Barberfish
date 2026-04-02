@@ -248,11 +248,11 @@ private fun HUDPreviewCell(
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sizeConfig = remember(baseConfig, sparklineEnabled, widthPx) {
-            val adjusted = if (!sparklineEnabled)
-                baseConfig.copy(valueTranslationY = 37.5f) // 20dp × 1.875 density
-            else baseConfig
-            adjusted.copy(cellWidthPxOverride = widthPx.toFloat())
+        val sizeConfig = remember(baseConfig, widthPx, heightPx) {
+            baseConfig.copy(
+                cellWidthPxOverride = widthPx.toFloat(),
+                cellHeightPx = heightPx.toFloat(),
+            )
         }
         val bitmap = remember(field, colorMode, sizeConfig, heightPx) {
             val rv = barberfishFieldRemoteViews(

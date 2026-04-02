@@ -22,7 +22,6 @@ import io.hammerhead.karooext.models.ViewConfig
 fun ViewConfig.toViewSizeConfig(
     colSpanOverride: Int? = null,
     textSizeOverride: Int? = null,
-    sparklineActive: Boolean = false,
 ): ViewSizeConfig {
     val colSpan = colSpanOverride ?: gridSize.first
     val rowSpan = gridSize.second
@@ -48,22 +47,6 @@ fun ViewConfig.toViewSizeConfig(
         colSpan == 20 -> 14
         else          -> 12  // 4-col HUD
     }
-    // Move value up in FrameLayout
-    val translationYPx: Float =
-        when {
-            colSpan == 60 && rowSpan >= 20 -> 16f
-            colSpan == 60 && rowSpan >= 15 -> 14f
-            colSpan == 60 && rowSpan >= 12 -> 10f
-            colSpan == 30 && rowSpan >= 15 -> 27f
-            colSpan == 30 && rowSpan >= 12 -> 24f
-            colSpan == 20 && rowSpan >= 18 && sparklineActive -> 55f
-            colSpan == 20 && rowSpan >= 15 -> 27f
-            colSpan == 20 && rowSpan >= 12 -> 24f
-            colSpan == 15 && rowSpan >= 18 && sparklineActive -> 60f
-            colSpan == 15 && rowSpan >= 15 -> 22f
-            colSpan == 15 && rowSpan >= 12 -> 20f
-            else -> 0f
-        }
     return ViewSizeConfig.STANDARD.copy(
         colSpan = colSpan,
         valueFontSizeBase = textSizeEff.coerceAtLeast(20),
@@ -72,7 +55,6 @@ fun ViewConfig.toViewSizeConfig(
         headerIconLabelGap = gapDp.dp,
         labelMaxLines = labelMaxLines,
         wrapThresholdSp = wrapThresholdSp,
-        valueTranslationY = translationYPx,
     )
 }
 
@@ -85,7 +67,7 @@ data class ViewSizeConfig(
     val labelMaxLines: Int,
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,
-    val valueTranslationY: Float,
+    val cellHeightPx: Float? = null,
     val cellWidthPxOverride: Float? = null,
 ) {
     companion object {
@@ -99,7 +81,6 @@ data class ViewSizeConfig(
                 labelMaxLines = 2,
                 wrapThresholdSp = 18,
                 valueFontSizeBase = 49,
-                valueTranslationY = 0f,
             )
 
         // Config-screen preview: HUD 3-column slots
@@ -113,7 +94,6 @@ data class ViewSizeConfig(
                 labelMaxLines = 2,
                 wrapThresholdSp = 14,
                 valueFontSizeBase = 28,
-                valueTranslationY = 7.5f, // 4dp × 1.875 density
             )
 
         // Config-screen preview: HUD 4-column slots
@@ -127,7 +107,6 @@ data class ViewSizeConfig(
                 labelMaxLines = 2,
                 wrapThresholdSp = 12,
                 valueFontSizeBase = 20,
-                valueTranslationY = 7.5f, // 4dp × 1.875 density
             )
     }
 }
