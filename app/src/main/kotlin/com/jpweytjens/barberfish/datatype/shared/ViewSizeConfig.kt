@@ -47,14 +47,29 @@ fun ViewConfig.toViewSizeConfig(
         colSpan == 20 -> 14
         else          -> 12  // 4-col HUD
     }
+    // Distance from cell bottom to value text baseline (px).
+    // Tuned per grid size to match native rideapp positioning.
+    val baselineMarginPx: Float =
+        when {
+            colSpan == 60 && rowSpan >= 15 -> 9f // 1-col 3/4-row
+            colSpan == 60 && rowSpan >= 12 -> 5f // 1-col 5-row
+            colSpan == 30 && rowSpan >= 15 -> 9f // 2-col 4-row
+            colSpan == 30 && rowSpan >= 12 -> 5f // 2-col 5-row
+            colSpan == 20                  -> 5f // HUD 3-col
+            colSpan == 15                  -> 5f // HUD 4-col
+            else                           -> 5f
+        }
+    val paddingH = if (colSpan <= 20) 2.dp else 4.dp
     return ViewSizeConfig.STANDARD.copy(
         colSpan = colSpan,
+        paddingH = paddingH,
         valueFontSizeBase = textSizeEff.coerceAtLeast(20),
         headerFontSize = labelSp.sp,
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
         labelMaxLines = labelMaxLines,
         wrapThresholdSp = wrapThresholdSp,
+        baselineMarginPx = baselineMarginPx,
     )
 }
 
@@ -67,6 +82,7 @@ data class ViewSizeConfig(
     val labelMaxLines: Int,
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,
+    val baselineMarginPx: Float = 5f,
     val cellHeightPx: Float? = null,
     val cellWidthPxOverride: Float? = null,
 ) {
@@ -83,30 +99,38 @@ data class ViewSizeConfig(
                 valueFontSizeBase = 49,
             )
 
-        // Config-screen preview: HUD 3-column slots
-        val PREVIEW_HUD_THREE =
+        // On-device HUD 3-column slots (colSpan=20)
+        val HUD_THREE =
             ViewSizeConfig(
                 colSpan = 20,
-                paddingH = 4.dp,
+                paddingH = 2.dp,
                 headerIconSize = 12.dp,
                 headerIconLabelGap = 2.dp,
                 headerFontSize = 12.sp,
-                labelMaxLines = 2,
+                labelMaxLines = 1,
                 wrapThresholdSp = 14,
-                valueFontSizeBase = 28,
+                valueFontSizeBase = 42,
             )
 
-        // Config-screen preview: HUD 4-column slots
-        val PREVIEW_HUD_FOUR =
+        // On-device HUD 4-column slots (colSpan=15)
+        val HUD_FOUR =
             ViewSizeConfig(
                 colSpan = 15,
-                paddingH = 4.dp,
+                paddingH = 2.dp,
                 headerIconSize = 11.dp,
                 headerIconLabelGap = 2.dp,
-                headerFontSize = 9.sp,
-                labelMaxLines = 2,
+                headerFontSize = 11.sp,
+                labelMaxLines = 1,
                 wrapThresholdSp = 12,
-                valueFontSizeBase = 20,
+                valueFontSizeBase = 37,
             )
+
+        // Config-screen preview: smaller font sizes to fit the preview composable
+        val PREVIEW_HUD_THREE = HUD_THREE.copy(valueFontSizeBase = 28, labelMaxLines = 2)
+        val PREVIEW_HUD_FOUR = HUD_FOUR.copy(
+            headerFontSize = 9.sp,
+            valueFontSizeBase = 20,
+            labelMaxLines = 2,
+        )
     }
 }
