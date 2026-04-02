@@ -35,6 +35,8 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
         val rv = RemoteViews(context.packageName, layoutRes)
         rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, paddingPx)
+        // Clip slot row above the sparkline so colored backgrounds don't bleed through
+        rv.setViewPadding(R.id.hud_slot_row, 0, 0, 0, sparklineHeightPx)
         // Preview corner radius
         if (config.preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             rv.setViewOutlinePreferredRadius(R.id.hud_root, 12f, TypedValue.COMPLEX_UNIT_DIP)
