@@ -182,13 +182,14 @@ private fun HUDPreview(
         ).first
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(80.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(Color.Black)
     ) {
-        Row(Modifier.fillMaxWidth().height(80.dp)) {
+        Row(Modifier.fillMaxSize()) {
             buildList {
                 add(Triple(0, current.leftSlot, current.leftColorMode))
                 add(Triple(1, current.middleSlot, current.middleColorMode))
@@ -210,7 +211,7 @@ private fun HUDPreview(
             Image(
                 bitmap = sparklineBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(28.dp),
+                modifier = Modifier.fillMaxWidth().height(40.dp).align(Alignment.BottomCenter),
                 contentScale = ContentScale.FillBounds,
             )
         }
@@ -248,10 +249,12 @@ private fun HUDPreviewCell(
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sizeConfig = remember(baseConfig, widthPx, heightPx) {
+        val sparklineMarginPx = if (sparklineEnabled) 32f * density else 0f
+        val sizeConfig = remember(baseConfig, widthPx, heightPx, sparklineMarginPx) {
             baseConfig.copy(
                 cellWidthPxOverride = widthPx.toFloat(),
                 cellHeightPx = heightPx.toFloat(),
+                baselineMarginPx = baseConfig.baselineMarginPx + sparklineMarginPx,
             )
         }
         val bitmap = remember(field, colorMode, sizeConfig, heightPx) {
