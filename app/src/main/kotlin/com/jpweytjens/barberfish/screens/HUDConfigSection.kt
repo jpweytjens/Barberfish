@@ -250,14 +250,14 @@ private fun HUDPreviewCell(
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
         val sparklineMarginPx = if (sparklineEnabled) 32f * density else 0f
-        val sizeConfig = remember(baseConfig, widthPx, heightPx, sparklineMarginPx) {
+        val slotHeightPx = heightPx - sparklineMarginPx.toInt()
+        val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
             baseConfig.copy(
                 cellWidthPxOverride = widthPx.toFloat(),
-                cellHeightPx = heightPx.toFloat(),
-                baselineMarginPx = baseConfig.baselineMarginPx + sparklineMarginPx,
+                cellHeightPx = slotHeightPx.toFloat(),
             )
         }
-        val bitmap = remember(field, colorMode, sizeConfig, heightPx) {
+        val bitmap = remember(field, colorMode, sizeConfig, slotHeightPx) {
             val rv = barberfishFieldRemoteViews(
                 field = field,
                 alignment = ViewConfig.Alignment.RIGHT,
@@ -266,13 +266,13 @@ private fun HUDPreviewCell(
                 preview = true,
                 context = context,
             )
-            remoteViewsToBitmap(rv, widthPx, heightPx, context)
+            remoteViewsToBitmap(rv, widthPx, slotHeightPx, context)
         }
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillBounds,
+            modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+            contentScale = ContentScale.FillWidth,
         )
     }
 }
