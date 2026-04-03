@@ -2,8 +2,8 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import com.jpweytjens.barberfish.R
-import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -15,15 +15,11 @@ import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
 
@@ -45,15 +41,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 cfg to zones
             }
             .flatMapLatest { (cfg, zones) ->
-                flow {
-                        val states = previewStates(cfg, zones)
-                        var i = 0
-                        while (true) {
-                            emit(states[i++ % states.size])
-                            delay(Delay.PREVIEW.time)
-                        }
-                    }
-                    .flowOn(Dispatchers.IO)
+                cyclePreview(previewStates(cfg, zones))
             }
 
     companion object {

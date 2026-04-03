@@ -3,8 +3,8 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.AvgSpeedPrior
-import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.ETAInput
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.ETAState
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -19,14 +19,10 @@ import com.jpweytjens.barberfish.extension.streamTimeConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
 import java.util.Calendar
@@ -65,14 +61,7 @@ class ETAField(
             context.streamTimeConfig(),
         ) { etaCfg, timeCfg -> etaCfg to timeCfg }
             .flatMapLatest { (_, timeCfg) ->
-                flow {
-                    val states = previewStates(kind, timeCfg.format)
-                    var i = 0
-                    while (true) {
-                        emit(states[i++ % states.size])
-                        delay(Delay.PREVIEW.time)
-                    }
-                }.flowOn(Dispatchers.IO)
+                cyclePreview(previewStates(kind, timeCfg.format))
             }
 
     companion object {

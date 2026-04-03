@@ -9,8 +9,8 @@ import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.R
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
-import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.KAROO_DESTINATION_PURPLE
@@ -60,7 +60,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
@@ -231,14 +230,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, zones, profile) ->
                 context.streamTimeConfig().flatMapLatest { timeCfg ->
-                    flow {
-                        val states = previewStates(cfg, timeCfg, profile, zones)
-                        var i = 0
-                        while (true) {
-                            emit(states[i++ % states.size])
-                            delay(Delay.PREVIEW.time)
-                        }
-                    }.flowOn(Dispatchers.IO)
+                    cyclePreview(previewStates(cfg, timeCfg, profile, zones))
                 }
             }
 

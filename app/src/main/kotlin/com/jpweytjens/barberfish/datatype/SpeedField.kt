@@ -3,8 +3,8 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
-import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
@@ -15,14 +15,10 @@ import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -44,15 +40,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 cfg to profile
             }
             .flatMapLatest { (cfg, profile) ->
-                flow {
-                        val states = previewStates(cfg, profile)
-                        var i = 0
-                        while (true) {
-                            emit(states[i++ % states.size])
-                            delay(Delay.PREVIEW.time)
-                        }
-                    }
-                    .flowOn(Dispatchers.IO)
+                cyclePreview(previewStates(cfg, profile))
             }
 
     companion object {

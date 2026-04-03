@@ -2,8 +2,8 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import com.jpweytjens.barberfish.R
-import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
@@ -18,14 +18,10 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -55,14 +51,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, profile, zones)
             }
             .flatMapLatest { (cfg, profile, zones) ->
-                flow {
-                    val states = previewStates(cfg, profile, zones)
-                    var i = 0
-                    while (true) {
-                        emit(states[i++ % states.size])
-                        delay(Delay.PREVIEW.time)
-                    }
-                }.flowOn(Dispatchers.IO)
+                cyclePreview(previewStates(cfg, profile, zones))
             }
 
     companion object {

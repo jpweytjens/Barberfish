@@ -3,8 +3,8 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
-import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
@@ -13,14 +13,10 @@ import com.jpweytjens.barberfish.extension.streamTimeConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 fun formatTime(seconds: Long, format: TimeFormat): String {
@@ -116,14 +112,7 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         context.streamTimeConfig().flatMapLatest { cfg ->
-            flow {
-                val states = previewStates(cfg, kind)
-                var i = 0
-                while (true) {
-                    emit(states[i++ % states.size])
-                    delay(Delay.PREVIEW.time)
-                }
-            }.flowOn(Dispatchers.IO)
+            cyclePreview(previewStates(cfg, kind))
         }
 
 }
