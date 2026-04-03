@@ -202,14 +202,14 @@ suspend fun Context.saveSpeedFieldConfig(config: SpeedFieldConfig) =
 // MIN_MAX mode: null means that boundary is disabled (only-min or only-max behavior).
 // rangePercentAbove/Below: % of threshold speed that maps to the fully-orange gradient edge.
 @Serializable
-enum class SpeedThresholdMode {
+enum class ThresholdMode {
     TARGET,
     MIN_MAX,
 }
 
 @Serializable
 data class AvgSpeedConfig(
-    val mode: SpeedThresholdMode = SpeedThresholdMode.TARGET,
+    val mode: ThresholdMode = ThresholdMode.TARGET,
     val thresholdKph: Double = 0.0,
     val rangePercentAbove: Double = 10.0,
     val rangePercentBelow: Double = 10.0,

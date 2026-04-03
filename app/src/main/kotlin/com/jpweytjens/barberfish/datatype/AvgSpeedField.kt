@@ -7,7 +7,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
-import com.jpweytjens.barberfish.extension.SpeedThresholdMode
+import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -30,7 +30,7 @@ internal fun avgSpeedFieldState(
     val converted = ConvertType.SPEED.apply(rawMs, profile)
     val color =
         when (cfg.mode) {
-            SpeedThresholdMode.TARGET -> {
+            ThresholdMode.TARGET -> {
                 if (cfg.thresholdKph <= 0.0) {
                     FieldColor.Default
                 } else {
@@ -45,7 +45,7 @@ internal fun avgSpeedFieldState(
                     FieldColor.Threshold(factor)
                 }
             }
-            SpeedThresholdMode.MIN_MAX -> {
+            ThresholdMode.MIN_MAX -> {
                 val min = cfg.minKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
                 val max = cfg.maxKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
                 if (min == null && max == null) {
@@ -153,9 +153,9 @@ class AvgSpeedField(
             // Generate values around the configured threshold so color transitions are visible.
             // Offsets are percentages of the threshold; the range params are typically 10%.
             val centerKph = when (cfg.mode) {
-                SpeedThresholdMode.TARGET ->
+                ThresholdMode.TARGET ->
                     if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
-                SpeedThresholdMode.MIN_MAX -> {
+                ThresholdMode.MIN_MAX -> {
                     val min = cfg.minKph
                     val max = cfg.maxKph
                     when {

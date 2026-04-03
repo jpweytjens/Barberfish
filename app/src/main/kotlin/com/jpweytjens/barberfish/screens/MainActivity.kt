@@ -142,7 +142,7 @@ import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
-import com.jpweytjens.barberfish.extension.SpeedThresholdMode
+import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -1444,7 +1444,7 @@ internal fun AvgSpeedThresholdControls(
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
     val modeOptions =
-        listOf(SpeedThresholdMode.TARGET to "Target", SpeedThresholdMode.MIN_MAX to "Min / Max")
+        listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -1492,7 +1492,7 @@ internal fun AvgSpeedThresholdControls(
         }
     }
     val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
-    if (config.mode == SpeedThresholdMode.TARGET) {
+    if (config.mode == ThresholdMode.TARGET) {
         Text(
             "TARGET ($speedUnit)",
             fontSize = 11.sp,
