@@ -81,6 +81,7 @@ internal fun renderElevationSparkline(
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
     dotColor: Int = LemonYellow.toArgb(),
+    isNightMode: Boolean = true,
 ): Pair<Bitmap?, Float> {
     if (elevationPoints.isEmpty()) return Pair(null, displayedRange)
 
@@ -152,7 +153,8 @@ internal fun renderElevationSparkline(
     val aheadSilPts = visible.filter { (d, _) -> d >= positionM }
     if (aheadSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
-        paint.color = android.graphics.Color.argb(15, 255, 255, 255)
+        paint.color = if (isNightMode) android.graphics.Color.argb(15, 255, 255, 255)
+            else android.graphics.Color.argb(15, 0, 0, 0)
         val path = Path().apply {
             moveTo(dotX, dotY)
             aheadSilPts.forEach { (d, e) -> lineTo(toX(d), toY(e)) }
@@ -205,7 +207,8 @@ internal fun renderElevationSparkline(
     // 2b. Dark overlay on past region to grey out grade fills
     if (pastSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
-        paint.color = android.graphics.Color.argb(140, 0, 0, 0)
+        paint.color = if (isNightMode) android.graphics.Color.argb(140, 0, 0, 0)
+            else android.graphics.Color.argb(140, 255, 255, 255)
         val path = Path().apply {
             moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
             pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
@@ -232,7 +235,7 @@ internal fun renderElevationSparkline(
     }
     val aheadPts = visible.filter { (d, _) -> toX(d) >= dotX }
     if (aheadPts.isNotEmpty()) {
-        paint.color = android.graphics.Color.WHITE
+        paint.color = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         val aheadPath = Path().apply {
             moveTo(toX(aheadPts.first().first), toY(aheadPts.first().second))
             aheadPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
