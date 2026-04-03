@@ -2,6 +2,8 @@ package com.jpweytjens.barberfish.datatype.shared
 
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
+import io.hammerhead.karooext.models.UserProfile
 
 data class FieldState(
     val primary: String,
@@ -56,3 +58,19 @@ sealed interface FieldColor {
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
     data class Grade(val percent: Double, val palette: GradePalette, val readable: Boolean = true) : FieldColor
 }
+
+fun zoneFieldColor(
+    zone: Int,
+    colorMode: ZoneColorMode,
+    profile: UserProfile,
+    zones: ZoneConfig,
+    isHr: Boolean,
+): FieldColor =
+    if (colorMode == ZoneColorMode.NONE) FieldColor.Default
+    else FieldColor.Zone(
+        zone,
+        (if (isHr) profile.heartRateZones else profile.powerZones).size.coerceAtLeast(1),
+        if (isHr) zones.hrPalette else zones.powerPalette,
+        isHr = isHr,
+        readable = zones.readableColors,
+    )

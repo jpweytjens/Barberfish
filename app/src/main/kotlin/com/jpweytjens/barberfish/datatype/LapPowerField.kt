@@ -3,8 +3,8 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -87,16 +87,7 @@ class LapPowerField(
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
                     ?: return FieldState.unavailable(label)
             val zone = powerZone(raw, profile.powerZones)
-            val color =
-                if (colorMode == ZoneColorMode.NONE) FieldColor.Default
-                else
-                    FieldColor.Zone(
-                        zone,
-                        profile.powerZones.size.coerceAtLeast(1),
-                        zones.powerPalette,
-                        isHr = false,
-                        readable = zones.readableColors,
-                    )
+            val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(
                 raw.toInt().toString(),
                 label = label,
@@ -117,16 +108,7 @@ class LapPowerField(
             val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
             return listOf(195, 210, 220, 185, 230).map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
-                val color =
-                    if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                    else
-                        FieldColor.Zone(
-                            zone,
-                            profile.powerZones.size.coerceAtLeast(1),
-                            zones.powerPalette,
-                            isHr = false,
-                            readable = zones.readableColors,
-                        )
+                val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(
                     watts.toString(),
                     label = label,

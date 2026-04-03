@@ -3,8 +3,8 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -44,16 +44,7 @@ class HRField(private val karooSystem: KarooSystemService) :
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
                     ?: return FieldState.unavailable("HR")
             val zone = hrZone(raw, profile.heartRateZones)
-            val color =
-                if (colorMode == ZoneColorMode.NONE) FieldColor.Default
-                else
-                    FieldColor.Zone(
-                        zone,
-                        profile.heartRateZones.size.coerceAtLeast(1),
-                        zones.hrPalette,
-                        isHr = true,
-                        readable = zones.readableColors,
-                    )
+            val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = true)
             return FieldState(
                 raw.toInt().toString(),
                 label = "HR",
@@ -70,16 +61,7 @@ class HRField(private val karooSystem: KarooSystemService) :
         ): List<FieldState> =
             listOf(85, 130, 152, 165, 172, 187, 145).map { bpm ->
                 val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
-                val color =
-                    if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                    else
-                        FieldColor.Zone(
-                            zone,
-                            profile.heartRateZones.size.coerceAtLeast(1),
-                            zones.hrPalette,
-                            isHr = true,
-                            readable = zones.readableColors,
-                        )
+                val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
                 FieldState(
                     bpm.toString(),
                     label = "HR",

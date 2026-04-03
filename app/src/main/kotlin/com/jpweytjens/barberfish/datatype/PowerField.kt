@@ -3,8 +3,8 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.Delay
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
@@ -82,16 +82,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
                     ?: return FieldState.unavailable(label)
             val zone = powerZone(raw, profile.powerZones)
-            val color =
-                if (colorMode == ZoneColorMode.NONE) FieldColor.Default
-                else
-                    FieldColor.Zone(
-                        zone,
-                        profile.powerZones.size.coerceAtLeast(1),
-                        zones.powerPalette,
-                        isHr = false,
-                        readable = zones.readableColors,
-                    )
+            val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(
                 raw.toInt().toString(),
                 label = label,
@@ -111,16 +102,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
                 else "${cfg.smoothing.label} Power"
             return listOf(180, 240, 320, 400, 451, 511, 1234).map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
-                val color =
-                    if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                    else
-                        FieldColor.Zone(
-                            zone,
-                            profile.powerZones.size.coerceAtLeast(1),
-                            zones.powerPalette,
-                            isHr = false,
-                            readable = zones.readableColors,
-                        )
+                val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(
                     watts.toString(),
                     label = label,
