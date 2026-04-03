@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import android.content.res.Configuration
 import kotlin.math.roundToInt
 import android.graphics.Paint
 import android.graphics.Typeface
@@ -35,7 +36,8 @@ fun barberfishFieldRemoteViews(
     val paddingHPx = (sizeConfig.paddingH.value * dm.density).toInt()
     // Always collapse \n to space — maxLines=2 + breakStrategy=simple in XML handles line breaking.
     val displayLabel = field.label.replace("\n", " ")
-    val colors = field.color.toColorConfig(colorMode)
+    val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    val colors = field.color.toColorConfig(colorMode, isNightMode)
     val rv =
         makeFieldRemoteViews(
             field,
@@ -199,6 +201,7 @@ private fun makeFieldRemoteViews(
         rv.setViewVisibility(R.id.field_value, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
+        rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
         rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, fontSp.coerceAtMost(19).toFloat())
         rv.setViewPadding(R.id.stream_state_tv, 0, headerPadPx, 0, 0)
         if (maxLines == 2) {
