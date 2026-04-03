@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.view.View
 import com.jpweytjens.barberfish.BuildConfig
@@ -102,6 +103,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     context.streamZoneConfig(),
                     context.streamHUDConfig(),
                 ) { hudState, navState, distState, zoneConfig, hudConfig ->
+                    val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                     val dm = context.resources.displayMetrics
                     val sparkCfg = hudConfig.sparkline
                     val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
@@ -145,6 +147,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             displayedRange  = ratchetRange,
                             distanceDeltaM  = distanceDeltaM,
                             dotColor        = dotColor,
+                            isNightMode     = isNightMode,
                         )
                     else Pair(null, ratchetRange)
                     ratchetRange = updatedRange
@@ -163,7 +166,9 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             val displayDist = ConvertType.DISTANCE.toDisplay(transitionKm.toDouble(), hudState.profile).toInt()
                             val distUnit = ConvertType.DISTANCE.unit(hudState.profile)
                             rv.setTextViewText(R.id.hud_transition_text, "$displayDist$distUnit")
-                            rv.setInt(R.id.hud_transition_icon, "setColorFilter", Color.WHITE)
+                            val transitionColor = if (isNightMode) Color.WHITE else Color.BLACK
+                            rv.setTextColor(R.id.hud_transition_text, transitionColor)
+                            rv.setInt(R.id.hud_transition_icon, "setColorFilter", transitionColor)
                         }
                         bitmap != null -> {
                             rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
