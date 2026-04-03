@@ -263,7 +263,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
             HUDSlotField.Cadence ->
                 karooSystem
                     .streamDataFlow(slot.cadenceSmoothing.typeId)
-                    .map { CadenceField.toFieldState(it, slot.cadenceSmoothing) }
+                    .map { CadenceField.toFieldState(it, slot.cadenceSmoothing, slot.cadenceThreshold) }
             HUDSlotField.AvgPower ->
                 karooSystem
                     .streamDataFlow(DataType.Type.AVERAGE_POWER)
@@ -326,7 +326,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 HUDSlotField.Speed ->
                     SpeedField.previewStates(SpeedFieldConfig(slotCfg.speedSmoothing), profile)
                 HUDSlotField.Cadence ->
-                    CadenceField.previewStates(CadenceFieldConfig(slotCfg.cadenceSmoothing))
+                    CadenceField.previewStates(CadenceFieldConfig(slotCfg.cadenceSmoothing, slotCfg.cadenceThreshold))
                 is HUDSlotField.AvgSpeed ->
                     AvgSpeedField.previewStates(slotCfg.avgSpeedConfig, profile, field.includePaused)
                 HUDSlotField.AvgPower ->

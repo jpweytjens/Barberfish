@@ -60,6 +60,7 @@ import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
@@ -370,7 +371,8 @@ private fun HUDSlotFieldCard(
                 slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
                 slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.HR ||
                 slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR ||
-                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.Grade) {
+                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.Grade ||
+                slot.field == HUDSlotField.Cadence) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
                     onSelected = { onUpdate(slot.copy(colorMode = it)) },
@@ -511,6 +513,10 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
         label = { it.label },
         onSelected = { onUpdate(slot.copy(cadenceSmoothing = it)) },
         thumbIcon = R.drawable.ic_cadence,
+    )
+    CadenceThresholdControls(
+        config = slot.cadenceThreshold,
+        onConfigChange = { onUpdate(slot.copy(cadenceThreshold = it)) },
     )
 }
 
