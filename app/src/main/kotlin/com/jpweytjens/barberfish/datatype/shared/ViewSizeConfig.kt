@@ -6,6 +6,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.hammerhead.karooext.models.ViewConfig
 
+// Grid span constants: 60-unit internal grid, divided by colSpan gives column count.
+private const val GRID_FULL = 60    // 1 column
+private const val GRID_HALF = 30    // 2 columns
+private const val GRID_THIRD = 20   // 3 columns (HUD 3-col)
+private const val GRID_QUARTER = 15 // 4 columns (HUD 4-col)
+
 // Native rideapp (hhv5.d.hha) uses a hardcoded px lookup keyed on (colSpan, rowSpan).
 // Converted to sp at Karoo 3 density (1.875 = 300 dpi / 160):
 //
@@ -28,38 +34,38 @@ fun ViewConfig.toViewSizeConfig(
     val textSizeEff = textSizeOverride ?: textSize
     val labelSp: Float =
         when {
-            colSpan == 60 && rowSpan >= 15 -> 19.2f // 36 px
-            colSpan == 60 && rowSpan >= 12 -> 17.6f // 33 px
-            colSpan == 30 && rowSpan >= 15 -> 17.6f // 33 px
-            colSpan == 30 && rowSpan >= 12 -> 15.5f // 29 px
-            colSpan == 20 && rowSpan >= 12 -> 12.0f // HUD slot (1/3)
-            colSpan == 15 && rowSpan >= 12 -> 11.0f // 4-col HUD slot (1/4)
+            colSpan == GRID_FULL && rowSpan >= 15 -> 19.2f // 36 px
+            colSpan == GRID_FULL && rowSpan >= 12 -> 17.6f // 33 px
+            colSpan == GRID_HALF && rowSpan >= 15 -> 17.6f // 33 px
+            colSpan == GRID_HALF && rowSpan >= 12 -> 15.5f // 29 px
+            colSpan == GRID_THIRD && rowSpan >= 12 -> 12.0f // HUD slot (1/3)
+            colSpan == GRID_QUARTER && rowSpan >= 12 -> 11.0f // 4-col HUD slot (1/4)
             else -> 15.5f
         }
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
     // Wide (1-col) cells have short labels that fit on one line; colSpan=20 HUD slots also use 1.
-    val labelMaxLines = if (colSpan != 30) 1 else 2
+    val labelMaxLines = if (colSpan != GRID_HALF) 1 else 2
     // Threshold below which single-line shrinks enough to warrant 2-line wrapping.
     // Lower for narrow HUD slots (small font is acceptable there).
     val wrapThresholdSp = when {
-        colSpan == 60 -> 22
-        colSpan == 30 -> 18
-        colSpan == 20 -> 14
-        else          -> 12  // 4-col HUD
+        colSpan == GRID_FULL    -> 22
+        colSpan == GRID_HALF    -> 18
+        colSpan == GRID_THIRD   -> 14
+        else                    -> 12  // 4-col HUD
     }
     // Distance from cell bottom to value text baseline (px).
     // Tuned per grid size to match native rideapp positioning.
     val baselineMarginPx: Float =
         when {
-            colSpan == 60 && rowSpan >= 15 -> 9f // 1-col 3/4-row
-            colSpan == 60 && rowSpan >= 12 -> 5f // 1-col 5-row
-            colSpan == 30 && rowSpan >= 15 -> 9f // 2-col 4-row
-            colSpan == 30 && rowSpan >= 12 -> 5f // 2-col 5-row
-            colSpan == 20                  -> 5f // HUD 3-col
-            colSpan == 15                  -> 5f // HUD 4-col
-            else                           -> 5f
+            colSpan == GRID_FULL && rowSpan >= 15 -> 9f // 1-col 3/4-row
+            colSpan == GRID_FULL && rowSpan >= 12 -> 5f // 1-col 5-row
+            colSpan == GRID_HALF && rowSpan >= 15 -> 9f // 2-col 4-row
+            colSpan == GRID_HALF && rowSpan >= 12 -> 5f // 2-col 5-row
+            colSpan == GRID_THIRD                 -> 5f // HUD 3-col
+            colSpan == GRID_QUARTER               -> 5f // HUD 4-col
+            else                                  -> 5f
         }
-    val paddingH = if (colSpan <= 20) 2.dp else 4.dp
+    val paddingH = if (colSpan <= GRID_THIRD) 2.dp else 4.dp
     return ViewSizeConfig.STANDARD.copy(
         colSpan = colSpan,
         paddingH = paddingH,
@@ -89,7 +95,7 @@ data class ViewSizeConfig(
     companion object {
         val STANDARD =
             ViewSizeConfig(
-                colSpan = 30,
+                colSpan = GRID_HALF,
                 paddingH = 4.dp,
                 headerIconSize = 17.dp,
                 headerIconLabelGap = 6.dp,
@@ -102,7 +108,7 @@ data class ViewSizeConfig(
         // On-device HUD 3-column slots (colSpan=20)
         val HUD_THREE =
             ViewSizeConfig(
-                colSpan = 20,
+                colSpan = GRID_THIRD,
                 paddingH = 2.dp,
                 headerIconSize = 12.dp,
                 headerIconLabelGap = 2.dp,
@@ -115,7 +121,7 @@ data class ViewSizeConfig(
         // On-device HUD 4-column slots (colSpan=15)
         val HUD_FOUR =
             ViewSizeConfig(
-                colSpan = 15,
+                colSpan = GRID_QUARTER,
                 paddingH = 2.dp,
                 headerIconSize = 11.dp,
                 headerIconLabelGap = 2.dp,
