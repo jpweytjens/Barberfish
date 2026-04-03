@@ -99,6 +99,7 @@ data class HUDSlotConfig(
     val speedSmoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0,
     val cadenceSmoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0,
     val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
+    val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
@@ -260,7 +261,20 @@ enum class CadenceSmoothingStream(val label: String, val typeId: String, val fie
 }
 
 @Serializable
-data class CadenceFieldConfig(val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0)
+data class CadenceThresholdConfig(
+    val mode: ThresholdMode = ThresholdMode.TARGET,
+    val thresholdRpm: Double = 0.0,
+    val rangePercentAbove: Double = 10.0,
+    val rangePercentBelow: Double = 10.0,
+    val minRpm: Double? = null,
+    val maxRpm: Double? = null,
+)
+
+@Serializable
+data class CadenceFieldConfig(
+    val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0,
+    val threshold: CadenceThresholdConfig = CadenceThresholdConfig(),
+)
 
 fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
     streamConfig(cadenceFieldConfigKey, CadenceFieldConfig())
