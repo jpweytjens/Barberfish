@@ -132,6 +132,7 @@ import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
@@ -542,33 +543,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    Text("OTHER", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "CADENCE",
-                        description = "Current cadence",
-                        previewFields = cadencePreviewStates,
-                        colorMode = ZoneColorMode.NONE,
-                        selected = selectedDataField == "CADENCE",
-                        onSelect = { selectedDataField = if (selectedDataField == "CADENCE") null else "CADENCE" },
-                    ) {
-                        Text(
-                            "SMOOTHING",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark,
-                        )
-                        SmoothingSlider(
-                            options = CadenceSmoothingStream.entries,
-                            selected = cadenceFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_cadence,
-                            onSelected = { stream ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                    }
-
                     FieldCard(
                         title = "GRADE",
                         description = "Road gradient with color coding.",
@@ -595,9 +569,9 @@ class MainActivity : ComponentActivity() {
                 }
 
                 CollapsibleSection(
-                    title = "Speed thresholds",
+                    title = "Threshold fields",
                     description =
-                        "Color average speed by distance from a target speed or zone",
+                        "Color data fields by distance from a target or zone",
                     icon = R.drawable.ic_section_speed,
                     expanded = thresholdsExpanded,
                     onToggle = { thresholdsExpanded = !thresholdsExpanded },
@@ -674,7 +648,40 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     }
-                } // end Speed Thresholds
+
+                    FieldCard(
+                        title = "CADENCE",
+                        description = "Current cadence with threshold coloring",
+                        previewFields = cadencePreviewStates,
+                        colorMode = ZoneColorMode.TEXT,
+                        selected = selectedThresholdField == "CADENCE",
+                        onSelect = { selectedThresholdField = if (selectedThresholdField == "CADENCE") null else "CADENCE" },
+                    ) {
+                        Text(
+                            "SMOOTHING",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark,
+                        )
+                        SmoothingSlider(
+                            options = CadenceSmoothingStream.entries,
+                            selected = cadenceFieldConfig.smoothing,
+                            label = { it.label },
+                            thumbIcon = R.drawable.ic_cadence,
+                            onSelected = { stream ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                        CadenceThresholdControls(
+                            config = cadenceFieldConfig.threshold,
+                            onConfigChange = { cfg ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                    }
+                } // end Threshold Fields
 
                 CollapsibleSection(
                     title = "ETA",
@@ -1558,6 +1565,171 @@ internal fun AvgSpeedThresholdControls(
     }
 }
 
+@Composable
+internal fun CadenceThresholdControls(
+    config: CadenceThresholdConfig,
+    onConfigChange: (CadenceThresholdConfig) -> Unit,
+) {
+    val modeOptions =
+        listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(onConfigChange) {
+                    val slotWidthPx = size.width.toFloat() / modeOptions.size
+                    fun idxAt(x: Float) =
+                        (x / slotWidthPx).toInt().coerceIn(0, modeOptions.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onConfigChange(
+                            config.copy(mode = modeOptions[idxAt(down.position.x)].first)
+                        )
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onConfigChange(
+                                config.copy(mode = modeOptions[idxAt(change.position.x)].first)
+                            )
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        modeOptions.forEach { (mode, label) ->
+            val isSelected = config.mode == mode
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+    if (config.mode == ThresholdMode.TARGET) {
+        Text(
+            "TARGET (RPM)",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDark,
+        )
+        CadenceThresholdInput(
+            value = config.thresholdRpm,
+            onValueChange = { onConfigChange(config.copy(thresholdRpm = it)) },
+        )
+    } else {
+        Text(
+            "MIN CADENCE (RPM)",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDark,
+        )
+        NullableCadenceThresholdInput(
+            value = config.minRpm,
+            placeholder = "Min (rpm)",
+            onValueChange = { onConfigChange(config.copy(minRpm = it)) },
+        )
+        Text(
+            "MAX CADENCE (RPM)",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDark,
+        )
+        NullableCadenceThresholdInput(
+            value = config.maxRpm,
+            placeholder = "Max (rpm)",
+            onValueChange = { onConfigChange(config.copy(maxRpm = it)) },
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "UNDER (%)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+            )
+            RangeInput(
+                value = config.rangePercentBelow,
+                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "OVER (%)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+            )
+            RangeInput(
+                value = config.rangePercentAbove,
+                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CadenceThresholdInput(
+    value: Double,
+    onValueChange: (Double) -> Unit,
+) {
+    var text by remember(value) { mutableStateOf(if (value == 0.0) "" else value.toInt().toString()) }
+    val focusManager = LocalFocusManager.current
+    val commit = {
+        val entered = text.toDoubleOrNull() ?: 0.0
+        onValueChange(entered)
+    }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { input -> text = input },
+        placeholder = {
+            Text(
+                "Target (rpm)",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun NullableCadenceThresholdInput(
+    value: Double?,
+    placeholder: String,
+    onValueChange: (Double?) -> Unit,
+) {
+    var text by remember(value) { mutableStateOf(value?.toInt()?.toString() ?: "") }
+    val focusManager = LocalFocusManager.current
+    val commit = {
+        onValueChange(text.toDoubleOrNull())
+    }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { input -> text = input },
+        placeholder = {
+            Text(placeholder, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
