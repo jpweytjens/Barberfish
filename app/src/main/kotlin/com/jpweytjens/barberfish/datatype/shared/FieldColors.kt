@@ -187,21 +187,24 @@ internal fun FieldColor.toColor(): Color? =
         is FieldColor.Grade -> gradeColor(percent, palette, readable)
     }
 
-internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
+internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boolean): ColorConfig {
+    val defaultText = if (isNightMode) Color.White else Color.Black
     val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColor() else null
     val onBg = bg != null
     val valueColor: Color =
         when {
             // Error/Muted always use their own text color regardless of colorMode.
-            // StreamState goes to stream_state_tv (white in XML); valueText unused but set white.
-            this is FieldColor.Error || this is FieldColor.Muted || this is FieldColor.StreamState -> toColor() ?: Color.White
-            colorMode == ZoneColorMode.TEXT -> toColor() ?: Color.White
-            else -> Color.White
+            // StreamState goes to stream_state_tv; valueText set to theme default.
+            this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: defaultText
+            this is FieldColor.StreamState -> defaultText
+            colorMode == ZoneColorMode.TEXT -> toColor() ?: defaultText
+            onBg -> defaultText
+            else -> defaultText
         }
     return ColorConfig(
         valueText = valueColor,
-        headerText = Color.White,
-        iconTint = if (onBg || this is FieldColor.StreamState) Color.White else ICON_TINT_TEAL,
+        headerText = defaultText,
+        iconTint = if (onBg || this is FieldColor.StreamState) defaultText else ICON_TINT_TEAL,
         background = bg,
     )
 }
