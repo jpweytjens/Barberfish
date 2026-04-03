@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -1049,7 +1050,7 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
         contentDescription = null,
         modifier = Modifier.width(120.dp).height(80.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(Color.Black),
+            .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
         contentScale = ContentScale.FillBounds,
     )
 }
@@ -1318,13 +1319,15 @@ private fun TimeFormatPreview(format: TimeFormat) {
     Box(
         modifier =
             Modifier.fillMaxWidth()
-                .background(Color.Black, RoundedCornerShape(6.dp))
+                .background(if (isSystemInDarkTheme()) Color.Black else Color.White, RoundedCornerShape(6.dp))
                 .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = formatTime(5025L, format),
-            style = MaterialTheme.typography.displaySmall.copy(color = Color.White),
+            style = MaterialTheme.typography.displaySmall.copy(
+                color = if (isSystemInDarkTheme()) Color.White else Color.Black,
+            ),
             textAlign = TextAlign.Center,
         )
     }

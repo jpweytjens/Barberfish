@@ -27,6 +27,7 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -167,7 +168,8 @@ private fun HUDPreview(
 
     val density = LocalDensity.current.density
     val screenWidthPx = (LocalConfiguration.current.screenWidthDp * density).toInt()
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, screenWidthPx) {
+    val isNightMode = isSystemInDarkTheme()
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, screenWidthPx, isNightMode) {
         if (!hudConfig.sparkline.enabled) null
         else renderElevationSparkline(
             elevationPoints = previewElevationFixture(),
@@ -179,6 +181,7 @@ private fun HUDPreview(
             readable        = zoneConfig.readableColors,
             lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
             skipBands       = hudConfig.sparkline.skipBands,
+            isNightMode     = isNightMode,
         ).first
     }
 
@@ -187,7 +190,7 @@ private fun HUDPreview(
             .fillMaxWidth()
             .height(80.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.Black)
+            .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
     ) {
         Row(Modifier.fillMaxSize()) {
             buildList {
