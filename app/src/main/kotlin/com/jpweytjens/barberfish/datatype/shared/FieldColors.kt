@@ -9,10 +9,8 @@ import kotlin.math.sqrt
 // UI grey palette (Design Guide scale: 100=lightest, 600=darkest)
 internal val Grey100 = Color(0xFFF4F4F4)
 internal val Grey200 = Color(0xFFDDDDDD)
-// internal val Grey300 = Color(0xFFBCBCBC)   // reserved — not yet used
 internal val Grey400 = Color(0xFF979797)
 internal val Grey500 = Color(0xFF7D7D7D)
-// internal val Grey600 = Color(0xFF636363)   // reserved — not yet used
 
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
