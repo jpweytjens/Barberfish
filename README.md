@@ -11,7 +11,7 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 Barberfish reimplements and enhances a core set of Karoo data fields with features the built-in fields don't offer. A configurable 3- or 4-column HUD shows any combination of speed, heart rate, power, cadence, average power, normalized power, or grade side by side with zone coloring. An optional color-coded elevation sparkline below the HUD shows the terrain profile when a route is loaded.
 
-Zone coloring supports both background-fill and text-color styles across multiple palettes. Time fields use a consistent, unambiguous format across all durations. Average speed and cadence fields support a single target or a min/max range with threshold coloring. All fields are styled to match the native Karoo look and feel. Settings are configured with live-updating field previews.
+Zone coloring supports both background-fill and text-color styles across multiple palettes. Time fields use a consistent, unambiguous format across all durations. Average speed and cadence fields support a single target or a min/max range with threshold coloring. All fields are styled to match the native Karoo look and feel. Supports metric and imperial units, dark and light mode. Settings are configured with live-updating field previews.
 
 ## Data field enhancements
 
@@ -154,16 +154,15 @@ Racing an event with a target average? Set a single threshold at your goal pace 
 
 ## Roadmap
 
-- Day mode support. In day moe, Barberfish will currently render white text on the white background.
-- Gradient-aware forward-looking ETA replacing the current DEWMA estimator with terrain-aware arrival predictions. Development [Godot](https://github.com/jpweytjens/godot) —
+- Gradient-aware forward-looking ETA replacing the current DEWMA estimator with terrain-aware arrival predictions. See [Godot](https://github.com/jpweytjens/godot).
 - Workout target field — continuous deviation from the workout target (power, HR, pace) rather than the native discrete below/on target/above states; zone coloring reflects how far off target you are, not just which side you're on
 
 ## Compatibility
 
-| Device  | Firmware      | Data fields | Metric units | Imperial units | Dark mode | Light mode |
-| ------- | ------------- | ----------- | ------------ | -------------- | --------- | ---------- |
-| Karoo 3 | 1.618.2377.20 | ✔︎           | ✔︎            | ✔︎              | ✔︎         | ❌          |
-| Karoo 2 | 1.613.2351.12 | ✔︎           | ✔︎            | ✔︎              | ✔︎         | ❌          |
+| Device  | Firmware      |
+| ------- | ------------- |
+| Karoo 3 | 1.618.2377.20 |
+| Karoo 2 | 1.613.2351.12 |
 
 
 ## Installation
