@@ -97,6 +97,12 @@ private val ZWIFT_GRADE_BANDS = listOf(
 )
 
 // Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against black. Pre-computed via scripts/apca_hsluv.py.
+private val ZWIFT_GRADE_BANDS_READABLE = listOf(
+     9.0 to Color(0xFFEB6D66), //  9%+    — red
+     6.0 to Color(0xFFFE8253), //  6–9%   — orange
+     3.0 to Color(0xFFF2C510), //  3–6%   — yellow
+     0.0 to Color(0xFF39A7D6), //  0–3%   — blue
+)
 private val WAHOO_GRADE_BANDS_READABLE = listOf(
     20.0 to Color(0xFFFF5959), // 20%+
     12.0 to Color(0xFFFF5958), // 12–19.9%
@@ -128,7 +134,7 @@ internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolea
         GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
         GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
-        GradePalette.ZWIFT -> ZWIFT_GRADE_BANDS
+        GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE else ZWIFT_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second
 }
