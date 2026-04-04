@@ -53,6 +53,7 @@ Zone colors from other platforms (Wahoo, Garmin, Zwift, Intervals.icu) are often
 | Karoo   | 0–5% · 5–8% · 8–13% · 13–16% · 16–20% · 20–24% · ≥24% | ![](docs/palette-grade-karoo.svg)  | ![](docs/palette-grade-karoo-readable.svg)  |
 | Wahoo   | 0–4% · 4–8% · 8–12% · 12–20% · ≥20%                   | ![](docs/palette-grade-wahoo.svg)  | ![](docs/palette-grade-wahoo-readable.svg)  |
 | Garmin  | 0–3% · 3–6% · 6–9% · 9–12% · ≥12%                     | ![](docs/palette-grade-garmin.svg) | ![](docs/palette-grade-garmin-readable.svg) |
+| Zwift   | 0–3% · 3–6% · 6–9% · ≥9%                               | ![](docs/palette-grade-zwift.svg)  | ![](docs/palette-grade-zwift-readable.svg)  |
 | HSLuv   | 0–3% · 3–6% · 6–9% · 9–12% · 12–15% · 15–18% · ≥18%   |                                    | ![](docs/palette-grade-hsluv.svg)           |
 
 ### Elevation sparkline
