@@ -210,3 +210,34 @@ Icon size equals `labelSize` in both dimensions (`width = height = labelSize px`
 
 For narrow cells (`colSpan = 30`, `rowSpan ≥ 12`), the native label uses two lines with
 `lineSpacingMultiplier = 0.6` and `translationY = -3px` to collapse the inter-line gap.
+
+---
+
+## Native ETA estimation (TIME_TO_DESTINATION)
+
+Source: decompiled ride app, `hhp7/m.java` (`TYPE_TIME_TO_DESTINATION_ID`).
+
+The native ETA data type declares four dependencies:
+
+| Dependency       | Obfuscated class | Data type ID                      |
+| ---------------- | ---------------- | --------------------------------- |
+| Dist to dest     | `hha7.g`         | `TYPE_DISTANCE_TO_DESTINATION_ID` |
+| Avg speed (moving)| `hhl7.g`        | `TYPE_AVERAGE_SPEED_ID`           |
+| 1hr avg speed    | `hhl7.c`         | `TYPE_1HR_AVERAGE_SPEED_ID`       |
+| Ride time (total)| `hhp7.j`         | `TYPE_RIDE_TIME_ID`               |
+
+`TYPE_AVERAGE_SPEED_ID` is constructed with `TYPE_ELAPSED_TIME_ID` as its time
+dependency (`hhp7.b`), meaning it computes distance / moving time (excluding paused
+time). `TYPE_RIDE_TIME_ID` is wall-clock time including pauses.
+
+The exact formula that combines these inputs is inside heavily obfuscated processor
+code and could not be reconstructed. What we know:
+
+- It uses both overall average speed and a 1-hour rolling window average speed,
+  suggesting some kind of blended estimate rather than a simple `distance / avg_speed`.
+- Ride time (wall-clock, including paused time) is an input, which may explain the
+  reported odd behavior during pauses — if the blend weights depend on elapsed time,
+  pausing could shift the weight between the two speed components.
+- The processor class (`hhm7.c`, case 1) selects between a "loading" and "no route"
+  state but the computation itself is dispatched through further obfuscated layers
+  that could not be traced.

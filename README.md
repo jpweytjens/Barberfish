@@ -27,12 +27,14 @@ Zone coloring supports both background-fill and text-color styles across multipl
 | Avg speed threshold | Not available                                                                                                                                                      | Configurable single threshold or min/max range with warning bands                                                                       |
 | Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h23m45s`, `1h23'45"`, or `01:23:45`                                                                                      |
 | Duration fields     | [Built-in duration fields](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend)  including total time, riding time, paused time, ... | Reimplemented with Barberfish formatting options                                                                                        |
+| ETA fields          | Time to destination (TTD) and estimated time of arrival (ETA)                                                                                                      | Adds remaining ride time (RRT): predicted cycling time excluding pauses                                                                 |
+| ETA algorithm       | Blends moving-time average speed and a 1-hour rolling average (exact formula unknown)                                                                              | [DEWMA](https://github.com/jpweytjens/godot) blending a 5-min fast and 1-hour slow component with a configurable speed prior            |
 
 All field settings are configured in the Barberfish app on your Karoo. Changes update live and take effect immediately without restarting your ride. When a route is loaded, the sparkline preview in the data page configuration shows your actual route rather than a placeholder.
 
 ### Color palettes
 
-Zone colors from other platforms (Wahoo, Garmin, Zwift, Intervals.icu) are often too dark to read on the Karoo's dark background. Barberfish offers both the original colors and a "readable" variant adjusted using [APCA](https://apcacontrast.com/) contrast checking and [HSLuv](https://www.hsluv.org/) lightness correction to ensure readability. A custom HSLuv palette is included that needs no correction by design. See [docs/color-palettes.md](docs/color-palettes.md) for the full explanation.
+Zone colors from other platforms (Wahoo, Garmin, Zwift, Intervals.icu) are often too dark to read on the Karoo's dark background. Barberfish offers both the original colors and a "readable" variant adjusted using [APCA](https://apcacontrast.com/) contrast checking and [HSLuv](https://www.hsluv.org/) lightness correction to ensure readability. A custom HSLuv palette is included that needs no correction by design. See [color palettes](color-palettes.md) for more details..
 
 ### Zone color palettes
 
