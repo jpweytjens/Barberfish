@@ -41,7 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.jpweytjens.barberfish.R
@@ -168,15 +168,16 @@ private fun HUDPreview(
     val current = states[index.coerceIn(states.indices)]
 
     val density = LocalDensity.current.density
-    val screenWidthPx = (LocalConfiguration.current.screenWidthDp * density).toInt()
     val isNightMode = isSystemInDarkTheme()
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, screenWidthPx, isNightMode) {
-        if (!hudConfig.sparkline.enabled) null
+    val sparklineDisplayHeightPx = (40f * density).toInt()
+    var boxWidthPx by remember { mutableIntStateOf(0) }
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode) {
+        if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
         else renderElevationSparkline(
             elevationPoints = previewElevationFixture(),
             positionM       = 2_500f,
-            widthPx         = screenWidthPx,
-            heightPx        = (28f * density).toInt(),
+            widthPx         = boxWidthPx,
+            heightPx        = sparklineDisplayHeightPx,
             density         = density,
             palette         = zoneConfig.gradePalette,
             readable        = zoneConfig.readableColors,
@@ -192,6 +193,7 @@ private fun HUDPreview(
             .height(80.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
+            .onSizeChanged { boxWidthPx = it.width }
     ) {
         Row(Modifier.fillMaxSize()) {
             buildList {
