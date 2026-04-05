@@ -4,39 +4,51 @@
 
 ### Elevation sparkline
 
-A tiny mountain profile now lives below your HUD. Past on the left, current suffering in the middle, upcoming elevation on the right. Tap to look 5, 10, or 20 km ahead. When a route is loaded, the field picker preview shows your actual route.
+A tiny mountain profile now lives below your HUD.  
 
-### New fields
+Only when a route is loaded, you see the past on the left, current gradient in the middle, upcoming elevation on the right. Tap to look 5, 10, or 20 km ahead. 
 
-(Last) Lap Power, (Last) Lap Time, (Last) Lap HR, Average HR. The field list was starting to feel like it only cared about your current moment. Now it also cares about your recent and average moments.
+### New data fields
+
+The field list was starting to feel like it only cared about your current moment. Now it also cares about your recent and average moments.
+
+- (Last) Lap Power
+- (Last) Lap Time
+- (Last) Lap HR
+- Average HR
+- Cadence threshold coloring — set a target RPM or min/max zone, same system as average speed
 
 ### ETA
 
-Three new fields: remaining ride time, time to destination, and clock-on-the-wall arrival time. Powered by [DEWMA](https://github.com/jpweytjens/godot), because "assume you'll hold this exact watt for the next 80 km" was optimistic at best.
+Three new ETA data fields powered by [DEWMA](https://github.com/jpweytjens/godot).
+- Remaining ride time (excluding paused time)
+- Time to destination (including paused time)
+- Clock-on-the-wall arrival time.
 
-### The elapsed/riding time thing
+### Elapsed/paused time fix
 
-Elapsed time and riding time were swapped. Somebody named the moving-time field `ELAPSED_TIME` and the total-time field `RIDE_TIME` and I got confused.
+Somebody at Karoo named the moving-time field `ELAPSED_TIME` and the total-time field `RIDE_TIME` and I got confused.
+
+- Fixed elapsed time showing no values
+- Fixed paused time showing large values
 
 ### Zone colors
 
-Zone colors are now legible on the Karoo screen. Previously they were colorful. There is a difference. Each palette is tuned using [APCA](https://apcacontrast.com/) contrast checking and [HSLuv](https://www.hsluv.org/) lightness correction. A new HSLuv palette was designed from scratch to not need correction in the first place. Zwift grade palette added for your indoor climb sessions.
+Tweaked color palettes for increased readability in dark mode.
+
+- [APCA](https://apcacontrast.com/) contrast tuning and [HSLuv](https://www.hsluv.org/) lightness correction per palette
+- New HSLuv palette designed for readability in dark mode
+- Zwift grade palette for indoor climb sessions
+
+### Compatibility
+
+- Light mode support
+- Karoo 2 support
 
 ### Config screen
 
-Tap-to-expand cards, section icons, grouped dropdowns, live previews. It now matches the Karoo UI even better.
+ - Config UI has more organisation and new UI to follow Karoo UI more closely.
 
-### Under the hood
-
-Unified rendering pipeline, glyph-measured font sizing, shared base types. The kind of work that should make the next features take at least half as long.
-
-### Karoo 2 support
-
-Barberfish now runs on the Karoo 2. The old dog gets the new tricks.
-
-### Imperial units
-
-Data fields and the config UI now respect your Karoo's unit preference. Barberfish speaks both imperial and metric.
 
 ## 2.0
 - Configurable HUD slots  
