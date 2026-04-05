@@ -236,7 +236,7 @@ suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedC
 data class ZoneConfig(
     val hrPalette: ZonePalette = ZonePalette.KAROO,
     val powerPalette: ZonePalette = ZonePalette.KAROO,
-    val gradePalette: GradePalette = GradePalette.WAHOO,
+    val gradePalette: GradePalette = GradePalette.KAROO,
     val readableColors: Boolean = true,
 )
 
