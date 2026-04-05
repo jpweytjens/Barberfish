@@ -6,74 +6,63 @@ import android.util.TypedValue
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.HUDState
-import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
-import io.hammerhead.karooext.extension.DataTypeImpl
-import io.hammerhead.karooext.internal.ViewEmitter
-import io.hammerhead.karooext.models.UpdateGraphicConfig
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import io.hammerhead.karooext.models.ViewConfig
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.launch
 
-@OptIn(FlowPreview::class)
 abstract class HUDDataType(extensionId: String, typeId: String) :
-    DataTypeImpl(extensionId, typeId) {
+    BarberfishBase<HUDState>(extensionId, typeId) {
 
-    /** Throttle applied to [liveFlow] emissions. */
-    open val sampleMs: Long = 400L
+    override fun renderState(state: HUDState, config: ViewConfig, context: Context): RemoteViews =
+        buildHudRemoteViews(state, config, context)
 
-    /** Emits HUDState from real sensor streams. Must not sample internally. */
-    abstract fun liveFlow(context: Context): Flow<HUDState>
-
-    /** Emits HUDState for the Karoo config-screen preview carousel. */
-    abstract fun previewFlow(context: Context): Flow<HUDState>
-
-    override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        emitter.onNext(UpdateGraphicConfig(showHeader = false))
-        val scope = CoroutineScope(Dispatchers.IO + Job())
-        emitter.setCancellable { scope.cancel() }
-        scope.launch {
-            val flow =
-                if (config.preview) previewFlow(context) else liveFlow(context).sample(sampleMs)
-            flow.collect { state ->
-                val colSpanOverride = if (state.columns == 4) 15 else 20
-                val sizeConfig = config.toViewSizeConfig(colSpanOverride = colSpanOverride, textSizeOverride = if (state.columns == 4) 30 else 36)
-                val layoutRes = if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
-                val rv = RemoteViews(context.packageName, layoutRes)
-                // 2dp top/bottom padding
-                val paddingPx = (2f * context.resources.displayMetrics.density).toInt()
-                rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, paddingPx)
-                // Preview corner radius
-                if (config.preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    rv.setViewOutlinePreferredRadius(R.id.hud_root, 12f, TypedValue.COMPLEX_UNIT_DIP)
-                    rv.setBoolean(R.id.hud_root, "setClipToOutline", true)
-                }
-                buildList {
-                    add(Triple(R.id.hud_slot_left, state.leftSlot, state.leftColorMode))
-                    add(Triple(R.id.hud_slot_middle, state.middleSlot, state.middleColorMode))
-                    add(Triple(R.id.hud_slot_right, state.rightSlot, state.rightColorMode))
-                    if (state.columns == 4) add(Triple(R.id.hud_slot_fourth, state.fourthSlot, state.fourthColorMode))
-                }.forEach { (slotId, field, colorMode) ->
-                    rv.removeAllViews(slotId)
-                    rv.addView(
-                        slotId,
-                        barberfishFieldRemoteViews(
-                            field = field,
-                            alignment = config.alignment,
-                            colorMode = colorMode,
-                            sizeConfig = sizeConfig,
-                            preview = false,
-                            context = context,
-                        ),
-                    )
-                }
-                emitter.updateView(rv)
-            }
+    protected fun buildHudRemoteViews(
+        state: HUDState,
+        config: ViewConfig,
+        context: Context,
+        sparklineHeightPx: Int = 0,
+    ): RemoteViews {
+        val density = context.resources.displayMetrics.density
+        val paddingPx = (2f * density).toInt()
+        // Slot row fills full cell; sparkline overlays at bottom (FrameLayout root).
+        // When sparkline is active, increase baseline margin so values sit above it.
+        val slotHeightPx = config.viewSize.second.toFloat() - 2 * paddingPx
+        val baseConfig = if (state.columns == 4) ViewSizeConfig.HUD_FOUR else ViewSizeConfig.HUD_THREE
+        val baseSizeConfig = baseConfig.copy(cellHeightPx = slotHeightPx)
+        val sizeConfig = if (sparklineHeightPx > 0)
+            baseSizeConfig.copy(baselineMarginPx = baseSizeConfig.baselineMarginPx + sparklineHeightPx)
+        else baseSizeConfig
+        val layoutRes =
+            if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
+        val rv = RemoteViews(context.packageName, layoutRes)
+        rv.setViewPadding(R.id.hud_root, 0, paddingPx, 0, paddingPx)
+        // Clip slot row above the sparkline so colored backgrounds don't bleed through
+        rv.setViewPadding(R.id.hud_slot_row, 0, 0, 0, sparklineHeightPx)
+        // Preview corner radius
+        if (config.preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            rv.setViewOutlinePreferredRadius(R.id.hud_root, 12f, TypedValue.COMPLEX_UNIT_DIP)
+            rv.setBoolean(R.id.hud_root, "setClipToOutline", true)
         }
+        buildList {
+            add(Triple(R.id.hud_slot_left,   state.leftSlot,   state.leftColorMode))
+            add(Triple(R.id.hud_slot_middle, state.middleSlot, state.middleColorMode))
+            add(Triple(R.id.hud_slot_right,  state.rightSlot,  state.rightColorMode))
+            if (state.columns == 4)
+                add(Triple(R.id.hud_slot_fourth, state.fourthSlot, state.fourthColorMode))
+        }.forEach { (slotId, field, colorMode) ->
+            rv.removeAllViews(slotId)
+            rv.addView(
+                slotId,
+                barberfishFieldRemoteViews(
+                    field      = field,
+                    alignment  = config.alignment,
+                    colorMode  = colorMode,
+                    sizeConfig = sizeConfig,
+                    preview    = false,
+                    context    = context,
+                ),
+            )
+        }
+        return rv
     }
+
 }

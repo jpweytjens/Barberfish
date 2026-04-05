@@ -6,11 +6,20 @@ import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import kotlin.math.sqrt
 
+// UI grey palette (Design Guide scale: 100=lightest, 600=darkest)
+internal val Grey100 = Color(0xFFF4F4F4)
+internal val Grey200 = Color(0xFFDDDDDD)
+internal val Grey400 = Color(0xFF979797)
+internal val Grey500 = Color(0xFF7D7D7D)
+
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
-private val MUTED_GREY = Color(0xFF7D7D7D)
-private val ICON_TINT_TEAL = Color(0xFF31E09A)
-private val ICON_TINT_BLACK = Color(0xFF000000)
+internal val ICON_TINT_TEAL = Color(0xFF31E09A)
+internal val KAROO_REJOIN_RED         = Color(0xFFfc292b)
+internal val KAROO_DESTINATION_PURPLE = Color(0xFFddacfa)
+internal val TextDark      = Color(0xFF1B2D2D)
+internal val LemonYellow   = Color(0xFFFFE900)
+internal val BackButtonTint = Color(0xFFA0B4BE)
 
 // RdYlGn color map (single threshold) — neutral center is white
 internal val RDYLGN_RED = Color(0xFFD73027)
@@ -57,6 +66,17 @@ private val GARMIN_GRADE_BANDS = listOf(
      0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
 )
 
+// HSLuv grade bands — aliased to HSLuv power palette, Garmin-style grade spacing
+private val HSLUV_GRADE_BANDS = listOf(
+    18.0 to hsluvPowerColors[6], // >18%       purple/neuromuscular
+    15.0 to hsluvPowerColors[5], // 15–18%     red/anaerobic
+    12.0 to hsluvPowerColors[4], // 12–15%     yellow/VO₂max
+     9.0 to hsluvPowerColors[3], //  9–12%     yellow-green/threshold
+     6.0 to hsluvPowerColors[2], //  6–9%      green/tempo
+     3.0 to hsluvPowerColors[1], //  3–6%      teal/endurance
+     0.0 to hsluvPowerColors[0], //  <3%       blue-gray/recovery
+)
+
 // Reuses Karoo power zone palette (green→yellow→orange→red→purple)
 private val KAROO_GRADE_BANDS = listOf(
     23.6 to karooPowerColors[6], // >23.5%     — purple
@@ -68,13 +88,74 @@ private val KAROO_GRADE_BANDS = listOf(
      0.0 to karooPowerColors[0], //  <4.6%     — dark green
 )
 
-internal fun gradeColor(percent: Double, palette: GradePalette): Color {
+// Zwift grade bands — official Zwift climb colors, designed for dark backgrounds
+private val ZWIFT_GRADE_BANDS = listOf(
+     9.0 to Color(0xFFEA5147), //  9%+    — red
+     6.0 to Color(0xFFFE8253), //  6–9%   — orange
+     3.0 to Color(0xFFF2C510), //  3–6%   — yellow
+     0.0 to Color(0xFF39A7D6), //  0–3%   — blue
+)
+
+// Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against black. Pre-computed via scripts/apca_hsluv.py.
+private val ZWIFT_GRADE_BANDS_READABLE = listOf(
+     9.0 to Color(0xFFEB6D66), //  9%+    — red
+     6.0 to Color(0xFFFE8253), //  6–9%   — orange
+     3.0 to Color(0xFFF2C510), //  3–6%   — yellow
+     0.0 to Color(0xFF39A7D6), //  0–3%   — blue
+)
+private val WAHOO_GRADE_BANDS_READABLE = listOf(
+    20.0 to Color(0xFFFF5959), // 20%+
+    12.0 to Color(0xFFFF5958), // 12–19.9%
+     8.0 to Color(0xFFFF5C23), //  8–11.9%
+     4.0 to Color(0xFFFEFF00), //  4–7.9%
+     0.0 to Color(0xFF04FE00), //  0–3.9%
+)
+private val GARMIN_GRADE_BANDS_READABLE = listOf(
+    12.0 to Color(0xFFFA5E60), // >12%  HC
+     9.0 to Color(0xFFF36C72), //  9–12% Cat 1
+     6.0 to Color(0xFFFBAD41), //  6–9%  Cat 2
+     3.0 to Color(0xFFF9EE44), //  3–6%  Cat 3
+     0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
+)
+private val KAROO_GRADE_BANDS_READABLE = listOf(
+    23.6 to karooPowerColorsReadable[6], // >23.5%     — purple
+    19.6 to karooPowerColorsReadable[5], // 19.6–23.5% — red
+    15.6 to karooPowerColorsReadable[4], // 15.6–19.5% — orange
+    12.6 to karooPowerColorsReadable[3], // 12.6–15.5% — salmon
+     7.6 to karooPowerColorsReadable[2], //  7.6–12.5% — yellow
+     4.6 to karooPowerColorsReadable[1], //  4.6–7.5%  — mint green
+     0.0 to karooPowerColorsReadable[0], //  <4.6%     — dark green
+)
+
+internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
+    if (percent < 0) return null
     val bands = when (palette) {
-        GradePalette.WAHOO -> WAHOO_GRADE_BANDS
-        GradePalette.GARMIN -> GARMIN_GRADE_BANDS
-        GradePalette.KAROO -> KAROO_GRADE_BANDS
+        GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE else WAHOO_GRADE_BANDS
+        GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
+        GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
+        GradePalette.HSLUV -> HSLUV_GRADE_BANDS
+        GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE else ZWIFT_GRADE_BANDS
     }
-    return bands.firstOrNull { percent >= it.first }?.second ?: bands.last().second
+    return bands.firstOrNull { percent >= it.first }?.second
+}
+
+/**
+ * Returns the minimum grade (%) that receives a colour fill in the elevation sparkline.
+ *
+ * [skipBands] controls how many of the lowest-grade bands are suppressed (0 = colour
+ * everything including flat terrain, 1 = skip the lowest band (default), 2 = skip the
+ * two lowest, etc.). Clamped so it never exceeds the band count.
+ */
+internal fun gradeThreshold(palette: GradePalette, skipBands: Int = 1): Double {
+    val bands = when (palette) {
+        GradePalette.WAHOO  -> WAHOO_GRADE_BANDS
+        GradePalette.GARMIN -> GARMIN_GRADE_BANDS
+        GradePalette.HSLUV  -> HSLUV_GRADE_BANDS
+        GradePalette.KAROO  -> KAROO_GRADE_BANDS
+        GradePalette.ZWIFT  -> ZWIFT_GRADE_BANDS
+    }
+    val idx = (bands.lastIndex - skipBands).coerceAtLeast(0)
+    return bands[idx].first
 }
 
 data class ColorConfig(
@@ -89,42 +170,47 @@ internal fun FieldColor.toBackgroundColor(): Color? =
     when (this) {
         is FieldColor.Default,
         is FieldColor.Error,
-        is FieldColor.Muted -> null
+        is FieldColor.Muted,
+        is FieldColor.StreamState -> null
         is FieldColor.Threshold -> thresholdColor(factor)
         is FieldColor.DangerZone ->
             dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
-            if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette)
-        is FieldColor.Grade -> gradeColor(percent, palette)
+            if (isHr) hrZoneColor(zone, palette, readable) else powerZoneColor(zone, palette, readable)
+        is FieldColor.Grade -> gradeColor(percent, palette, readable)
     }
 
 internal fun FieldColor.toColor(): Color? =
     when (this) {
         is FieldColor.Default -> null
         is FieldColor.Error -> ERROR_RED
-        is FieldColor.Muted -> MUTED_GREY
+        is FieldColor.Muted -> Grey500
+        is FieldColor.StreamState -> null
         is FieldColor.Threshold -> thresholdColor(factor)
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
-            if (isHr) hrZoneColor(zone, palette) else powerZoneColor(zone, palette)
-        is FieldColor.Grade -> gradeColor(percent, palette)
+            if (isHr) hrZoneColor(zone, palette, readable) else powerZoneColor(zone, palette, readable)
+        is FieldColor.Grade -> gradeColor(percent, palette, readable)
     }
 
-internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode): ColorConfig {
+internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boolean): ColorConfig {
+    val defaultText = if (isNightMode) Color.White else Color.Black
     val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColor() else null
     val onBg = bg != null
     val valueColor: Color =
         when {
-            onBg -> Color.Black
-            // Error/Muted always use their own text color regardless of colorMode
-            this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: Color.White
-            colorMode == ZoneColorMode.TEXT -> toColor() ?: Color.White
-            else -> Color.White
+            // Error/Muted always use their own text color regardless of colorMode.
+            // StreamState goes to stream_state_tv; valueText set to theme default.
+            this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: defaultText
+            this is FieldColor.StreamState -> defaultText
+            colorMode == ZoneColorMode.TEXT -> toColor() ?: defaultText
+            onBg -> defaultText
+            else -> defaultText
         }
     return ColorConfig(
         valueText = valueColor,
-        headerText = if (onBg) Color.Black else Color.White,
-        iconTint = if (onBg) ICON_TINT_BLACK else ICON_TINT_TEAL,
+        headerText = defaultText,
+        iconTint = if (onBg || this is FieldColor.StreamState) defaultText else ICON_TINT_TEAL,
         background = bg,
     )
 }

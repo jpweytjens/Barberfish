@@ -1,36 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Four-column HUD container. Each slot is filled via RemoteViews.removeAllViews() +
-    addView() with a barberfish_field.xml RemoteViews instance.
+    Four-column HUD container. FrameLayout root so the sparkline overlays
+    at the bottom without stealing height from the slot row.
+    Each slot is filled via RemoteViews.removeAllViews() + addView()
+    with a barberfish_field.xml RemoteViews instance.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/hud_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal">
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/hud_slot_row"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:id="@+id/hud_slot_left"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:id="@+id/hud_slot_middle"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:id="@+id/hud_slot_right"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <FrameLayout
+            android:id="@+id/hud_slot_fourth"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+    </LinearLayout>
 
     <FrameLayout
-        android:id="@+id/hud_slot_left"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        android:id="@+id/hud_sparkline_container"
+        android:layout_width="match_parent"
+        android:layout_height="34dp"
+        android:layout_gravity="bottom"
+        android:visibility="gone">
 
-    <FrameLayout
-        android:id="@+id/hud_slot_middle"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        <ImageView
+            android:id="@+id/hud_elevation_sparkline"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY" />
 
-    <FrameLayout
-        android:id="@+id/hud_slot_right"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+        <LinearLayout
+            android:id="@+id/hud_sparkline_transition"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
 
-    <FrameLayout
-        android:id="@+id/hud_slot_fourth"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1" />
+            <TextView
+                android:id="@+id/hud_transition_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFFFF"
+                android:textSize="11sp" />
 
-</LinearLayout>
+            <ImageView
+                android:id="@+id/hud_transition_icon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_swap_horiz" />
+        </LinearLayout>
+    </FrameLayout>
+
+</FrameLayout>

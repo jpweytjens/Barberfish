@@ -33,6 +33,11 @@
 hs_err_pid*
 replay_pid*
 
+### Python ###
+__pycache__/
+*.py[cod]
+.venv/
+
 ### Claude ###
 .claude/
 PLAN.MD
@@ -51,6 +56,7 @@ screencaps/
 # Decompiled files
 docs/ride_decompiled/
 docs/ride.apk
+docs/karoo-ext_decompiled/
 
 # Superpowers
 docs/superpowers/

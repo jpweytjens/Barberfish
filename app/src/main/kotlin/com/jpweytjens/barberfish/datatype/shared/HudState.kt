@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype.shared
 
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import io.hammerhead.karooext.models.UserProfile
 
 data class HUDState(
     val columns: Int,
@@ -12,4 +13,5 @@ data class HUDState(
     val rightColorMode: ZoneColorMode,
     val fourthSlot: FieldState,
     val fourthColorMode: ZoneColorMode,
+    val profile: UserProfile,
 )

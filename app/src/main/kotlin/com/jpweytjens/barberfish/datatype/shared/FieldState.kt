@@ -2,22 +2,25 @@ package com.jpweytjens.barberfish.datatype.shared
 
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
+import io.hammerhead.karooext.models.UserProfile
 
 data class FieldState(
     val primary: String,
     val label: String = "",
     val color: FieldColor,
     val iconRes: Int? = null,
+    val secondaryIconRes: Int? = null,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
-        fun unavailable(label: String) = FieldState("---", label, FieldColor.Default)
+        fun unavailable(label: String) = FieldState("—", label, FieldColor.Error)
 
-        fun noSensor(label: String = "") = FieldState("No sensor", label, FieldColor.Error)
+        fun searching(label: String = "") = FieldState("Searching...", label, FieldColor.StreamState)
 
-        fun notAvailable(label: String = "") = FieldState("Not available", label, FieldColor.Error)
+        fun notAvailable(label: String = "") = FieldState("Not available", label, FieldColor.StreamState)
 
-        fun noData(label: String = "") = FieldState("No data", label, FieldColor.Muted)
+        fun idle(label: String = "") = FieldState("No data", label, FieldColor.StreamState)
     }
 }
 
@@ -26,8 +29,13 @@ sealed interface FieldColor {
     data object Default : FieldColor
 
     // zone: 1-based zone number, total: number of zones (7 for power, 5 for HR)
-    data class Zone(val zone: Int, val total: Int, val palette: ZonePalette, val isHr: Boolean) :
-        FieldColor
+    data class Zone(
+        val zone: Int,
+        val total: Int,
+        val palette: ZonePalette,
+        val isHr: Boolean,
+        val readable: Boolean = true,
+    ) : FieldColor
 
     // factor: -1.0 (fully red) to 0.0 (yellow, at threshold) to +1.0 (fully green) — RdYlGn map
     data class Threshold(val factor: Float) : FieldColor
@@ -41,10 +49,28 @@ sealed interface FieldColor {
         val hasSafeZone: Boolean,
     ) : FieldColor
 
-    data object Error : FieldColor // sensor missing or unavailable — #FF5252 red
+    data object Error : FieldColor // null value in a live stream — #FF5252 red in field_value
 
-    data object Muted : FieldColor // sensor idle, no data flowing — #7D7D7D grey
+    data object Muted : FieldColor // reserved — #7D7D7D grey
+
+    data object StreamState : FieldColor // SDK non-Streaming state — white ibm-plex-sans-condensed in stream_state_tv
 
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
-    data class Grade(val percent: Double, val palette: GradePalette) : FieldColor
+    data class Grade(val percent: Double, val palette: GradePalette, val readable: Boolean = true) : FieldColor
 }
+
+fun zoneFieldColor(
+    zone: Int,
+    colorMode: ZoneColorMode,
+    profile: UserProfile,
+    zones: ZoneConfig,
+    isHr: Boolean,
+): FieldColor =
+    if (colorMode == ZoneColorMode.NONE) FieldColor.Default
+    else FieldColor.Zone(
+        zone,
+        (if (isHr) profile.heartRateZones else profile.powerZones).size.coerceAtLeast(1),
+        if (isHr) zones.hrPalette else zones.powerPalette,
+        isHr = isHr,
+        readable = zones.readableColors,
+    )

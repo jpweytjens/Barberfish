@@ -2,9 +2,9 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import com.jpweytjens.barberfish.R
-import com.jpweytjens.barberfish.datatype.shared.Delay
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
@@ -18,14 +18,10 @@ import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -41,33 +37,8 @@ class PowerField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, profile, zones)
             }
             .flatMapLatest { (cfg, profile, zones) ->
-                val label =
-                    if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
-                    else "${cfg.smoothing.label} Power"
                 karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
-                    state.toErrorFieldState(label)?.let {
-                        return@map it
-                    }
-                    val raw =
-                        (state as StreamState.Streaming).dataPoint.values[cfg.smoothing.fieldId]
-                            ?: return@map FieldState.unavailable(label)
-                    val zone = powerZone(raw, profile.powerZones)
-                    val color =
-                        if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                        else
-                            FieldColor.Zone(
-                                zone,
-                                profile.powerZones.size.coerceAtLeast(1),
-                                zones.powerPalette,
-                                isHr = false,
-                            )
-                    FieldState(
-                        raw.toInt().toString(),
-                        label = label,
-                        color = color,
-                        iconRes = R.drawable.ic_col_power,
-                        colorMode = cfg.colorMode,
-                    )
+                    toFieldState(state, cfg.smoothing, profile, zones, cfg.colorMode)
                 }
             }
 
@@ -80,18 +51,35 @@ class PowerField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, profile, zones)
             }
             .flatMapLatest { (cfg, profile, zones) ->
-                flow {
-                        val states = previewStates(cfg, profile, zones)
-                        var i = 0
-                        while (true) {
-                            emit(states[i++ % states.size])
-                            delay(Delay.PREVIEW.time)
-                        }
-                    }
-                    .flowOn(Dispatchers.IO)
+                cyclePreview(previewStates(cfg, profile, zones))
             }
 
     companion object {
+        fun toFieldState(
+            state: StreamState,
+            smoothing: PowerSmoothingStream,
+            profile: UserProfile,
+            zones: ZoneConfig,
+            colorMode: ZoneColorMode,
+        ): FieldState {
+            val label =
+                if (smoothing == PowerSmoothingStream.S0) "Power"
+                else "${smoothing.label} Power"
+            state.toErrorFieldState(label)?.let { return it }
+            val raw =
+                (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
+                    ?: return FieldState.unavailable(label)
+            val zone = powerZone(raw, profile.powerZones)
+            val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
+            return FieldState(
+                raw.toInt().toString(),
+                label = label,
+                color = color,
+                iconRes = R.drawable.ic_col_power,
+                colorMode = colorMode,
+            )
+        }
+
         fun previewStates(
             cfg: PowerFieldConfig,
             profile: UserProfile,
@@ -100,17 +88,9 @@ class PowerField(private val karooSystem: KarooSystemService) :
             val label =
                 if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
                 else "${cfg.smoothing.label} Power"
-            return listOf(180, 240, 320, 400, 531, 647, 1234).map { watts ->
+            return listOf(180, 240, 320, 400, 451, 511, 1234).map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
-                val color =
-                    if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                    else
-                        FieldColor.Zone(
-                            zone,
-                            profile.powerZones.size.coerceAtLeast(1),
-                            zones.powerPalette,
-                            isHr = false,
-                        )
+                val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(
                     watts.toString(),
                     label = label,

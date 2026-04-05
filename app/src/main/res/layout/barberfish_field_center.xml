@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Field layout: CENTER-aligned.
+    Identical structure to barberfish_field.xml, only horizontal gravity differs.
+    See barberfish_field.xml for documentation.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/field_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/stream_state_tv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="top|center_horizontal"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:fontWeight="500"
+        android:textColor="@android:color/white"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:lineSpacingMultiplier="0.6"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/field_value"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="top|center_horizontal"
+        android:includeFontPadding="false"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:fontFamily="monospace"
+        android:letterSpacing="-0.04" />
+
+    <LinearLayout
+        android:id="@+id/field_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:minHeight="22dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/field_icon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/field_icon_secondary"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/field_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:lines="2"
+            android:gravity="center_vertical|center_horizontal"
+            android:ellipsize="end"
+            android:textAllCaps="true"
+            android:fontFamily="ibm-plex-sans-condensed"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="0.7"
+            android:breakStrategy="simple" />
+
+    </LinearLayout>
+
+</FrameLayout>

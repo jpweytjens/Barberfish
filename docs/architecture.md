@@ -18,7 +18,7 @@ The Header sits at the top of the cell and contains:
 
 The Value is the large number below the header. Its font shrinks automatically to fit longer strings (e.g. `00:18` is smaller than `239`).
 
-Barberfish reimplements this anatomy via `RemoteViews` using `barberfish_field.xml`, matching the native look and feel precisely, with added support for zone coloring, variable font sizes, and a three-column HUD.
+Barberfish reimplements this anatomy via `RemoteViews` using three alignment-specific layouts (`barberfish_field.xml` for right, `barberfish_field_left.xml` for left, `barberfish_field_center.xml` for center), matching the native look and feel precisely, with added support for zone coloring, variable font sizes, and a three-column HUD.
 
 ---
 
@@ -28,14 +28,20 @@ All field rendering goes through a single function in `datatype/BarberfishView.k
 
 ```
 barberfishFieldRemoteViews(field, alignment, colorMode, sizeConfig, preview, context)
-  → RemoteViews (barberfish_field.xml)
+  → RemoteViews (barberfish_field*.xml, selected by alignment)
       ├── field_header  LinearLayout  (icon + label, wraps content, top of cell)
-      │   ├── field_icon   ImageView
-      │   └── field_label  TextView
-      └── field_value   TextView      (fills remaining space, vertically centered)
+      │   ├── field_icon            ImageView
+      │   ├── field_icon_secondary  ImageView  (GONE by default)
+      │   └── field_label           TextView
+      ├── field_value       TextView  (match_parent, gravity="top", positioned via paddingTop)
+      └── stream_state_tv   TextView  (GONE by default; shown for non-Streaming SDK states)
 ```
 
+Alignment determines the layout file: `barberfish_field.xml` (right), `barberfish_field_left.xml` (left), `barberfish_field_center.xml` (center). Each layout bakes in the correct gravity for header and value text. No programmatic `setGravity()` calls are made.
+
 `barberfishFieldRemoteViews()` receives a `FieldState` and a `ViewSizeConfig`; it has no access to streams, DataStore, or configuration. All sizing decisions are made by the caller before this function is invoked.
+
+Config-screen previews use the same rendering engine: `remoteViewsToBitmap()` in `RemoteViewsBitmap.kt` renders the `RemoteViews` to a `Bitmap` (via `apply/measure/layout/draw`), displayed in Compose via `Image(bitmap.asImageBitmap())`. `ViewSizeConfig.cellWidthPxOverride` allows preview callers to specify the exact cell width in pixels, bypassing the `dm.widthPixels * colSpan / 60` formula used for on-device rendering.
 
 ---
 
@@ -96,14 +102,17 @@ All spacing and sizing constants for one rendering context live in a single `Vie
 ```
 Cell level   paddingH
 Header       headerIconSize, headerIconLabelGap, headerFontSize, labelMaxLines
-Value        valueFontSizeBase, baseChars, valueTranslationY
+Value        valueFontSizeBase, wrapThresholdSp, baselineMarginPx, cellHeightPx
 ```
 
-One preset ships out of the box:
+Presets:
 
 | Preset                    | Use                                                           |
 | ------------------------- | ------------------------------------------------------------- |
 | `ViewSizeConfig.STANDARD` | Default values; overridden by `toViewSizeConfig()` at runtime |
+| `ViewSizeConfig.HUD_THREE`| On-device HUD 3-column slots (colSpan=20)                     |
+| `ViewSizeConfig.HUD_FOUR` | On-device HUD 4-column slots (colSpan=15)                     |
+| `PREVIEW_HUD_THREE/FOUR`  | Config-screen HUD previews (smaller fonts)                    |
 
 ---
 
@@ -124,56 +133,75 @@ For HUD slots the SDK `textSize` is meaningless, so `textSizeOverride` is used i
 
 | HUD columns | `colSpanOverride` | `textSizeOverride` |
 | ----------- | ----------------- | ------------------ |
-| 3-col       | 20                | 36 sp              |
-| 4-col       | 15                | 30 sp              |
+| 3-col       | 20                | 42 sp              |
+| 4-col       | 15                | 37 sp              |
 
-### Dynamic shrinking: `dynamicFontSp`
+### Dynamic shrinking: `fontSizeForCell`
 
-`valueFontSizeBase` is the *ceiling* — the size used when the value is short. For longer strings, `dynamicFontSp()` shrinks the font proportionally:
+`valueFontSizeBase` is the *ceiling* — the size used when the value is short. For longer strings, `fontSizeForCell()` shrinks the font using exact glyph measurements:
 
 ```
-dynamicFontSp(text, fontSizeBase, baseChars, k = 1.05)
+fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 ```
 
-1. Compute the effective character count of `text` using weighted widths:
+1. Measure text width at `fontSizeBaseSp` using `Paint.measureText()`.
+2. If it fits in `cellWidthPx` → return `fontSizeBaseSp` unchanged.
+3. Otherwise → scale proportionally: `floor(fontSizeBaseSp × cellWidthPx / measuredWidth)`.
+4. If the scaled result drops below `wrapThresholdSp` → attempt 2-line split at the word boundary
+   nearest the midpoint; size to the longer half.
 
-   | Characters      | Weight |
-   | --------------- | ------ |
-   | digits, letters | 1.0    |
-   | `h` `m` `s`     | 0.25   |
-   | `: . ' "`       | 0.15   |
+### `wrapThresholdSp` per layout
 
-2. If `effective ≤ baseChars` → return `fontSizeBase` unchanged.
-3. Otherwise → `floor(fontSizeBase × k × baseChars / effective)`, capped at `fontSizeBase`.
-
-The `k = 1.05` factor increases the font to take up as much of the width as possible, to reduce abrupt font size changes.
-
-### `baseChars` per layout
-
-`baseChars` controls how aggressively the font shrinks and is derived from `colSpan` in `ViewConfig.toViewSizeConfig()`:
-
-| `colSpan` | Layout context | `baseChars` | Starts shrinking at… |
-| --------- | -------------- | ----------- | -------------------- |
-| 60        | 1-column field | 6           | 7th effective char   |
-| 30        | 2-column field | 4           | 5th effective char   |
-| 20        | HUD 3-col slot | 4           | 5th effective char   |
-| 15        | HUD 4-col slot | 3           | 4th effective char   |
+| `colSpan` | Layout context | `wrapThresholdSp` |
+| --------- | -------------- | ----------------- |
+| 60        | 1-column field | 22                |
+| 30        | 2-column field | 18                |
+| 20        | HUD 3-col slot | 14                |
+| 15        | HUD 4-col slot | 12                |
 
 ### End-to-end flow
 
 ```
 ViewConfig.textSize  (SDK, sp, layout-aware)
-  │  or textSizeOverride (HUD slots: 36 for 3-col, 30 for 4-col)
+  │  or textSizeOverride (HUD slots: 42 for 3-col, 37 for 4-col)
   ▼
 ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig()
-ViewSizeConfig.baseChars                  ← derived from colSpan (6 / 4 / 3)
+ViewSizeConfig.wrapThresholdSp            ← derived from colSpan
 
-  ▼ at render time, in BarberfishValue
-dynamicFontSp(value, valueFontSizeBase, baseChars)
+  ▼ at render time, in makeFieldRemoteViews (BarberfishView.kt)
+fontSizeForCell(value, valueFontSizeBase, cellWidthPx, density, wrapThresholdSp)
   └─► actual sp applied to field_value TextView via RemoteViews.setTextViewTextSize()
 ```
 
-`BarberfishValue` is the only place `dynamicFontSp` is called. All scaling parameters flow in through `ViewSizeConfig`; the view layer makes no sizing decisions of its own.
+`makeFieldRemoteViews` is the only place `fontSizeForCell` is called for values. All sizing
+parameters flow in through `ViewSizeConfig`; the view layer makes no sizing decisions of its own.
+
+---
+
+## Value baseline alignment
+
+The value TextView uses `gravity="top"` (set in XML) with a computed `paddingTop` to pin the text baseline at a fixed vertical position regardless of font size.
+
+### Formula
+
+```
+paddingTop = (cellHeight - baselineMarginPx + ascent).coerceAtLeast(0)
+```
+
+- `cellHeight` — cell height in pixels; defaults to `screenHeight * 15 / 60` (one 4-row cell), overridable via `ViewSizeConfig.cellHeightPx`
+- `baselineMarginPx` — distance from the cell bottom to the value baseline; grid-size dependent (see table below)
+- `ascent` — `Paint.FontMetrics.ascent` for the value font at the computed sp size (negative value; text rises above the baseline)
+
+### `baselineMarginPx` per grid size
+
+| colSpan | rowSpan | baselineMarginPx | Layout context  |
+| ------- | ------- | ----------------- | --------------- |
+| 60      | >= 15   | 9                 | 1-col 3/4-row   |
+| 60      | >= 12   | 5                 | 1-col 5-row     |
+| 30      | >= 15   | 9                 | 2-col 4-row     |
+| 30      | >= 12   | 5                 | 2-col 5-row     |
+| 20      | any     | 5                 | HUD 3-col       |
+| 15      | any     | 5                 | HUD 4-col       |
 
 ---
 

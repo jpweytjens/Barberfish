@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Field layout matching native data_element_single.xml centering behaviour.
-    FrameLayout root: field_value fills full cell height with gravity=center_vertical,
-    matching native ConstraintLayout (top_toBottomOf=header + bottom_toBottomOf=parent + wrap_content).
-    field_header overlays at top. Value can extend into header area via translationY without clipping.
+    Field layout: RIGHT-aligned.
+    FrameLayout root: field_header overlays at top, field_value fills full cell with
+    gravity="top" and dynamic top padding set programmatically.
+    Top padding places baseline at cellH - margin for all font sizes.
     RemoteViews-safe: only FrameLayout, LinearLayout, ImageView, TextView are used.
     Horizontal padding and all text/icon properties are set programmatically.
 -->
@@ -12,15 +12,30 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Value: fills full cell, text centered vertically (drawn first = behind header). -->
+    <!-- Stream state (Searching/NotAvailable/Idle): ibm-plex-sans-condensed, white. GONE by default. -->
+    <TextView
+        android:id="@+id/stream_state_tv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="top|end"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:fontWeight="500"
+        android:textColor="@android:color/white"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:lineSpacingMultiplier="0.6"
+        android:visibility="gone" />
+
+    <!-- Value: fills full cell, text centered vertically. Dynamic top padding set at runtime. -->
     <TextView
         android:id="@+id/field_value"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center_vertical"
+        android:gravity="top|end"
         android:includeFontPadding="false"
         android:maxLines="1"
-        android:fontFamily="relative"
+        android:ellipsize="end"
+        android:fontFamily="monospace"
         android:letterSpacing="-0.04" />
 
     <!-- Header row: overlays at top. Mirrors native DataHeaderView. -->
@@ -40,13 +55,20 @@
             android:scaleType="fitCenter"
             android:visibility="gone" />
 
+        <ImageView
+            android:id="@+id/field_icon_secondary"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/field_label"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:lines="2"
-            android:gravity="center_vertical"
+            android:gravity="center_vertical|end"
             android:ellipsize="end"
             android:textAllCaps="true"
             android:fontFamily="ibm-plex-sans-condensed"

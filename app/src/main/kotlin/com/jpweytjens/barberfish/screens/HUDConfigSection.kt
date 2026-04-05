@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,52 +19,83 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.HUDField
+import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
+import com.jpweytjens.barberfish.datatype.shared.ConvertType
+import com.jpweytjens.barberfish.datatype.shared.Delay
 import com.jpweytjens.barberfish.datatype.shared.FieldState
-import com.jpweytjens.barberfish.datatype.shared.PreviewSizeConfig
+import androidx.compose.ui.platform.LocalContext
+import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
+import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
+import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
+import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
+import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
+import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.TimeConfig
+import com.jpweytjens.barberfish.datatype.shared.Grey100
+import com.jpweytjens.barberfish.datatype.shared.Grey200
+import com.jpweytjens.barberfish.datatype.shared.Grey400
+import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
+import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HUDConfigSection(
     hudConfig: HUDConfig,
     zoneConfig: ZoneConfig,
+    timeCfg: TimeConfig,
+    profile: UserProfile,
     onUpdate: (HUDConfig) -> Unit,
 ) {
-    var selectedSlot by remember { mutableStateOf<Int?>(0) }
+    var selectedSlot by remember { mutableStateOf<Int?>(null) }
 
     ColumnCountToggle(
         columns = hudConfig.columns,
         onSelect = { cols ->
             if (cols != hudConfig.columns) {
-                selectedSlot = 0
+                selectedSlot = null
                 onUpdate(hudConfig.copy(columns = cols))
             }
         },
@@ -71,11 +103,13 @@ internal fun HUDConfigSection(
     Text(
         "Tap a column to configure it.",
         fontSize = 12.sp,
-        color = Color(0xFF1B2D2D),
+        color = TextDark,
     )
     HUDPreview(
         hudConfig = hudConfig,
         zoneConfig = zoneConfig,
+        timeCfg = timeCfg,
+        profile = profile,
         selectedSlot = selectedSlot,
         onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
     )
@@ -90,6 +124,7 @@ internal fun HUDConfigSection(
     if (slot != null) {
         HUDSlotFieldCard(
             slot = slot,
+            profile = profile,
             onUpdate = { updated ->
                 onUpdate(
                     when (selectedSlot) {
@@ -102,36 +137,88 @@ internal fun HUDConfigSection(
             },
         )
     }
+    SparklineCard(
+        config = hudConfig.sparkline,
+        palette = zoneConfig.gradePalette,
+        profile = profile,
+        onUpdate = { onUpdate(hudConfig.copy(sparkline = it)) },
+    )
 }
 
 @Composable
 private fun HUDPreview(
     hudConfig: HUDConfig,
     zoneConfig: ZoneConfig,
+    timeCfg: TimeConfig,
+    profile: UserProfile,
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
 ) {
-    val sizeConfig = if (hudConfig.columns == 4) PreviewSizeConfig.HUD_FOUR else PreviewSizeConfig.HUD
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.Black)
-                .height(80.dp)
+    val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
+        HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
+    }
+    var index by remember { mutableIntStateOf(0) }
+    LaunchedEffect(states) {
+        index = 0
+        while (true) {
+            delay(Delay.PREVIEW.time)
+            index = (index + 1) % states.size
+        }
+    }
+    val current = states[index.coerceIn(states.indices)]
+
+    val density = LocalDensity.current.density
+    val isNightMode = isSystemInDarkTheme()
+    val sparklineDisplayHeightPx = (40f * density).toInt()
+    var boxWidthPx by remember { mutableIntStateOf(0) }
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode) {
+        if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
+        else renderElevationSparkline(
+            elevationPoints = previewElevationFixture(),
+            positionM       = 2_500f,
+            widthPx         = boxWidthPx,
+            heightPx        = sparklineDisplayHeightPx,
+            density         = density,
+            palette         = zoneConfig.gradePalette,
+            readable        = zoneConfig.readableColors,
+            lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
+            skipBands       = hudConfig.sparkline.skipBands,
+            isNightMode     = isNightMode,
+        ).first
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
+            .onSizeChanged { boxWidthPx = it.width }
     ) {
-        buildList {
-            add(hudConfig.leftSlot)
-            add(hudConfig.middleSlot)
-            add(hudConfig.rightSlot)
-            if (hudConfig.columns == 4) add(hudConfig.fourthSlot)
-        }.forEachIndexed { idx, slotCfg ->
-            HUDPreviewCell(
-                field = slotPreviewFieldState(slotCfg, zoneConfig),
-                colorMode = slotCfg.colorMode,
-                selected = selectedSlot == idx,
-                onClick = { onSlotSelected(idx) },
-                modifier = Modifier.weight(1f),
-                sizeConfig = sizeConfig,
+        Row(Modifier.fillMaxSize()) {
+            buildList {
+                add(Triple(0, current.leftSlot, current.leftColorMode))
+                add(Triple(1, current.middleSlot, current.middleColorMode))
+                add(Triple(2, current.rightSlot, current.rightColorMode))
+                if (hudConfig.columns == 4) add(Triple(3, current.fourthSlot, current.fourthColorMode))
+            }.forEach { (idx, field, colorMode) ->
+                HUDPreviewCell(
+                    field = field,
+                    colorMode = colorMode,
+                    selected = selectedSlot == idx,
+                    onClick = { onSlotSelected(idx) },
+                    modifier = Modifier.weight(1f),
+                    columns = hudConfig.columns,
+                    sparklineEnabled = hudConfig.sparkline.enabled,
+                )
+            }
+        }
+        if (sparklineBitmap != null) {
+            Image(
+                bitmap = sparklineBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(40.dp).align(Alignment.BottomCenter),
+                contentScale = ContentScale.FillBounds,
             )
         }
     }
@@ -144,9 +231,13 @@ private fun HUDPreviewCell(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    sizeConfig: PreviewSizeConfig = PreviewSizeConfig.HUD,
+    columns: Int = 3,
+    sparklineEnabled: Boolean = true,
 ) {
-    Box(
+    val context = LocalContext.current
+    val baseConfig = if (columns == 4) ViewSizeConfig.PREVIEW_HUD_FOUR
+        else ViewSizeConfig.PREVIEW_HUD_THREE
+    BoxWithConstraints(
         modifier =
             modifier
                 .pointerInput(onClick) {
@@ -157,16 +248,37 @@ private fun HUDPreviewCell(
                 }
                 .then(
                     if (selected)
-                        Modifier.border(2.dp, Color(0xFF31E09A), RoundedCornerShape(6.dp))
+                        Modifier.border(2.dp, ICON_TINT_TEAL, RoundedCornerShape(6.dp))
                     else Modifier
                 )
     ) {
-        BarberfishPreviewCell(
-            field = field,
-            alignment = ViewConfig.Alignment.RIGHT,
-            colorMode = colorMode,
-            modifier = Modifier.fillMaxSize(),
-            sizeConfig = sizeConfig,
+        val density = LocalDensity.current.density
+        val widthPx = (maxWidth.value * density).toInt()
+        val heightPx = (maxHeight.value * density).toInt()
+        val sparklineMarginPx = if (sparklineEnabled) 32f * density else 0f
+        val slotHeightPx = heightPx - sparklineMarginPx.toInt()
+        val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
+            baseConfig.copy(
+                cellWidthPxOverride = widthPx.toFloat(),
+                cellHeightPx = slotHeightPx.toFloat(),
+            )
+        }
+        val bitmap = remember(field, colorMode, sizeConfig, slotHeightPx) {
+            val rv = barberfishFieldRemoteViews(
+                field = field,
+                alignment = ViewConfig.Alignment.RIGHT,
+                colorMode = colorMode,
+                sizeConfig = sizeConfig,
+                preview = true,
+                context = context,
+            )
+            remoteViewsToBitmap(rv, widthPx, slotHeightPx, context)
+        }
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = null,
+            modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter),
+            contentScale = ContentScale.FillWidth,
         )
     }
 }
@@ -177,7 +289,7 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color(0xFFD5D5D5))
+                .background(Grey200)
                 .padding(3.dp)
                 .pointerInput(columns, onSelect) {
                     val slotWidthPx = size.width.toFloat() / 2
@@ -194,14 +306,14 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Color(0xFF9E9E9E) else Color.Transparent)
+                        .background(if (isSelected) Grey400 else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = label,
                     fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
+                    color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -209,96 +321,65 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
     }
 }
 
-private fun slotPreviewFieldState(slot: HUDSlotConfig, zoneConfig: ZoneConfig): FieldState =
-    when (slot.field) {
-        HUDSlotField.Speed ->
-            FieldState(
-                "42.1",
-                if (slot.speedSmoothing == SpeedSmoothingStream.S0) "Speed"
-                else "${slot.speedSmoothing.label} Speed",
-                FieldColor.Default,
-                R.drawable.ic_col_speed,
-            )
-        HUDSlotField.HR ->
-            FieldState(
-                "187",
-                "HR",
-                FieldColor.Zone(4, 5, zoneConfig.hrPalette, isHr = true),
-                R.drawable.ic_col_hr,
-            )
-        HUDSlotField.Power ->
-            FieldState(
-                "247",
-                if (slot.powerSmoothing == PowerSmoothingStream.S0) "Power"
-                else "${slot.powerSmoothing.label} Power",
-                FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false),
-                R.drawable.ic_col_power,
-            )
-        HUDSlotField.Cadence ->
-            FieldState(
-                "87",
-                if (slot.cadenceSmoothing == CadenceSmoothingStream.S0) "Cadence"
-                else "${slot.cadenceSmoothing.label} Cad",
-                FieldColor.Default,
-                R.drawable.ic_cadence,
-            )
-        HUDSlotField.AvgPower ->
-            FieldState("220", "Avg Power", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_avg_power)
-        HUDSlotField.NP ->
-            FieldState("247", "NP", FieldColor.Zone(3, 7, zoneConfig.powerPalette, isHr = false), R.drawable.ic_col_power)
-        HUDSlotField.Grade ->
-            FieldState("6.2%", "Grade", FieldColor.Grade(6.2, zoneConfig.gradePalette), R.drawable.ic_grade)
-        is HUDSlotField.AvgSpeed ->
-            FieldState(
-                "30.0",
-                if (slot.field.includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
-                FieldColor.Default,
-                R.drawable.ic_speed_average,
-            )
-        is HUDSlotField.Time ->
-            FieldState(
-                "23'45\"",
-                slot.field.kind.label,
-                FieldColor.Default,
-                slot.field.kind.iconRes,
-            )
-    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HUDSlotFieldCard(
     slot: HUDSlotConfig,
+    profile: UserProfile,
     onUpdate: (HUDSlotConfig) -> Unit,
 ) {
     Column(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color(0xFFD5D5D5))
-                .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
     ) {
-        HUDFieldTypeDropdown(slot = slot, onUpdate = onUpdate)
-
-        when (val f = slot.field) {
-            HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
-            HUDSlotField.HR -> {}
-            HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
-            HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
-            HUDSlotField.AvgPower -> {}
-            HUDSlotField.NP -> {}
-            HUDSlotField.Grade -> {}
-            is HUDSlotField.AvgSpeed -> HUDAvgSpeedCard(slot, f, onUpdate)
-            is HUDSlotField.Time -> HUDTimeDropdown(slot, f, onUpdate)
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .background(Grey100)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            HUDFieldTypeDropdown(slot = slot, onUpdate = onUpdate)
         }
-
-        if (slot.field == HUDSlotField.HR || slot.field == HUDSlotField.Power ||
-            slot.field == HUDSlotField.AvgPower || slot.field == HUDSlotField.NP ||
-            slot.field == HUDSlotField.Grade) {
-            ZoneColorSlider(
-                selected = slot.colorMode,
-                onSelected = { onUpdate(slot.copy(colorMode = it)) },
-            )
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .background(Grey200)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            when (val f = slot.field) {
+                HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
+                HUDSlotField.AvgPower -> {}
+                HUDSlotField.NP -> {}
+                HUDSlotField.LapPower -> {}
+                HUDSlotField.LastLapPower -> {}
+                HUDSlotField.HR -> {}
+                HUDSlotField.AvgHR -> {}
+                HUDSlotField.LapAvgHR -> {}
+                HUDSlotField.LastLapAvgHR -> {}
+                HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
+                is HUDSlotField.AvgSpeed -> AvgSpeedThresholdControls(
+                    config = slot.avgSpeedConfig,
+                    profile = profile,
+                    onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
+                )
+                HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
+                HUDSlotField.Grade -> {}
+                is HUDSlotField.Time -> {}
+                is HUDSlotField.ETA -> {}
+            }
+            if (slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower ||
+                slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
+                slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.HR ||
+                slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR ||
+                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.Grade ||
+                slot.field == HUDSlotField.Cadence) {
+                ZoneColorSlider(
+                    selected = slot.colorMode,
+                    onSelected = { onUpdate(slot.copy(colorMode = it)) },
+                )
+            }
         }
     }
 }
@@ -307,16 +388,22 @@ private fun HUDSlotFieldCard(
 @Composable
 private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
     val fieldLabel =
-        when (slot.field) {
-            HUDSlotField.Speed -> "Speed"
-            HUDSlotField.HR -> "Heart rate"
+        when (val f = slot.field) {
             HUDSlotField.Power -> "Power"
-            HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.AvgPower -> "Avg Power"
             HUDSlotField.NP -> "NP"
+            HUDSlotField.LapPower -> "Lap Power"
+            HUDSlotField.LastLapPower -> "Last Lap Power"
+            HUDSlotField.HR -> "Heart rate"
+            HUDSlotField.AvgHR -> "Avg heart rate"
+            HUDSlotField.LapAvgHR -> "Lap avg heart rate"
+            HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
+            HUDSlotField.Speed -> "Speed"
+            is HUDSlotField.AvgSpeed -> if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
+            HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.Grade -> "Grade"
-            is HUDSlotField.AvgSpeed -> "Avg Speed"
-            is HUDSlotField.Time -> "Time"
+            is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
+            is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
         }
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -329,18 +416,58 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            listOf(
-                    "Speed" to HUDSlotField.Speed,
-                    "Heart rate" to HUDSlotField.HR,
+            val groups = listOf(
+                "Power" to listOf(
                     "Power" to HUDSlotField.Power,
-                    "Cadence" to HUDSlotField.Cadence,
                     "Avg Power" to HUDSlotField.AvgPower,
                     "NP" to HUDSlotField.NP,
+                    "Lap Power" to HUDSlotField.LapPower,
+                    "Last Lap Power" to HUDSlotField.LastLapPower,
+                ),
+                "Heart rate" to listOf(
+                    "Heart rate" to HUDSlotField.HR,
+                    "Avg heart rate" to HUDSlotField.AvgHR,
+                    "Lap avg heart rate" to HUDSlotField.LapAvgHR,
+                    "Last lap avg heart rate" to HUDSlotField.LastLapAvgHR,
+                ),
+                "Speed" to listOf(
+                    "Speed" to HUDSlotField.Speed,
+                    "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
+                    "Avg Speed (Total)" to HUDSlotField.AvgSpeed(includePaused = true),
+                ),
+                "Other" to listOf(
+                    "Cadence" to HUDSlotField.Cadence,
                     "Grade" to HUDSlotField.Grade,
-                    "Avg Speed" to HUDSlotField.AvgSpeed(),
-                    "Time" to HUDSlotField.Time(),
+                ),
+                "Duration" to listOf(
+                    "Elapsed time" to HUDSlotField.Time(TimeKind.TOTAL),
+                    "Moving time" to HUDSlotField.Time(TimeKind.RIDING),
+                    "Paused time" to HUDSlotField.Time(TimeKind.PAUSED),
+                    "Lap time" to HUDSlotField.Time(TimeKind.LAP),
+                    "Last lap time" to HUDSlotField.Time(TimeKind.LAST_LAP),
+                ),
+                "Navigation" to listOf(
+                    "Remaining ride time" to HUDSlotField.ETA(ETAKind.REMAINING_RIDE_TIME),
+                    "To destination" to HUDSlotField.ETA(ETAKind.TIME_TO_DESTINATION),
+                    "ETA" to HUDSlotField.ETA(ETAKind.TIME_OF_ARRIVAL),
+                ),
+                "Daylight" to listOf(
+                    "Sunrise" to HUDSlotField.Time(TimeKind.TIME_TO_SUNRISE),
+                    "Sunset" to HUDSlotField.Time(TimeKind.TIME_TO_SUNSET),
+                    "Dawn" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DAWN),
+                    "Dusk" to HUDSlotField.Time(TimeKind.TIME_TO_CIVIL_DUSK),
+                ),
+            )
+            groups.forEachIndexed { groupIndex, (groupLabel, fields) ->
+                if (groupIndex > 0) HorizontalDivider()
+                Text(
+                    groupLabel,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Grey400,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                 )
-                .forEach { (label, field) ->
+                fields.forEach { (label, field) ->
                     DropdownMenuItem(
                         text = { Text(label) },
                         onClick = {
@@ -349,13 +476,14 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                         },
                     )
                 }
+            }
         }
     }
 }
 
 @Composable
 private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
         selected = slot.speedSmoothing,
@@ -367,7 +495,7 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 
 @Composable
 private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     SmoothingSlider(
         options = PowerSmoothingStream.entries,
         selected = slot.powerSmoothing,
@@ -377,58 +505,10 @@ private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
     )
 }
 
-@Composable
-private fun HUDAvgSpeedCard(
-    slot: HUDSlotConfig,
-    field: HUDSlotField.AvgSpeed,
-    onUpdate: (HUDSlotConfig) -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(field, onUpdate) {
-                    val slotWidthPx = size.width.toFloat() / 2
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        val idx = (down.position.x / slotWidthPx).toInt().coerceIn(0, 1)
-                        val includePaused = idx == 1
-                        onUpdate(slot.copy(field = HUDSlotField.AvgSpeed(includePaused)))
-                    }
-                }
-    ) {
-        listOf(false to "Moving", true to "Total").forEach { (includePaused, label) ->
-            val isSelected = field.includePaused == includePaused
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(
-                            if (isSelected) Color(0xFF9E9E9E) else Color.Transparent
-                        )
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = Color(0xFF1B2D2D),
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
-    AvgSpeedThresholdControls(
-        config = slot.avgSpeedConfig,
-        onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
-    )
-}
 
 @Composable
 private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B2D2D))
+    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     SmoothingSlider(
         options = CadenceSmoothingStream.entries,
         selected = slot.cadenceSmoothing,
@@ -436,35 +516,111 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
         onSelected = { onUpdate(slot.copy(cadenceSmoothing = it)) },
         thumbIcon = R.drawable.ic_cadence,
     )
+    CadenceThresholdControls(
+        config = slot.cadenceThreshold,
+        onConfigChange = { onUpdate(slot.copy(cadenceThreshold = it)) },
+    )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HUDTimeDropdown(
-    slot: HUDSlotConfig,
-    field: HUDSlotField.Time,
-    onUpdate: (HUDSlotConfig) -> Unit,
+private fun SparklineCard(
+    config: SparklineConfig,
+    palette: GradePalette,
+    profile: UserProfile,
+    onUpdate: (SparklineConfig) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = field.kind.label.replace("\n", " "),
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Time field") },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    Column(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Grey200)
+                .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("ELEVATION SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+        Text("Shows elevation ahead when a route is loaded.", fontSize = 12.sp, color = TextDark)
+        SegmentedRow(
+            options = listOf(true to "On", false to "Off"),
+            selected = config.enabled,
+            onSelect = { onUpdate(config.copy(enabled = it)) },
         )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            TimeKind.entries.forEach { kind ->
-                DropdownMenuItem(
-                    text = { Text(kind.label.replace("\n", " ")) },
-                    onClick = {
-                        onUpdate(slot.copy(field = HUDSlotField.Time(kind)))
-                        expanded = false
-                    },
+        if (config.enabled) {
+            Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = listOf(5, 10, 20).map { km ->
+                    val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                    km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+                },
+                selected = config.lookaheadKm,
+                onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+            )
+            val threshold = gradeThreshold(palette, config.skipBands)
+            Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Grades below this band stay uncolored.", fontSize = 12.sp, color = TextDark)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SegmentedRow(
+                    options = listOf(0 to "0", 1 to "1", 2 to "2", 3 to "3"),
+                    selected = config.skipBands,
+                    onSelect = { onUpdate(config.copy(skipBands = it)) },
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "≥${"%.0f".format(threshold)}%",
+                    fontSize = 11.sp,
+                    color = TextDark,
                 )
             }
         }
     }
 }
+
+@Composable
+private fun <T> SegmentedRow(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(options, onSelect) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val idx =
+                            (down.position.x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
+                        onSelect(options[idx].first)
+                    }
+                }
+    ) {
+        options.forEach { (value, label) ->
+            val isSelected = selected == value
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+

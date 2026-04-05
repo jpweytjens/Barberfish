@@ -9,6 +9,7 @@
         displayName="@string/hud_name"
         description="@string/hud_description"
         graphical="true" />
+    <!-- Power -->
     <DataType
         icon="@drawable/ic_col_power"
         typeId="power"
@@ -16,11 +17,55 @@
         description="@string/power_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_avg_power"
+        typeId="avg-power"
+        displayName="@string/avg_power_name"
+        description="@string/avg_power_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="np"
+        displayName="@string/np_name"
+        description="@string/np_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_lap_power"
+        typeId="lap-power"
+        displayName="@string/lap_power_name"
+        description="@string/lap_power_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap_power"
+        typeId="last-lap-power"
+        displayName="@string/last_lap_power_name"
+        description="@string/last_lap_power_description"
+        graphical="true" />
+    <!-- HR -->
+    <DataType
         icon="@drawable/ic_col_hr"
         typeId="hr"
         displayName="@string/hr_name"
         description="@string/hr_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_avg_hr"
+        typeId="avg-hr"
+        displayName="@string/avg_hr_name"
+        description="@string/avg_hr_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_lap"
+        typeId="lap-avg-hr"
+        displayName="@string/lap_avg_hr_name"
+        description="@string/lap_avg_hr_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap"
+        typeId="last-lap-avg-hr"
+        displayName="@string/last_lap_avg_hr_name"
+        description="@string/last_lap_avg_hr_description"
+        graphical="true" />
+    <!-- Speed -->
     <DataType
         icon="@drawable/ic_speed_average"
         typeId="speed"
@@ -39,6 +84,20 @@
         displayName="@string/avg_speed_moving_name"
         description="@string/avg_speed_moving_description"
         graphical="true" />
+    <!-- Other -->
+    <DataType
+        icon="@drawable/ic_cadence"
+        typeId="cadence"
+        displayName="@string/cadence_name"
+        description="@string/cadence_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_grade"
+        typeId="grade"
+        displayName="@string/grade_name"
+        description="@string/grade_description"
+        graphical="true" />
+    <!-- Time -->
     <DataType
         icon="@drawable/ic_time_to_dest"
         typeId="time-elapsed"
@@ -56,6 +115,24 @@
         typeId="time-paused"
         displayName="@string/time_paused_name"
         description="@string/time_paused_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_lap"
+        typeId="time-lap"
+        displayName="@string/time_lap_name"
+        description="@string/time_lap_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_last_lap"
+        typeId="time-last-lap"
+        displayName="@string/time_last_lap_name"
+        description="@string/time_last_lap_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_time_to_dest"
+        typeId="remaining-ride-time"
+        displayName="@string/remaining_ride_time_name"
+        description="@string/remaining_ride_time_description"
         graphical="true" />
     <DataType
         icon="@drawable/ic_time_to_dest"
@@ -92,29 +169,5 @@
         typeId="time-to-civil-dusk"
         displayName="@string/time_to_civil_dusk_name"
         description="@string/time_to_civil_dusk_description"
-        graphical="true" />
-    <DataType
-        icon="@drawable/ic_cadence"
-        typeId="cadence"
-        displayName="@string/cadence_name"
-        description="@string/cadence_description"
-        graphical="true" />
-    <DataType
-        icon="@drawable/ic_avg_power"
-        typeId="avg-power"
-        displayName="@string/avg_power_name"
-        description="@string/avg_power_description"
-        graphical="true" />
-    <DataType
-        icon="@drawable/ic_col_power"
-        typeId="np"
-        displayName="@string/np_name"
-        description="@string/np_description"
-        graphical="true" />
-    <DataType
-        icon="@drawable/ic_grade"
-        typeId="grade"
-        displayName="@string/grade_name"
-        description="@string/grade_description"
         graphical="true" />
 </ExtensionInfo>
