@@ -254,6 +254,69 @@ internal fun renderElevationSparkline(
 /** Last 20 km of Tour of Flanders 2025 (RvV). Used for config-screen previews and debug builds. */
 internal fun previewElevationFixture(): List<Pair<Float, Float>> = rvvElevationFixture()
 
+/**
+ * Generates a synthetic elevation fixture: flat lead-in → climb → flat run-out.
+ * All fixtures span 0–20 km with the climb starting at 10 km.
+ *
+ * @param gainM total elevation gain on the climb
+ * @param grade climb gradient (0.03 = 3%, 0.20 = 20%)
+ */
+private fun syntheticClimbFixture(gainM: Float, grade: Float): List<Pair<Float, Float>> {
+    val baseElev = 50f
+    val climbStart = 10_000f
+    val routeEnd = 20_000f
+    val climbLength = gainM / grade
+    val climbEnd = climbStart + climbLength
+    val topElev = baseElev + gainM
+
+    val points = mutableListOf<Pair<Float, Float>>()
+
+    // Flat sections: every 50m (matches typical Strava route density)
+    var d = 0f
+    while (d < climbStart) { points.add(d to baseElev); d += 50f }
+    points.add(climbStart to baseElev)
+
+    // Climb: every 20m
+    d = climbStart + 20f
+    while (d < climbEnd) {
+        val elev = baseElev + (d - climbStart) * grade
+        points.add(d to (Math.round(elev * 10f) / 10f))
+        d += 20f
+    }
+    points.add((Math.round(climbEnd * 10f) / 10f) to topElev)
+
+    // Flat run-out: every 50m
+    d = climbEnd + 50f
+    while (d < routeEnd) { points.add((Math.round(d * 10f) / 10f) to topElev); d += 50f }
+    points.add(routeEnd to topElev)
+
+    return points
+}
+
+// 20m gain — varying difficulty (L×G²)
+internal fun gain20WallFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.20f)       // 100m @ 20%, L×G²=4.0
+internal fun gain20SteepFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.10f)      // 200m @ 10%, L×G²=2.0
+internal fun gain20ModerateFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.05f)   // 400m @  5%, L×G²=1.0
+internal fun gain20GentleFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.03f)     // 667m @  3%, L×G²=0.6
+
+// 50m gain — varying difficulty (L×G²)
+internal fun gain50WallFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.20f)       // 250m @ 20%, L×G²=10.0
+internal fun gain50SteepFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.10f)      // 500m @ 10%, L×G²=5.0
+internal fun gain50ModerateFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.05f)   // 1km  @  5%, L×G²=2.5
+internal fun gain50GentleFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.03f)     // 1.7km@  3%, L×G²=1.5
+
+internal val ELEVATION_FIXTURES: LinkedHashMap<String, () -> List<Pair<Float, Float>>> = linkedMapOf(
+    "RvV (last 20km)" to ::rvvElevationFixture,
+    "20m — 100m @ 20%" to ::gain20WallFixture,
+    "20m — 200m @ 10%" to ::gain20SteepFixture,
+    "20m — 400m @ 5%" to ::gain20ModerateFixture,
+    "20m — 667m @ 3%" to ::gain20GentleFixture,
+    "50m — 250m @ 20%" to ::gain50WallFixture,
+    "50m — 500m @ 10%" to ::gain50SteepFixture,
+    "50m — 1km @ 5%" to ::gain50ModerateFixture,
+    "50m — 1.7km @ 3%" to ::gain50GentleFixture,
+)
+
 /** Last 20 km of Tour of Flanders 2025 (RvV). Used for debug builds. */
 internal fun rvvElevationFixture(): List<Pair<Float, Float>> = listOf(
     97.1f to 13.0f, 171.4f to 13.0f, 213.6f to 14.0f, 247.8f to 14.0f, 300.6f to 14.0f, 399.5f to 14.0f,
