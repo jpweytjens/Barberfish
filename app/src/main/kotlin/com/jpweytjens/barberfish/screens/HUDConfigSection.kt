@@ -56,8 +56,10 @@ import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
+import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
@@ -145,6 +147,7 @@ internal fun HUDConfigSection(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HUDPreview(
     hudConfig: HUDConfig,
@@ -171,10 +174,19 @@ private fun HUDPreview(
     val isNightMode = isSystemInDarkTheme()
     val sparklineDisplayHeightPx = (40f * density).toInt()
     var boxWidthPx by remember { mutableIntStateOf(0) }
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode) {
+
+    var selectedFixtureName by remember { mutableStateOf(ELEVATION_FIXTURES.keys.first()) }
+    val elevationPoints = remember(selectedFixtureName) {
+        if (BuildConfig.DEBUG) {
+            ELEVATION_FIXTURES[selectedFixtureName]?.invoke() ?: previewElevationFixture()
+        } else {
+            previewElevationFixture()
+        }
+    }
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode, selectedFixtureName) {
         if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
         else renderElevationSparkline(
-            elevationPoints = previewElevationFixture(),
+            elevationPoints = elevationPoints,
             positionM       = 2_500f,
             widthPx         = boxWidthPx,
             heightPx        = sparklineDisplayHeightPx,
@@ -185,6 +197,28 @@ private fun HUDPreview(
             skipBands       = hudConfig.sparkline.skipBands,
             isNightMode     = isNightMode,
         ).first
+    }
+
+    if (BuildConfig.DEBUG) {
+        var expanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            OutlinedTextField(
+                value = selectedFixtureName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Fixture") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                ELEVATION_FIXTURES.keys.forEach { name ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = { selectedFixtureName = name; expanded = false },
+                    )
+                }
+            }
+        }
     }
 
     Box(
