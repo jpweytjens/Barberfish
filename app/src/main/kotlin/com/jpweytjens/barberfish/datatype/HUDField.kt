@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.KAROO_DESTINATION_PURPLE
 import com.jpweytjens.barberfish.datatype.shared.KAROO_REJOIN_RED
+import com.jpweytjens.barberfish.datatype.shared.ElevationSparklineResult
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -165,7 +166,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                 dotColor        = dotColor,
                                 isNightMode     = isNightMode,
                             )
-                        else Pair(null, ratchetRange)
+                        else ElevationSparklineResult(null, ratchetRange)
                         ratchetRange = updatedRange
                         val showSparklineArea = sparkCfg.enabled && (bitmap != null || transitionKm != null)
                         val rv = buildHudRemoteViews(

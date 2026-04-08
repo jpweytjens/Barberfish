@@ -76,6 +76,9 @@ private const val LOG_WARP_K = 8f
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
 private const val DOT_RADIUS_PX = 5f
 
+/** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
+internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
+
 internal fun renderElevationSparkline(
     elevationPoints: List<Pair<Float, Float>>, // (distanceM, elevationM)
     positionM: Float,
@@ -90,8 +93,8 @@ internal fun renderElevationSparkline(
     distanceDeltaM: Float = 0f,
     dotColor: Int = LemonYellow.toArgb(),
     isNightMode: Boolean = true,
-): Pair<Bitmap?, Float> {
-    if (elevationPoints.isEmpty()) return Pair(null, displayedRange)
+): ElevationSparklineResult {
+    if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
     // Clamp window to route bounds so the sparkline fills full width even at the start.
     // The dot migrates from the left edge to the 25% position as you accumulate past distance.
@@ -103,7 +106,7 @@ internal fun renderElevationSparkline(
 
     val visible = elevationPoints
         .filter { (d, _) -> d in windowStart..windowEnd }
-        .ifEmpty { return Pair(null, displayedRange) }
+        .ifEmpty { return ElevationSparklineResult(null, displayedRange) }
 
     // Y-axis: range from ±50% extended lookahead window (double window).
     val rangeStart = (windowStart - lookaheadM * 0.5f).coerceAtLeast(firstDist)
@@ -256,7 +259,7 @@ internal fun renderElevationSparkline(
     paint.color = dotColor
     canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
-    return Pair(bitmap, newDisplayedRange)
+    return ElevationSparklineResult(bitmap, newDisplayedRange)
 }
 
 /** Alias for [rvvElevationFixture]: the default fixture shown in config-screen previews. */
