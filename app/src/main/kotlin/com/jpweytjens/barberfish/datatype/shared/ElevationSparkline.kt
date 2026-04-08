@@ -103,7 +103,7 @@ internal fun renderElevationSparkline(
     val rangePoints = elevationPoints.filter { (d, _) -> d in rangeStart..rangeEnd }
     val elevMin   = rangePoints.minOfOrNull { it.second } ?: visible.minOf { it.second }
     val elevMax   = rangePoints.maxOfOrNull { it.second } ?: visible.maxOf { it.second }
-    val elevRange = (elevMax - elevMin).coerceAtLeast(MIN_MEANINGFUL_GRADE * FLAT_SCALE_FACTOR * 5_000f)
+    val elevRange = (elevMax - elevMin).coerceAtLeast(50f)
 
     // Ratchet: grow instantly, decay slowly as distance is ridden.
     val newDisplayedRange = if (elevRange > displayedRange) elevRange
