@@ -13,7 +13,8 @@ import com.jpweytjens.barberfish.extension.GradePalette
 
 /**
  * Decodes the Karoo elevation polyline into a list of (distanceM, elevationM) pairs.
- * Returns empty list for blank or invalid input.
+ * Returns empty list for blank or invalid input. Returns whatever was decoded up to
+ * the truncation point if [encoded] ends mid-varint.
  */
 internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> {
     if (encoded.isBlank()) return emptyList()
@@ -22,28 +23,35 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
     var lat = 0
     var lng = 0
     while (index < encoded.length) {
-        var shift = 0
-        var b: Int
-        var result1 = 0
-        do {
-            b = encoded[index++].code - 63
-            result1 = result1 or ((b and 0x1f) shl shift)
-            shift += 5
-        } while (b >= 0x20)
-        lat += if (result1 and 1 != 0) (result1 shr 1).inv() else result1 shr 1
+        val latDelta = readVarint(encoded, index) ?: break
+        lat += latDelta.value
+        index = latDelta.nextIndex
 
-        shift = 0
-        result1 = 0
-        do {
-            b = encoded[index++].code - 63
-            result1 = result1 or ((b and 0x1f) shl shift)
-            shift += 5
-        } while (b >= 0x20)
-        lng += if (result1 and 1 != 0) (result1 shr 1).inv() else result1 shr 1
+        val lngDelta = readVarint(encoded, index) ?: break
+        lng += lngDelta.value
+        index = lngDelta.nextIndex
 
         result.add(Pair(lat / 10f, lng / 10f))
     }
     return result
+}
+
+private data class VarintResult(val value: Int, val nextIndex: Int)
+
+/** Reads one zig-zag varint starting at [start]. Returns null if the input is truncated. */
+private fun readVarint(encoded: String, start: Int): VarintResult? {
+    var index = start
+    var shift = 0
+    var value = 0
+    while (true) {
+        if (index >= encoded.length) return null
+        val b = encoded[index++].code - 63
+        value = value or ((b and 0x1f) shl shift)
+        if (b < 0x20) break
+        shift += 5
+    }
+    val decoded = if (value and 1 != 0) (value shr 1).inv() else value shr 1
+    return VarintResult(decoded, index)
 }
 
 /**
