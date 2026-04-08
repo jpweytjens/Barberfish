@@ -48,21 +48,21 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
 
 /**
  * Renders a Tufte-style elevation sparkline strip.
- * Returns null if [elevationPoints] is empty.
+ * Returns a bitmap plus the current ratchet range; the bitmap is null if [elevationPoints] is empty.
  *
  * Rendering layers (bottom to top):
- *  1. Subtle base silhouette fill (~6% white)
- *  2. Climb fills for grade ≥ gradeThreshold(palette), from gradeColor()
- *  3. Past outline (left of dot): 22% white, strokeWidth 1.5px
- *  4. Ahead outline (right of dot): 72% white, strokeWidth 1.5px
- *  5. Distance tick at +5 km ahead: 1px stroke, "5" label, 30% white
- *  6. Position dot: circle radius 2.5px, color from [dotColor] (default LemonYellow)
+ *  1. Ahead silhouette fill (~6% alpha; white on night, black on day)
+ *  2. Climb fills for grade ≥ gradeThreshold(palette), from gradeColor(); consecutive
+ *     same-colour segments are merged into a single polygon to eliminate seams.
+ *  2b. Dark overlay on the past region to grey out grade fills behind the dot
+ *      (55% alpha; black on night, white on day)
+ *  3. Past outline (left of dot): opaque grey(100,100,100), strokeWidth 3px
+ *  4. Ahead outline (right of dot): opaque white on night / black on day, strokeWidth 3px
+ *  5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default LemonYellow)
  */
 
 private const val POSITION_FRACTION = 0.05f
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
-private const val MIN_MEANINGFUL_GRADE = 0.03f
-private const val FLAT_SCALE_FACTOR = 2.0f
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val LOG_WARP_K = 8f
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
@@ -251,7 +251,7 @@ internal fun renderElevationSparkline(
     return Pair(bitmap, newDisplayedRange)
 }
 
-/** Last 20 km of Tour of Flanders 2025 (RvV). Used for config-screen previews and debug builds. */
+/** Alias for [rvvElevationFixture]: the default fixture shown in config-screen previews. */
 internal fun previewElevationFixture(): List<Pair<Float, Float>> = rvvElevationFixture()
 
 /**
