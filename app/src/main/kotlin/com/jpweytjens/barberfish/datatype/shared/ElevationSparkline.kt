@@ -120,36 +120,30 @@ internal fun renderElevationSparkline(
     val newDisplayedRange = if (elevRange > displayedRange) elevRange
         else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
 
-    // Builds a cumulative pixel-density integral over the display window.
-    // Points near positionM receive more pixels; distant points receive fewer.
-    // mag(d) = 1 + K·exp(-normalised_distance · K/2) — peaks at dot, falls off exponentially.
-    val warpIntegrationSteps = (lookaheadM / WARP_STEP_TARGET_M).toInt()
-    val pixelDensityCumulative = FloatArray(warpIntegrationSteps + 1)
-    val integrationStepM = (windowEnd - windowStart) / warpIntegrationSteps
-    for (step in 0 until warpIntegrationSteps) {
-        val routeDistanceM = windowStart + step * integrationStepM
-        val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
-        val pixelsPerMetre = 1f + LOG_WARP_K * kotlin.math.exp(-normalisedDistanceFromDot * LOG_WARP_K * 0.5f).toFloat()
-        pixelDensityCumulative[step + 1] = pixelDensityCumulative[step] + pixelsPerMetre * integrationStepM
-    }
-    val totalWarpedBudget = pixelDensityCumulative[warpIntegrationSteps]
-
-    // Maps a route distance to a screen x-coordinate by looking up its share
-    // of the total pixel budget accumulated up to that point.
-    fun toX(routeDistanceM: Float): Float {
-        val windowFraction = ((routeDistanceM - windowStart) / (windowEnd - windowStart)).coerceIn(0f, 1f)
-        val lookupIndex = windowFraction * warpIntegrationSteps
-        val lowerStep = lookupIndex.toInt().coerceIn(0, warpIntegrationSteps - 1)
-        val interpolationFraction = lookupIndex - lowerStep
-        val budgetConsumed = pixelDensityCumulative[lowerStep] +
-            interpolationFraction * (pixelDensityCumulative[lowerStep + 1] - pixelDensityCumulative[lowerStep])
-        return ((budgetConsumed / totalWarpedBudget) * widthPx).coerceIn(0f, widthPx.toFloat())
-    }
+    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx)
     fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * DOT_RADIUS_PX) - DOT_RADIUS_PX).coerceIn(0f, heightPx.toFloat())
 
+    // Partition `visible` around positionM once. Points exactly at positionM appear in
+    // both lists so past/ahead polygons meet cleanly at the dot (mirrors the old
+    // `d <= positionM` / `d >= positionM` filter semantics).
+    val pastEnd    = visible.indexOfFirst { it.first > positionM }.let { if (it < 0) visible.size else it }
+    val aheadStart = visible.indexOfFirst { it.first >= positionM }.let { if (it < 0) visible.size else it }
+    val pastSilPts  = visible.subList(0, pastEnd)
+    val aheadSilPts = visible.subList(aheadStart, visible.size)
+
     val dotX = toX(positionM)
-    val dotY = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - positionM) }
-        ?.let { (_, e) -> toY(e) } ?: heightPx * 0.9f
+    // Nearest point to positionM sits at the split: the last past point or the first ahead point.
+    val nearestElev = when {
+        pastSilPts.isEmpty() && aheadSilPts.isEmpty()  -> null
+        pastSilPts.isEmpty()                           -> aheadSilPts.first().second
+        aheadSilPts.isEmpty()                          -> pastSilPts.last().second
+        else -> {
+            val p = pastSilPts.last()
+            val a = aheadSilPts.first()
+            if (kotlin.math.abs(p.first - positionM) <= kotlin.math.abs(a.first - positionM)) p.second else a.second
+        }
+    }
+    val dotY = nearestElev?.let { toY(it) } ?: (heightPx * 0.9f)
 
     val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888).also {
         it.density = Bitmap.DENSITY_NONE  // prevent RemoteViews auto-scaling; fitXY handles fill
@@ -157,11 +151,7 @@ internal fun renderElevationSparkline(
     val canvas = Canvas(bitmap)
     val paint  = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    // Past points — reused for grade fill overlay (step 2b) and outline (step 3).
-    val pastSilPts = visible.filter { (d, _) -> d <= positionM }
-
-    // 1. Ahead silhouette fill — subtle (~6% white)
-    val aheadSilPts = visible.filter { (d, _) -> d >= positionM }
+    // 1. Ahead silhouette fill — subtle (~6% alpha)
     if (aheadSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
         paint.color = if (isNightMode) android.graphics.Color.argb(15, 255, 255, 255)
@@ -231,25 +221,23 @@ internal fun renderElevationSparkline(
         canvas.drawPath(path, paint)
     }
 
-    // 3 & 4. Outlines (past = dimmed, ahead = bright)
+    // 3 & 4. Outlines (past = dimmed, ahead = bright) — reuse the past/ahead partitions.
     paint.style = Paint.Style.STROKE
     paint.strokeWidth = 3f
     paint.strokeJoin = Paint.Join.ROUND
-    val pastPts = visible.filter { (d, _) -> toX(d) <= dotX }
-    if (pastPts.isNotEmpty()) {
+    if (pastSilPts.isNotEmpty()) {
         paint.color = android.graphics.Color.argb(255, 100, 100, 100)
         val pastPath = Path().apply {
-            moveTo(toX(pastPts.first().first), toY(pastPts.first().second))
-            pastPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+            moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
+            pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
         }
         canvas.drawPath(pastPath, paint)
     }
-    val aheadPts = visible.filter { (d, _) -> toX(d) >= dotX }
-    if (aheadPts.isNotEmpty()) {
+    if (aheadSilPts.isNotEmpty()) {
         paint.color = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         val aheadPath = Path().apply {
-            moveTo(toX(aheadPts.first().first), toY(aheadPts.first().second))
-            aheadPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+            moveTo(toX(aheadSilPts.first().first), toY(aheadSilPts.first().second))
+            aheadSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
         }
         canvas.drawPath(aheadPath, paint)
     }
@@ -260,6 +248,39 @@ internal fun renderElevationSparkline(
     canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
     return ElevationSparklineResult(bitmap, newDisplayedRange)
+}
+
+/**
+ * Builds a monotonic function mapping a route distance in metres to a screen x-coordinate
+ * in [0, widthPx]. Applies log-warp so pixels near [positionM] get more density than
+ * pixels farther away: `mag(d) = 1 + K·exp(-normalised_distance · K/2)`.
+ */
+private fun buildWarpedXMapper(
+    windowStart: Float,
+    windowEnd: Float,
+    positionM: Float,
+    lookaheadM: Float,
+    widthPx: Int,
+): (Float) -> Float {
+    val steps = (lookaheadM / WARP_STEP_TARGET_M).toInt()
+    val cumulative = FloatArray(steps + 1)
+    val stepM = (windowEnd - windowStart) / steps
+    for (step in 0 until steps) {
+        val routeDistanceM = windowStart + step * stepM
+        val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
+        val pixelsPerMetre = 1f + LOG_WARP_K * kotlin.math.exp(-normalisedDistanceFromDot * LOG_WARP_K * 0.5f).toFloat()
+        cumulative[step + 1] = cumulative[step] + pixelsPerMetre * stepM
+    }
+    val totalBudget = cumulative[steps]
+    return { routeDistanceM ->
+        val windowFraction = ((routeDistanceM - windowStart) / (windowEnd - windowStart)).coerceIn(0f, 1f)
+        val lookupIndex = windowFraction * steps
+        val lowerStep = lookupIndex.toInt().coerceIn(0, steps - 1)
+        val interpolationFraction = lookupIndex - lowerStep
+        val budgetConsumed = cumulative[lowerStep] +
+            interpolationFraction * (cumulative[lowerStep + 1] - cumulative[lowerStep])
+        ((budgetConsumed / totalBudget) * widthPx).coerceIn(0f, widthPx.toFloat())
+    }
 }
 
 /** Alias for [rvvElevationFixture]: the default fixture shown in config-screen previews. */
