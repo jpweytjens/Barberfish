@@ -102,7 +102,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 val distFlow: Flow<StreamState> = if (debugSweep)
                     flow { while (true) { emit(StreamState.NotAvailable); delay(1000L) } }
                 else
-                    karooSystem.streamDataFlow(DataType.Type.DISTANCE).sample(1000L)
+                    karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).sample(1000L)
                 transitionFlow.flatMapLatest { transitionKm ->
                     combine(
                         hudStateFlow.sample(1000L),
@@ -124,13 +124,21 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         }
                         val routeLengthM = route?.routeDistance?.toFloat()
                             ?: elevPoints.lastOrNull()?.first ?: 20_000f
-                        val positionM = if (debugSweep)
-                            (System.currentTimeMillis() % 180_000L).toFloat() / 180_000f * routeLengthM
-                            else (distState as? StreamState.Streaming)
-                                ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
-                                ?.toFloat() ?: 0f
-                        val isOffRoute = route != null &&
-                            (route.rejoinPolyline != null || route.rejoinDistance != null)
+                        val streamingDist = distState as? StreamState.Streaming
+                        val distanceToDestinationM = streamingDist
+                            ?.dataPoint?.values?.get(DataType.Field.DISTANCE_TO_DESTINATION)
+                            ?.toFloat()
+                        val onRoute = streamingDist
+                            ?.dataPoint?.values?.get(DataType.Field.ON_ROUTE)
+                            ?.let { it >= 0.5 } ?: true
+                        val positionM = when {
+                            debugSweep ->
+                                (System.currentTimeMillis() % 180_000L).toFloat() / 180_000f * routeLengthM
+                            distanceToDestinationM != null && (route != null || dest != null) ->
+                                (routeLengthM - distanceToDestinationM).coerceIn(0f, routeLengthM)
+                            else -> 0f
+                        }
+                        val isOffRoute = route != null && !onRoute
                         if (!isOffRoute) lastOnRoutePositionM = positionM
                         val sparklinePositionM = if (isOffRoute) lastOnRoutePositionM else positionM
                         val dotColor = when {
