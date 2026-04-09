@@ -73,7 +73,6 @@ private fun readVarint(encoded: String, start: Int): VarintResult? {
 private const val POSITION_FRACTION = 0.05f
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
-private const val LOG_WARP_K = 8f
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
 private const val DOT_RADIUS_PX = 6f
 
@@ -94,6 +93,7 @@ internal fun renderElevationSparkline(
     distanceDeltaM: Float = 0f,
     dotColor: Int = LemonYellow.toArgb(),
     isNightMode: Boolean = true,
+    logWarpK: Float = 8f,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
@@ -119,7 +119,7 @@ internal fun renderElevationSparkline(
     val newDisplayedRange = if (elevRange > displayedRange) elevRange
         else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
 
-    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx)
+    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, logWarpK)
     fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * DOT_RADIUS_PX) - DOT_RADIUS_PX).coerceIn(0f, heightPx.toFloat())
 
     // Partition `visible` around positionM once. Points exactly at positionM appear in
@@ -253,6 +253,7 @@ internal fun renderElevationSparkline(
  * Builds a monotonic function mapping a route distance in metres to a screen x-coordinate
  * in [0, widthPx]. Applies log-warp so pixels near [positionM] get more density than
  * pixels farther away: `mag(d) = 1 + K·exp(-normalised_distance · K/2)`.
+ * With `logWarpK = 0f` the mapping collapses to linear (every metre gets one pixel budget).
  */
 private fun buildWarpedXMapper(
     windowStart: Float,
@@ -260,6 +261,7 @@ private fun buildWarpedXMapper(
     positionM: Float,
     lookaheadM: Float,
     widthPx: Int,
+    logWarpK: Float,
 ): (Float) -> Float {
     val steps = (lookaheadM / WARP_STEP_TARGET_M).toInt()
     val cumulative = FloatArray(steps + 1)
@@ -267,7 +269,7 @@ private fun buildWarpedXMapper(
     for (step in 0 until steps) {
         val routeDistanceM = windowStart + step * stepM
         val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
-        val pixelsPerMetre = 1f + LOG_WARP_K * kotlin.math.exp(-normalisedDistanceFromDot * LOG_WARP_K * 0.5f).toFloat()
+        val pixelsPerMetre = 1f + logWarpK * kotlin.math.exp(-normalisedDistanceFromDot * logWarpK * 0.5f).toFloat()
         cumulative[step + 1] = cumulative[step] + pixelsPerMetre * stepM
     }
     val totalBudget = cumulative[steps]
