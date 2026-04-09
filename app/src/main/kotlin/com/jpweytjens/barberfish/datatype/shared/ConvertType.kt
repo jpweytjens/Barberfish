@@ -4,7 +4,7 @@ import io.hammerhead.karooext.models.UserProfile
 import kotlin.math.roundToLong
 
 private const val MS_TO_MPH = 2.237
-private const val MS_TO_KMH = 3.6
+internal const val MS_TO_KMH = 3.6
 private const val METERS_PER_MILE = 1609.344
 private const val METERS_PER_KM = 1000.0
 private const val METERS_TO_FEET = 3.28084

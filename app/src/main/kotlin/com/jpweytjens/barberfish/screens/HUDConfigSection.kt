@@ -50,6 +50,7 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.Delay
+import com.jpweytjens.barberfish.datatype.shared.MS_TO_KMH
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
@@ -147,6 +148,12 @@ internal fun HUDConfigSection(
                 }
             }
         }
+        var previewSpeedKmh by remember { mutableIntStateOf(30) }
+        SegmentedRow(
+            options = listOf(15 to "15 km/h", 30 to "30 km/h", 60 to "60 km/h"),
+            selected = previewSpeedKmh,
+            onSelect = { previewSpeedKmh = it },
+        )
         HUDPreview(
             hudConfig = hudConfig,
             zoneConfig = zoneConfig,
@@ -155,6 +162,7 @@ internal fun HUDConfigSection(
             selectedSlot = selectedSlot,
             onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
             fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
+            previewSpeedKmh = previewSpeedKmh,
         )
     } else {
         HUDPreview(
@@ -207,6 +215,7 @@ private fun HUDPreview(
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
     fixturePoints: List<Pair<Float, Float>>? = null,
+    previewSpeedKmh: Int = 30,
 ) {
     val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
         HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
@@ -233,9 +242,9 @@ private fun HUDPreview(
     var lastPositionM by remember { mutableStateOf(elevationPoints.first().first) }
     var displayedRange by remember { mutableStateOf(0f) }
     val routeEndM = remember(elevationPoints) { elevationPoints.last().first }
-    val speedMPerTick = remember(elevationPoints) {
-        // Complete one sweep in ~10 seconds at 30fps
-        (routeEndM - elevationPoints.first().first) / (10f * 30f)
+    // Simulated ride speed at 30 fps. km/h → m/s (via MS_TO_KMH) → m/tick.
+    val speedMPerTick = remember(previewSpeedKmh) {
+        (previewSpeedKmh / MS_TO_KMH / 30.0).toFloat()
     }
     LaunchedEffect(elevationPoints) {
         positionM = elevationPoints.first().first
