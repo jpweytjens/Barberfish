@@ -299,7 +299,7 @@ private fun syntheticClimbFixture(gainM: Float, grade: Float): List<Pair<Float, 
     val routeEnd = 20_000f
     // Round climbEnd once so the "top of climb" point and the run-out start from the
     // same x-coordinate (previously the top point was rounded but the run-out base was not).
-    val climbEnd = Math.round((climbStart + gainM / grade) * 10f) / 10f
+    val climbEnd = round1(climbStart + gainM / grade)
     val topElev = baseElev + gainM
 
     val points = mutableListOf<Pair<Float, Float>>()
@@ -313,18 +313,55 @@ private fun syntheticClimbFixture(gainM: Float, grade: Float): List<Pair<Float, 
     d = climbStart + 20f
     while (d < climbEnd) {
         val elev = baseElev + (d - climbStart) * grade
-        points.add(d to (Math.round(elev * 10f) / 10f))
+        points.add(d to round1(elev))
         d += 20f
     }
     points.add(climbEnd to topElev)
 
     // Flat run-out: every 50m
     d = climbEnd + 50f
-    while (d < routeEnd) { points.add((Math.round(d * 10f) / 10f) to topElev); d += 50f }
+    while (d < routeEnd) { points.add(round1(d) to topElev); d += 50f }
     points.add(routeEnd to topElev)
 
     return points
 }
+
+/**
+ * Generates a synthetic elevation fixture from a sequence of segments.
+ * Each segment is a (lengthM, grade) pair. Positive grade = uphill, 0 = flat.
+ * Points sampled every 50m on flat, every 20m on climbs.
+ */
+private fun syntheticProfileFixture(
+    segments: List<Pair<Float, Float>>,
+    baseElev: Float = 50f,
+): List<Pair<Float, Float>> {
+    val points = mutableListOf<Pair<Float, Float>>()
+    var dist = 0f
+    var elev = baseElev
+
+    for ((lengthM, grade) in segments) {
+        val step = if (grade == 0f) 50f else 20f
+        points.add(round1(dist) to round1(elev))
+        var covered = step
+        while (covered < lengthM) {
+            dist += step
+            elev += step * grade
+            points.add(round1(dist) to round1(elev))
+            covered += step
+        }
+        // Exact segment end — always close, skipping only the degenerate case where
+        // the final iteration already landed exactly on the segment boundary.
+        val remaining = lengthM - (covered - step)
+        if (remaining > 0.01f) {
+            dist += remaining
+            elev += remaining * grade
+            points.add(round1(dist) to round1(elev))
+        }
+    }
+    return points
+}
+
+private fun round1(v: Float) = Math.round(v * 10f) / 10f
 
 // 20m gain — varying difficulty (L×G²)
 internal fun gain20WallFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.20f)       // 100m @ 20%, L×G²=4.0
@@ -338,6 +375,28 @@ internal fun gain50SteepFixture(): List<Pair<Float, Float>> = syntheticClimbFixt
 internal fun gain50ModerateFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.05f)   // 1km  @  5%, L×G²=2.5
 internal fun gain50GentleFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.03f)     // 1.7km@  3%, L×G²=1.5
 
+// Double ramp: 50m gain @ 10% → 2km flat → 50m gain @ 10%
+internal fun doubleRampFixture(): List<Pair<Float, Float>> = syntheticProfileFixture(
+    listOf(
+        5_000f to 0f,       // 5km flat lead-in
+        500f to 0.10f,      // 500m @ 10% → +50m
+        2_000f to 0f,       // 2km flat gap
+        500f to 0.10f,      // 500m @ 10% → +50m
+        12_000f to 0f,      // flat run-out to 20km
+    )
+)
+
+// Steep wall then gentle: 20m @ 20% → 1km flat → 20m @ 3%
+internal fun wallThenGentleFixture(): List<Pair<Float, Float>> = syntheticProfileFixture(
+    listOf(
+        5_000f to 0f,       // 5km flat lead-in
+        100f to 0.20f,      // 100m @ 20% → +20m
+        1_000f to 0f,       // 1km flat gap
+        667f to 0.03f,      // 667m @ 3% → +20m
+        13_233f to 0f,      // flat run-out
+    )
+)
+
 internal val ELEVATION_FIXTURES: LinkedHashMap<String, () -> List<Pair<Float, Float>>> = linkedMapOf(
     "RvV (last 20km)" to ::rvvElevationFixture,
     "20m — 100m @ 20%" to ::gain20WallFixture,
@@ -348,6 +407,8 @@ internal val ELEVATION_FIXTURES: LinkedHashMap<String, () -> List<Pair<Float, Fl
     "50m — 500m @ 10%" to ::gain50SteepFixture,
     "50m — 1km @ 5%" to ::gain50ModerateFixture,
     "50m — 1.7km @ 3%" to ::gain50GentleFixture,
+    "2× 50m @ 10%, 2km gap" to ::doubleRampFixture,
+    "20m wall→flat→20m gentle" to ::wallThenGentleFixture,
 )
 
 /** Last 20 km of Tour of Flanders 2025 (RvV). Used for debug builds. */
