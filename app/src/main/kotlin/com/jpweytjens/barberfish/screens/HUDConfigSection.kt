@@ -57,6 +57,7 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
 import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
+import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
@@ -92,6 +93,7 @@ internal fun HUDConfigSection(
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
+    currentRouteElevationPolyline: String?,
     onUpdate: (HUDConfig) -> Unit,
 ) {
     var selectedSlot by remember { mutableStateOf<Int?>(null) }
@@ -111,7 +113,21 @@ internal fun HUDConfigSection(
         color = TextDark,
     )
     if (BuildConfig.DEBUG) {
-        var selectedFixtureName by remember { mutableStateOf(ELEVATION_FIXTURES.keys.first()) }
+        // "Current route" is prepended when a route (or destination) is loaded on the device,
+        // so VW / warp tuning can be judged against real Strava-density data instead of the
+        // synthetic fixtures, which have perfectly collinear climbs and therefore don't
+        // exhibit the rainbow-banding problem.
+        val fixtures: Map<String, () -> List<Pair<Float, Float>>> =
+            remember(currentRouteElevationPolyline) {
+                buildMap {
+                    val poly = currentRouteElevationPolyline
+                    if (!poly.isNullOrBlank()) {
+                        put("Current route") { decodeElevationPolyline(poly) }
+                    }
+                    putAll(ELEVATION_FIXTURES)
+                }
+            }
+        var selectedFixtureName by remember(fixtures) { mutableStateOf(fixtures.keys.first()) }
         var expanded by remember { mutableStateOf(false) }
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
             OutlinedTextField(
@@ -123,7 +139,7 @@ internal fun HUDConfigSection(
                 modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
             )
             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                ELEVATION_FIXTURES.keys.forEach { name ->
+                fixtures.keys.forEach { name ->
                     DropdownMenuItem(
                         text = { Text(name) },
                         onClick = { selectedFixtureName = name; expanded = false },
@@ -138,7 +154,7 @@ internal fun HUDConfigSection(
             profile = profile,
             selectedSlot = selectedSlot,
             onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
-            fixturePoints = ELEVATION_FIXTURES[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
+            fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
         )
     } else {
         HUDPreview(

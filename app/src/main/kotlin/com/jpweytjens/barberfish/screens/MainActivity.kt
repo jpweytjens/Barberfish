@@ -168,6 +168,7 @@ import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamNPFieldConfig
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
@@ -176,6 +177,7 @@ import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
@@ -226,6 +228,7 @@ class MainActivity : ComponentActivity() {
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
+        var currentRouteElevationPolyline by remember { mutableStateOf<String?>(null) }
         var userProfile by remember {
             mutableStateOf(
                 UserProfile(
@@ -272,6 +275,15 @@ class MainActivity : ComponentActivity() {
             launch { streamETAConfig().collect { etaConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
+            launch {
+                karooSystem.streamNavigationState().collect { nav ->
+                    currentRouteElevationPolyline = when (val s = nav.state) {
+                        is OnNavigationState.NavigationState.NavigatingRoute -> s.routeElevationPolyline
+                        is OnNavigationState.NavigationState.NavigatingToDestination -> s.elevationPolyline
+                        else -> null
+                    }
+                }
+            }
         }
 
         Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
@@ -292,6 +304,7 @@ class MainActivity : ComponentActivity() {
                         zoneConfig = zoneConfig,
                         timeCfg = timeConfig,
                         profile = userProfile,
+                        currentRouteElevationPolyline = currentRouteElevationPolyline,
                         onUpdate = { updated ->
                             hudConfig = updated
                             lifecycleScope.launch { saveHUDConfig(updated) }
