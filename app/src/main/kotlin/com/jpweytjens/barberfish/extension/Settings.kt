@@ -104,10 +104,28 @@ data class HUDSlotConfig(
 )
 
 @Serializable
+enum class ElevationSimplification(val label: String, val minAreaM2: Float) {
+    NONE("None", 0f),
+    MILD("Mild", 25f),      // just above the 21 m² rainbow-noise floor
+    MEDIUM("Medium", 60f),  // merges most micro-wiggles
+    HEAVY("Heavy", 120f),   // abstract blocks; preserves sharp flat→climb corners
+}
+
+@Serializable
+enum class SparklineWarp(val label: String, val k: Float) {
+    NONE("None", 0f),       // linear x-axis
+    MILD("Mild", 4f),
+    MEDIUM("Medium", 8f),   // previous hardcoded LOG_WARP_K
+    HEAVY("Heavy", 12f),
+}
+
+@Serializable
 data class SparklineConfig(
     val enabled: Boolean = true,
     val lookaheadKm: Int = 10,
     val skipBands: Int = 1,
+    val simplification: ElevationSimplification = ElevationSimplification.MEDIUM,
+    val warp: SparklineWarp = SparklineWarp.MEDIUM,
 )
 
 @Serializable
