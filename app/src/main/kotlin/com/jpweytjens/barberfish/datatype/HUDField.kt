@@ -20,6 +20,8 @@ import com.jpweytjens.barberfish.datatype.shared.ElevationSparklineResult
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
@@ -93,6 +95,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
             var ratchetRange = 0f
             var lastPositionM = 0f
             var lastOnRoutePositionM = 0f
+            // Memoise VW-simplified elevation points, keyed on (encoded polyline, preset, source tag).
+            // Source tag disambiguates route / destination / fixture / empty so identical strings
+            // from different sources can't collide. Cache naturally resets per startView call.
+            var cachedElevKey: Triple<String, ElevationSimplification, Int>? = null
+            var cachedElevPoints: List<Pair<Float, Float>> = emptyList()
             val transitionFlow: Flow<Int?> = SparklineTapReceiver.tapSignal
                 .flatMapLatest { (ts, km) ->
                     if (ts == 0L) flowOf(null)
@@ -117,12 +124,23 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         val sparkCfg = hudConfig.sparkline
                         val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
                         val dest  = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
-                        val elevPoints: List<Pair<Float, Float>> = when {
-                            route != null -> decodeElevationPolyline(route.routeElevationPolyline ?: "")
-                            dest  != null -> decodeElevationPolyline(dest.elevationPolyline ?: "")
-                            debugSweep -> previewElevationFixture()
-                            else -> emptyList()
+                        val (elevEncoded, elevSource) = when {
+                            route != null -> (route.routeElevationPolyline ?: "") to 0
+                            dest  != null -> (dest.elevationPolyline ?: "") to 1
+                            debugSweep    -> "" to 2
+                            else          -> "" to 3
                         }
+                        val elevKey = Triple(elevEncoded, sparkCfg.simplification, elevSource)
+                        if (elevKey != cachedElevKey) {
+                            val raw = when {
+                                elevSource == 2 -> previewElevationFixture()
+                                elevEncoded.isBlank() -> emptyList()
+                                else -> decodeElevationPolyline(elevEncoded)
+                            }
+                            cachedElevPoints = visvalingamWhyatt(raw, sparkCfg.simplification.minAreaM2)
+                            cachedElevKey = elevKey
+                        }
+                        val elevPoints: List<Pair<Float, Float>> = cachedElevPoints
                         val routeLengthM = route?.routeDistance?.toFloat()
                             ?: elevPoints.lastOrNull()?.first ?: 20_000f
                         val streamingDist = distState as? StreamState.Streaming
@@ -165,6 +183,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                 distanceDeltaM  = distanceDeltaM,
                                 dotColor        = dotColor,
                                 isNightMode     = isNightMode,
+                                logWarpK        = sparkCfg.warp.k,
                             )
                         else ElevationSparklineResult(null, ratchetRange)
                         ratchetRange = updatedRange
