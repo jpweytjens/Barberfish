@@ -59,6 +59,7 @@ import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
 import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
@@ -68,7 +69,9 @@ import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
+import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.SparklineWarp
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -233,13 +236,18 @@ private fun HUDPreview(
         }
     }
 
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode, elevationPoints, positionM) {
+    // VW runs once per (fixture, preset) change — not once per animation frame.
+    val simplifiedElevationPoints = remember(elevationPoints, hudConfig.sparkline.simplification) {
+        visvalingamWhyatt(elevationPoints, hudConfig.sparkline.simplification.minAreaM2)
+    }
+
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
         if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
             val (bitmap, newRange) = renderElevationSparkline(
-                elevationPoints = elevationPoints,
+                elevationPoints = simplifiedElevationPoints,
                 positionM       = positionM,
                 widthPx         = boxWidthPx,
                 heightPx        = sparklineDisplayHeightPx,
@@ -251,6 +259,7 @@ private fun HUDPreview(
                 displayedRange  = displayedRange,
                 distanceDeltaM  = distanceDeltaM,
                 isNightMode     = isNightMode,
+                logWarpK        = hudConfig.sparkline.warp.k,
             )
             displayedRange = newRange
             bitmap
@@ -645,6 +654,20 @@ private fun SparklineCard(
                     color = TextDark,
                 )
             }
+            Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = ElevationSimplification.entries.map { it to it.label },
+                selected = config.simplification,
+                onSelect = { onUpdate(config.copy(simplification = it)) },
+            )
+            Text("X-WARP", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = SparklineWarp.entries.map { it to it.label },
+                selected = config.warp,
+                onSelect = { onUpdate(config.copy(warp = it)) },
+            )
         }
     }
 }
