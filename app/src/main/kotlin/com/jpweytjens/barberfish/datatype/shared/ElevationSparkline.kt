@@ -74,7 +74,7 @@ private const val MIN_FILL_PX = 1f          // skip colour fills narrower than t
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val LOG_WARP_K = 8f
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
-private const val DOT_RADIUS_PX = 5f
+private const val DOT_RADIUS_PX = 6f
 
 /** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
 internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
