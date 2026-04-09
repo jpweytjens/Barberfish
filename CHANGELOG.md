@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.1 — Sparkline update
+
+### Accuracy
+
+The sparkline looked right in most cases but could drift or flatten in a few real-world ones. This release fixes those.
+
+- Position now tracks distance-to-destination instead of distance-ridden, so the "you are here" marker stays correct after reroutes and restarts
+- Elevation range is derived from the visible window only, so short, sharp climbs no longer get squashed against a full-route Y scale
+- Lowered the minimum elevation range to 50 m so small rollers actually look like rollers instead of a flat line
+- Hardened the polyline decoder against truncated input so a partial route string can no longer crash the field
+
+### Config preview
+
+- Animated preview sweeps along the profile so you can see how the current-position marker and gradient coloring behave while riding
+
 ## 3.0
 
 ### Elevation sparkline
