@@ -108,12 +108,10 @@ internal fun renderElevationSparkline(
         .filter { (d, _) -> d in windowStart..windowEnd }
         .ifEmpty { return ElevationSparklineResult(null, displayedRange) }
 
-    // Y-axis: range from ±50% extended lookahead window (double window).
-    val rangeStart = (windowStart - lookaheadM * 0.5f).coerceAtLeast(firstDist)
-    val rangeEnd   = (windowEnd   + lookaheadM * 0.5f).coerceAtMost(lastDist)
-    val rangePoints = elevationPoints.filter { (d, _) -> d in rangeStart..rangeEnd }
-    val elevMin   = rangePoints.minOfOrNull { it.second } ?: visible.minOf { it.second }
-    val elevMax   = rangePoints.maxOfOrNull { it.second } ?: visible.maxOf { it.second }
+    // Y-axis: derived from the visible window only. 
+    // The ratchet below still stabilises the scale during climbs that *are* on screen.
+    val elevMin   = visible.minOf { it.second }
+    val elevMax   = visible.maxOf { it.second }
     val elevRange = (elevMax - elevMin).coerceAtLeast(50f)
 
     // Ratchet: grow instantly, decay slowly as distance is ridden.
