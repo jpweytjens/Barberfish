@@ -255,7 +255,7 @@ data class ZoneConfig(
     val hrPalette: ZonePalette = ZonePalette.KAROO,
     val powerPalette: ZonePalette = ZonePalette.KAROO,
     val gradePalette: GradePalette = GradePalette.KAROO,
-    val readableColors: Boolean = true,
+    val readableColors: Boolean = false,
 )
 
 fun Context.streamZoneConfig(): Flow<ZoneConfig> =
