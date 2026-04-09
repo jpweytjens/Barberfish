@@ -297,8 +297,9 @@ private fun syntheticClimbFixture(gainM: Float, grade: Float): List<Pair<Float, 
     val baseElev = 50f
     val climbStart = 10_000f
     val routeEnd = 20_000f
-    val climbLength = gainM / grade
-    val climbEnd = climbStart + climbLength
+    // Round climbEnd once so the "top of climb" point and the run-out start from the
+    // same x-coordinate (previously the top point was rounded but the run-out base was not).
+    val climbEnd = Math.round((climbStart + gainM / grade) * 10f) / 10f
     val topElev = baseElev + gainM
 
     val points = mutableListOf<Pair<Float, Float>>()
@@ -315,7 +316,7 @@ private fun syntheticClimbFixture(gainM: Float, grade: Float): List<Pair<Float, 
         points.add(d to (Math.round(elev * 10f) / 10f))
         d += 20f
     }
-    points.add((Math.round(climbEnd * 10f) / 10f) to topElev)
+    points.add(climbEnd to topElev)
 
     // Flat run-out: every 50m
     d = climbEnd + 50f
