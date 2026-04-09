@@ -815,6 +815,11 @@ class MainActivity : ComponentActivity() {
                     )
 
                     Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Used by the Grade data field and the sparkline gradient overlay.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     ReadabilityToggle(
                         readable = zoneConfig.readableColors,
                         onSelected = { readable ->
