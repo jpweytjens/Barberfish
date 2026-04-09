@@ -62,8 +62,9 @@ private fun readVarint(encoded: String, start: Int): VarintResult? {
  *  1. Ahead silhouette fill (~6% alpha; white on night, black on day)
  *  2. Climb fills for grade ≥ gradeThreshold(palette), from gradeColor(); consecutive
  *     same-colour segments are merged into a single polygon to eliminate seams.
- *  2b. Dark overlay on the past region to grey out grade fills behind the dot
- *      (55% alpha; black on night, white on day)
+ *  2b. Overlay on the past region to grey out grade fills behind the dot
+ *      (night: 55% alpha black; day: 78% alpha mid-grey — grey desaturates
+ *      bright grade colours more effectively than white, which just pastels them)
  *  3. Past outline (left of dot): opaque grey(100,100,100), strokeWidth 3px
  *  4. Ahead outline (right of dot): opaque white on night / black on day, strokeWidth 3px
  *  5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default LemonYellow)
@@ -207,7 +208,7 @@ internal fun renderElevationSparkline(
     if (pastSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
         paint.color = if (isNightMode) android.graphics.Color.argb(140, 0, 0, 0)
-            else android.graphics.Color.argb(140, 255, 255, 255)
+            else android.graphics.Color.argb(200, 180, 180, 180)
         val path = Path().apply {
             moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
             pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
