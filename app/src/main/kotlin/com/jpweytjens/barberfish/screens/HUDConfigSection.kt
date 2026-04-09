@@ -107,14 +107,46 @@ internal fun HUDConfigSection(
         fontSize = 12.sp,
         color = TextDark,
     )
-    HUDPreview(
-        hudConfig = hudConfig,
-        zoneConfig = zoneConfig,
-        timeCfg = timeCfg,
-        profile = profile,
-        selectedSlot = selectedSlot,
-        onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
-    )
+    if (BuildConfig.DEBUG) {
+        var selectedFixtureName by remember { mutableStateOf(ELEVATION_FIXTURES.keys.first()) }
+        var expanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            OutlinedTextField(
+                value = selectedFixtureName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Fixture") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                ELEVATION_FIXTURES.keys.forEach { name ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = { selectedFixtureName = name; expanded = false },
+                    )
+                }
+            }
+        }
+        HUDPreview(
+            hudConfig = hudConfig,
+            zoneConfig = zoneConfig,
+            timeCfg = timeCfg,
+            profile = profile,
+            selectedSlot = selectedSlot,
+            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
+            fixturePoints = ELEVATION_FIXTURES[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
+        )
+    } else {
+        HUDPreview(
+            hudConfig = hudConfig,
+            zoneConfig = zoneConfig,
+            timeCfg = timeCfg,
+            profile = profile,
+            selectedSlot = selectedSlot,
+            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
+        )
+    }
 
     val slot = when (selectedSlot) {
         0 -> hudConfig.leftSlot
@@ -147,7 +179,6 @@ internal fun HUDConfigSection(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HUDPreview(
     hudConfig: HUDConfig,
@@ -156,6 +187,7 @@ private fun HUDPreview(
     profile: UserProfile,
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
+    fixturePoints: List<Pair<Float, Float>>? = null,
 ) {
     val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
         HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
@@ -172,52 +204,56 @@ private fun HUDPreview(
 
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
-    val sparklineDisplayHeightPx = (40f * density).toInt()
+    val sparklineDisplayHeightPx = (32f * density).toInt()
     var boxWidthPx by remember { mutableIntStateOf(0) }
 
-    var selectedFixtureName by remember { mutableStateOf(ELEVATION_FIXTURES.keys.first()) }
-    val elevationPoints = remember(selectedFixtureName) {
-        if (BuildConfig.DEBUG) {
-            ELEVATION_FIXTURES[selectedFixtureName]?.invoke() ?: previewElevationFixture()
-        } else {
-            previewElevationFixture()
+    val elevationPoints = fixturePoints ?: previewElevationFixture()
+
+    // Animate position: sweep from route start to end, then loop
+    var positionM by remember { mutableStateOf(elevationPoints.first().first) }
+    var lastPositionM by remember { mutableStateOf(elevationPoints.first().first) }
+    var displayedRange by remember { mutableStateOf(0f) }
+    val routeEndM = remember(elevationPoints) { elevationPoints.last().first }
+    val speedMPerTick = remember(elevationPoints) {
+        // Complete one sweep in ~10 seconds at 30fps
+        (routeEndM - elevationPoints.first().first) / (10f * 30f)
+    }
+    LaunchedEffect(elevationPoints) {
+        positionM = elevationPoints.first().first
+        lastPositionM = elevationPoints.first().first
+        displayedRange = 0f
+        while (true) {
+            delay(33L) // ~30fps
+            positionM += speedMPerTick
+            if (positionM > routeEndM) {
+                positionM = elevationPoints.first().first
+                lastPositionM = elevationPoints.first().first
+                displayedRange = 0f
+            }
         }
     }
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode, selectedFixtureName) {
-        if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
-        else renderElevationSparkline(
-            elevationPoints = elevationPoints,
-            positionM       = 2_500f,
-            widthPx         = boxWidthPx,
-            heightPx        = sparklineDisplayHeightPx,
-            density         = density,
-            palette         = zoneConfig.gradePalette,
-            readable        = zoneConfig.readableColors,
-            lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
-            skipBands       = hudConfig.sparkline.skipBands,
-            isNightMode     = isNightMode,
-        ).first
-    }
 
-    if (BuildConfig.DEBUG) {
-        var expanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            OutlinedTextField(
-                value = selectedFixtureName,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Fixture") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode, elevationPoints, positionM) {
+        if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
+        else {
+            val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
+            lastPositionM = positionM
+            val (bitmap, newRange) = renderElevationSparkline(
+                elevationPoints = elevationPoints,
+                positionM       = positionM,
+                widthPx         = boxWidthPx,
+                heightPx        = sparklineDisplayHeightPx,
+                density         = density,
+                palette         = zoneConfig.gradePalette,
+                readable        = zoneConfig.readableColors,
+                lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
+                skipBands       = hudConfig.sparkline.skipBands,
+                displayedRange  = displayedRange,
+                distanceDeltaM  = distanceDeltaM,
+                isNightMode     = isNightMode,
             )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                ELEVATION_FIXTURES.keys.forEach { name ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = { selectedFixtureName = name; expanded = false },
-                    )
-                }
-            }
+            displayedRange = newRange
+            bitmap
         }
     }
 
@@ -251,7 +287,7 @@ private fun HUDPreview(
             Image(
                 bitmap = sparklineBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(40.dp).align(Alignment.BottomCenter),
+                modifier = Modifier.fillMaxWidth().height(32.dp).align(Alignment.BottomCenter),
                 contentScale = ContentScale.FillBounds,
             )
         }
