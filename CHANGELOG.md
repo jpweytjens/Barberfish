@@ -15,6 +15,11 @@ The sparkline looked right in most cases but could drift or flatten in a few rea
 
 - Animated preview sweeps along the profile so you can see how the current-position marker and gradient coloring behave while riding
 
+### Config UI
+
+- Default color palettes now use the original Karoo colors instead of the readability-corrected variants
+- Clarified that the "Gradient colors" palette drives both the Grade data field and the sparkline gradient overlay
+
 ## 3.0
 
 ### Elevation sparkline
