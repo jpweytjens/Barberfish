@@ -777,6 +777,21 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
                         },
                     )
+                    if (climberMapConfig.enabled) {
+                        Text("CHEVRONS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text(
+                            "Draw black direction chevrons inside each coloured segment to distinguish climbs from the route line.",
+                            fontSize = 12.sp,
+                            color = TextDark,
+                        )
+                        ClimberChevronsToggle(
+                            enabled = climberMapConfig.showChevrons,
+                            onSelected = { enabled ->
+                                climberMapConfig = climberMapConfig.copy(showChevrons = enabled)
+                                lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
+                            },
+                        )
+                    }
 
                     Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -1329,7 +1344,17 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
 }
 
 @Composable
+private fun ClimberChevronsToggle(enabled: Boolean, onSelected: (Boolean) -> Unit) {
+    ClimberBooleanPill(enabled = enabled, onSelected = onSelected)
+}
+
+@Composable
 private fun ClimberOverlayToggle(enabled: Boolean, onSelected: (Boolean) -> Unit) {
+    ClimberBooleanPill(enabled = enabled, onSelected = onSelected)
+}
+
+@Composable
+private fun ClimberBooleanPill(enabled: Boolean, onSelected: (Boolean) -> Unit) {
     val options = listOf(false, true)
     Row(
         modifier =

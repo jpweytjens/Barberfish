@@ -130,7 +130,7 @@ internal fun extractSubPolyline(
  * on a vertex, returns that vertex; otherwise linearly interpolates between the
  * two bracketing vertices. Caller must ensure `0 ≤ distanceM ≤ cumDist.last()`.
  */
-private fun interpolateAt(points: List<LatLng>, cumDist: DoubleArray, distanceM: Double): LatLng {
+internal fun interpolateAt(points: List<LatLng>, cumDist: DoubleArray, distanceM: Double): LatLng {
     if (distanceM <= 0.0) return points.first()
     if (distanceM >= cumDist.last()) return points.last()
     // cumDist is strictly non-decreasing; find the first index i with cumDist[i] >= distanceM.

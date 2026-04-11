@@ -299,6 +299,7 @@ suspend fun Context.saveZoneConfig(config: ZoneConfig) =
 @Serializable
 data class ClimberMapConfig(
     val enabled: Boolean = true,
+    val showChevrons: Boolean = true,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
     val skipBands: Int = 1,
 )
