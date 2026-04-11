@@ -18,11 +18,16 @@ import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.datatype.shared.DEFAULT_CHEVRON_SPACING_M
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
+import com.jpweytjens.barberfish.datatype.shared.mapDiagonalMeters
+import com.jpweytjens.barberfish.datatype.shared.mapViewportBounds
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.MapEffect
+import io.hammerhead.karooext.models.OnLocationChanged
+import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,10 +35,17 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune via screencaps
+
+// Number of chevrons we aim to show along one visible map diagonal. Matches
+// timklge/karoo-routegraph's MEDIUM frequency — dense enough to read climbs as
+// climbs, sparse enough to not clutter the map.
+private const val CHEVRONS_PER_DIAGONAL = 6
+
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
 
@@ -94,13 +106,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         val chevronController = ClimbChevronController()
         val scope = CoroutineScope(Dispatchers.IO)
         val job: Job = scope.launch {
-            combine(
+            // Branch A: config + nav (changes rarely — route load, settings edit).
+            val configNavFlow = combine(
                 applicationContext.streamClimberMapConfig(),
                 applicationContext.streamZoneConfig(),
                 applicationContext.streamElevationRenderConfig(),
                 karooSystem.streamNavigationState(),
             ) { climberCfg, zoneCfg, renderCfg, navEvent ->
-                ClimbMapInputs(
+                ClimbMapConfigInputs(
                     enabled = climberCfg.enabled,
                     showChevrons = climberCfg.showChevrons,
                     palette = zoneCfg.gradePalette,
@@ -109,21 +122,40 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     state = navEvent.state,
                 )
             }
-                .distinctUntilChanged { prev, next -> prev.signature() == next.signature() }
-                .collect { inputs ->
+            // Branch B: zoom + location (changes on every GPS tick / map interaction).
+            // Debounce so rapid bursts coalesce; onStart seeds defaults so the combine
+            // fires immediately on route load even before the first location fix.
+            val viewportFlow = combine(
+                karooSystem.consumerFlow<OnMapZoomLevel>()
+                    .onStart { emit(OnMapZoomLevel(15.0)) },
+                karooSystem.consumerFlow<OnLocationChanged>()
+                    .onStart { emit(OnLocationChanged(0.0, 0.0, null)) },
+            ) { zoom, loc -> ViewportInputs(zoom.zoomLevel, loc.lat, loc.lng) }
+
+            configNavFlow.combine(viewportFlow) { cfg, vp -> cfg to vp }
+                .distinctUntilChanged { prev, next ->
+                    prev.first.signature() == next.first.signature() &&
+                        prev.second.bucketedSignature() == next.second.bucketedSignature()
+                }
+                .collect { (inputs, viewport) ->
                     val route = inputs.state as? OnNavigationState.NavigationState.NavigatingRoute
-                    Timber.d(
-                        "climber: collect enabled=${inputs.enabled} " +
-                            "stateType=${inputs.state::class.simpleName} " +
-                            "routeLen=${route?.routePolyline?.length ?: -1} " +
-                            "elevLen=${route?.routeElevationPolyline?.length ?: -1}",
-                    )
                     if (!inputs.enabled || route == null) {
-                        Timber.d("climber: clearing (enabled=${inputs.enabled}, route=${route != null})")
                         polylineController.clearAll(emitter)
                         chevronController.clearAll(emitter)
                         return@collect
                     }
+                    val hasLocation = viewport.lat != 0.0 || viewport.lng != 0.0
+                    val diagonal = mapDiagonalMeters(viewport.lat, viewport.lng, viewport.zoomLevel)
+                    val chevronStep = if (hasLocation) {
+                        (diagonal / CHEVRONS_PER_DIAGONAL).coerceAtLeast(20.0)
+                    } else {
+                        DEFAULT_CHEVRON_SPACING_M
+                    }
+                    // Viewport filtering disabled for now — the rideapp's IPC reordering
+                    // between HideSymbols and ShowSymbols causes chevrons to vanish when
+                    // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
+                    // already prevents excessive rebuilds.
+                    val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? = null
                     val specs = buildClimbOverlaySpecs(
                         routePolyline = route.routePolyline,
                         routeElevationPolyline = route.routeElevationPolyline,
@@ -131,8 +163,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         readable = inputs.readable,
                         renderCfg = inputs.renderCfg,
                         includeChevrons = inputs.showChevrons,
+                        chevronSpacingM = chevronStep,
+                        chevronViewport = bounds,
                     )
-                    Timber.d("climber: built ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (palette=${inputs.palette} readable=${inputs.readable} simpl=${inputs.renderCfg.simplification} skipBands=${inputs.renderCfg.skipBands})")
+                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds)")
                     polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
                     chevronController.emit(emitter, specs.chevrons)
                 }
@@ -145,7 +179,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
     }
 }
 
-private data class ClimbMapInputs(
+private data class ClimbMapConfigInputs(
     val enabled: Boolean,
     val showChevrons: Boolean,
     val palette: GradePalette,
@@ -153,9 +187,9 @@ private data class ClimbMapInputs(
     val renderCfg: ElevationRenderConfig,
     val state: OnNavigationState.NavigationState,
 ) {
-    fun signature(): ClimbMapSignature {
+    fun signature(): ClimbMapConfigSignature {
         val route = state as? OnNavigationState.NavigationState.NavigatingRoute
-        return ClimbMapSignature(
+        return ClimbMapConfigSignature(
             enabled = enabled,
             showChevrons = showChevrons,
             palette = palette,
@@ -168,7 +202,7 @@ private data class ClimbMapInputs(
     }
 }
 
-private data class ClimbMapSignature(
+private data class ClimbMapConfigSignature(
     val enabled: Boolean,
     val showChevrons: Boolean,
     val palette: GradePalette,
@@ -177,4 +211,23 @@ private data class ClimbMapSignature(
     val skipBands: Int,
     val routeElevationHash: Int,
     val routePolylineHash: Int,
+)
+
+private data class ViewportInputs(
+    val zoomLevel: Double,
+    val lat: Double,
+    val lng: Double,
+) {
+    /** Bucket lat/lng to ~11 m and zoom to 0.5 so GPS jitter doesn't trigger rebuilds. */
+    fun bucketedSignature() = ViewportSignature(
+        zoomBucket = (zoomLevel * 2).toInt(),
+        latBucket = (lat * 1e4).toLong(),
+        lngBucket = (lng * 1e4).toLong(),
+    )
+}
+
+private data class ViewportSignature(
+    val zoomBucket: Int,
+    val latBucket: Long,
+    val lngBucket: Long,
 )

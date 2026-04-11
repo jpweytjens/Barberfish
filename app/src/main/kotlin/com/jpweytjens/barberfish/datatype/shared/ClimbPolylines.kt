@@ -34,8 +34,19 @@ internal data class ClimbOverlaySpecs(
     val chevrons: List<ClimbChevronSpec>,
 )
 
-/** Fixed chevron spacing in metres along each coloured run. */
-private const val CHEVRON_SPACING_M = 60.0
+/** Axis-aligned viewport bounding box in lat/lng. */
+internal data class LatLngBounds(
+    val minLat: Double,
+    val maxLat: Double,
+    val minLng: Double,
+    val maxLng: Double,
+) {
+    fun contains(lat: Double, lng: Double): Boolean =
+        lat in minLat..maxLat && lng in minLng..maxLng
+}
+
+/** Default chevron spacing when no zoom-adaptive step is supplied. */
+internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
 
 /**
  * Builds gradient polyline specs and chevron symbol specs along a route's elevation
@@ -52,11 +63,14 @@ private const val CHEVRON_SPACING_M = 60.0
  *    segments, and each run emits a single polyline spanning `[runStartM, runEndM]`.
  *    Merging same-colour runs eliminates the visible double-stroke at each elevation-vertex
  *    junction and cuts the emission count.
- * 4. For each run, sample chevron positions every [CHEVRON_SPACING_M] metres, computing
+ * 4. For each run, sample chevron positions every [chevronSpacingM] metres, computing
  *    each chevron's bearing from two route points 10 m apart. Short runs still get at
  *    least one chevron at their midpoint so climbs shorter than the spacing remain marked.
+ * 5. If [chevronViewport] is non-null, drop any chevron whose lat/lng falls outside the
+ *    viewport bounds. This keeps the emitted symbol count bounded regardless of route
+ *    length — we only render what the rider can see.
  *
- * Returns an empty list pair if either polyline is missing.
+ * Returns empty lists if either polyline is missing.
  */
 internal fun buildClimbOverlaySpecs(
     routePolyline: String,
@@ -65,6 +79,8 @@ internal fun buildClimbOverlaySpecs(
     readable: Boolean,
     renderCfg: ElevationRenderConfig,
     includeChevrons: Boolean = true,
+    chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
+    chevronViewport: LatLngBounds? = null,
 ): ClimbOverlaySpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
         return ClimbOverlaySpecs(emptyList(), emptyList())
@@ -108,10 +124,15 @@ internal fun buildClimbOverlaySpecs(
             colorArgb = run.colorArgb,
         )
         if (includeChevrons) {
-            chevrons += chevronsForRun(runIdx, run.startM, run.endM, gps, cumDist)
+            chevrons += chevronsForRun(runIdx, run.startM, run.endM, gps, cumDist, chevronSpacingM)
         }
     }
-    return ClimbOverlaySpecs(polylines, chevrons)
+    val filteredChevrons = if (chevronViewport != null) {
+        chevrons.filter { chevronViewport.contains(it.lat, it.lng) }
+    } else {
+        chevrons
+    }
+    return ClimbOverlaySpecs(polylines, filteredChevrons)
 }
 
 private fun chevronsForRun(
@@ -120,13 +141,14 @@ private fun chevronsForRun(
     endM: Double,
     gps: List<LatLng>,
     cumDist: DoubleArray,
+    spacingM: Double,
 ): List<ClimbChevronSpec> {
     val lengthM = endM - startM
-    if (lengthM <= 0.0) return emptyList()
+    if (lengthM <= 0.0 || spacingM <= 0.0) return emptyList()
     val total = cumDist.last()
     // Sample count: floor(length / spacing) gives an integer number of full spacings.
     // Short runs (< spacing) still get one chevron at the midpoint.
-    val count = (lengthM / CHEVRON_SPACING_M).toInt().coerceAtLeast(1)
+    val count = (lengthM / spacingM).toInt().coerceAtLeast(1)
     val specs = ArrayList<ClimbChevronSpec>(count)
     for (i in 0 until count) {
         // Place chevrons at the centre of each equal-length sub-span so the first and last
