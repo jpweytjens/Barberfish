@@ -1,7 +1,7 @@
 package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.toArgb
-import com.jpweytjens.barberfish.datatype.shared.buildClimbPolylineSpecs
+import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.ElevationRenderConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
@@ -38,49 +38,52 @@ class ClimbPolylinesTest {
     private val noneCfg = ElevationRenderConfig(ElevationSimplification.NONE, skipBands = 0)
 
     @Test fun blank_route_polyline_returns_empty() {
-        val specs = buildClimbPolylineSpecs(
+        val overlay = buildClimbOverlaySpecs(
             routePolyline = "",
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = noneCfg,
         )
-        assertTrue(specs.isEmpty())
+        assertTrue(overlay.polylines.isEmpty())
+        assertTrue(overlay.chevrons.isEmpty())
     }
 
     @Test fun missing_elevation_polyline_returns_empty() {
-        val specs = buildClimbPolylineSpecs(
+        val overlay = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = null,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = noneCfg,
         )
-        assertTrue(specs.isEmpty())
+        assertTrue(overlay.polylines.isEmpty())
+        assertTrue(overlay.chevrons.isEmpty())
     }
 
     @Test fun blank_elevation_polyline_returns_empty() {
-        val specs = buildClimbPolylineSpecs(
+        val overlay = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = "",
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = noneCfg,
         )
-        assertTrue(specs.isEmpty())
+        assertTrue(overlay.polylines.isEmpty())
+        assertTrue(overlay.chevrons.isEmpty())
     }
 
     @Test fun merges_adjacent_same_colour_segments() {
         // Segments in the KAROO palette: 8% and 12% both fall in the "yellow" band (7.6–12.5%),
         // so they merge into one run; the 0% segment is in the dark-green band (the lowest),
         // a different colour, so it becomes its own run.
-        val specs = buildClimbPolylineSpecs(
+        val specs = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = noneCfg,
-        )
+        ).polylines
         assertEquals(2, specs.size)
         assertEquals("barberfish-seg-0", specs[0].id)
         assertEquals("barberfish-seg-1", specs[1].id)
@@ -100,13 +103,13 @@ class ClimbPolylinesTest {
                 200f to 124f,   // 16% → orange
             ),
         )
-        val specs = buildClimbPolylineSpecs(
+        val specs = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = twoBandsPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = noneCfg,
-        )
+        ).polylines
         assertEquals(2, specs.size)
         assertEquals(
             gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb(),
@@ -119,13 +122,13 @@ class ClimbPolylinesTest {
     }
 
     @Test fun skipBands_one_suppresses_flat_segment() {
-        val specs = buildClimbPolylineSpecs(
+        val specs = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = ElevationRenderConfig(ElevationSimplification.NONE, skipBands = 1),
-        )
+        ).polylines
         // Flat 0% segment drops to below threshold; the two climbing segments (8% and 12%)
         // are both in the yellow band and merge into a single run.
         assertEquals(1, specs.size)
@@ -143,13 +146,13 @@ class ClimbPolylinesTest {
                 300f to 120f,    // +15 m in 100 m = 15% grade
             ),
         )
-        val specs = buildClimbPolylineSpecs(
+        val specs = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = dipPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = ElevationRenderConfig(ElevationSimplification.NONE, skipBands = 0),
-        )
+        ).polylines
         // Two runs, one per above-threshold segment (non-adjacent, different colours).
         // IDs are contiguous run indices — not the original VW vertex indices.
         assertEquals(2, specs.size)
@@ -165,24 +168,78 @@ class ClimbPolylinesTest {
             noisy += d.toFloat() to e
         }
         val noisyPolyline = encodeElevationManually(noisy)
-        val rawSpecs = buildClimbPolylineSpecs(
+        val rawSpecs = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = noisyPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = ElevationRenderConfig(ElevationSimplification.NONE, skipBands = 0),
-        )
-        val heavySpecs = buildClimbPolylineSpecs(
+        ).polylines
+        val heavySpecs = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = noisyPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             renderCfg = ElevationRenderConfig(ElevationSimplification.HEAVY, skipBands = 0),
-        )
+        ).polylines
         assertTrue(
             "expected HEAVY to produce fewer specs than NONE (raw=${rawSpecs.size}, heavy=${heavySpecs.size})",
             heavySpecs.size < rawSpecs.size,
         )
+    }
+
+    @Test fun chevrons_are_emitted_per_run_with_fixed_spacing() {
+        // The merged_adjacent_same_colour fixture yields two runs: a 200 m yellow run
+        // (8% + 12% segments, merged) and a 100 m dark-green flat run. At 60 m spacing,
+        // the yellow run gets floor(200/60) = 3 chevrons and the flat run gets
+        // floor(100/60) = 1 chevron.
+        val overlay = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            renderCfg = noneCfg,
+        )
+        assertEquals(2, overlay.polylines.size)
+        assertEquals(4, overlay.chevrons.size)
+        assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
+        assertEquals("barberfish-chev-0-1", overlay.chevrons[1].id)
+        assertEquals("barberfish-chev-0-2", overlay.chevrons[2].id)
+        assertEquals("barberfish-chev-1-0", overlay.chevrons[3].id)
+    }
+
+    @Test fun chevrons_omitted_when_includeChevrons_false() {
+        val overlay = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            renderCfg = noneCfg,
+            includeChevrons = false,
+        )
+        assertEquals(2, overlay.polylines.size)
+        assertTrue(overlay.chevrons.isEmpty())
+    }
+
+    @Test fun short_run_still_gets_one_chevron() {
+        // A single 40 m above-threshold segment shorter than CHEVRON_SPACING_M (60 m)
+        // must still receive one chevron at its midpoint.
+        val shortPoly = encodeElevationManually(
+            listOf(
+                0f to 100f,
+                40f to 103.2f,    // 8% grade → yellow band
+            ),
+        )
+        val overlay = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = shortPoly,
+            palette = GradePalette.KAROO,
+            readable = true,
+            renderCfg = noneCfg,
+        )
+        assertEquals(1, overlay.polylines.size)
+        assertEquals(1, overlay.chevrons.size)
+        assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
     }
 
     // --- inline polyline encoders (test-only) -----------------------------------

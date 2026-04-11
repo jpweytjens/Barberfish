@@ -18,7 +18,7 @@ import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
-import com.jpweytjens.barberfish.datatype.shared.buildClimbPolylineSpecs
+import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-private const val CLIMB_OVERLAY_WIDTH = 8           // coloured fill width; tune via screencaps
+private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune via screencaps
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
 
@@ -90,7 +90,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
     override fun startMap(emitter: Emitter<MapEffect>) {
         Timber.d("climber: startMap invoked")
-        val controller = ClimbMapController()
+        val polylineController = ClimbMapController()
+        val chevronController = ClimbChevronController()
         val scope = CoroutineScope(Dispatchers.IO)
         val job: Job = scope.launch {
             combine(
@@ -101,6 +102,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             ) { climberCfg, zoneCfg, renderCfg, navEvent ->
                 ClimbMapInputs(
                     enabled = climberCfg.enabled,
+                    showChevrons = climberCfg.showChevrons,
                     palette = zoneCfg.gradePalette,
                     readable = zoneCfg.readableColors,
                     renderCfg = renderCfg,
@@ -118,18 +120,21 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     )
                     if (!inputs.enabled || route == null) {
                         Timber.d("climber: clearing (enabled=${inputs.enabled}, route=${route != null})")
-                        controller.clearAll(emitter)
+                        polylineController.clearAll(emitter)
+                        chevronController.clearAll(emitter)
                         return@collect
                     }
-                    val specs = buildClimbPolylineSpecs(
+                    val specs = buildClimbOverlaySpecs(
                         routePolyline = route.routePolyline,
                         routeElevationPolyline = route.routeElevationPolyline,
                         palette = inputs.palette,
                         readable = inputs.readable,
                         renderCfg = inputs.renderCfg,
+                        includeChevrons = inputs.showChevrons,
                     )
-                    Timber.d("climber: built ${specs.size} specs (palette=${inputs.palette} readable=${inputs.readable} simpl=${inputs.renderCfg.simplification} skipBands=${inputs.renderCfg.skipBands})")
-                    controller.emit(emitter, specs, CLIMB_OVERLAY_WIDTH)
+                    Timber.d("climber: built ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (palette=${inputs.palette} readable=${inputs.readable} simpl=${inputs.renderCfg.simplification} skipBands=${inputs.renderCfg.skipBands})")
+                    polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
+                    chevronController.emit(emitter, specs.chevrons)
                 }
         }
         emitter.setCancellable {
@@ -142,6 +147,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
 private data class ClimbMapInputs(
     val enabled: Boolean,
+    val showChevrons: Boolean,
     val palette: GradePalette,
     val readable: Boolean,
     val renderCfg: ElevationRenderConfig,
@@ -151,6 +157,7 @@ private data class ClimbMapInputs(
         val route = state as? OnNavigationState.NavigationState.NavigatingRoute
         return ClimbMapSignature(
             enabled = enabled,
+            showChevrons = showChevrons,
             palette = palette,
             readable = readable,
             simplification = renderCfg.simplification,
@@ -163,6 +170,7 @@ private data class ClimbMapInputs(
 
 private data class ClimbMapSignature(
     val enabled: Boolean,
+    val showChevrons: Boolean,
     val palette: GradePalette,
     val readable: Boolean,
     val simplification: ElevationSimplification,

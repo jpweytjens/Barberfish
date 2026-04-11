@@ -283,6 +283,7 @@ suspend fun Context.saveElevationRenderConfig(config: ElevationRenderConfig) =
 @Serializable
 data class ClimberMapConfig(
     val enabled: Boolean = true,
+    val showChevrons: Boolean = true,
 )
 
 private val climberMapConfigKey = stringPreferencesKey("climber_map_config")
