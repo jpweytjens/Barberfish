@@ -278,6 +278,21 @@ fun Context.streamElevationRenderConfig(): Flow<ElevationRenderConfig> =
 suspend fun Context.saveElevationRenderConfig(config: ElevationRenderConfig) =
     saveConfig(elevationRenderConfigKey, config)
 
+// --- ClimberMapConfig ---
+
+@Serializable
+data class ClimberMapConfig(
+    val enabled: Boolean = true,
+)
+
+private val climberMapConfigKey = stringPreferencesKey("climber_map_config")
+
+fun Context.streamClimberMapConfig(): Flow<ClimberMapConfig> =
+    streamConfig(climberMapConfigKey, ClimberMapConfig())
+
+suspend fun Context.saveClimberMapConfig(config: ClimberMapConfig) =
+    saveConfig(climberMapConfigKey, config)
+
 // --- CadenceFieldConfig ---
 
 @Serializable

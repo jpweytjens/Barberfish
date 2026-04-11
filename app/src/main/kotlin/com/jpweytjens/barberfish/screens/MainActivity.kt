@@ -128,6 +128,9 @@ import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.extension.ElevationRenderConfig
+import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
@@ -148,6 +151,8 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.saveClimberMapConfig
+import com.jpweytjens.barberfish.extension.saveElevationRenderConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
@@ -161,6 +166,8 @@ import com.jpweytjens.barberfish.extension.savePowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
+import com.jpweytjens.barberfish.extension.streamClimberMapConfig
+import com.jpweytjens.barberfish.extension.streamElevationRenderConfig
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
@@ -168,6 +175,7 @@ import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamNPFieldConfig
@@ -228,6 +236,8 @@ class MainActivity : ComponentActivity() {
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
+        var elevationRenderConfig by remember { mutableStateOf(ElevationRenderConfig()) }
+        var climberMapConfig by remember { mutableStateOf(ClimberMapConfig()) }
         var currentRouteElevationPolyline by remember { mutableStateOf<String?>(null) }
         var userProfile by remember {
             mutableStateOf(
@@ -274,6 +284,8 @@ class MainActivity : ComponentActivity() {
             launch { streamTimeConfig().collect { timeConfig = it } }
             launch { streamETAConfig().collect { etaConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
+            launch { streamElevationRenderConfig().collect { elevationRenderConfig = it } }
+            launch { streamClimberMapConfig().collect { climberMapConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
             launch {
                 karooSystem.streamNavigationState().collect { nav ->
@@ -836,6 +848,61 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
+
+                    Text("Elevation rendering", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Shared by the HUD elevation sparkline and the climber map overlay.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val elevationThreshold = gradeThreshold(
+                        zoneConfig.gradePalette,
+                        elevationRenderConfig.skipBands,
+                    )
+                    Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    Text("Grades below this band stay uncoloured.", fontSize = 12.sp, color = TextDark)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ElevationSkipBandsRow(
+                            selected = elevationRenderConfig.skipBands,
+                            onSelect = { skip ->
+                                elevationRenderConfig = elevationRenderConfig.copy(skipBands = skip)
+                                lifecycleScope.launch { saveElevationRenderConfig(elevationRenderConfig) }
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            "≥${"%.0f".format(elevationThreshold)}%",
+                            fontSize = 11.sp,
+                            color = TextDark,
+                        )
+                    }
+                    Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
+                    ElevationSimplificationRow(
+                        selected = elevationRenderConfig.simplification,
+                        onSelect = { s ->
+                            elevationRenderConfig = elevationRenderConfig.copy(simplification = s)
+                            lifecycleScope.launch { saveElevationRenderConfig(elevationRenderConfig) }
+                        },
+                    )
+
+                    Text("Climber map overlay", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Gradient-colour upcoming climbs and flag completed ones in yellow on the map. Uses the simplification and minimum grade above.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ClimberOverlayToggle(
+                        enabled = climberMapConfig.enabled,
+                        onSelected = { enabled ->
+                            climberMapConfig = climberMapConfig.copy(enabled = enabled)
+                            lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
+                        },
+                    )
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
             }
@@ -1228,6 +1295,140 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
             ) {
                 Text(
                     text = format.label,
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClimberOverlayToggle(enabled: Boolean, onSelected: (Boolean) -> Unit) {
+    val options = listOf(false, true)
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Grey100)
+                .padding(3.dp)
+                .pointerInput(enabled, onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { opt ->
+            val isSelected = opt == enabled
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = if (opt) "On" else "Off",
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ElevationSkipBandsRow(
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val options = listOf(0, 1, 2, 3)
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(options, onSelect) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val idx =
+                            (down.position.x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
+                        onSelect(options[idx])
+                    }
+                }
+    ) {
+        options.forEach { value ->
+            val isSelected = selected == value
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = value.toString(),
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ElevationSimplificationRow(
+    selected: ElevationSimplification,
+    onSelect: (ElevationSimplification) -> Unit,
+) {
+    val options = ElevationSimplification.entries
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(options, onSelect) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val idx =
+                            (down.position.x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
+                        onSelect(options[idx])
+                    }
+                }
+    ) {
+        options.forEach { value ->
+            val isSelected = selected == value
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = value.label,
                     fontSize = 10.sp,
                     color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
