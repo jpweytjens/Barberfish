@@ -21,6 +21,7 @@ import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.extension.ElevationRenderConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
@@ -38,6 +39,7 @@ import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamElevationRenderConfig
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamNavigationState
@@ -69,6 +71,14 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
+
+private data class HudInputs(
+    val hudState: HUDState,
+    val navState: OnNavigationState,
+    val distState: StreamState,
+    val zoneConfig: ZoneConfig,
+    val hudConfig: HUDConfig,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HUDField(private val karooSystem: KarooSystemService) :
@@ -119,6 +129,15 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         context.streamZoneConfig(),
                         context.streamHUDConfig(),
                     ) { hudState, navState, distState, zoneConfig, hudConfig ->
+                        HudInputs(hudState, navState, distState, zoneConfig, hudConfig)
+                    }.combine(context.streamElevationRenderConfig()) { inputs, renderCfg ->
+                        inputs to renderCfg
+                    }.map { (inputs, renderCfg) ->
+                        val hudState = inputs.hudState
+                        val navState = inputs.navState
+                        val distState = inputs.distState
+                        val zoneConfig = inputs.zoneConfig
+                        val hudConfig = inputs.hudConfig
                         val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                         val dm = context.resources.displayMetrics
                         val sparkCfg = hudConfig.sparkline
@@ -130,14 +149,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             debugSweep    -> "" to 2
                             else          -> "" to 3
                         }
-                        val elevKey = Triple(elevEncoded, sparkCfg.simplification, elevSource)
+                        val elevKey = Triple(elevEncoded, renderCfg.simplification, elevSource)
                         if (elevKey != cachedElevKey) {
                             val raw = when {
                                 elevSource == 2 -> previewElevationFixture()
                                 elevEncoded.isBlank() -> emptyList()
                                 else -> decodeElevationPolyline(elevEncoded)
                             }
-                            cachedElevPoints = visvalingamWhyatt(raw, sparkCfg.simplification.minAreaM2)
+                            cachedElevPoints = visvalingamWhyatt(raw, renderCfg.simplification.minAreaM2)
                             cachedElevKey = elevKey
                         }
                         val elevPoints: List<Pair<Float, Float>> = cachedElevPoints
@@ -178,7 +197,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                 palette         = zoneConfig.gradePalette,
                                 readable        = zoneConfig.readableColors,
                                 lookaheadM      = sparkCfg.lookaheadKm * 1000f,
-                                skipBands       = sparkCfg.skipBands,
+                                skipBands       = renderCfg.skipBands,
                                 displayedRange  = ratchetRange,
                                 distanceDeltaM  = distanceDeltaM,
                                 dotColor        = dotColor,

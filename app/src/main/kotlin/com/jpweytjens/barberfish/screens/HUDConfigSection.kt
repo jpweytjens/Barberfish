@@ -55,7 +55,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
-import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
 import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
@@ -65,13 +64,13 @@ import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
-import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
-import com.jpweytjens.barberfish.extension.ElevationSimplification
+import com.jpweytjens.barberfish.extension.ElevationRenderConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.streamElevationRenderConfig
 import com.jpweytjens.barberfish.extension.SparklineWarp
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -207,7 +206,6 @@ internal fun HUDConfigSection(
     }
     SparklineCard(
         config = hudConfig.sparkline,
-        palette = zoneConfig.gradePalette,
         profile = profile,
         onUpdate = { onUpdate(hudConfig.copy(sparkline = it)) },
     )
@@ -224,6 +222,11 @@ private fun HUDPreview(
     fixturePoints: List<Pair<Float, Float>>? = null,
     previewSweepSeconds: Int = 10,
 ) {
+    val context = LocalContext.current
+    var elevationRenderConfig by remember { mutableStateOf(ElevationRenderConfig()) }
+    LaunchedEffect(Unit) {
+        context.streamElevationRenderConfig().collect { elevationRenderConfig = it }
+    }
     val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
         HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
     }
@@ -269,11 +272,11 @@ private fun HUDPreview(
     }
 
     // VW runs once per (fixture, preset) change — not once per animation frame.
-    val simplifiedElevationPoints = remember(elevationPoints, hudConfig.sparkline.simplification) {
-        visvalingamWhyatt(elevationPoints, hudConfig.sparkline.simplification.minAreaM2)
+    val simplifiedElevationPoints = remember(elevationPoints, elevationRenderConfig.simplification) {
+        visvalingamWhyatt(elevationPoints, elevationRenderConfig.simplification.minAreaM2)
     }
 
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
+    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, elevationRenderConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
         if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
@@ -287,7 +290,7 @@ private fun HUDPreview(
                 palette         = zoneConfig.gradePalette,
                 readable        = zoneConfig.readableColors,
                 lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
-                skipBands       = hudConfig.sparkline.skipBands,
+                skipBands       = elevationRenderConfig.skipBands,
                 displayedRange  = displayedRange,
                 distanceDeltaM  = distanceDeltaM,
                 isNightMode     = isNightMode,
@@ -636,7 +639,6 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 @Composable
 private fun SparklineCard(
     config: SparklineConfig,
-    palette: GradePalette,
     profile: UserProfile,
     onUpdate: (SparklineConfig) -> Unit,
 ) {
@@ -649,7 +651,11 @@ private fun SparklineCard(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("ELEVATION SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-        Text("Shows elevation ahead when a route is loaded.", fontSize = 12.sp, color = TextDark)
+        Text(
+            "Shows elevation ahead when a route is loaded. Grade bands and simplification are configured in the Global section.",
+            fontSize = 12.sp,
+            color = TextDark,
+        )
         SegmentedRow(
             options = listOf(true to "On", false to "Off"),
             selected = config.enabled,
@@ -665,33 +671,6 @@ private fun SparklineCard(
                 },
                 selected = config.lookaheadKm,
                 onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
-            )
-            val threshold = gradeThreshold(palette, config.skipBands)
-            Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Grades below this band stay uncolored.", fontSize = 12.sp, color = TextDark)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SegmentedRow(
-                    options = listOf(0 to "0", 1 to "1", 2 to "2", 3 to "3"),
-                    selected = config.skipBands,
-                    onSelect = { onUpdate(config.copy(skipBands = it)) },
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    "≥${"%.0f".format(threshold)}%",
-                    fontSize = 11.sp,
-                    color = TextDark,
-                )
-            }
-            Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = ElevationSimplification.entries.map { it to it.label },
-                selected = config.simplification,
-                onSelect = { onUpdate(config.copy(simplification = it)) },
             )
             Text("X-WARP", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)

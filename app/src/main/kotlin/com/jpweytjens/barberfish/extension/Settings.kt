@@ -123,8 +123,6 @@ enum class SparklineWarp(val label: String, val k: Float) {
 data class SparklineConfig(
     val enabled: Boolean = true,
     val lookaheadKm: Int = 10,
-    val skipBands: Int = 1,
-    val simplification: ElevationSimplification = ElevationSimplification.MEDIUM,
     val warp: SparklineWarp = SparklineWarp.MEDIUM,
 )
 
@@ -263,6 +261,22 @@ fun Context.streamZoneConfig(): Flow<ZoneConfig> =
 
 suspend fun Context.saveZoneConfig(config: ZoneConfig) =
     saveConfig(zoneConfigKey, config)
+
+// --- ElevationRenderConfig (shared by HUD sparkline and climber map overlay) ---
+
+@Serializable
+data class ElevationRenderConfig(
+    val simplification: ElevationSimplification = ElevationSimplification.MEDIUM,
+    val skipBands: Int = 1,
+)
+
+private val elevationRenderConfigKey = stringPreferencesKey("elevation_render_config")
+
+fun Context.streamElevationRenderConfig(): Flow<ElevationRenderConfig> =
+    streamConfig(elevationRenderConfigKey, ElevationRenderConfig())
+
+suspend fun Context.saveElevationRenderConfig(config: ElevationRenderConfig) =
+    saveConfig(elevationRenderConfigKey, config)
 
 // --- CadenceFieldConfig ---
 
