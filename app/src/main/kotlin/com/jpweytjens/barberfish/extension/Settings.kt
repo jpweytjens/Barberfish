@@ -294,6 +294,23 @@ fun Context.streamZoneConfig(): Flow<ZoneConfig> =
 suspend fun Context.saveZoneConfig(config: ZoneConfig) =
     saveConfig(zoneConfigKey, config)
 
+// --- ClimberMapConfig ---
+
+@Serializable
+data class ClimberMapConfig(
+    val enabled: Boolean = true,
+    val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
+    val skipBands: Int = 1,
+)
+
+private val climberMapConfigKey = stringPreferencesKey("climber_map_config")
+
+fun Context.streamClimberMapConfig(): Flow<ClimberMapConfig> =
+    streamConfig(climberMapConfigKey, ClimberMapConfig())
+
+suspend fun Context.saveClimberMapConfig(config: ClimberMapConfig) =
+    saveConfig(climberMapConfigKey, config)
+
 // --- CadenceFieldConfig ---
 
 @Serializable

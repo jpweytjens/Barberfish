@@ -3,7 +3,8 @@
     id="barberfish"
     displayName="@string/extension_name"
     icon="@drawable/ic_extension"
-    scansDevices="false">
+    scansDevices="false"
+    mapLayer="true">
     <DataType
         typeId="three-column"
         displayName="@string/hud_name"
