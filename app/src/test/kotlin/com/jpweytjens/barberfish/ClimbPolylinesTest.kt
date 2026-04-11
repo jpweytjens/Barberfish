@@ -221,9 +221,11 @@ class ClimbPolylinesTest {
         assertTrue(overlay.chevrons.isEmpty())
     }
 
-    @Test fun short_run_still_gets_one_chevron() {
-        // A single 40 m above-threshold segment shorter than CHEVRON_SPACING_M (60 m)
-        // must still receive one chevron at its midpoint.
+    @Test fun short_run_gets_no_chevron_at_default_spacing() {
+        // A single 40 m above-threshold segment shorter than DEFAULT_CHEVRON_SPACING_M
+        // (60 m) gets a polyline but no chevron — at this zoom level the gradient colour
+        // alone is sufficient. Chevrons only appear when the run is at least as long as
+        // the spacing.
         val shortPoly = encodeElevationManually(
             listOf(
                 0f to 100f,
@@ -238,8 +240,7 @@ class ClimbPolylinesTest {
             renderCfg = noneCfg,
         )
         assertEquals(1, overlay.polylines.size)
-        assertEquals(1, overlay.chevrons.size)
-        assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
+        assertTrue(overlay.chevrons.isEmpty())
     }
 
     // --- inline polyline encoders (test-only) -----------------------------------

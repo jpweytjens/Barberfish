@@ -146,9 +146,10 @@ private fun chevronsForRun(
     val lengthM = endM - startM
     if (lengthM <= 0.0 || spacingM <= 0.0) return emptyList()
     val total = cumDist.last()
-    // Sample count: floor(length / spacing) gives an integer number of full spacings.
-    // Short runs (< spacing) still get one chevron at the midpoint.
-    val count = (lengthM / spacingM).toInt().coerceAtLeast(1)
+    // Sample count: floor(length / spacing). Runs shorter than the step get no
+    // chevron — at wide zoom the gradient colour alone is sufficient.
+    val count = (lengthM / spacingM).toInt()
+    if (count == 0) return emptyList()
     val specs = ArrayList<ClimbChevronSpec>(count)
     for (i in 0 until count) {
         // Place chevrons at the centre of each equal-length sub-span so the first and last
