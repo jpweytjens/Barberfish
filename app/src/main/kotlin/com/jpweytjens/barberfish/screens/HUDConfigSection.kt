@@ -156,7 +156,7 @@ internal fun HUDConfigSection(
                 .padding(12.dp),
         ) {
             SegmentedRow(
-                options = listOf(10 to "10s", 30 to "30s", 60 to "60s"),
+                options = listOf(30 to "30s", 240 to "240s", 480 to "480s"),
                 selected = previewSweepSeconds,
                 onSelect = { previewSweepSeconds = it },
             )
