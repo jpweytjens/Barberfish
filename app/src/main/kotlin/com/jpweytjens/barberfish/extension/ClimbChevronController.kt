@@ -21,10 +21,12 @@ internal class ClimbChevronController {
     private var previousIds: Set<String> = emptySet()
 
     fun emit(emitter: Emitter<MapEffect>, specs: List<ClimbChevronSpec>) {
-        val newIds = specs.mapTo(mutableSetOf()) { it.id }
-        val removed = previousIds - newIds
-        if (removed.isNotEmpty()) {
-            emitter.onNext(HideSymbols(removed.toList()))
+        // Always hide ALL previously-emitted ids first. The rideapp sometimes fails
+        // to process a single HideSymbols call (IPC reordering), so we re-issue the
+        // hide on every rebuild rather than diffing. Hiding an already-hidden id is a
+        // no-op on the rideapp side.
+        if (previousIds.isNotEmpty()) {
+            emitter.onNext(HideSymbols(previousIds.toList()))
         }
         if (specs.isNotEmpty()) {
             val icons = specs.map { spec ->
@@ -38,7 +40,7 @@ internal class ClimbChevronController {
             }
             emitter.onNext(ShowSymbols(icons))
         }
-        previousIds = newIds
+        previousIds = specs.mapTo(mutableSetOf()) { it.id }
     }
 
     fun clearAll(emitter: Emitter<MapEffect>) {
