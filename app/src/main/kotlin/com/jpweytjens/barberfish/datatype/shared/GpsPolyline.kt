@@ -11,6 +11,43 @@ internal data class LatLng(val lat: Double, val lng: Double)
 private const val EARTH_RADIUS_M = 6_371_000.0
 
 /**
+ * Computes an axis-aligned viewport bounding box centred on [lat]/[lng] at a given
+ * Karoo map [zoomLevel] (range 8.0–18.0, see `OnMapZoomLevel`). The bounds are widened
+ * by [paddingFactor] on each side so chevrons don't pop out on small pans.
+ *
+ * Matches timklge/karoo-routegraph's approach: `halfMapSpan = 180 / 2^zoomLevel` degrees
+ * in both lat and lng. At the equator this overestimates the on-screen east-west extent
+ * (because `halfMapSpan` is unscaled degrees of longitude), but the map is roughly square
+ * so the error cancels out for chevron-visibility purposes.
+ */
+internal fun mapViewportBounds(
+    lat: Double,
+    lng: Double,
+    zoomLevel: Double,
+    paddingFactor: Double = 1.5,
+): LatLngBounds {
+    val halfSpan = (180.0 / 2.0.pow(zoomLevel)) * paddingFactor
+    return LatLngBounds(
+        minLat = lat - halfSpan,
+        maxLat = lat + halfSpan,
+        minLng = lng - halfSpan,
+        maxLng = lng + halfSpan,
+    )
+}
+
+/**
+ * Approximate map diagonal in metres for a viewport centred at [lat]/[lng] at the given
+ * Karoo [zoomLevel]. Uses the equirectangular distance from the SW corner of the
+ * unpadded bounding box to the NE corner (matches timklge/karoo-routegraph's formula).
+ */
+internal fun mapDiagonalMeters(lat: Double, lng: Double, zoomLevel: Double): Double {
+    val halfSpan = 180.0 / 2.0.pow(zoomLevel)
+    val sw = LatLng(lat - halfSpan, lng - halfSpan)
+    val ne = LatLng(lat + halfSpan, lng + halfSpan)
+    return cumulativeDistancesM(listOf(sw, ne))[1]
+}
+
+/**
  * Decodes a Google encoded polyline at the given precision (default 5 for GPS).
  * Returns an empty list on blank input.
  */
