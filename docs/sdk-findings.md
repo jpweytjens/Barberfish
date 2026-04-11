@@ -241,3 +241,71 @@ code and could not be reconstructed. What we know:
 - The processor class (`hhm7.c`, case 1) selects between a "loading" and "no route"
   state but the computation itself is dispatched through further obfuscated layers
   that could not be traced.
+
+---
+
+## NavigatingRoute.routePolyline is the un-snapped saved polyline
+
+`OnNavigationState.NavigationState.NavigatingRoute.routePolyline` (precision-5 Google
+encoded polyline) is the same geometry that was saved with the route — it is *not*
+road-snapped to the map geometry the rideapp actually draws as the yellow
+`ROUTE_LINE`. An extension that emits a `ShowPolyline` with `route.routePolyline`
+verbatim will cut chords across hairpins where the native route line hugs the road.
+
+Confirmed empirically: a diagnostic `ShowPolyline(encodedPolyline = route.routePolyline)`
+drawn in a contrasting colour under the native route shows exactly the same
+chord-cutting as a re-encoded subset built by our own extraction pipeline. The
+divergence is visible on tight switchbacks; over straight roads the two lines
+coincide.
+
+### What Hammerhead's decompiled rideapp tells us
+
+`io.hammerhead.datamodels.routes.Route` (decompiled) has *two* polyline fields:
+
+- `summaryPolyline` (non-null) — low-density, presumably the thumbnail geometry
+- `routePolyline` (nullable) — detailed, possibly snapped
+
+It is unclear which of these the SDK's `NavigatingRoute.routePolyline` maps to. The
+field name suggests `routePolyline`, but the chord-cutting behaviour suggests we may
+be receiving `summaryPolyline` under that name, or receiving `routePolyline` when it
+has not been populated with road-snapped geometry.
+
+The rideapp itself runs on-device road snapping via a bundled GraphHopper routing
+graph cache at `/sdcard/offline/nav/2/000/<y>/<x>.gph.gz`, so the data exists locally
+but is not reachable from an extension:
+
+- No ContentProvider for routes. The rideapp exports only
+  `androidx.startup.InitializationProvider` and `ClarityPotion`, both
+  `exported="false"`.
+- No exported services beyond `io.hammerhead.karooext.KAROO_EXTENSION`.
+- `/data/data/io.hammerhead.rideapp/` is permission-denied; the rideapp is not
+  `debuggable`, so `run-as` fails.
+- Linking GraphHopper ourselves would require reverse-engineering the Karoo-specific
+  tile sharding and bundling ~10–15 MB of jars. Too fragile; any rideapp update that
+  changes the sharding breaks the extension silently.
+
+### Implications for extensions that draw map overlays
+
+Any extension that needs to trace the *actual road geometry* (not just the distance
+axis along the route) currently cannot do so. The workaround is to accept the
+chord-cutting, which is visually acceptable on most routes but noticeable on
+switchbacks.
+
+### Feature request
+
+The ideal SDK fix is one of:
+
+1. Guarantee `NavigatingRoute.routePolyline` is the road-snapped, detailed polyline
+   the rideapp draws as `ROUTE_LINE`, and document the precision.
+2. If the existing field is intentionally the saved geometry, add a separate
+   `snappedRoutePolyline: String?` field on `NavigatingRoute` populated from the same
+   source the rideapp uses for its `ROUTE_LINE` draw call.
+3. Alternatively, accept `MapEffect` extensions that reference a built-in layer id
+   (e.g. "colour the segments of `ROUTE_LINE` between distances `[d0, d1]` with
+   colour X") so extensions never handle geometry at all and the rideapp always
+   owns the polyline.
+
+This was investigated during the gradient climber overlay work
+(`docs/plans/gradient-climber-overlay.md`). See
+`app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ClimbPolylines.kt`
+for the extraction pipeline that hits this limitation.
