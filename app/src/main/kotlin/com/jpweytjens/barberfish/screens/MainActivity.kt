@@ -256,6 +256,7 @@ class MainActivity : ComponentActivity() {
         var fieldsExpanded by remember { mutableStateOf(false) }
         var thresholdsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
+        var climberExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
 
@@ -314,10 +315,6 @@ class MainActivity : ComponentActivity() {
                         onUpdate = { updated ->
                             hudConfig = updated
                             lifecycleScope.launch { saveHUDConfig(updated) }
-                        },
-                        onSparklineUpdate = { updated ->
-                            sparklineConfig = updated
-                            lifecycleScope.launch { saveSparklineConfig(updated) }
                         },
                     )
                 } // end HUD
@@ -566,22 +563,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    FieldCard(
-                        title = "GRADE",
-                        description = "Road gradient with color coding.",
-                        previewFields = gradePreviewStates,
-                        colorMode = gradeFieldConfig.colorMode,
-                        selected = selectedDataField == "GRADE",
-                        onSelect = { selectedDataField = if (selectedDataField == "GRADE") null else "GRADE" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = gradeFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
-                            },
-                        )
-                    }
                 } // end Fields
 
                 val avgTotalPreviewStates = remember(avgTotalConfig, userProfile) {
@@ -707,6 +688,65 @@ class MainActivity : ComponentActivity() {
                 } // end Threshold Fields
 
                 CollapsibleSection(
+                    title = "Climber",
+                    description = "Elevation sparkline and gradient coloring",
+                    icon = R.drawable.ic_grade,
+                    expanded = climberExpanded,
+                    onToggle = { climberExpanded = !climberExpanded },
+                ) {
+                    SparklineCard(
+                        config = sparklineConfig,
+                        palette = zoneConfig.gradePalette,
+                        profile = userProfile,
+                        onUpdate = { updated ->
+                            sparklineConfig = updated
+                            lifecycleScope.launch { saveSparklineConfig(updated) }
+                        },
+                    )
+
+                    var gradeExpanded by remember { mutableStateOf(false) }
+                    FieldCard(
+                        title = "GRADE",
+                        description = "Road gradient with color coding.",
+                        previewFields = gradePreviewStates,
+                        colorMode = gradeFieldConfig.colorMode,
+                        selected = gradeExpanded,
+                        onSelect = { gradeExpanded = !gradeExpanded },
+                    ) {
+                        ZoneColorSlider(
+                            selected = gradeFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                            },
+                        )
+                    }
+
+                    Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Used by the Grade data field and the sparkline gradient overlay.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ReadabilityToggle(
+                        readable = zoneConfig.readableColors,
+                        onSelected = { readable ->
+                            zoneConfig = zoneConfig.copy(readableColors = readable)
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
+                    GradePaletteDropdown(
+                        title = "Grade",
+                        selected = zoneConfig.gradePalette,
+                        onSelected = { palette ->
+                            zoneConfig = zoneConfig.copy(gradePalette = palette)
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
+                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
+                } // end Climber
+
+                CollapsibleSection(
                     title = "ETA",
                     description = "Configure time of arrival estimation",
                     icon = R.drawable.ic_time_to_dest,
@@ -824,28 +864,6 @@ class MainActivity : ComponentActivity() {
                             }
                     )
 
-                    Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Used by the Grade data field and the sparkline gradient overlay.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    ReadabilityToggle(
-                        readable = zoneConfig.readableColors,
-                        onSelected = { readable ->
-                            zoneConfig = zoneConfig.copy(readableColors = readable)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradePaletteDropdown(
-                        title = "Grade",
-                        selected = zoneConfig.gradePalette,
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(gradePalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
             }

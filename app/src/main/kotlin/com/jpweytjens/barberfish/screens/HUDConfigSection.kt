@@ -96,7 +96,6 @@ internal fun HUDConfigSection(
     profile: UserProfile,
     currentRouteElevationPolyline: String?,
     onUpdate: (HUDConfig) -> Unit,
-    onSparklineUpdate: (SparklineConfig) -> Unit,
 ) {
     var selectedSlot by remember { mutableStateOf<Int?>(null) }
 
@@ -209,12 +208,6 @@ internal fun HUDConfigSection(
             },
         )
     }
-    SparklineCard(
-        config = sparklineConfig,
-        palette = zoneConfig.gradePalette,
-        profile = profile,
-        onUpdate = onSparklineUpdate,
-    )
 }
 
 @Composable
@@ -640,7 +633,7 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 }
 
 @Composable
-private fun SparklineCard(
+internal fun SparklineCard(
     config: SparklineConfig,
     palette: GradePalette,
     profile: UserProfile,
