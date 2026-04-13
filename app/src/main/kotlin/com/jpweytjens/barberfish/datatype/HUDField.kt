@@ -41,6 +41,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamNavigationState
+import com.jpweytjens.barberfish.extension.streamSparklineConfig
 import com.jpweytjens.barberfish.extension.streamRideState
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -117,11 +118,10 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         karooSystem.streamNavigationState().sample(1000L),
                         distFlow,
                         context.streamZoneConfig(),
-                        context.streamHUDConfig(),
-                    ) { hudState, navState, distState, zoneConfig, hudConfig ->
+                        context.streamSparklineConfig(),
+                    ) { hudState, navState, distState, zoneConfig, sparkCfg ->
                         val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                         val dm = context.resources.displayMetrics
-                        val sparkCfg = hudConfig.sparkline
                         val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
                         val dest  = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
                         val (elevEncoded, elevSource) = when {

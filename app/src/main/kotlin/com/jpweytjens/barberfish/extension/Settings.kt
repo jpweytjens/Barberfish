@@ -41,6 +41,7 @@ private suspend inline fun <reified T> Context.saveConfig(
     dataStore.edit { it[key] = json.encodeToString(config) }
 }
 
+private val sparklineConfigKey = stringPreferencesKey("sparkline_config")
 private val threeColumnConfigKey = stringPreferencesKey("three_column_config")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
@@ -143,6 +144,24 @@ fun Context.streamHUDConfig(): Flow<HUDConfig> =
 
 suspend fun Context.saveHUDConfig(config: HUDConfig) =
     saveConfig(threeColumnConfigKey, config)
+
+// --- SparklineConfig (shared by HUD and standalone sparkline field) ---
+
+fun Context.streamSparklineConfig(): Flow<SparklineConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[sparklineConfigKey]?.let {
+                runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
+            }
+                ?: prefs[threeColumnConfigKey]?.let {
+                    runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
+                }?.sparkline
+                ?: SparklineConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveSparklineConfig(config: SparklineConfig) =
+    saveConfig(sparklineConfigKey, config)
 
 // --- PowerFieldConfig ---
 

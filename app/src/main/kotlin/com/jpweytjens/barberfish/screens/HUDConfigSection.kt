@@ -90,11 +90,13 @@ import kotlinx.coroutines.delay
 @Composable
 internal fun HUDConfigSection(
     hudConfig: HUDConfig,
+    sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
     currentRouteElevationPolyline: String?,
     onUpdate: (HUDConfig) -> Unit,
+    onSparklineUpdate: (SparklineConfig) -> Unit,
 ) {
     var selectedSlot by remember { mutableStateOf<Int?>(null) }
 
@@ -163,6 +165,7 @@ internal fun HUDConfigSection(
         }
         HUDPreview(
             hudConfig = hudConfig,
+            sparklineConfig = sparklineConfig,
             zoneConfig = zoneConfig,
             timeCfg = timeCfg,
             profile = profile,
@@ -174,6 +177,7 @@ internal fun HUDConfigSection(
     } else {
         HUDPreview(
             hudConfig = hudConfig,
+            sparklineConfig = sparklineConfig,
             zoneConfig = zoneConfig,
             timeCfg = timeCfg,
             profile = profile,
@@ -206,16 +210,17 @@ internal fun HUDConfigSection(
         )
     }
     SparklineCard(
-        config = hudConfig.sparkline,
+        config = sparklineConfig,
         palette = zoneConfig.gradePalette,
         profile = profile,
-        onUpdate = { onUpdate(hudConfig.copy(sparkline = it)) },
+        onUpdate = onSparklineUpdate,
     )
 }
 
 @Composable
 private fun HUDPreview(
     hudConfig: HUDConfig,
+    sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
@@ -269,12 +274,12 @@ private fun HUDPreview(
     }
 
     // VW runs once per (fixture, preset) change — not once per animation frame.
-    val simplifiedElevationPoints = remember(elevationPoints, hudConfig.sparkline.simplification) {
-        visvalingamWhyatt(elevationPoints, hudConfig.sparkline.simplification.minAreaM2)
+    val simplifiedElevationPoints = remember(elevationPoints, sparklineConfig.simplification) {
+        visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
     }
 
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
-        if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
+    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
+        if (!sparklineConfig.enabled || boxWidthPx <= 0) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
@@ -286,13 +291,13 @@ private fun HUDPreview(
                 density         = density,
                 palette         = zoneConfig.gradePalette,
                 readable        = zoneConfig.readableColors,
-                lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
-                skipBands       = hudConfig.sparkline.skipBands,
+                lookaheadM      = sparklineConfig.lookaheadKm * 1_000f,
+                skipBands       = sparklineConfig.skipBands,
                 displayedRange  = displayedRange,
                 distanceDeltaM  = distanceDeltaM,
                 isNightMode     = isNightMode,
-                logWarpK        = hudConfig.sparkline.warp.k,
-                positionFraction = hudConfig.sparkline.warp.positionFraction,
+                logWarpK        = sparklineConfig.warp.k,
+                positionFraction = sparklineConfig.warp.positionFraction,
             )
             displayedRange = newRange
             bitmap
@@ -321,7 +326,7 @@ private fun HUDPreview(
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
                     columns = hudConfig.columns,
-                    sparklineEnabled = hudConfig.sparkline.enabled,
+                    sparklineEnabled = sparklineConfig.enabled,
                 )
             }
         }

@@ -167,7 +167,10 @@ import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
+import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.saveSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamSparklineConfig
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamNPFieldConfig
@@ -211,6 +214,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ConfigScreen() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
+        var sparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -257,6 +261,7 @@ class MainActivity : ComponentActivity() {
 
         LaunchedEffect(Unit) {
             launch { streamHUDConfig().collect { hudConfig = it } }
+            launch { streamSparklineConfig().collect { sparklineConfig = it } }
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
             launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
             launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
@@ -301,6 +306,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     HUDConfigSection(
                         hudConfig = hudConfig,
+                        sparklineConfig = sparklineConfig,
                         zoneConfig = zoneConfig,
                         timeCfg = timeConfig,
                         profile = userProfile,
@@ -308,6 +314,10 @@ class MainActivity : ComponentActivity() {
                         onUpdate = { updated ->
                             hudConfig = updated
                             lifecycleScope.launch { saveHUDConfig(updated) }
+                        },
+                        onSparklineUpdate = { updated ->
+                            sparklineConfig = updated
+                            lifecycleScope.launch { saveSparklineConfig(updated) }
                         },
                     )
                 } // end HUD

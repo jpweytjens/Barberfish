@@ -27,8 +27,8 @@ class SparklineTapReceiver : BroadcastReceiver() {
         val job = Job()
         CoroutineScope(Dispatchers.IO + job).launch {
             try {
-                val cfg = context.streamHUDConfig().first()
-                context.saveHUDConfig(cfg.copy(sparkline = cfg.sparkline.copy(lookaheadKm = next)))
+                val cfg = context.streamSparklineConfig().first()
+                context.saveSparklineConfig(cfg.copy(lookaheadKm = next))
             } finally {
                 result.finish()
                 job.cancel()
