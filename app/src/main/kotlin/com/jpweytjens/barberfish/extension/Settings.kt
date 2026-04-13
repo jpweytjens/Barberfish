@@ -112,11 +112,11 @@ enum class ElevationSimplification(val label: String, val minAreaM2: Float) {
 }
 
 @Serializable
-enum class SparklineWarp(val label: String, val k: Float) {
-    NONE("None", 0f),       // linear x-axis
-    MILD("Mild", 4f),
-    MEDIUM("Medium", 8f),   // previous hardcoded LOG_WARP_K
-    HEAVY("Heavy", 12f),
+enum class SparklineWarp(val label: String, val k: Float, val positionFraction: Float) {
+    NONE("None", 0f, 0.1235f),
+    MILD("Mild", 4f, 0.0783f),
+    MEDIUM("Medium", 8f, 0.05f),
+    HEAVY("Heavy", 12f, 0.0357f),
 }
 
 @Serializable

@@ -292,6 +292,7 @@ private fun HUDPreview(
                 distanceDeltaM  = distanceDeltaM,
                 isNightMode     = isNightMode,
                 logWarpK        = hudConfig.sparkline.warp.k,
+                positionFraction = hudConfig.sparkline.warp.positionFraction,
             )
             displayedRange = newRange
             bitmap

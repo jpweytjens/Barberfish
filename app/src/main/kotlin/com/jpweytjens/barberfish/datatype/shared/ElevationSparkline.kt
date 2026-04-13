@@ -138,7 +138,6 @@ internal fun visvalingamWhyatt(
  *  5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default LemonYellow)
  */
 
-private const val POSITION_FRACTION = 0.05f
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
@@ -162,6 +161,7 @@ internal fun renderElevationSparkline(
     dotColor: Int = LemonYellow.toArgb(),
     isNightMode: Boolean = true,
     logWarpK: Float = 8f,
+    positionFraction: Float = 0.05f,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
@@ -169,7 +169,7 @@ internal fun renderElevationSparkline(
     // The dot migrates from the left edge to the 25% position as you accumulate past distance.
     val firstDist = elevationPoints.first().first
     val lastDist  = elevationPoints.last().first
-    val rawEnd    = positionM - lookaheadM * POSITION_FRACTION + lookaheadM
+    val rawEnd    = positionM - lookaheadM * positionFraction + lookaheadM
     val windowEnd = rawEnd.coerceAtMost(lastDist)
     val windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
 

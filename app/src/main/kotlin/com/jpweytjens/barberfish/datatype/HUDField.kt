@@ -184,6 +184,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                 dotColor        = dotColor,
                                 isNightMode     = isNightMode,
                                 logWarpK        = sparkCfg.warp.k,
+                                positionFraction = sparkCfg.warp.positionFraction,
                             )
                         else ElevationSparklineResult(null, ratchetRange)
                         ratchetRange = updatedRange
