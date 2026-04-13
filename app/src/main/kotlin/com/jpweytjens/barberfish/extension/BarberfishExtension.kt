@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
+import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HUDField
@@ -48,6 +49,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             // Other
             CadenceField(karooSystem),
             GradeField(karooSystem),
+            ElevationSparklineField(karooSystem),
             // Time
             TimeField(karooSystem, TimeKind.TOTAL),
             TimeField(karooSystem, TimeKind.RIDING),
