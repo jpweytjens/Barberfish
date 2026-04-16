@@ -61,7 +61,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     @OptIn(FlowPreview::class)
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
-        if (!config.preview && config.gridSize.second < 18) {
+        if (config.gridSize.second < 18) {
             super.startView(context, config, emitter)
             return
         }
