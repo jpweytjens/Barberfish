@@ -136,14 +136,13 @@ private fun makeFieldRemoteViews(
 
     // Icons
     val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
+    val iconSizePx = (sizeConfig.headerIconSize.value * density).toInt()
     if (field.iconRes != null) {
         rv.setViewVisibility(R.id.field_icon, View.VISIBLE)
         rv.setImageViewResource(R.id.field_icon, field.iconRes)
         rv.setInt(R.id.field_icon, "setColorFilter", colors.iconTint.toArgb())
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            rv.setViewLayoutWidth(R.id.field_icon, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
-            rv.setViewLayoutHeight(R.id.field_icon, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
-        }
+        rv.setInt(R.id.field_icon, "setMaxWidth", iconSizePx)
+        rv.setInt(R.id.field_icon, "setMaxHeight", iconSizePx)
     } else {
         rv.setViewVisibility(R.id.field_icon, View.GONE)
     }
@@ -151,10 +150,8 @@ private fun makeFieldRemoteViews(
         rv.setViewVisibility(R.id.field_icon_secondary, View.VISIBLE)
         rv.setImageViewResource(R.id.field_icon_secondary, field.secondaryIconRes)
         rv.setInt(R.id.field_icon_secondary, "setColorFilter", colors.iconTint.toArgb())
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            rv.setViewLayoutWidth(R.id.field_icon_secondary, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
-            rv.setViewLayoutHeight(R.id.field_icon_secondary, sizeConfig.headerIconSize.value, TypedValue.COMPLEX_UNIT_DIP)
-        }
+        rv.setInt(R.id.field_icon_secondary, "setMaxWidth", iconSizePx)
+        rv.setInt(R.id.field_icon_secondary, "setMaxHeight", iconSizePx)
     } else {
         rv.setViewVisibility(R.id.field_icon_secondary, View.GONE)
     }
