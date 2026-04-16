@@ -135,7 +135,7 @@ internal fun visvalingamWhyatt(
  *      bright grade colours more effectively than white, which just pastels them)
  *  3. Past outline (left of dot): opaque grey(100,100,100), strokeWidth 3px
  *  4. Ahead outline (right of dot): opaque white on night / black on day, strokeWidth 3px
- *  5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default LemonYellow)
+ *  5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default teal)
  */
 
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
@@ -158,7 +158,7 @@ internal fun renderElevationSparkline(
     skipBands: Int = 1,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
-    dotColor: Int = LemonYellow.toArgb(),
+    dotColor: Int = ICON_TINT_TEAL.toArgb(),
     isNightMode: Boolean = true,
     logWarpK: Float = 8f,
     positionFraction: Float = 0.05f,
