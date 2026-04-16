@@ -194,14 +194,19 @@ private fun makeFieldRemoteViews(
     }
     // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
     // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
+    // Size computed from the longest state text so baselines align across HUD slots.
     if (field.color is FieldColor.StreamState) {
+        val (stateFont, stateMaxLines) = fontSizeForCell(
+            "Not available", sizeConfig.valueFontSizeBase, cellWidthPx, density,
+            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+        )
         rv.setViewVisibility(R.id.field_value, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
-        rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, fontSp.coerceAtMost(19).toFloat())
+        rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, stateFont.coerceAtMost(19).toFloat())
         rv.setViewPadding(R.id.stream_state_tv, 0, headerPadPx, 0, 0)
-        if (maxLines == 2) {
+        if (stateMaxLines == 2) {
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }
     } else {
