@@ -297,14 +297,15 @@ internal fun renderElevationSparkline(
         val pastPath = Path().apply {
             moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
             pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+            lineTo(dotX, dotY)
         }
         canvas.drawPath(pastPath, paint)
     }
     if (aheadSilPts.isNotEmpty()) {
         paint.color = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         val aheadPath = Path().apply {
-            moveTo(toX(aheadSilPts.first().first), toY(aheadSilPts.first().second))
-            aheadSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+            moveTo(dotX, dotY)
+            aheadSilPts.forEach { (d, e) -> lineTo(toX(d), toY(e)) }
         }
         canvas.drawPath(aheadPath, paint)
     }
