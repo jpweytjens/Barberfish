@@ -97,6 +97,12 @@
         displayName="@string/grade_name"
         description="@string/grade_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_grade"
+        typeId="elevation-sparkline"
+        displayName="@string/elevation_sparkline_name"
+        description="@string/elevation_sparkline_description"
+        graphical="true" />
     <!-- Time -->
     <DataType
         icon="@drawable/ic_time_to_dest"

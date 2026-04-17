@@ -41,6 +41,7 @@ private suspend inline fun <reified T> Context.saveConfig(
     dataStore.edit { it[key] = json.encodeToString(config) }
 }
 
+private val sparklineConfigKey = stringPreferencesKey("sparkline_config")
 private val threeColumnConfigKey = stringPreferencesKey("three_column_config")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
@@ -104,10 +105,36 @@ data class HUDSlotConfig(
 )
 
 @Serializable
+enum class ElevationSimplification(val label: String, val minAreaM2: Float) {
+    NONE("Off", 0f),
+    MILD("Mild", 25f),      // just above the 21 m² rainbow-noise floor
+    MEDIUM("Medium", 60f),  // merges most micro-wiggles
+    HEAVY("Max", 120f),     // abstract blocks; preserves sharp flat→climb corners
+}
+
+@Serializable
+enum class SparklineWarp(val label: String, val k: Float, val positionFraction: Float) {
+    NONE("Off", 0f, 0.1235f),
+    MILD("Mild", 4f, 0.0783f),
+    MEDIUM("Medium", 8f, 0.05f),
+    HEAVY("Max", 12f, 0.0357f),
+}
+
+@Serializable
+enum class ElevationZoom(val label: String, val minRangeM: Float) {
+    CLOSE("Close", 20f),
+    NORMAL("Normal", 50f),
+    WIDE("Wide", 100f),
+}
+
+@Serializable
 data class SparklineConfig(
     val enabled: Boolean = true,
     val lookaheadKm: Int = 10,
     val skipBands: Int = 1,
+    val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
+    val warp: SparklineWarp = SparklineWarp.MILD,
+    val yZoom: ElevationZoom = ElevationZoom.NORMAL,
 )
 
 @Serializable
@@ -125,6 +152,24 @@ fun Context.streamHUDConfig(): Flow<HUDConfig> =
 
 suspend fun Context.saveHUDConfig(config: HUDConfig) =
     saveConfig(threeColumnConfigKey, config)
+
+// --- SparklineConfig (shared by HUD and standalone sparkline field) ---
+
+fun Context.streamSparklineConfig(): Flow<SparklineConfig> =
+    dataStore.data
+        .map { prefs ->
+            prefs[sparklineConfigKey]?.let {
+                runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
+            }
+                ?: prefs[threeColumnConfigKey]?.let {
+                    runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
+                }?.sparkline
+                ?: SparklineConfig()
+        }
+        .distinctUntilChanged()
+
+suspend fun Context.saveSparklineConfig(config: SparklineConfig) =
+    saveConfig(sparklineConfigKey, config)
 
 // --- PowerFieldConfig ---
 
@@ -237,7 +282,7 @@ data class ZoneConfig(
     val hrPalette: ZonePalette = ZonePalette.KAROO,
     val powerPalette: ZonePalette = ZonePalette.KAROO,
     val gradePalette: GradePalette = GradePalette.KAROO,
-    val readableColors: Boolean = true,
+    val readableColors: Boolean = false,
 )
 
 fun Context.streamZoneConfig(): Flow<ZoneConfig> =

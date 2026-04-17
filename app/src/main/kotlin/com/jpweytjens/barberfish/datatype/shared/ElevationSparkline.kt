@@ -13,7 +13,8 @@ import com.jpweytjens.barberfish.extension.GradePalette
 
 /**
  * Decodes the Karoo elevation polyline into a list of (distanceM, elevationM) pairs.
- * Returns empty list for blank or invalid input.
+ * Returns empty list for blank or invalid input. Returns whatever was decoded up to
+ * the truncation point if [encoded] ends mid-varint.
  */
 internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> {
     if (encoded.isBlank()) return emptyList()
@@ -22,51 +23,128 @@ internal fun decodeElevationPolyline(encoded: String): List<Pair<Float, Float>> 
     var lat = 0
     var lng = 0
     while (index < encoded.length) {
-        var shift = 0
-        var b: Int
-        var result1 = 0
-        do {
-            b = encoded[index++].code - 63
-            result1 = result1 or ((b and 0x1f) shl shift)
-            shift += 5
-        } while (b >= 0x20)
-        lat += if (result1 and 1 != 0) (result1 shr 1).inv() else result1 shr 1
+        val latDelta = readVarint(encoded, index) ?: break
+        lat += latDelta.value
+        index = latDelta.nextIndex
 
-        shift = 0
-        result1 = 0
-        do {
-            b = encoded[index++].code - 63
-            result1 = result1 or ((b and 0x1f) shl shift)
-            shift += 5
-        } while (b >= 0x20)
-        lng += if (result1 and 1 != 0) (result1 shr 1).inv() else result1 shr 1
+        val lngDelta = readVarint(encoded, index) ?: break
+        lng += lngDelta.value
+        index = lngDelta.nextIndex
 
         result.add(Pair(lat / 10f, lng / 10f))
     }
     return result
 }
 
+private data class VarintResult(val value: Int, val nextIndex: Int)
+
+/** Reads one zig-zag varint starting at [start]. Returns null if the input is truncated. */
+private fun readVarint(encoded: String, start: Int): VarintResult? {
+    var index = start
+    var shift = 0
+    var value = 0
+    while (true) {
+        if (index >= encoded.length) return null
+        val b = encoded[index++].code - 63
+        value = value or ((b and 0x1f) shl shift)
+        if (b < 0x20) break
+        shift += 5
+    }
+    val decoded = if (value and 1 != 0) (value shr 1).inv() else value shr 1
+    return VarintResult(decoded, index)
+}
+
+/**
+ * Simplifies an elevation polyline using Visvalingam–Whyatt.
+ *
+ * Repeatedly removes the interior point whose triangle with its two live neighbours has
+ * the smallest area, stopping when the smallest remaining area ≥ [minAreaM2]. Endpoints
+ * are always preserved. Input is `(distanceM, elevationM)` pairs, so the triangle area is
+ * in m² and has a direct physical meaning: roughly the smallest bump (width × height)
+ * the simplifier refuses to erase.
+ *
+ * Returns [points] unchanged when `points.size < 3` or `minAreaM2 <= 0f`.
+ */
+internal fun visvalingamWhyatt(
+    points: List<Pair<Float, Float>>,
+    minAreaM2: Float,
+): List<Pair<Float, Float>> {
+    if (points.size < 3 || minAreaM2 <= 0f) return points
+
+    val n = points.size
+    val prev = IntArray(n) { it - 1 }
+    val next = IntArray(n) { it + 1 }
+    val alive = BooleanArray(n) { true }
+    val version = IntArray(n)      // bump to invalidate stale heap entries
+
+    fun triArea(i: Int): Float {
+        val p = prev[i]
+        val q = next[i]
+        val (d1, e1) = points[p]
+        val (d2, e2) = points[i]
+        val (d3, e3) = points[q]
+        return 0.5f * kotlin.math.abs((d2 - d1) * (e3 - e1) - (d3 - d1) * (e2 - e1))
+    }
+
+    data class HeapEntry(val index: Int, val area: Float, val ver: Int)
+    val heap = java.util.PriorityQueue<HeapEntry>(compareBy { it.area })
+    for (i in 1 until n - 1) heap.add(HeapEntry(i, triArea(i), version[i]))
+
+    while (true) {
+        val top = heap.poll() ?: break
+        if (!alive[top.index] || top.ver != version[top.index]) continue
+        if (top.area >= minAreaM2) break
+
+        // Remove point `top.index` from the linked list.
+        val l = prev[top.index]
+        val r = next[top.index]
+        alive[top.index] = false
+        next[l] = r
+        prev[r] = l
+
+        // Re-enqueue each neighbour with a refreshed area, unless it is an endpoint.
+        if (l > 0) {
+            version[l]++
+            heap.add(HeapEntry(l, triArea(l), version[l]))
+        }
+        if (r < n - 1) {
+            version[r]++
+            heap.add(HeapEntry(r, triArea(r), version[r]))
+        }
+    }
+
+    val out = ArrayList<Pair<Float, Float>>(n)
+    var i = 0
+    while (i < n) {
+        out.add(points[i])
+        i = next[i]
+    }
+    return out
+}
+
 /**
  * Renders a Tufte-style elevation sparkline strip.
- * Returns null if [elevationPoints] is empty.
+ * Returns a bitmap plus the current ratchet range; the bitmap is null if [elevationPoints] is empty.
  *
  * Rendering layers (bottom to top):
- *  1. Subtle base silhouette fill (~6% white)
- *  2. Climb fills for grade ≥ gradeThreshold(palette), from gradeColor()
- *  3. Past outline (left of dot): 22% white, strokeWidth 1.5px
- *  4. Ahead outline (right of dot): 72% white, strokeWidth 1.5px
- *  5. Distance tick at +5 km ahead: 1px stroke, "5" label, 30% white
- *  6. Position dot: circle radius 2.5px, color from [dotColor] (default LemonYellow)
+ *  1. Ahead silhouette fill (~6% alpha; white on night, black on day)
+ *  2. Climb fills for grade ≥ gradeThreshold(palette), from gradeColor(); consecutive
+ *     same-colour segments are merged into a single polygon to eliminate seams.
+ *  2b. Overlay on the past region to grey out grade fills behind the dot
+ *      (night: 55% alpha black; day: 78% alpha mid-grey — grey desaturates
+ *      bright grade colours more effectively than white, which just pastels them)
+ *  3. Past outline (left of dot): opaque grey(100,100,100), strokeWidth 3px
+ *  4. Ahead outline (right of dot): opaque white on night / black on day, strokeWidth 3px
+ *  5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default teal)
  */
 
-private const val POSITION_FRACTION = 0.05f
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
-private const val MIN_MEANINGFUL_GRADE = 0.03f
-private const val FLAT_SCALE_FACTOR = 2.0f
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
-private const val LOG_WARP_K = 8f
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
-private const val DOT_RADIUS_PX = 5f
+private const val DOT_RADIUS_PX = 6f
+
+/** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
+internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
 
 internal fun renderElevationSparkline(
     elevationPoints: List<Pair<Float, Float>>, // (distanceM, elevationM)
@@ -80,65 +158,68 @@ internal fun renderElevationSparkline(
     skipBands: Int = 1,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
-    dotColor: Int = LemonYellow.toArgb(),
+    dotColor: Int = ICON_TINT_TEAL.toArgb(),
     isNightMode: Boolean = true,
-): Pair<Bitmap?, Float> {
-    if (elevationPoints.isEmpty()) return Pair(null, displayedRange)
+    minElevRangeM: Float = 50f,
+    logWarpK: Float = 8f,
+    positionFraction: Float = 0.05f,
+): ElevationSparklineResult {
+    if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
     // Clamp window to route bounds so the sparkline fills full width even at the start.
     // The dot migrates from the left edge to the 25% position as you accumulate past distance.
     val firstDist = elevationPoints.first().first
     val lastDist  = elevationPoints.last().first
-    val rawEnd    = positionM - lookaheadM * POSITION_FRACTION + lookaheadM
+    val rawEnd    = positionM - lookaheadM * positionFraction + lookaheadM
     val windowEnd = rawEnd.coerceAtMost(lastDist)
     val windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
 
-    val visible = elevationPoints
-        .filter { (d, _) -> d in windowStart..windowEnd }
-        .ifEmpty { return Pair(null, displayedRange) }
+    // Include one point beyond each edge so segments spanning the window boundary
+    // are partially drawn instead of popping in only when fully visible.
+    val firstInside = elevationPoints.indexOfFirst { it.first >= windowStart }
+    val lastInside  = elevationPoints.indexOfLast  { it.first <= windowEnd }
+    if (firstInside < 0 || lastInside < 0 || firstInside > lastInside + 1) {
+        return ElevationSparklineResult(null, displayedRange)
+    }
+    val sliceStart = (firstInside - 1).coerceAtLeast(0)
+    val sliceEnd   = (lastInside + 1).coerceAtMost(elevationPoints.lastIndex)
+    val visible = elevationPoints.subList(sliceStart, sliceEnd + 1)
+    if (visible.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
-    // Y-axis: range from ±50% extended lookahead window (double window).
-    val rangeStart = (windowStart - lookaheadM * 0.5f).coerceAtLeast(firstDist)
-    val rangeEnd   = (windowEnd   + lookaheadM * 0.5f).coerceAtMost(lastDist)
-    val rangePoints = elevationPoints.filter { (d, _) -> d in rangeStart..rangeEnd }
-    val elevMin   = rangePoints.minOfOrNull { it.second } ?: visible.minOf { it.second }
-    val elevMax   = rangePoints.maxOfOrNull { it.second } ?: visible.maxOf { it.second }
-    val elevRange = (elevMax - elevMin).coerceAtLeast(MIN_MEANINGFUL_GRADE * FLAT_SCALE_FACTOR * 5_000f)
+    // Y-axis: derived from the visible window only. 
+    // The ratchet below still stabilises the scale during climbs that *are* on screen.
+    val elevMin   = visible.minOf { it.second }
+    val elevMax   = visible.maxOf { it.second }
+    val elevRange = (elevMax - elevMin).coerceAtLeast(minElevRangeM)
 
     // Ratchet: grow instantly, decay slowly as distance is ridden.
     val newDisplayedRange = if (elevRange > displayedRange) elevRange
         else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
 
-    // Builds a cumulative pixel-density integral over the display window.
-    // Points near positionM receive more pixels; distant points receive fewer.
-    // mag(d) = 1 + K·exp(-normalised_distance · K/2) — peaks at dot, falls off exponentially.
-    val warpIntegrationSteps = (lookaheadM / WARP_STEP_TARGET_M).toInt()
-    val pixelDensityCumulative = FloatArray(warpIntegrationSteps + 1)
-    val integrationStepM = (windowEnd - windowStart) / warpIntegrationSteps
-    for (step in 0 until warpIntegrationSteps) {
-        val routeDistanceM = windowStart + step * integrationStepM
-        val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
-        val pixelsPerMetre = 1f + LOG_WARP_K * kotlin.math.exp(-normalisedDistanceFromDot * LOG_WARP_K * 0.5f).toFloat()
-        pixelDensityCumulative[step + 1] = pixelDensityCumulative[step] + pixelsPerMetre * integrationStepM
-    }
-    val totalWarpedBudget = pixelDensityCumulative[warpIntegrationSteps]
-
-    // Maps a route distance to a screen x-coordinate by looking up its share
-    // of the total pixel budget accumulated up to that point.
-    fun toX(routeDistanceM: Float): Float {
-        val windowFraction = ((routeDistanceM - windowStart) / (windowEnd - windowStart)).coerceIn(0f, 1f)
-        val lookupIndex = windowFraction * warpIntegrationSteps
-        val lowerStep = lookupIndex.toInt().coerceIn(0, warpIntegrationSteps - 1)
-        val interpolationFraction = lookupIndex - lowerStep
-        val budgetConsumed = pixelDensityCumulative[lowerStep] +
-            interpolationFraction * (pixelDensityCumulative[lowerStep + 1] - pixelDensityCumulative[lowerStep])
-        return ((budgetConsumed / totalWarpedBudget) * widthPx).coerceIn(0f, widthPx.toFloat())
-    }
+    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, logWarpK)
     fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * DOT_RADIUS_PX) - DOT_RADIUS_PX).coerceIn(0f, heightPx.toFloat())
 
+    // Partition `visible` around positionM once. Points exactly at positionM appear in
+    // both lists so past/ahead polygons meet cleanly at the dot (mirrors the old
+    // `d <= positionM` / `d >= positionM` filter semantics).
+    val pastEnd    = visible.indexOfFirst { it.first > positionM }.let { if (it < 0) visible.size else it }
+    val aheadStart = visible.indexOfFirst { it.first >= positionM }.let { if (it < 0) visible.size else it }
+    val pastSilPts  = visible.subList(0, pastEnd)
+    val aheadSilPts = visible.subList(aheadStart, visible.size)
+
     val dotX = toX(positionM)
-    val dotY = visible.minByOrNull { (d, _) -> kotlin.math.abs(d - positionM) }
-        ?.let { (_, e) -> toY(e) } ?: heightPx * 0.9f
+    // Nearest point to positionM sits at the split: the last past point or the first ahead point.
+    val nearestElev = when {
+        pastSilPts.isEmpty() && aheadSilPts.isEmpty()  -> null
+        pastSilPts.isEmpty()                           -> aheadSilPts.first().second
+        aheadSilPts.isEmpty()                          -> pastSilPts.last().second
+        else -> {
+            val p = pastSilPts.last()
+            val a = aheadSilPts.first()
+            if (kotlin.math.abs(p.first - positionM) <= kotlin.math.abs(a.first - positionM)) p.second else a.second
+        }
+    }
+    val dotY = nearestElev?.let { toY(it) } ?: (heightPx * 0.9f)
 
     val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888).also {
         it.density = Bitmap.DENSITY_NONE  // prevent RemoteViews auto-scaling; fitXY handles fill
@@ -146,11 +227,7 @@ internal fun renderElevationSparkline(
     val canvas = Canvas(bitmap)
     val paint  = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    // Past points — reused for grade fill overlay (step 2b) and outline (step 3).
-    val pastSilPts = visible.filter { (d, _) -> d <= positionM }
-
-    // 1. Ahead silhouette fill — subtle (~6% white)
-    val aheadSilPts = visible.filter { (d, _) -> d >= positionM }
+    // 1. Ahead silhouette fill — subtle (~6% alpha)
     if (aheadSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
         paint.color = if (isNightMode) android.graphics.Color.argb(15, 255, 255, 255)
@@ -208,7 +285,7 @@ internal fun renderElevationSparkline(
     if (pastSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
         paint.color = if (isNightMode) android.graphics.Color.argb(140, 0, 0, 0)
-            else android.graphics.Color.argb(140, 255, 255, 255)
+            else android.graphics.Color.argb(200, 180, 180, 180)
         val path = Path().apply {
             moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
             pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
@@ -220,25 +297,24 @@ internal fun renderElevationSparkline(
         canvas.drawPath(path, paint)
     }
 
-    // 3 & 4. Outlines (past = dimmed, ahead = bright)
+    // 3 & 4. Outlines (past = dimmed, ahead = bright) — reuse the past/ahead partitions.
     paint.style = Paint.Style.STROKE
     paint.strokeWidth = 3f
     paint.strokeJoin = Paint.Join.ROUND
-    val pastPts = visible.filter { (d, _) -> toX(d) <= dotX }
-    if (pastPts.isNotEmpty()) {
+    if (pastSilPts.isNotEmpty()) {
         paint.color = android.graphics.Color.argb(255, 100, 100, 100)
         val pastPath = Path().apply {
-            moveTo(toX(pastPts.first().first), toY(pastPts.first().second))
-            pastPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+            moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
+            pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+            lineTo(dotX, dotY)
         }
         canvas.drawPath(pastPath, paint)
     }
-    val aheadPts = visible.filter { (d, _) -> toX(d) >= dotX }
-    if (aheadPts.isNotEmpty()) {
+    if (aheadSilPts.isNotEmpty()) {
         paint.color = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         val aheadPath = Path().apply {
-            moveTo(toX(aheadPts.first().first), toY(aheadPts.first().second))
-            aheadPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+            moveTo(dotX, dotY)
+            aheadSilPts.forEach { (d, e) -> lineTo(toX(d), toY(e)) }
         }
         canvas.drawPath(aheadPath, paint)
     }
@@ -248,11 +324,171 @@ internal fun renderElevationSparkline(
     paint.color = dotColor
     canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
-    return Pair(bitmap, newDisplayedRange)
+    return ElevationSparklineResult(bitmap, newDisplayedRange)
 }
 
-/** Last 20 km of Tour of Flanders 2025 (RvV). Used for config-screen previews and debug builds. */
+/**
+ * Builds a monotonic function mapping a route distance in metres to a screen x-coordinate
+ * in [0, widthPx]. Applies log-warp so pixels near [positionM] get more density than
+ * pixels farther away: `mag(d) = 1 + K·exp(-normalised_distance · K/2)`.
+ * With `logWarpK = 0f` the mapping collapses to linear (every metre gets one pixel budget).
+ */
+private fun buildWarpedXMapper(
+    windowStart: Float,
+    windowEnd: Float,
+    positionM: Float,
+    lookaheadM: Float,
+    widthPx: Int,
+    logWarpK: Float,
+): (Float) -> Float {
+    val steps = (lookaheadM / WARP_STEP_TARGET_M).toInt()
+    val cumulative = FloatArray(steps + 1)
+    val stepM = (windowEnd - windowStart) / steps
+    for (step in 0 until steps) {
+        val routeDistanceM = windowStart + step * stepM
+        val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
+        val pixelsPerMetre = 1f + logWarpK * kotlin.math.exp(-normalisedDistanceFromDot * logWarpK * 0.5f).toFloat()
+        cumulative[step + 1] = cumulative[step] + pixelsPerMetre * stepM
+    }
+    val totalBudget = cumulative[steps]
+    return { routeDistanceM ->
+        val windowFraction = ((routeDistanceM - windowStart) / (windowEnd - windowStart)).coerceIn(0f, 1f)
+        val lookupIndex = windowFraction * steps
+        val lowerStep = lookupIndex.toInt().coerceIn(0, steps - 1)
+        val interpolationFraction = lookupIndex - lowerStep
+        val budgetConsumed = cumulative[lowerStep] +
+            interpolationFraction * (cumulative[lowerStep + 1] - cumulative[lowerStep])
+        ((budgetConsumed / totalBudget) * widthPx).coerceIn(0f, widthPx.toFloat())
+    }
+}
+
+/** Alias for [rvvElevationFixture]: the default fixture shown in config-screen previews. */
 internal fun previewElevationFixture(): List<Pair<Float, Float>> = rvvElevationFixture()
+
+/**
+ * Generates a synthetic elevation fixture: flat lead-in → climb → flat run-out.
+ * All fixtures span 0–20 km with the climb starting at 10 km.
+ *
+ * @param gainM total elevation gain on the climb
+ * @param grade climb gradient (0.03 = 3%, 0.20 = 20%)
+ */
+private fun syntheticClimbFixture(gainM: Float, grade: Float): List<Pair<Float, Float>> {
+    val baseElev = 50f
+    val climbStart = 10_000f
+    val routeEnd = 20_000f
+    // Round climbEnd once so the "top of climb" point and the run-out start from the
+    // same x-coordinate (previously the top point was rounded but the run-out base was not).
+    val climbEnd = round1(climbStart + gainM / grade)
+    val topElev = baseElev + gainM
+
+    val points = mutableListOf<Pair<Float, Float>>()
+
+    // Flat sections: every 50m (matches typical Strava route density)
+    var d = 0f
+    while (d < climbStart) { points.add(d to baseElev); d += 50f }
+    points.add(climbStart to baseElev)
+
+    // Climb: every 20m
+    d = climbStart + 20f
+    while (d < climbEnd) {
+        val elev = baseElev + (d - climbStart) * grade
+        points.add(d to round1(elev))
+        d += 20f
+    }
+    points.add(climbEnd to topElev)
+
+    // Flat run-out: every 50m
+    d = climbEnd + 50f
+    while (d < routeEnd) { points.add(round1(d) to topElev); d += 50f }
+    points.add(routeEnd to topElev)
+
+    return points
+}
+
+/**
+ * Generates a synthetic elevation fixture from a sequence of segments.
+ * Each segment is a (lengthM, grade) pair. Positive grade = uphill, 0 = flat.
+ * Points sampled every 50m on flat, every 20m on climbs.
+ */
+private fun syntheticProfileFixture(
+    segments: List<Pair<Float, Float>>,
+    baseElev: Float = 50f,
+): List<Pair<Float, Float>> {
+    val points = mutableListOf<Pair<Float, Float>>()
+    var dist = 0f
+    var elev = baseElev
+
+    for ((lengthM, grade) in segments) {
+        val step = if (grade == 0f) 50f else 20f
+        points.add(round1(dist) to round1(elev))
+        var covered = step
+        while (covered < lengthM) {
+            dist += step
+            elev += step * grade
+            points.add(round1(dist) to round1(elev))
+            covered += step
+        }
+        // Exact segment end — always close, skipping only the degenerate case where
+        // the final iteration already landed exactly on the segment boundary.
+        val remaining = lengthM - (covered - step)
+        if (remaining > 0.01f) {
+            dist += remaining
+            elev += remaining * grade
+            points.add(round1(dist) to round1(elev))
+        }
+    }
+    return points
+}
+
+private fun round1(v: Float) = Math.round(v * 10f) / 10f
+
+// 20m gain — varying difficulty (L×G²)
+internal fun gain20WallFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.20f)       // 100m @ 20%, L×G²=4.0
+internal fun gain20SteepFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.10f)      // 200m @ 10%, L×G²=2.0
+internal fun gain20ModerateFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.05f)   // 400m @  5%, L×G²=1.0
+internal fun gain20GentleFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(20f, 0.03f)     // 667m @  3%, L×G²=0.6
+
+// 50m gain — varying difficulty (L×G²)
+internal fun gain50WallFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.20f)       // 250m @ 20%, L×G²=10.0
+internal fun gain50SteepFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.10f)      // 500m @ 10%, L×G²=5.0
+internal fun gain50ModerateFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.05f)   // 1km  @  5%, L×G²=2.5
+internal fun gain50GentleFixture(): List<Pair<Float, Float>> = syntheticClimbFixture(50f, 0.03f)     // 1.7km@  3%, L×G²=1.5
+
+// Double ramp: 50m gain @ 10% → 2km flat → 50m gain @ 10%
+internal fun doubleRampFixture(): List<Pair<Float, Float>> = syntheticProfileFixture(
+    listOf(
+        5_000f to 0f,       // 5km flat lead-in
+        500f to 0.10f,      // 500m @ 10% → +50m
+        2_000f to 0f,       // 2km flat gap
+        500f to 0.10f,      // 500m @ 10% → +50m
+        12_000f to 0f,      // flat run-out to 20km
+    )
+)
+
+// Steep wall then gentle: 20m @ 20% → 1km flat → 20m @ 3%
+internal fun wallThenGentleFixture(): List<Pair<Float, Float>> = syntheticProfileFixture(
+    listOf(
+        5_000f to 0f,       // 5km flat lead-in
+        100f to 0.20f,      // 100m @ 20% → +20m
+        1_000f to 0f,       // 1km flat gap
+        667f to 0.03f,      // 667m @ 3% → +20m
+        13_233f to 0f,      // flat run-out
+    )
+)
+
+internal val ELEVATION_FIXTURES: LinkedHashMap<String, () -> List<Pair<Float, Float>>> = linkedMapOf(
+    "RvV (last 20km)" to ::rvvElevationFixture,
+    "20m — 100m @ 20%" to ::gain20WallFixture,
+    "20m — 200m @ 10%" to ::gain20SteepFixture,
+    "20m — 400m @ 5%" to ::gain20ModerateFixture,
+    "20m — 667m @ 3%" to ::gain20GentleFixture,
+    "50m — 250m @ 20%" to ::gain50WallFixture,
+    "50m — 500m @ 10%" to ::gain50SteepFixture,
+    "50m — 1km @ 5%" to ::gain50ModerateFixture,
+    "50m — 1.7km @ 3%" to ::gain50GentleFixture,
+    "2× 50m @ 10%, 2km gap" to ::doubleRampFixture,
+    "20m wall→flat→20m gentle" to ::wallThenGentleFixture,
+)
 
 /** Last 20 km of Tour of Flanders 2025 (RvV). Used for debug builds. */
 internal fun rvvElevationFixture(): List<Pair<Float, Float>> = listOf(

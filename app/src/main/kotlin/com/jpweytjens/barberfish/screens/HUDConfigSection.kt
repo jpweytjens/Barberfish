@@ -56,8 +56,12 @@ import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
+import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
+import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
@@ -66,7 +70,10 @@ import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
+import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.ElevationZoom
+import com.jpweytjens.barberfish.extension.SparklineWarp
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -84,9 +91,11 @@ import kotlinx.coroutines.delay
 @Composable
 internal fun HUDConfigSection(
     hudConfig: HUDConfig,
+    sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
+    currentRouteElevationPolyline: String?,
     onUpdate: (HUDConfig) -> Unit,
 ) {
     var selectedSlot by remember { mutableStateOf<Int?>(null) }
@@ -105,14 +114,77 @@ internal fun HUDConfigSection(
         fontSize = 12.sp,
         color = TextDark,
     )
-    HUDPreview(
-        hudConfig = hudConfig,
-        zoneConfig = zoneConfig,
-        timeCfg = timeCfg,
-        profile = profile,
-        selectedSlot = selectedSlot,
-        onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
-    )
+    if (BuildConfig.DEBUG) {
+        // "Current route" is prepended when a route (or destination) is loaded on the device,
+        // so VW / warp tuning can be judged against real Strava-density data instead of the
+        // synthetic fixtures, which have perfectly collinear climbs and therefore don't
+        // exhibit the rainbow-banding problem.
+        val fixtures: Map<String, () -> List<Pair<Float, Float>>> =
+            remember(currentRouteElevationPolyline) {
+                buildMap {
+                    val poly = currentRouteElevationPolyline
+                    if (!poly.isNullOrBlank()) {
+                        put("Current route") { decodeElevationPolyline(poly) }
+                    }
+                    putAll(ELEVATION_FIXTURES)
+                }
+            }
+        var selectedFixtureName by remember(fixtures) { mutableStateOf(fixtures.keys.first()) }
+        var expanded by remember { mutableStateOf(false) }
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            OutlinedTextField(
+                value = selectedFixtureName,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Fixture") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                fixtures.keys.forEach { name ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = { selectedFixtureName = name; expanded = false },
+                    )
+                }
+            }
+        }
+        var previewSweepSeconds by remember { mutableIntStateOf(10) }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(Grey200)
+                .padding(12.dp),
+        ) {
+            SegmentedRow(
+                options = listOf(10 to "10s", 30 to "30s", 60 to "60s"),
+                selected = previewSweepSeconds,
+                onSelect = { previewSweepSeconds = it },
+            )
+        }
+        HUDPreview(
+            hudConfig = hudConfig,
+            sparklineConfig = sparklineConfig,
+            zoneConfig = zoneConfig,
+            timeCfg = timeCfg,
+            profile = profile,
+            selectedSlot = selectedSlot,
+            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
+            fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
+            previewSweepSeconds = previewSweepSeconds,
+        )
+    } else {
+        HUDPreview(
+            hudConfig = hudConfig,
+            sparklineConfig = sparklineConfig,
+            zoneConfig = zoneConfig,
+            timeCfg = timeCfg,
+            profile = profile,
+            selectedSlot = selectedSlot,
+            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
+        )
+    }
 
     val slot = when (selectedSlot) {
         0 -> hudConfig.leftSlot
@@ -137,22 +209,19 @@ internal fun HUDConfigSection(
             },
         )
     }
-    SparklineCard(
-        config = hudConfig.sparkline,
-        palette = zoneConfig.gradePalette,
-        profile = profile,
-        onUpdate = { onUpdate(hudConfig.copy(sparkline = it)) },
-    )
 }
 
 @Composable
 private fun HUDPreview(
     hudConfig: HUDConfig,
+    sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
+    fixturePoints: List<Pair<Float, Float>>? = null,
+    previewSweepSeconds: Int = 10,
 ) {
     val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
         HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
@@ -169,22 +238,65 @@ private fun HUDPreview(
 
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
-    val sparklineDisplayHeightPx = (40f * density).toInt()
+    val sparklineDisplayHeightPx = (32f * density).toInt()
     var boxWidthPx by remember { mutableIntStateOf(0) }
-    val sparklineBitmap = remember(hudConfig.sparkline, zoneConfig, boxWidthPx, isNightMode) {
-        if (!hudConfig.sparkline.enabled || boxWidthPx <= 0) null
-        else renderElevationSparkline(
-            elevationPoints = previewElevationFixture(),
-            positionM       = 2_500f,
-            widthPx         = boxWidthPx,
-            heightPx        = sparklineDisplayHeightPx,
-            density         = density,
-            palette         = zoneConfig.gradePalette,
-            readable        = zoneConfig.readableColors,
-            lookaheadM      = hudConfig.sparkline.lookaheadKm * 1_000f,
-            skipBands       = hudConfig.sparkline.skipBands,
-            isNightMode     = isNightMode,
-        ).first
+
+    val elevationPoints = fixturePoints ?: previewElevationFixture()
+
+    // Animate position: sweep from route start to end, then loop
+    var positionM by remember { mutableStateOf(elevationPoints.first().first) }
+    var lastPositionM by remember { mutableStateOf(elevationPoints.first().first) }
+    var displayedRange by remember { mutableStateOf(0f) }
+    val routeEndM = remember(elevationPoints) { elevationPoints.last().first }
+    // Total seconds to complete one full sweep at 30 fps.
+    val speedMPerTick = remember(elevationPoints, previewSweepSeconds) {
+        (routeEndM - elevationPoints.first().first) / (previewSweepSeconds * 30f)
+    }
+    LaunchedEffect(elevationPoints) {
+        positionM = elevationPoints.first().first
+        lastPositionM = elevationPoints.first().first
+        displayedRange = 0f
+        while (true) {
+            delay(33L) // ~30fps
+            positionM += speedMPerTick
+            if (positionM > routeEndM) {
+                positionM = elevationPoints.first().first
+                lastPositionM = elevationPoints.first().first
+                displayedRange = 0f
+            }
+        }
+    }
+
+    // VW runs once per (fixture, preset) change — not once per animation frame.
+    val simplifiedElevationPoints = remember(elevationPoints, sparklineConfig.simplification) {
+        visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
+    }
+
+    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
+        if (!sparklineConfig.enabled || boxWidthPx <= 0) null
+        else {
+            val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
+            lastPositionM = positionM
+            val (bitmap, newRange) = renderElevationSparkline(
+                elevationPoints = simplifiedElevationPoints,
+                positionM       = positionM,
+                widthPx         = boxWidthPx,
+                heightPx        = sparklineDisplayHeightPx,
+                density         = density,
+                palette         = zoneConfig.gradePalette,
+                readable        = zoneConfig.readableColors,
+                lookaheadM      = sparklineConfig.lookaheadKm * 1_000f,
+                skipBands       = sparklineConfig.skipBands,
+                displayedRange  = displayedRange,
+                distanceDeltaM  = distanceDeltaM,
+                isNightMode     = isNightMode,
+                minElevRangeM   = sparklineConfig.yZoom.minRangeM,
+                logWarpK        = sparklineConfig.warp.k,
+                positionFraction = sparklineConfig.warp.positionFraction,
+            )
+            displayedRange = newRange
+            bitmap
+        }
     }
 
     Box(
@@ -209,7 +321,7 @@ private fun HUDPreview(
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
                     columns = hudConfig.columns,
-                    sparklineEnabled = hudConfig.sparkline.enabled,
+                    sparklineEnabled = sparklineConfig.enabled,
                 )
             }
         }
@@ -217,7 +329,7 @@ private fun HUDPreview(
             Image(
                 bitmap = sparklineBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(40.dp).align(Alignment.BottomCenter),
+                modifier = Modifier.fillMaxWidth().height(32.dp).align(Alignment.BottomCenter),
                 contentScale = ContentScale.FillBounds,
             )
         }
@@ -523,7 +635,7 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 }
 
 @Composable
-private fun SparklineCard(
+internal fun SparklineCard(
     config: SparklineConfig,
     palette: GradePalette,
     profile: UserProfile,
@@ -557,24 +669,37 @@ private fun SparklineCard(
             )
             val threshold = gradeThreshold(palette, config.skipBands)
             Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Grades below this band stay uncolored.", fontSize = 12.sp, color = TextDark)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SegmentedRow(
-                    options = listOf(0 to "0", 1 to "1", 2 to "2", 3 to "3"),
-                    selected = config.skipBands,
-                    onSelect = { onUpdate(config.copy(skipBands = it)) },
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    "≥${"%.0f".format(threshold)}%",
-                    fontSize = 11.sp,
-                    color = TextDark,
-                )
-            }
+            Text(
+                if (config.skipBands == 0) "Skip the lowest color bands. Bands are set by the gradient palette."
+                else "Skip the lowest color bands. Bands are set by the gradient palette. Grades below ≥${"%.0f".format(threshold)}% stay uncolored.",
+                fontSize = 12.sp, color = TextDark,
+            )
+            SegmentedRow(
+                options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                selected = config.skipBands,
+                onSelect = { onUpdate(config.copy(skipBands = it)) },
+            )
+            Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = ElevationSimplification.entries.map { it to it.label },
+                selected = config.simplification,
+                onSelect = { onUpdate(config.copy(simplification = it)) },
+            )
+            Text("X-WARP", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = SparklineWarp.entries.map { it to it.label },
+                selected = config.warp,
+                onSelect = { onUpdate(config.copy(warp = it)) },
+            )
+            Text("Y-ZOOM", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = ElevationZoom.entries.map { it to it.label },
+                selected = config.yZoom,
+                onSelect = { onUpdate(config.copy(yZoom = it)) },
+            )
         }
     }
 }

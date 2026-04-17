@@ -1,5 +1,46 @@
 # Changelog
 
+## 3.1 — Sparkline update
+
+### Accuracy
+
+The sparkline looked right in most cases but could drift or flatten in a few real-world ones. This release fixes those.
+
+- Position now tracks distance-to-destination instead of distance-ridden, so the "you are here" marker stays correct after reroutes and restarts
+- Lowered the default minimum elevation range to 50 m so small rollers actually look like rollers instead of a flat line (now configurable via Y-zoom)
+
+### Sparkline config
+
+Make the sparkline more configurable
+
+- Profile detail  
+  Control how much similar gradient segments are combined into one for a better a glance view
+- X-axis warp  
+  control how much the view stretches toward what's immediately ahead versus showing the full lookahead evenly
+- Y-zoom  
+  Close amplifies minor bumps, Wide smooths them out
+
+### Sparkline rendering
+
+- Smoother edges: segments near the window boundaries are now partially drawn instead of popping in, and the outline connects cleanly through the current position dot
+
+### Standalone sparkline field
+
+- New standalone elevation sparkline data field available outside the HUD
+
+### Visual
+
+- Desaturated past-section gradient fills in light mode
+- Enlarged current-position dot for easier tracking
+
+### Config UI
+
+- Reorganized data fields: Grade moved to a "Climbing" subsection, NP moved to end of power fields
+- Renamed "Climber" section to "Climbing"
+- Clearer sparkline labels: Off / Mild / Medium / Max
+- Default color palettes now use the original Karoo colors instead of the readability-corrected variants
+- Clarified that the "Gradient colors" palette drives both the Grade data field and the sparkline gradient overlay
+
 ## 3.0
 
 ### Elevation sparkline

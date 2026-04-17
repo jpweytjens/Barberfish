@@ -5,6 +5,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.KarooEvent
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.OnStreamState
+import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.channels.awaitClose
@@ -28,6 +29,8 @@ inline fun <reified T : KarooEvent> KarooSystemService.consumerFlow(): Flow<T> =
 fun KarooSystemService.streamUserProfile(): Flow<UserProfile> = consumerFlow()
 
 fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consumerFlow()
+
+fun KarooSystemService.streamRideState(): Flow<RideState> = consumerFlow()
 
 /**
  * Returns a [FieldState] for non-Streaming states, or null if the state is [StreamState.Streaming].

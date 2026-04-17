@@ -167,7 +167,11 @@ import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
+import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.saveSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamSparklineConfig
+import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamNPFieldConfig
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
@@ -176,6 +180,7 @@ import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
@@ -209,6 +214,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ConfigScreen() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
+        var sparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -226,6 +232,7 @@ class MainActivity : ComponentActivity() {
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
+        var currentRouteElevationPolyline by remember { mutableStateOf<String?>(null) }
         var userProfile by remember {
             mutableStateOf(
                 UserProfile(
@@ -249,11 +256,13 @@ class MainActivity : ComponentActivity() {
         var fieldsExpanded by remember { mutableStateOf(false) }
         var thresholdsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
+        var climberExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             launch { streamHUDConfig().collect { hudConfig = it } }
+            launch { streamSparklineConfig().collect { sparklineConfig = it } }
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
             launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
             launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
@@ -272,6 +281,15 @@ class MainActivity : ComponentActivity() {
             launch { streamETAConfig().collect { etaConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
+            launch {
+                karooSystem.streamNavigationState().collect { nav ->
+                    currentRouteElevationPolyline = when (val s = nav.state) {
+                        is OnNavigationState.NavigationState.NavigatingRoute -> s.routeElevationPolyline
+                        is OnNavigationState.NavigationState.NavigatingToDestination -> s.elevationPolyline
+                        else -> null
+                    }
+                }
+            }
         }
 
         Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
@@ -289,9 +307,11 @@ class MainActivity : ComponentActivity() {
                 ) {
                     HUDConfigSection(
                         hudConfig = hudConfig,
+                        sparklineConfig = sparklineConfig,
                         zoneConfig = zoneConfig,
                         timeCfg = timeConfig,
                         profile = userProfile,
+                        currentRouteElevationPolyline = currentRouteElevationPolyline,
                         onUpdate = { updated ->
                             hudConfig = updated
                             lifecycleScope.launch { saveHUDConfig(updated) }
@@ -397,23 +417,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                     FieldCard(
-                        title = "NP",
-                        description = "Normalized power with zone coloring.",
-                        previewFields = npPreviewStates,
-                        colorMode = npFieldConfig.colorMode,
-                        selected = selectedDataField == "NP",
-                        onSelect = { selectedDataField = if (selectedDataField == "NP") null else "NP" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = npFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
                         title = "LAP AVG POWER",
                         description = "Average power this lap with zone coloring.",
                         previewFields = lapPowerPreviewStates,
@@ -443,6 +446,23 @@ class MainActivity : ComponentActivity() {
                             onSelected = { mode ->
                                 lastLapPowerFieldConfig = lastLapPowerFieldConfig.copy(colorMode = mode)
                                 lifecycleScope.launch { saveLapPowerFieldConfig(isLastLap = true, lastLapPowerFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "NP",
+                        description = "Normalized power with zone coloring.",
+                        previewFields = npPreviewStates,
+                        colorMode = npFieldConfig.colorMode,
+                        selected = selectedDataField == "NP",
+                        onSelect = { selectedDataField = if (selectedDataField == "NP") null else "NP" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = npFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
                             },
                         )
                     }
@@ -543,6 +563,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    Text("CLIMBING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "GRADE",
                         description = "Road gradient with color coding.",
@@ -559,6 +580,7 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     }
+
                 } // end Fields
 
                 val avgTotalPreviewStates = remember(avgTotalConfig, userProfile) {
@@ -684,6 +706,47 @@ class MainActivity : ComponentActivity() {
                 } // end Threshold Fields
 
                 CollapsibleSection(
+                    title = "Climbing",
+                    description = "Elevation sparkline and gradient coloring",
+                    icon = R.drawable.ic_grade,
+                    expanded = climberExpanded,
+                    onToggle = { climberExpanded = !climberExpanded },
+                ) {
+                    SparklineCard(
+                        config = sparklineConfig,
+                        palette = zoneConfig.gradePalette,
+                        profile = userProfile,
+                        onUpdate = { updated ->
+                            sparklineConfig = updated
+                            lifecycleScope.launch { saveSparklineConfig(updated) }
+                        },
+                    )
+
+                    Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Used by the grade data field and the sparkline gradient overlay.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    ReadabilityToggle(
+                        readable = zoneConfig.readableColors,
+                        onSelected = { readable ->
+                            zoneConfig = zoneConfig.copy(readableColors = readable)
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
+                    GradePaletteDropdown(
+                        title = "Grade",
+                        selected = zoneConfig.gradePalette,
+                        onSelected = { palette ->
+                            zoneConfig = zoneConfig.copy(gradePalette = palette)
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
+                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
+                } // end Climbing
+
+                CollapsibleSection(
                     title = "ETA",
                     description = "Configure time of arrival estimation",
                     icon = R.drawable.ic_time_to_dest,
@@ -801,23 +864,6 @@ class MainActivity : ComponentActivity() {
                             }
                     )
 
-                    Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
-                    ReadabilityToggle(
-                        readable = zoneConfig.readableColors,
-                        onSelected = { readable ->
-                            zoneConfig = zoneConfig.copy(readableColors = readable)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradePaletteDropdown(
-                        title = "Grade",
-                        selected = zoneConfig.gradePalette,
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(gradePalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
             }
