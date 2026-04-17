@@ -167,20 +167,30 @@ private fun makeFieldRemoteViews(
     }
 
     // Value — gravity="bottom" in child layout, translationY baked into XML.
-    // Baseline = actualContainerBottom - baselineMarginPx, independent of cellH.
-    // The child is added via addView to value_container with the right translationY layout.
-    val headerPadPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
+    // The child is added via addView to value_container with the right translationY.
+    //
+    // Baseline margin approximates native ConstraintLayout centering: the value text
+    // (wrap_content) is centered between header bottom and cell bottom. When cellH is
+    // correct (no toast), alignment matches native. When cellH is stale (toast shrinks
+    // the container), the margin is slightly too large → text sits a few px high but
+    // never clips, because gravity="bottom" anchors to the real container bottom.
+    val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
     val valueFm = Paint().apply {
         typeface = Typeface.MONOSPACE
         textSize = fontSp * density
     }.fontMetrics
-    val translationYPx = (valueFm.descent - sizeConfig.baselineMarginPx).roundToInt().coerceIn(0, MAX_TRANSLATION_Y)
+    val cellH = sizeConfig.cellHeightPx ?: (dm.heightPixels.toFloat() * 15f / 60f)
+    val textBlockPx = -valueFm.ascent + valueFm.descent
+    val availableSpace = cellH - headerPx
+    val baselineMarginPx = ((availableSpace - textBlockPx) / 2f + valueFm.descent)
+        .coerceAtLeast(sizeConfig.baselineMarginPx) // never less than the grid minimum
+    val translationYPx = (valueFm.descent - baselineMarginPx).roundToInt().coerceIn(0, MAX_TRANSLATION_Y)
 
     if (DEBUG_LAYOUT) {
         Log.d("Barberfish", buildString {
             append("VALUE POS: fontSp=$fontSp")
-            append(" translationY=$translationYPx descent=${valueFm.descent.roundToInt()}")
-            append(" baselineMargin=${sizeConfig.baselineMarginPx.roundToInt()}")
+            append(" cellH=${cellH.toInt()} headerPx=$headerPx textBlock=${textBlockPx.toInt()}")
+            append(" baselineMargin=${baselineMarginPx.toInt()} translationY=$translationYPx")
         })
     }
 
@@ -207,7 +217,7 @@ private fun makeFieldRemoteViews(
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
         rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, stateFont.coerceAtMost(19).toFloat())
-        rv.setViewPadding(R.id.stream_state_tv, 0, headerPadPx, 0, 0)
+        rv.setViewPadding(R.id.stream_state_tv, 0, headerPx, 0, 0)
         if (stateMaxLines == 2) {
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }

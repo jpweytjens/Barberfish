@@ -56,18 +56,16 @@ fun ViewConfig.toViewSizeConfig(
         colSpan == THREE_COLS   -> 14
         else                    -> 12  // 4-col HUD
     }
-    // Distance from cell bottom to value text baseline (px).
-    // Tuned per grid size to match native rideapp positioning.
-    // With bottom-anchored layout (gravity="bottom" + translationY), this is the
-    // exact distance from the actual container bottom to the baseline, regardless
-    // of reported cellH. Slightly larger than native's ~5-9px to account for the
-    // fact that native uses ConstraintLayout centering which shifts up in taller cells.
+    // Minimum distance from cell bottom to value baseline (px).
+    // Floor for the centering formula in BarberfishView — the formula scales margin
+    // with cellH to approximate native centering, but never goes below this minimum.
+    // These match the native baseline position in the smallest expected cells (key icons ON).
     val baselineMarginPx: Float =
         when {
-            colSpan == ONE_COL && rowSpan >= FOUR_ROWS  -> 17f // 1-col 3/4-row
-            colSpan == ONE_COL && rowSpan >= FIVE_ROWS  -> 9f  // 1-col 5-row
-            colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 13f // 2-col 4-row
-            colSpan == TWO_COLS && rowSpan >= FIVE_ROWS -> 13f // 2-col 5-row
+            colSpan == ONE_COL && rowSpan >= FOUR_ROWS  -> 9f  // 1-col 3/4-row
+            colSpan == ONE_COL && rowSpan >= FIVE_ROWS  -> 5f  // 1-col 5-row
+            colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 9f  // 2-col 4-row
+            colSpan == TWO_COLS && rowSpan >= FIVE_ROWS -> 9f  // 2-col 5-row
             colSpan == THREE_COLS                       -> 5f  // HUD 3-col
             colSpan == FOUR_COLS                        -> 5f  // HUD 4-col
             else                                        -> 5f
