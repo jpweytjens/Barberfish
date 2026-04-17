@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Field layout: RIGHT-aligned.
-    FrameLayout root: field_header overlays at top, field_value fills full cell with
-    gravity="top" and dynamic top padding set programmatically.
-    Top padding places baseline at cellH - margin for all font sizes.
+    FrameLayout root: field_header overlays at top, value_container holds a dynamically
+    added TextView (via addView) with gravity="bottom" and baked-in translationY.
+    This anchors the value to the real container bottom, eliminating cellH dependency.
     RemoteViews-safe: only FrameLayout, LinearLayout, ImageView, TextView are used.
     Horizontal padding and all text/icon properties are set programmatically.
 -->
@@ -26,17 +26,11 @@
         android:lineSpacingMultiplier="0.6"
         android:visibility="gone" />
 
-    <!-- Value: fills full cell, text centered vertically. Dynamic top padding set at runtime. -->
-    <TextView
-        android:id="@+id/field_value"
+    <!-- Value container: child TextView added via addView with baked-in translationY. -->
+    <FrameLayout
+        android:id="@+id/value_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="top|end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:fontFamily="monospace"
-        android:letterSpacing="-0.04" />
+        android:layout_height="match_parent" />
 
     <!-- Header row: overlays at top. Mirrors native DataHeaderView. -->
     <LinearLayout
