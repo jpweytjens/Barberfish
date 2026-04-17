@@ -72,6 +72,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.ElevationZoom
 import com.jpweytjens.barberfish.extension.SparklineWarp
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -289,6 +290,7 @@ private fun HUDPreview(
                 displayedRange  = displayedRange,
                 distanceDeltaM  = distanceDeltaM,
                 isNightMode     = isNightMode,
+                minElevRangeM   = sparklineConfig.yZoom.minRangeM,
                 logWarpK        = sparklineConfig.warp.k,
                 positionFraction = sparklineConfig.warp.positionFraction,
             )
@@ -690,6 +692,13 @@ internal fun SparklineCard(
                 options = SparklineWarp.entries.map { it to it.label },
                 selected = config.warp,
                 onSelect = { onUpdate(config.copy(warp = it)) },
+            )
+            Text("Y-ZOOM", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = ElevationZoom.entries.map { it to it.label },
+                selected = config.yZoom,
+                onSelect = { onUpdate(config.copy(yZoom = it)) },
             )
         }
     }

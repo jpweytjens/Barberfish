@@ -160,6 +160,7 @@ internal fun renderElevationSparkline(
     distanceDeltaM: Float = 0f,
     dotColor: Int = ICON_TINT_TEAL.toArgb(),
     isNightMode: Boolean = true,
+    minElevRangeM: Float = 50f,
     logWarpK: Float = 8f,
     positionFraction: Float = 0.05f,
 ): ElevationSparklineResult {
@@ -189,7 +190,7 @@ internal fun renderElevationSparkline(
     // The ratchet below still stabilises the scale during climbs that *are* on screen.
     val elevMin   = visible.minOf { it.second }
     val elevMax   = visible.maxOf { it.second }
-    val elevRange = (elevMax - elevMin).coerceAtLeast(50f)
+    val elevRange = (elevMax - elevMin).coerceAtLeast(minElevRangeM)
 
     // Ratchet: grow instantly, decay slowly as distance is ridden.
     val newDisplayedRange = if (elevRange > displayedRange) elevRange

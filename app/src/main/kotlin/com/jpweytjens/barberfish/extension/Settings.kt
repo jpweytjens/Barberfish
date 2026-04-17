@@ -121,12 +121,20 @@ enum class SparklineWarp(val label: String, val k: Float, val positionFraction: 
 }
 
 @Serializable
+enum class ElevationZoom(val label: String, val minRangeM: Float) {
+    CLOSE("Close", 20f),
+    NORMAL("Normal", 50f),
+    WIDE("Wide", 100f),
+}
+
+@Serializable
 data class SparklineConfig(
     val enabled: Boolean = true,
     val lookaheadKm: Int = 10,
     val skipBands: Int = 1,
     val simplification: ElevationSimplification = ElevationSimplification.MEDIUM,
     val warp: SparklineWarp = SparklineWarp.MEDIUM,
+    val yZoom: ElevationZoom = ElevationZoom.NORMAL,
 )
 
 @Serializable

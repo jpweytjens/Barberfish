@@ -136,6 +136,7 @@ internal fun sparklineBitmapFlow(
                     distanceDeltaM = distanceDeltaM,
                     dotColor = dotColor,
                     isNightMode = isNightMode,
+                    minElevRangeM = sparkCfg.yZoom.minRangeM,
                     logWarpK = sparkCfg.warp.k,
                     positionFraction = sparkCfg.warp.positionFraction,
                 )
