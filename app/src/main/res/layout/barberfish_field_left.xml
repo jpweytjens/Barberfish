@@ -48,7 +48,7 @@
             android:textAllCaps="true"
             android:fontFamily="ibm-plex-sans-condensed"
             android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.7"
+            android:lineSpacingMultiplier="0.6"
             android:breakStrategy="simple" />
 
         <ImageView
