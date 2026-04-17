@@ -62,10 +62,11 @@ fun ViewConfig.toViewSizeConfig(
     // These match the native baseline position in the smallest expected cells (key icons ON).
     val baselineMarginPx: Float =
         when {
-            colSpan == ONE_COL && rowSpan >= FOUR_ROWS  -> 9f  // 1-col 3/4-row
+            colSpan == ONE_COL && rowSpan >= THREE_ROWS  -> 5f  // 1-col 3-row
+            colSpan == ONE_COL && rowSpan >= FOUR_ROWS  -> 9f  // 1-col 4-row
             colSpan == ONE_COL && rowSpan >= FIVE_ROWS  -> 5f  // 1-col 5-row
             colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 9f  // 2-col 4-row
-            colSpan == TWO_COLS && rowSpan >= FIVE_ROWS -> 9f  // 2-col 5-row
+            colSpan == TWO_COLS && rowSpan >= FIVE_ROWS -> 11f  // 2-col 5-row
             colSpan == THREE_COLS                       -> 5f  // HUD 3-col
             colSpan == FOUR_COLS                        -> 5f  // HUD 4-col
             else                                        -> 5f
