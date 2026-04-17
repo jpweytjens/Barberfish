@@ -241,3 +241,54 @@ code and could not be reconstructed. What we know:
 - The processor class (`hhm7.c`, case 1) selects between a "loading" and "no route"
   state but the computation itself is dispatched through further obfuscated layers
   that could not be traced.
+
+---
+
+## Container resize on route toast (GitHub issue #2)
+
+When a rerouting/turn-cue toast appears, the rideapp adjusts the data grid bottom margin
+via `hho9.e.hho()`. The grid cells physically shrink, but `startView` is not re-called
+with updated `ViewConfig.viewSize` — the extension receives stale dimensions.
+
+### How the rideapp handles it
+
+1. `PersistentNavBarPresenter` (`hhu0/q.java`) detects `NavigationRerouting`,
+   `NavigationRerouted`, or `NavigationAlert` instructions
+2. Emits `PersistentNavIsShowing` / `PersistentNavIsHidden` events (internal, not in SDK)
+3. `DataElementPageFragment` (`hho9/e.java`) sets RecyclerView bottom margin:
+   - Nav bar or key buttons visible: `persistent_nav_bottom_padding` = 52dp
+   - Neither visible: `no_keys_bottom_padding` = 10dp
+4. Cells resize proportionally; the `OnLayoutChangeListener` on itemView fires
+5. The `distinctUntilChanged` → `switchMap` chain exists in the code but does NOT
+   trigger a new `startView` on firmware 1.628+
+
+### What the SDK does not expose
+
+- `PersistentNavIsShowing` / `PersistentNavIsHidden` events (rideapp-internal)
+- `UserProfile.getShowKeyButtons()` (rideapp-internal, not in SDK `UserProfile`)
+- Any callback for container resize after `startView`
+
+### RemoteViews constraints on K2 (API 26)
+
+Hammerhead's K2 ROM blocks several `@RemotableViewMethod` calls that work on stock AOSP:
+
+- `setGravity(int)` — CRASH
+- `setTextAlignment(int)` — CRASH
+- `setTranslationY(float)` — CRASH
+
+Workaround: bake gravity, alignment, and translationY into XML layout files and select
+the appropriate variant at render time via `removeAllViews` / `addView` (both work on K2).
+
+### Barberfish layout approach
+
+Value text uses `gravity="bottom"` with `translationY` baked into XML layout variants
+(selected via `addView`). This anchors the text to the real container bottom regardless
+of the reported `cellH`. A centering formula computes `baselineMarginPx` from `cellH`
+to approximate native ConstraintLayout centering, with floor values for the smallest cells.
+
+| Scenario | cellH | Container | Margin | Alignment | Clipping |
+|----------|-------|-----------|--------|-----------|----------|
+| Key icons ON, no toast | correct | matches | floor (5/9px) | matches native | none |
+| Key icons ON, toast | correct | unchanged | floor (5/9px) | matches native | none |
+| Key icons OFF, no toast | correct | matches | formula (~10px) | matches native | none |
+| Key icons OFF, toast | stale | shrunk | formula (stale) | ~5px high | none |
