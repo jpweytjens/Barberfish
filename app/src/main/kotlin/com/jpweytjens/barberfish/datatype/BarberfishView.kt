@@ -166,33 +166,37 @@ private fun makeFieldRemoteViews(
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Value — gravity="top" in XML: text starts at paddingTop, baseline = padTop + |ascent|.
-    // Target baseline position: cellH - baselineMarginPx (grid-size dependent).
+    // Value — gravity="bottom" in child layout, translationY baked into XML.
+    // Baseline = actualContainerBottom - baselineMarginPx, independent of cellH.
+    // The child is added via addView to value_container with the right translationY layout.
     val headerPadPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
     val valueFm = Paint().apply {
         typeface = Typeface.MONOSPACE
         textSize = fontSp * density
     }.fontMetrics
-    val cellH = sizeConfig.cellHeightPx ?: (dm.heightPixels.toFloat() * 15f / 60f)
-    val valuePadTop = (cellH - sizeConfig.baselineMarginPx + valueFm.ascent).roundToInt().coerceAtLeast(0)
+    val translationYPx = (valueFm.descent - sizeConfig.baselineMarginPx).roundToInt().coerceIn(0, MAX_TRANSLATION_Y)
+    val hAlign = alignment.toTextAlignment()
 
     if (DEBUG_LAYOUT) {
-        val baseline = valuePadTop + (-valueFm.ascent).roundToInt()
         Log.d("Barberfish", buildString {
             append("VALUE POS: fontSp=$fontSp")
-            append(" cellH=${cellH.toInt()} valuePadTop=$valuePadTop")
-            append(" baseline=$baseline distFromBottom=${cellH.toInt() - baseline}")
+            append(" translationY=$translationYPx descent=${valueFm.descent.roundToInt()}")
+            append(" baselineMargin=${sizeConfig.baselineMarginPx.roundToInt()}")
         })
     }
 
-    rv.setTextViewText(R.id.field_value, field.primary)
-    rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
-    rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
-    rv.setViewPadding(R.id.field_value, 0, valuePadTop, 0, 0)
+    val valueRv = RemoteViews(context.packageName, translationYLayout(translationYPx))
+    valueRv.setTextViewText(R.id.field_value, field.primary)
+    valueRv.setTextColor(R.id.field_value, colors.valueText.toArgb())
+    valueRv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
+    valueRv.setInt(R.id.field_value, "setTextAlignment", hAlign)
     if (maxLines == 2) {
-        rv.setInt(R.id.field_value, "setMaxLines", 2)
+        valueRv.setInt(R.id.field_value, "setMaxLines", 2)
     }
-    // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
+    rv.removeAllViews(R.id.value_container)
+    rv.addView(R.id.value_container, valueRv)
+
+    // Stream state overlay: ibm-plex-sans-condensed, white — replaces value_container for
     // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
     // Size computed from the longest state text so baselines align across HUD slots.
     if (field.color is FieldColor.StreamState) {
@@ -200,7 +204,7 @@ private fun makeFieldRemoteViews(
             "Not available", sizeConfig.valueFontSizeBase, cellWidthPx, density,
             wrapThresholdSp = sizeConfig.wrapThresholdSp,
         )
-        rv.setViewVisibility(R.id.field_value, View.GONE)
+        rv.setViewVisibility(R.id.value_container, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
@@ -210,7 +214,7 @@ private fun makeFieldRemoteViews(
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }
     } else {
-        rv.setViewVisibility(R.id.field_value, View.VISIBLE)
+        rv.setViewVisibility(R.id.value_container, View.VISIBLE)
         rv.setViewVisibility(R.id.stream_state_tv, View.GONE)
     }
 
@@ -223,3 +227,50 @@ private fun ViewConfig.Alignment.toLayoutRes(): Int =
         ViewConfig.Alignment.CENTER -> R.layout.barberfish_field_center
         ViewConfig.Alignment.RIGHT -> R.layout.barberfish_field
     }
+
+private fun ViewConfig.Alignment.toTextAlignment(): Int =
+    when (this) {
+        ViewConfig.Alignment.LEFT -> View.TEXT_ALIGNMENT_VIEW_START
+        ViewConfig.Alignment.CENTER -> View.TEXT_ALIGNMENT_CENTER
+        ViewConfig.Alignment.RIGHT -> View.TEXT_ALIGNMENT_VIEW_END
+    }
+
+private const val MAX_TRANSLATION_Y = 32
+
+private val translationYLayouts = intArrayOf(
+    R.layout.barberfish_value_ty0,
+    R.layout.barberfish_value_ty1,
+    R.layout.barberfish_value_ty2,
+    R.layout.barberfish_value_ty3,
+    R.layout.barberfish_value_ty4,
+    R.layout.barberfish_value_ty5,
+    R.layout.barberfish_value_ty6,
+    R.layout.barberfish_value_ty7,
+    R.layout.barberfish_value_ty8,
+    R.layout.barberfish_value_ty9,
+    R.layout.barberfish_value_ty10,
+    R.layout.barberfish_value_ty11,
+    R.layout.barberfish_value_ty12,
+    R.layout.barberfish_value_ty13,
+    R.layout.barberfish_value_ty14,
+    R.layout.barberfish_value_ty15,
+    R.layout.barberfish_value_ty16,
+    R.layout.barberfish_value_ty17,
+    R.layout.barberfish_value_ty18,
+    R.layout.barberfish_value_ty19,
+    R.layout.barberfish_value_ty20,
+    R.layout.barberfish_value_ty21,
+    R.layout.barberfish_value_ty22,
+    R.layout.barberfish_value_ty23,
+    R.layout.barberfish_value_ty24,
+    R.layout.barberfish_value_ty25,
+    R.layout.barberfish_value_ty26,
+    R.layout.barberfish_value_ty27,
+    R.layout.barberfish_value_ty28,
+    R.layout.barberfish_value_ty29,
+    R.layout.barberfish_value_ty30,
+    R.layout.barberfish_value_ty31,
+    R.layout.barberfish_value_ty32,
+)
+
+private fun translationYLayout(px: Int): Int = translationYLayouts[px.coerceIn(0, MAX_TRANSLATION_Y)]
