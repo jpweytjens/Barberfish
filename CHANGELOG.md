@@ -7,7 +7,7 @@
 The sparkline looked right in most cases but could drift or flatten in a few real-world ones. This release fixes those.
 
 - Position now tracks distance-to-destination instead of distance-ridden, so the "you are here" marker stays correct after reroutes and restarts
-- Lowered the minimum elevation range to 50 m so small rollers actually look like rollers instead of a flat line
+- Lowered the default minimum elevation range to 50 m so small rollers actually look like rollers instead of a flat line (now configurable via Y-zoom)
 
 ### Sparkline config
 
@@ -17,6 +17,8 @@ Make the sparkline more configurable
   Control how much similar gradient segments are combined into one for a better a glance view
 - X-axis warp  
   control how much the view stretches toward what's immediately ahead versus showing the full lookahead evenly
+- Y-zoom  
+  Close amplifies minor bumps, Wide smooths them out
 
 ### Sparkline rendering
 
