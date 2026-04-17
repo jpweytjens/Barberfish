@@ -417,23 +417,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                     FieldCard(
-                        title = "NP",
-                        description = "Normalized power with zone coloring.",
-                        previewFields = npPreviewStates,
-                        colorMode = npFieldConfig.colorMode,
-                        selected = selectedDataField == "NP",
-                        onSelect = { selectedDataField = if (selectedDataField == "NP") null else "NP" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = npFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
                         title = "LAP AVG POWER",
                         description = "Average power this lap with zone coloring.",
                         previewFields = lapPowerPreviewStates,
@@ -463,6 +446,23 @@ class MainActivity : ComponentActivity() {
                             onSelected = { mode ->
                                 lastLapPowerFieldConfig = lastLapPowerFieldConfig.copy(colorMode = mode)
                                 lifecycleScope.launch { saveLapPowerFieldConfig(isLastLap = true, lastLapPowerFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "NP",
+                        description = "Normalized power with zone coloring.",
+                        previewFields = npPreviewStates,
+                        colorMode = npFieldConfig.colorMode,
+                        selected = selectedDataField == "NP",
+                        onSelect = { selectedDataField = if (selectedDataField == "NP") null else "NP" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = npFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
                             },
                         )
                     }
@@ -559,6 +559,24 @@ class MainActivity : ComponentActivity() {
                             onSelected = { mode ->
                                 lastLapAvgHrFieldConfig = lastLapAvgHrFieldConfig.copy(colorMode = mode)
                                 lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.LAST_LAP_AVG, lastLapAvgHrFieldConfig) }
+                            },
+                        )
+                    }
+
+                    Text("CLIMBING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
+                    FieldCard(
+                        title = "GRADE",
+                        description = "Road gradient with color coding.",
+                        previewFields = gradePreviewStates,
+                        colorMode = gradeFieldConfig.colorMode,
+                        selected = selectedDataField == "GRADE",
+                        onSelect = { selectedDataField = if (selectedDataField == "GRADE") null else "GRADE" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = gradeFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
                             },
                         )
                     }
@@ -688,7 +706,7 @@ class MainActivity : ComponentActivity() {
                 } // end Threshold Fields
 
                 CollapsibleSection(
-                    title = "Climber",
+                    title = "Climbing",
                     description = "Elevation sparkline and gradient coloring",
                     icon = R.drawable.ic_grade,
                     expanded = climberExpanded,
@@ -703,24 +721,6 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveSparklineConfig(updated) }
                         },
                     )
-
-                    var gradeExpanded by remember { mutableStateOf(false) }
-                    FieldCard(
-                        title = "GRADE",
-                        description = "Road gradient with color coding.",
-                        previewFields = gradePreviewStates,
-                        colorMode = gradeFieldConfig.colorMode,
-                        selected = gradeExpanded,
-                        onSelect = { gradeExpanded = !gradeExpanded },
-                    ) {
-                        ZoneColorSlider(
-                            selected = gradeFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
-                            },
-                        )
-                    }
 
                     Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
                     Text(
@@ -744,7 +744,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
-                } // end Climber
+                } // end Climbing
 
                 CollapsibleSection(
                     title = "ETA",
