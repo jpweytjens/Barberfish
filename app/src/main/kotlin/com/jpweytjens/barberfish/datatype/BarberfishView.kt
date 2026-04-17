@@ -175,7 +175,6 @@ private fun makeFieldRemoteViews(
         textSize = fontSp * density
     }.fontMetrics
     val translationYPx = (valueFm.descent - sizeConfig.baselineMarginPx).roundToInt().coerceIn(0, MAX_TRANSLATION_Y)
-    val hAlign = alignment.toTextAlignment()
 
     if (DEBUG_LAYOUT) {
         Log.d("Barberfish", buildString {
@@ -185,11 +184,10 @@ private fun makeFieldRemoteViews(
         })
     }
 
-    val valueRv = RemoteViews(context.packageName, translationYLayout(translationYPx))
+    val valueRv = RemoteViews(context.packageName, valueLayout(alignment, translationYPx))
     valueRv.setTextViewText(R.id.field_value, field.primary)
     valueRv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     valueRv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
-    valueRv.setInt(R.id.field_value, "setTextAlignment", hAlign)
     if (maxLines == 2) {
         valueRv.setInt(R.id.field_value, "setMaxLines", 2)
     }
@@ -228,49 +226,72 @@ private fun ViewConfig.Alignment.toLayoutRes(): Int =
         ViewConfig.Alignment.RIGHT -> R.layout.barberfish_field
     }
 
-private fun ViewConfig.Alignment.toTextAlignment(): Int =
-    when (this) {
-        ViewConfig.Alignment.LEFT -> View.TEXT_ALIGNMENT_VIEW_START
-        ViewConfig.Alignment.CENTER -> View.TEXT_ALIGNMENT_CENTER
-        ViewConfig.Alignment.RIGHT -> View.TEXT_ALIGNMENT_VIEW_END
-    }
-
 private const val MAX_TRANSLATION_Y = 32
 
-private val translationYLayouts = intArrayOf(
-    R.layout.barberfish_value_ty0,
-    R.layout.barberfish_value_ty1,
-    R.layout.barberfish_value_ty2,
-    R.layout.barberfish_value_ty3,
-    R.layout.barberfish_value_ty4,
-    R.layout.barberfish_value_ty5,
-    R.layout.barberfish_value_ty6,
-    R.layout.barberfish_value_ty7,
-    R.layout.barberfish_value_ty8,
-    R.layout.barberfish_value_ty9,
-    R.layout.barberfish_value_ty10,
-    R.layout.barberfish_value_ty11,
-    R.layout.barberfish_value_ty12,
-    R.layout.barberfish_value_ty13,
-    R.layout.barberfish_value_ty14,
-    R.layout.barberfish_value_ty15,
-    R.layout.barberfish_value_ty16,
-    R.layout.barberfish_value_ty17,
-    R.layout.barberfish_value_ty18,
-    R.layout.barberfish_value_ty19,
-    R.layout.barberfish_value_ty20,
-    R.layout.barberfish_value_ty21,
-    R.layout.barberfish_value_ty22,
-    R.layout.barberfish_value_ty23,
-    R.layout.barberfish_value_ty24,
-    R.layout.barberfish_value_ty25,
-    R.layout.barberfish_value_ty26,
-    R.layout.barberfish_value_ty27,
-    R.layout.barberfish_value_ty28,
-    R.layout.barberfish_value_ty29,
-    R.layout.barberfish_value_ty30,
-    R.layout.barberfish_value_ty31,
-    R.layout.barberfish_value_ty32,
+// Layout arrays indexed by translationY (0..32), one per alignment.
+private val endLayouts = intArrayOf(
+    R.layout.barberfish_value_end_ty0, R.layout.barberfish_value_end_ty1,
+    R.layout.barberfish_value_end_ty2, R.layout.barberfish_value_end_ty3,
+    R.layout.barberfish_value_end_ty4, R.layout.barberfish_value_end_ty5,
+    R.layout.barberfish_value_end_ty6, R.layout.barberfish_value_end_ty7,
+    R.layout.barberfish_value_end_ty8, R.layout.barberfish_value_end_ty9,
+    R.layout.barberfish_value_end_ty10, R.layout.barberfish_value_end_ty11,
+    R.layout.barberfish_value_end_ty12, R.layout.barberfish_value_end_ty13,
+    R.layout.barberfish_value_end_ty14, R.layout.barberfish_value_end_ty15,
+    R.layout.barberfish_value_end_ty16, R.layout.barberfish_value_end_ty17,
+    R.layout.barberfish_value_end_ty18, R.layout.barberfish_value_end_ty19,
+    R.layout.barberfish_value_end_ty20, R.layout.barberfish_value_end_ty21,
+    R.layout.barberfish_value_end_ty22, R.layout.barberfish_value_end_ty23,
+    R.layout.barberfish_value_end_ty24, R.layout.barberfish_value_end_ty25,
+    R.layout.barberfish_value_end_ty26, R.layout.barberfish_value_end_ty27,
+    R.layout.barberfish_value_end_ty28, R.layout.barberfish_value_end_ty29,
+    R.layout.barberfish_value_end_ty30, R.layout.barberfish_value_end_ty31,
+    R.layout.barberfish_value_end_ty32,
+)
+private val startLayouts = intArrayOf(
+    R.layout.barberfish_value_start_ty0, R.layout.barberfish_value_start_ty1,
+    R.layout.barberfish_value_start_ty2, R.layout.barberfish_value_start_ty3,
+    R.layout.barberfish_value_start_ty4, R.layout.barberfish_value_start_ty5,
+    R.layout.barberfish_value_start_ty6, R.layout.barberfish_value_start_ty7,
+    R.layout.barberfish_value_start_ty8, R.layout.barberfish_value_start_ty9,
+    R.layout.barberfish_value_start_ty10, R.layout.barberfish_value_start_ty11,
+    R.layout.barberfish_value_start_ty12, R.layout.barberfish_value_start_ty13,
+    R.layout.barberfish_value_start_ty14, R.layout.barberfish_value_start_ty15,
+    R.layout.barberfish_value_start_ty16, R.layout.barberfish_value_start_ty17,
+    R.layout.barberfish_value_start_ty18, R.layout.barberfish_value_start_ty19,
+    R.layout.barberfish_value_start_ty20, R.layout.barberfish_value_start_ty21,
+    R.layout.barberfish_value_start_ty22, R.layout.barberfish_value_start_ty23,
+    R.layout.barberfish_value_start_ty24, R.layout.barberfish_value_start_ty25,
+    R.layout.barberfish_value_start_ty26, R.layout.barberfish_value_start_ty27,
+    R.layout.barberfish_value_start_ty28, R.layout.barberfish_value_start_ty29,
+    R.layout.barberfish_value_start_ty30, R.layout.barberfish_value_start_ty31,
+    R.layout.barberfish_value_start_ty32,
+)
+private val centerLayouts = intArrayOf(
+    R.layout.barberfish_value_center_ty0, R.layout.barberfish_value_center_ty1,
+    R.layout.barberfish_value_center_ty2, R.layout.barberfish_value_center_ty3,
+    R.layout.barberfish_value_center_ty4, R.layout.barberfish_value_center_ty5,
+    R.layout.barberfish_value_center_ty6, R.layout.barberfish_value_center_ty7,
+    R.layout.barberfish_value_center_ty8, R.layout.barberfish_value_center_ty9,
+    R.layout.barberfish_value_center_ty10, R.layout.barberfish_value_center_ty11,
+    R.layout.barberfish_value_center_ty12, R.layout.barberfish_value_center_ty13,
+    R.layout.barberfish_value_center_ty14, R.layout.barberfish_value_center_ty15,
+    R.layout.barberfish_value_center_ty16, R.layout.barberfish_value_center_ty17,
+    R.layout.barberfish_value_center_ty18, R.layout.barberfish_value_center_ty19,
+    R.layout.barberfish_value_center_ty20, R.layout.barberfish_value_center_ty21,
+    R.layout.barberfish_value_center_ty22, R.layout.barberfish_value_center_ty23,
+    R.layout.barberfish_value_center_ty24, R.layout.barberfish_value_center_ty25,
+    R.layout.barberfish_value_center_ty26, R.layout.barberfish_value_center_ty27,
+    R.layout.barberfish_value_center_ty28, R.layout.barberfish_value_center_ty29,
+    R.layout.barberfish_value_center_ty30, R.layout.barberfish_value_center_ty31,
+    R.layout.barberfish_value_center_ty32,
 )
 
-private fun translationYLayout(px: Int): Int = translationYLayouts[px.coerceIn(0, MAX_TRANSLATION_Y)]
+private fun valueLayout(alignment: ViewConfig.Alignment, translationYPx: Int): Int {
+    val idx = translationYPx.coerceIn(0, MAX_TRANSLATION_Y)
+    return when (alignment) {
+        ViewConfig.Alignment.RIGHT -> endLayouts[idx]
+        ViewConfig.Alignment.LEFT -> startLayouts[idx]
+        ViewConfig.Alignment.CENTER -> centerLayouts[idx]
+    }
+}
