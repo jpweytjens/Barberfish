@@ -667,24 +667,16 @@ internal fun SparklineCard(
             )
             val threshold = gradeThreshold(palette, config.skipBands)
             Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Grades below this band stay uncolored.", fontSize = 12.sp, color = TextDark)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SegmentedRow(
-                    options = listOf(0 to "0", 1 to "1", 2 to "2", 3 to "3"),
-                    selected = config.skipBands,
-                    onSelect = { onUpdate(config.copy(skipBands = it)) },
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    "≥${"%.0f".format(threshold)}%",
-                    fontSize = 11.sp,
-                    color = TextDark,
-                )
-            }
+            Text(
+                if (config.skipBands == 0) "Skip the lowest color bands. Bands are set by the gradient palette."
+                else "Skip the lowest color bands. Bands are set by the gradient palette. Grades below ≥${"%.0f".format(threshold)}% stay uncolored.",
+                fontSize = 12.sp, color = TextDark,
+            )
+            SegmentedRow(
+                options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                selected = config.skipBands,
+                onSelect = { onUpdate(config.copy(skipBands = it)) },
+            )
             Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(

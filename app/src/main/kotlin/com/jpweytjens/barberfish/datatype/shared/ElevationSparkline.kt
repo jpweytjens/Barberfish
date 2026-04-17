@@ -173,9 +173,17 @@ internal fun renderElevationSparkline(
     val windowEnd = rawEnd.coerceAtMost(lastDist)
     val windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
 
-    val visible = elevationPoints
-        .filter { (d, _) -> d in windowStart..windowEnd }
-        .ifEmpty { return ElevationSparklineResult(null, displayedRange) }
+    // Include one point beyond each edge so segments spanning the window boundary
+    // are partially drawn instead of popping in only when fully visible.
+    val firstInside = elevationPoints.indexOfFirst { it.first >= windowStart }
+    val lastInside  = elevationPoints.indexOfLast  { it.first <= windowEnd }
+    if (firstInside < 0 || lastInside < 0 || firstInside > lastInside + 1) {
+        return ElevationSparklineResult(null, displayedRange)
+    }
+    val sliceStart = (firstInside - 1).coerceAtLeast(0)
+    val sliceEnd   = (lastInside + 1).coerceAtMost(elevationPoints.lastIndex)
+    val visible = elevationPoints.subList(sliceStart, sliceEnd + 1)
+    if (visible.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
     // Y-axis: derived from the visible window only. 
     // The ratchet below still stabilises the scale during climbs that *are* on screen.

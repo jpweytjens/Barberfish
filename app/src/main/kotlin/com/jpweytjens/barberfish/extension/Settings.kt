@@ -106,18 +106,18 @@ data class HUDSlotConfig(
 
 @Serializable
 enum class ElevationSimplification(val label: String, val minAreaM2: Float) {
-    NONE("None", 0f),
+    NONE("Off", 0f),
     MILD("Mild", 25f),      // just above the 21 m² rainbow-noise floor
     MEDIUM("Medium", 60f),  // merges most micro-wiggles
-    HEAVY("Heavy", 120f),   // abstract blocks; preserves sharp flat→climb corners
+    HEAVY("Max", 120f),     // abstract blocks; preserves sharp flat→climb corners
 }
 
 @Serializable
 enum class SparklineWarp(val label: String, val k: Float, val positionFraction: Float) {
-    NONE("None", 0f, 0.1235f),
+    NONE("Off", 0f, 0.1235f),
     MILD("Mild", 4f, 0.0783f),
     MEDIUM("Medium", 8f, 0.05f),
-    HEAVY("Heavy", 12f, 0.0357f),
+    HEAVY("Max", 12f, 0.0357f),
 }
 
 @Serializable
