@@ -45,7 +45,7 @@
     <string name="last_lap_power_description">Last lap power with zone coloring</string>
     <string name="grade_name">Grade</string>
     <string name="grade_description">Current road gradient with gradient palette coloring</string>
-    <string name="elevation_sparkline_name">Elevation Profile</string>
+    <string name="elevation_sparkline_name">Elevation Sparkline</string>
     <string name="elevation_sparkline_description">Route elevation sparkline with gradient coloring and position marker</string>
     <string name="avg_hr_name">Avg Heart Rate</string>
     <string name="avg_hr_description">Average heart rate with zone coloring</string>

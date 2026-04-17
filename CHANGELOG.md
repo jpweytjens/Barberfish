@@ -18,6 +18,14 @@ Make the sparkline more configurable
 - X-axis warp  
   control how much the view stretches toward what's immediately ahead versus showing the full lookahead evenly
 
+### Sparkline rendering
+
+- Smoother edges: segments near the window boundaries are now partially drawn instead of popping in, and the outline connects cleanly through the current position dot
+
+### Standalone sparkline field
+
+- New standalone elevation sparkline data field available outside the HUD
+
 ### Visual
 
 - Desaturated past-section gradient fills in light mode
@@ -25,6 +33,9 @@ Make the sparkline more configurable
 
 ### Config UI
 
+- Reorganized data fields: Grade moved to a "Climbing" subsection, NP moved to end of power fields
+- Renamed "Climber" section to "Climbing"
+- Clearer sparkline labels: Off / Mild / Medium / Max
 - Default color palettes now use the original Karoo colors instead of the readability-corrected variants
 - Clarified that the "Gradient colors" palette drives both the Grade data field and the sparkline gradient overlay
 
