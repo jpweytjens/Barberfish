@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2
+
+- Fix value text clipping when the rerouting navigation bar appears mid-ride (key icons off). Closes [#2](https://github.com/jpweytjens/Barberfish/issues/2).
+
 ## 3.1 — Sparkline update
 
 ### Accuracy
