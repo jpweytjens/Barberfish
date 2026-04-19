@@ -1075,7 +1075,6 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     val sizeConfig = remember {
         ViewSizeConfig.STANDARD.copy(
             cellWidthPxOverride = widthPx.toFloat(),
-            cellHeightPx = heightPx.toFloat(),
         )
     }
     var index by remember { mutableIntStateOf(0) }

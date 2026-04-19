@@ -43,9 +43,7 @@ abstract class BarberfishDataType(extensionId: String, typeId: String) :
     BarberfishBase<FieldState>(extensionId, typeId) {
 
     override fun renderState(state: FieldState, config: ViewConfig, context: Context): RemoteViews {
-        val sizeConfig = config.toViewSizeConfig().copy(
-            cellHeightPx = config.viewSize.second.toFloat(),
-        )
+        val sizeConfig = config.toViewSizeConfig()
         return barberfishFieldRemoteViews(
             field = state,
             alignment = config.alignment,

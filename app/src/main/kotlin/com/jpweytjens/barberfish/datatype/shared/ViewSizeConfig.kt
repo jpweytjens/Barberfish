@@ -66,7 +66,7 @@ fun ViewConfig.toViewSizeConfig(
             colSpan == ONE_COL && rowSpan >= FOUR_ROWS  -> 9f  // 1-col 4-row
             colSpan == ONE_COL && rowSpan >= FIVE_ROWS  -> 5f  // 1-col 5-row
             colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 9f  // 2-col 4-row
-            colSpan == TWO_COLS && rowSpan >= FIVE_ROWS -> 11f  // 2-col 5-row
+            colSpan == TWO_COLS && rowSpan >= FIVE_ROWS -> 11.5f  // 2-col 5-row
             colSpan == THREE_COLS                       -> 5f  // HUD 3-col
             colSpan == FOUR_COLS                        -> 5f  // HUD 4-col
             else                                        -> 5f
@@ -95,7 +95,6 @@ data class ViewSizeConfig(
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,
     val baselineMarginPx: Float = 5f,
-    val cellHeightPx: Float? = null,
     val cellWidthPxOverride: Float? = null,
 ) {
     companion object {

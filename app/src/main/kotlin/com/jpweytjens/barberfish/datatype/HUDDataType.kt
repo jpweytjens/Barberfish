@@ -25,12 +25,10 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         val paddingPx = (2f * density).toInt()
         // Slot row fills full cell; sparkline overlays at bottom (FrameLayout root).
         // When sparkline is active, increase baseline margin so values sit above it.
-        val slotHeightPx = config.viewSize.second.toFloat() - 2 * paddingPx
         val baseConfig = if (state.columns == 4) ViewSizeConfig.HUD_FOUR else ViewSizeConfig.HUD_THREE
-        val baseSizeConfig = baseConfig.copy(cellHeightPx = slotHeightPx)
         val sizeConfig = if (sparklineHeightPx > 0)
-            baseSizeConfig.copy(baselineMarginPx = baseSizeConfig.baselineMarginPx + sparklineHeightPx)
-        else baseSizeConfig
+            baseConfig.copy(baselineMarginPx = baseConfig.baselineMarginPx + sparklineHeightPx)
+        else baseConfig
         val layoutRes =
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
         val rv = RemoteViews(context.packageName, layoutRes)
