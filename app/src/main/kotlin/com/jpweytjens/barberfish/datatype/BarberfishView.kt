@@ -2,8 +2,6 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import android.content.res.Configuration
-import kotlin.math.roundToInt
-import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
@@ -22,7 +20,7 @@ import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
-private const val DEBUG_LAYOUT = false
+private const val DEBUG_LAYOUT = true
 
 fun barberfishFieldRemoteViews(
     field: FieldState,
@@ -166,53 +164,41 @@ private fun makeFieldRemoteViews(
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Value — gravity="bottom" in child layout, translationY baked into XML.
-    // The child is added via addView to value_container with the right translationY.
-    //
-    // Baseline margin approximates native ConstraintLayout centering: the value text
-    // (wrap_content) is centered between header bottom and cell bottom. When cellH is
-    // correct (no toast), alignment matches native. When cellH is stale (toast shrinks
-    // the container), the margin is slightly too large → text sits a few px high but
-    // never clips, because gravity="bottom" anchors to the real container bottom.
-    val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
-    val valueFm = Paint().apply {
-        typeface = Typeface.MONOSPACE
-        textSize = fontSp * density
-    }.fontMetrics
-    val cellH = sizeConfig.cellHeightPx ?: (dm.heightPixels.toFloat() * 15f / 60f)
-    val textBlockPx = -valueFm.ascent + valueFm.descent
-    val availableSpace = cellH - headerPx
-    val baselineMarginPx = ((availableSpace - textBlockPx) / 2f + valueFm.descent)
-        .coerceAtLeast(sizeConfig.baselineMarginPx) // never less than the grid minimum
-    val translationYPx = (valueFm.descent - baselineMarginPx).roundToInt().coerceIn(0, MAX_TRANSLATION_Y)
+    // Value — baseline aligned to an invisible reference TextView anchored at the
+    // container bottom. The reference font size controls baseline distance from bottom:
+    // baseline_from_bottom = descent_of_ref_font. Set ref font so its descent = baselineMarginPx.
+    // Monospace descent ≈ 0.244 * fontSizePx, so refFontPx = baselineMarginPx / 0.244.
+    val refFontPx = sizeConfig.baselineMarginPx / 0.244f
+    val refFontSp = refFontPx / density
 
     if (DEBUG_LAYOUT) {
+        val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
         Log.d("Barberfish", buildString {
             append("VALUE POS: fontSp=$fontSp")
-            append(" cellH=${cellH.toInt()} headerPx=$headerPx textBlock=${textBlockPx.toInt()}")
-            append(" baselineMargin=${baselineMarginPx.toInt()} translationY=$translationYPx")
+            append(" baselineMarginPx=${sizeConfig.baselineMarginPx}")
+            append(" refFontSp=${refFontSp.toInt()} headerPx=$headerPx")
         })
     }
 
-    val valueRv = RemoteViews(context.packageName, valueLayout(alignment, translationYPx))
-    valueRv.setTextViewText(R.id.field_value, field.primary)
-    valueRv.setTextColor(R.id.field_value, colors.valueText.toArgb())
-    valueRv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
+    rv.setTextViewTextSize(R.id.baseline_ref, TypedValue.COMPLEX_UNIT_SP, refFontSp)
+    rv.setTextViewText(R.id.field_value, field.primary)
+    rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
+    rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
     if (maxLines == 2) {
-        valueRv.setInt(R.id.field_value, "setMaxLines", 2)
+        rv.setInt(R.id.field_value, "setMaxLines", 2)
     }
-    rv.removeAllViews(R.id.value_container)
-    rv.addView(R.id.value_container, valueRv)
 
-    // Stream state overlay: ibm-plex-sans-condensed, white — replaces value_container for
+    // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
     // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
     // Size computed from the longest state text so baselines align across HUD slots.
+    val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
     if (field.color is FieldColor.StreamState) {
         val (stateFont, stateMaxLines) = fontSizeForCell(
             "Not available", sizeConfig.valueFontSizeBase, cellWidthPx, density,
             wrapThresholdSp = sizeConfig.wrapThresholdSp,
         )
-        rv.setViewVisibility(R.id.value_container, View.GONE)
+        rv.setViewVisibility(R.id.field_value, View.GONE)
+        rv.setViewVisibility(R.id.baseline_ref, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
@@ -222,7 +208,7 @@ private fun makeFieldRemoteViews(
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }
     } else {
-        rv.setViewVisibility(R.id.value_container, View.VISIBLE)
+        rv.setViewVisibility(R.id.field_value, View.VISIBLE)
         rv.setViewVisibility(R.id.stream_state_tv, View.GONE)
     }
 
@@ -236,72 +222,3 @@ private fun ViewConfig.Alignment.toLayoutRes(): Int =
         ViewConfig.Alignment.RIGHT -> R.layout.barberfish_field
     }
 
-private const val MAX_TRANSLATION_Y = 32
-
-// Layout arrays indexed by translationY (0..32), one per alignment.
-private val endLayouts = intArrayOf(
-    R.layout.barberfish_value_end_ty0, R.layout.barberfish_value_end_ty1,
-    R.layout.barberfish_value_end_ty2, R.layout.barberfish_value_end_ty3,
-    R.layout.barberfish_value_end_ty4, R.layout.barberfish_value_end_ty5,
-    R.layout.barberfish_value_end_ty6, R.layout.barberfish_value_end_ty7,
-    R.layout.barberfish_value_end_ty8, R.layout.barberfish_value_end_ty9,
-    R.layout.barberfish_value_end_ty10, R.layout.barberfish_value_end_ty11,
-    R.layout.barberfish_value_end_ty12, R.layout.barberfish_value_end_ty13,
-    R.layout.barberfish_value_end_ty14, R.layout.barberfish_value_end_ty15,
-    R.layout.barberfish_value_end_ty16, R.layout.barberfish_value_end_ty17,
-    R.layout.barberfish_value_end_ty18, R.layout.barberfish_value_end_ty19,
-    R.layout.barberfish_value_end_ty20, R.layout.barberfish_value_end_ty21,
-    R.layout.barberfish_value_end_ty22, R.layout.barberfish_value_end_ty23,
-    R.layout.barberfish_value_end_ty24, R.layout.barberfish_value_end_ty25,
-    R.layout.barberfish_value_end_ty26, R.layout.barberfish_value_end_ty27,
-    R.layout.barberfish_value_end_ty28, R.layout.barberfish_value_end_ty29,
-    R.layout.barberfish_value_end_ty30, R.layout.barberfish_value_end_ty31,
-    R.layout.barberfish_value_end_ty32,
-)
-private val startLayouts = intArrayOf(
-    R.layout.barberfish_value_start_ty0, R.layout.barberfish_value_start_ty1,
-    R.layout.barberfish_value_start_ty2, R.layout.barberfish_value_start_ty3,
-    R.layout.barberfish_value_start_ty4, R.layout.barberfish_value_start_ty5,
-    R.layout.barberfish_value_start_ty6, R.layout.barberfish_value_start_ty7,
-    R.layout.barberfish_value_start_ty8, R.layout.barberfish_value_start_ty9,
-    R.layout.barberfish_value_start_ty10, R.layout.barberfish_value_start_ty11,
-    R.layout.barberfish_value_start_ty12, R.layout.barberfish_value_start_ty13,
-    R.layout.barberfish_value_start_ty14, R.layout.barberfish_value_start_ty15,
-    R.layout.barberfish_value_start_ty16, R.layout.barberfish_value_start_ty17,
-    R.layout.barberfish_value_start_ty18, R.layout.barberfish_value_start_ty19,
-    R.layout.barberfish_value_start_ty20, R.layout.barberfish_value_start_ty21,
-    R.layout.barberfish_value_start_ty22, R.layout.barberfish_value_start_ty23,
-    R.layout.barberfish_value_start_ty24, R.layout.barberfish_value_start_ty25,
-    R.layout.barberfish_value_start_ty26, R.layout.barberfish_value_start_ty27,
-    R.layout.barberfish_value_start_ty28, R.layout.barberfish_value_start_ty29,
-    R.layout.barberfish_value_start_ty30, R.layout.barberfish_value_start_ty31,
-    R.layout.barberfish_value_start_ty32,
-)
-private val centerLayouts = intArrayOf(
-    R.layout.barberfish_value_center_ty0, R.layout.barberfish_value_center_ty1,
-    R.layout.barberfish_value_center_ty2, R.layout.barberfish_value_center_ty3,
-    R.layout.barberfish_value_center_ty4, R.layout.barberfish_value_center_ty5,
-    R.layout.barberfish_value_center_ty6, R.layout.barberfish_value_center_ty7,
-    R.layout.barberfish_value_center_ty8, R.layout.barberfish_value_center_ty9,
-    R.layout.barberfish_value_center_ty10, R.layout.barberfish_value_center_ty11,
-    R.layout.barberfish_value_center_ty12, R.layout.barberfish_value_center_ty13,
-    R.layout.barberfish_value_center_ty14, R.layout.barberfish_value_center_ty15,
-    R.layout.barberfish_value_center_ty16, R.layout.barberfish_value_center_ty17,
-    R.layout.barberfish_value_center_ty18, R.layout.barberfish_value_center_ty19,
-    R.layout.barberfish_value_center_ty20, R.layout.barberfish_value_center_ty21,
-    R.layout.barberfish_value_center_ty22, R.layout.barberfish_value_center_ty23,
-    R.layout.barberfish_value_center_ty24, R.layout.barberfish_value_center_ty25,
-    R.layout.barberfish_value_center_ty26, R.layout.barberfish_value_center_ty27,
-    R.layout.barberfish_value_center_ty28, R.layout.barberfish_value_center_ty29,
-    R.layout.barberfish_value_center_ty30, R.layout.barberfish_value_center_ty31,
-    R.layout.barberfish_value_center_ty32,
-)
-
-private fun valueLayout(alignment: ViewConfig.Alignment, translationYPx: Int): Int {
-    val idx = translationYPx.coerceIn(0, MAX_TRANSLATION_Y)
-    return when (alignment) {
-        ViewConfig.Alignment.RIGHT -> endLayouts[idx]
-        ViewConfig.Alignment.LEFT -> startLayouts[idx]
-        ViewConfig.Alignment.CENTER -> centerLayouts[idx]
-    }
-}
