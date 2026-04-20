@@ -25,6 +25,9 @@ data class FieldState(
 
         fun idle(label: String = "", iconRes: Int? = null) =
             FieldState("No data", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun noLapsYet(label: String = "", iconRes: Int? = null) =
+            FieldState("No laps yet", label, FieldColor.StreamState, iconRes = iconRes)
     }
 }
 

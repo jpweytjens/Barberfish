@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.KarooEvent
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.OnStreamState
@@ -42,3 +43,9 @@ fun StreamState.toErrorFieldState(label: String = "", iconRes: Int? = null): Fie
         is StreamState.NotAvailable -> FieldState.notAvailable(label, iconRes)
         else -> FieldState.idle(label, iconRes) // Idle: sensor stopped emitting data
     }
+
+/** Current lap number from a LAP_NUMBER stream state; 0 if not streaming or missing. */
+fun lapNumberFrom(state: StreamState): Int =
+    (state as? StreamState.Streaming)
+        ?.dataPoint?.values?.get(DataType.Field.LAP_NUMBER)
+        ?.toInt() ?: 0
