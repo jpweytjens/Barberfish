@@ -26,7 +26,7 @@ Tested on a physical Karoo 2 (2026-03-29).
 | `rv.setInt("setMaxLines")`                | Yes               | Yes         | --                                                                                   | --               |
 | `rv.setInt("setLines")`                   | Yes               | Yes         | --                                                                                   | --               |
 | `rv.setFloat("setLineSpacingMultiplier")` | Likely yes*       | Yes         | Set in XML if it crashes                                                             | Yes              |
-| `rv.setFloat("setTranslationY")`          | CRASH             | Yes         | Skip translationY; use topPadding fallback                                           | Yes              |
+| `rv.setFloat("setTranslationY")`          | CRASH             | Yes         | Use `RelativeLayout` + `layout_alignBaseline` (layout attribute, not a method)       | Yes              |
 | `rv.addView` / `rv.removeAllViews`        | Yes               | Yes         | --                                                                                   | --               |
 | `xml: android:breakStrategy`              | Yes (API 23+)     | Yes         | --                                                                                   | --               |
 | `xml: android:letterSpacing`              | Yes (API 21+)     | Yes         | --                                                                                   | --               |
@@ -67,7 +67,10 @@ but visual tuning on-device may be needed for the K2 display.
 
 ## Summary
 
-`setGravity` was the only confirmed blocker. Fixed by replacing all 3 `setGravity` calls
-in `BarberfishView.kt` with `setTextAlignment` (a `@RemotableViewMethod` since API 17).
-XML `android:gravity="center_vertical"` handles vertical centering; `setTextAlignment`
-handles horizontal alignment. Works on both K2 and K3 with no version-specific branching.
+`setGravity`, `setTextAlignment`, and `setTranslationY` all crash on K2 but work on K3.
+Horizontal alignment is baked into three layout variants (`barberfish_field.xml`,
+`barberfish_field_left.xml`, `barberfish_field_center.xml`), and vertical baseline
+positioning uses `RelativeLayout` + `layout_alignBaseline` with an invisible reference
+TextView anchored at the bottom. Both are pure layout attributes set at inflation time,
+so neither requires the blocked remotable methods. Works on both K2 and K3 with no
+version-specific branching.
