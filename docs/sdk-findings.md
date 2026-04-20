@@ -281,14 +281,12 @@ the appropriate variant at render time via `removeAllViews` / `addView` (both wo
 
 ### Barberfish layout approach
 
-Value text uses `gravity="bottom"` with `translationY` baked into XML layout variants
-(selected via `addView`). This anchors the text to the real container bottom regardless
-of the reported `cellH`. A centering formula computes `baselineMarginPx` from `cellH`
-to approximate native ConstraintLayout centering, with floor values for the smallest cells.
+Value text uses `RelativeLayout` + `layout_alignBaseline` against an invisible `baseline_ref`
+TextView anchored at `layout_alignParentBottom="true"`. The reference's font size is set
+programmatically so its descent equals the target `baselineMarginPx`. The layout engine
+aligns the value's baseline to the reference's baseline in-process, so the baseline always
+tracks the real container bottom — the reported `cellH` is never consulted.
 
-| Scenario | cellH | Container | Margin | Alignment | Clipping |
-|----------|-------|-----------|--------|-----------|----------|
-| Key icons ON, no toast | correct | matches | floor (5/9px) | matches native | none |
-| Key icons ON, toast | correct | unchanged | floor (5/9px) | matches native | none |
-| Key icons OFF, no toast | correct | matches | formula (~10px) | matches native | none |
-| Key icons OFF, toast | stale | shrunk | formula (stale) | ~5px high | none |
+This is robust to all four scenarios (key icons on/off × toast on/off), because
+`layout_alignParentBottom` binds to whatever bottom actually exists at layout time,
+not to a cached value from `startView`.
