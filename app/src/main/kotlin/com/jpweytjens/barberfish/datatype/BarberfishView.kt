@@ -20,7 +20,7 @@ import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
-private const val DEBUG_LAYOUT = true
+private const val DEBUG_LAYOUT = false
 
 fun barberfishFieldRemoteViews(
     field: FieldState,
@@ -190,11 +190,12 @@ private fun makeFieldRemoteViews(
 
     // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
     // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
-    // Size computed from the longest state text so baselines align across HUD slots.
+    // Size computed from "Searching…" — the widest single-line stream state (no space
+    // to wrap on), so all other stream states fit at the same font size.
     val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
     if (field.color is FieldColor.StreamState) {
         val (stateFont, stateMaxLines) = fontSizeForCell(
-            "Not available", sizeConfig.valueFontSizeBase, cellWidthPx, density,
+            "Searching...", sizeConfig.valueFontSizeBase, cellWidthPx, density,
             wrapThresholdSp = sizeConfig.wrapThresholdSp,
         )
         rv.setViewVisibility(R.id.field_value, View.GONE)
