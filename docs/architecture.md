@@ -102,7 +102,7 @@ All spacing and sizing constants for one rendering context live in a single `Vie
 ```
 Cell level   paddingH
 Header       headerIconSize, headerIconLabelGap, headerFontSize, labelMaxLines
-Value        valueFontSizeBase, wrapThresholdSp, baselineMarginPx, cellHeightPx
+Value        valueFontSizeBase, wrapThresholdSp, baselineMarginPx
 ```
 
 Presets:
@@ -180,26 +180,25 @@ parameters flow in through `ViewSizeConfig`; the view layer makes no sizing deci
 
 ## Value baseline alignment
 
-The value TextView uses `gravity="top"` (set in XML) with a computed `paddingTop` to pin the text baseline at a fixed vertical position regardless of font size.
+The value TextView's baseline is aligned to an invisible `baseline_ref` TextView using `layout_alignBaseline`. The reference is anchored to the real container bottom via `layout_alignParentBottom="true"`, with `gravity="bottom"`. Its font size is set programmatically so its descent equals the target `baselineMarginPx`:
 
-### Formula
-
+```kotlin
+val refFontPx = sizeConfig.baselineMarginPx / 0.244f  // monospace descent ratio
+val refFontSp = refFontPx / density
+rv.setTextViewTextSize(R.id.baseline_ref, COMPLEX_UNIT_SP, refFontSp)
 ```
-paddingTop = (cellHeight - baselineMarginPx + ascent).coerceAtLeast(0)
-```
 
-- `cellHeight` — cell height in pixels; defaults to `screenHeight * 15 / 60` (one 4-row cell), overridable via `ViewSizeConfig.cellHeightPx`
-- `baselineMarginPx` — distance from the cell bottom to the value baseline; grid-size dependent (see table below)
-- `ascent` — `Paint.FontMetrics.ascent` for the value font at the computed sp size (negative value; text rises above the baseline)
+The layout engine places the value's baseline `descent_ref` pixels above the real container bottom — independent of the value's own font size (which may shrink via `fontSizeForCell` for long strings) and independent of reported cell height (the `alignParentBottom` anchor always tracks the actual bottom, even when the rerouting toast shrinks cells mid-ride without re-calling `startView`).
 
 ### `baselineMarginPx` per grid size
 
 | colSpan | rowSpan | baselineMarginPx | Layout context  |
 | ------- | ------- | ----------------- | --------------- |
-| 60      | >= 15   | 9                 | 1-col 3/4-row   |
-| 60      | >= 12   | 5                 | 1-col 5-row     |
-| 30      | >= 15   | 9                 | 2-col 4-row     |
-| 30      | >= 12   | 5                 | 2-col 5-row     |
+| 60      | 3-row   | 5                 | 1-col 3-row     |
+| 60      | 4-row   | 7                 | 1-col 4-row     |
+| 60      | 5-row   | 5                 | 1-col 5-row     |
+| 30      | 4-row   | 7                 | 2-col 4-row     |
+| 30      | 5-row   | 9                 | 2-col 5-row     |
 | 20      | any     | 5                 | HUD 3-col       |
 | 15      | any     | 5                 | HUD 4-col       |
 
