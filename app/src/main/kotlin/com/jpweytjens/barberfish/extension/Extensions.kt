@@ -35,10 +35,10 @@ fun KarooSystemService.streamRideState(): Flow<RideState> = consumerFlow()
 /**
  * Returns a [FieldState] for non-Streaming states, or null if the state is [StreamState.Streaming].
  */
-fun StreamState.toErrorFieldState(label: String = ""): FieldState? =
+fun StreamState.toErrorFieldState(label: String = "", iconRes: Int? = null): FieldState? =
     when (this) {
         is StreamState.Streaming -> null
-        is StreamState.Searching -> FieldState.searching(label)
-        is StreamState.NotAvailable -> FieldState.notAvailable(label)
-        else -> FieldState.idle(label) // Idle: sensor stopped emitting data
+        is StreamState.Searching -> FieldState.searching(label, iconRes)
+        is StreamState.NotAvailable -> FieldState.notAvailable(label, iconRes)
+        else -> FieldState.idle(label, iconRes) // Idle: sensor stopped emitting data
     }
