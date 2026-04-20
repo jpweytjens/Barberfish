@@ -11,6 +11,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import com.jpweytjens.barberfish.extension.lapNumberFrom
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.UserProfile
@@ -46,12 +47,17 @@ class LastLapAvgHRField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, profile, zones)
             }
             .flatMapLatest { (cfg, profile, zones) ->
-                karooSystem.streamDataFlow(DataType.Type.AVERAGE_HR_LAST_LAP).map { state ->
-                    AvgHRField.toFieldState(
-                        state, profile, zones, cfg.colorMode,
-                        "LL Avg HR", R.drawable.ic_last_lap, R.drawable.ic_avg_hr,
-                    )
-                }
+                combine(
+                    karooSystem.streamDataFlow(DataType.Type.AVERAGE_HR_LAST_LAP),
+                    karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER),
+                ) { state, lapState -> state to lapNumberFrom(lapState) }
+                    .map { (state, lapNumber) ->
+                        AvgHRField.toFieldState(
+                            state, profile, zones, cfg.colorMode,
+                            "LL Avg HR", R.drawable.ic_last_lap, R.drawable.ic_avg_hr,
+                            isLastLap = true, lapNumber = lapNumber,
+                        )
+                    }
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
