@@ -71,10 +71,10 @@ class LapPowerField(
         ): FieldState {
             val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
             val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
-            state.toErrorFieldState(label)?.let { return it }
+            state.toErrorFieldState(label, iconRes)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
-                    ?: return FieldState.unavailable(label)
+                    ?: return FieldState.unavailable(label, iconRes)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(

@@ -372,7 +372,6 @@ private fun HUDPreviewCell(
         val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
             baseConfig.copy(
                 cellWidthPxOverride = widthPx.toFloat(),
-                cellHeightPx = slotHeightPx.toFloat(),
             )
         }
         val bitmap = remember(field, colorMode, sizeConfig, slotHeightPx) {

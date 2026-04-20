@@ -14,13 +14,17 @@ data class FieldState(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
-        fun unavailable(label: String) = FieldState("—", label, FieldColor.Error)
+        fun unavailable(label: String, iconRes: Int? = null) =
+            FieldState("Not available", label, FieldColor.StreamState, iconRes = iconRes)
 
-        fun searching(label: String = "") = FieldState("Searching...", label, FieldColor.StreamState)
+        fun searching(label: String = "", iconRes: Int? = null) =
+            FieldState("Searching...", label, FieldColor.StreamState, iconRes = iconRes)
 
-        fun notAvailable(label: String = "") = FieldState("Not available", label, FieldColor.StreamState)
+        fun notAvailable(label: String = "", iconRes: Int? = null) =
+            FieldState("Not available", label, FieldColor.StreamState, iconRes = iconRes)
 
-        fun idle(label: String = "") = FieldState("No data", label, FieldColor.StreamState)
+        fun idle(label: String = "", iconRes: Int? = null) =
+            FieldState("No data", label, FieldColor.StreamState, iconRes = iconRes)
     }
 }
 

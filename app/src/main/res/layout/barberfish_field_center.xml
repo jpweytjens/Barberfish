@@ -4,16 +4,17 @@
     Identical structure to barberfish_field.xml, only horizontal gravity differs.
     See barberfish_field.xml for documentation.
 -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipChildren="false">
 
     <TextView
         android:id="@+id/stream_state_tv"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="top|center_horizontal"
+        android:gravity="center"
         android:fontFamily="ibm-plex-sans-condensed"
         android:fontWeight="500"
         android:textColor="@android:color/white"
@@ -23,10 +24,23 @@
         android:visibility="gone" />
 
     <TextView
+        android:id="@+id/baseline_ref"
+        android:layout_width="1px"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:gravity="bottom"
+        android:fontFamily="monospace"
+        android:includeFontPadding="false"
+        android:text=" "
+        android:visibility="invisible" />
+
+    <TextView
         android:id="@+id/field_value"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="top|center_horizontal"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@id/baseline_ref"
+        android:gravity="center_horizontal"
         android:includeFontPadding="false"
         android:maxLines="1"
         android:ellipsize="end"
@@ -37,7 +51,7 @@
         android:id="@+id/field_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="top"
+        android:layout_alignParentTop="true"
         android:minHeight="22dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
@@ -69,9 +83,9 @@
             android:textAllCaps="true"
             android:fontFamily="ibm-plex-sans-condensed"
             android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.7"
+            android:lineSpacingMultiplier="0.6"
             android:breakStrategy="simple" />
 
     </LinearLayout>
 
-</FrameLayout>
+</RelativeLayout>

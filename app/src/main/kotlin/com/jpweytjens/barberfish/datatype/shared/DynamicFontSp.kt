@@ -55,8 +55,8 @@ fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
     }
     val fm = paint.fontMetrics
     val lineHeight = fm.descent - fm.ascent // ascent is negative
-    // lineSpacingMultiplier=0.7 only affects inter-line spacing, not single-line height.
-    val factor = if (lines == 1) 1.0f else 1.7f // 1 + 0.7 for 2 lines
+    // lineSpacingMultiplier=0.6 only affects inter-line spacing, not single-line height.
+    val factor = if (lines == 1) 1.0f else 1.6f // 1 + 0.6 for 2 lines
     val textHeight = (factor * lineHeight).toInt()
     val minHeightPx = (22 * density).toInt()
     return maxOf(textHeight, minHeightPx)

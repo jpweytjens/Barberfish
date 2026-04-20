@@ -2,8 +2,6 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import android.content.res.Configuration
-import kotlin.math.roundToInt
-import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
@@ -166,46 +164,47 @@ private fun makeFieldRemoteViews(
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Value — gravity="top" in XML: text starts at paddingTop, baseline = padTop + |ascent|.
-    // Target baseline position: cellH - baselineMarginPx (grid-size dependent).
-    val headerPadPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
-    val valueFm = Paint().apply {
-        typeface = Typeface.MONOSPACE
-        textSize = fontSp * density
-    }.fontMetrics
-    val cellH = sizeConfig.cellHeightPx ?: (dm.heightPixels.toFloat() * 15f / 60f)
-    val valuePadTop = (cellH - sizeConfig.baselineMarginPx + valueFm.ascent).roundToInt().coerceAtLeast(0)
+    // Value — baseline aligned to an invisible reference TextView anchored at the
+    // container bottom. The reference font size controls baseline distance from bottom:
+    // baseline_from_bottom = descent_of_ref_font. Set ref font so its descent = baselineMarginPx.
+    // Monospace descent ≈ 0.244 * fontSizePx, so refFontPx = baselineMarginPx / 0.244.
+    val refFontPx = sizeConfig.baselineMarginPx / 0.244f
+    val refFontSp = refFontPx / density
 
     if (DEBUG_LAYOUT) {
-        val baseline = valuePadTop + (-valueFm.ascent).roundToInt()
+        val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
         Log.d("Barberfish", buildString {
             append("VALUE POS: fontSp=$fontSp")
-            append(" cellH=${cellH.toInt()} valuePadTop=$valuePadTop")
-            append(" baseline=$baseline distFromBottom=${cellH.toInt() - baseline}")
+            append(" baselineMarginPx=${sizeConfig.baselineMarginPx}")
+            append(" refFontSp=${refFontSp.toInt()} headerPx=$headerPx")
         })
     }
 
+    rv.setTextViewTextSize(R.id.baseline_ref, TypedValue.COMPLEX_UNIT_SP, refFontSp)
     rv.setTextViewText(R.id.field_value, field.primary)
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
-    rv.setViewPadding(R.id.field_value, 0, valuePadTop, 0, 0)
     if (maxLines == 2) {
         rv.setInt(R.id.field_value, "setMaxLines", 2)
     }
+
     // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
     // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
-    // Size computed from the longest state text so baselines align across HUD slots.
+    // Size computed from "Searching…" — the widest single-line stream state (no space
+    // to wrap on), so all other stream states fit at the same font size.
+    val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
     if (field.color is FieldColor.StreamState) {
         val (stateFont, stateMaxLines) = fontSizeForCell(
-            "Not available", sizeConfig.valueFontSizeBase, cellWidthPx, density,
+            "Searching...", sizeConfig.valueFontSizeBase, cellWidthPx, density,
             wrapThresholdSp = sizeConfig.wrapThresholdSp,
         )
         rv.setViewVisibility(R.id.field_value, View.GONE)
+        rv.setViewVisibility(R.id.baseline_ref, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
         rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, stateFont.coerceAtMost(19).toFloat())
-        rv.setViewPadding(R.id.stream_state_tv, 0, headerPadPx, 0, 0)
+        rv.setViewPadding(R.id.stream_state_tv, 0, headerPx, 0, 0)
         if (stateMaxLines == 2) {
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }
@@ -223,3 +222,4 @@ private fun ViewConfig.Alignment.toLayoutRes(): Int =
         ViewConfig.Alignment.CENTER -> R.layout.barberfish_field_center
         ViewConfig.Alignment.RIGHT -> R.layout.barberfish_field
     }
+
