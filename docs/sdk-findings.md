@@ -219,12 +219,12 @@ Source: decompiled ride app, `hhp7/m.java` (`TYPE_TIME_TO_DESTINATION_ID`).
 
 The native ETA data type declares four dependencies:
 
-| Dependency       | Obfuscated class | Data type ID                      |
-| ---------------- | ---------------- | --------------------------------- |
-| Dist to dest     | `hha7.g`         | `TYPE_DISTANCE_TO_DESTINATION_ID` |
-| Avg speed (moving)| `hhl7.g`        | `TYPE_AVERAGE_SPEED_ID`           |
-| 1hr avg speed    | `hhl7.c`         | `TYPE_1HR_AVERAGE_SPEED_ID`       |
-| Ride time (total)| `hhp7.j`         | `TYPE_RIDE_TIME_ID`               |
+| Dependency         | Obfuscated class | Data type ID                      |
+| ------------------ | ---------------- | --------------------------------- |
+| Dist to dest       | `hha7.g`         | `TYPE_DISTANCE_TO_DESTINATION_ID` |
+| Avg speed (moving) | `hhl7.g`         | `TYPE_AVERAGE_SPEED_ID`           |
+| 1hr avg speed      | `hhl7.c`         | `TYPE_1HR_AVERAGE_SPEED_ID`       |
+| Ride time (total)  | `hhp7.j`         | `TYPE_RIDE_TIME_ID`               |
 
 `TYPE_AVERAGE_SPEED_ID` is constructed with `TYPE_ELAPSED_TIME_ID` as its time
 dependency (`hhp7.b`), meaning it computes distance / moving time (excluding paused
@@ -281,12 +281,18 @@ the appropriate variant at render time via `removeAllViews` / `addView` (both wo
 
 ### Barberfish layout approach
 
-Value text uses `RelativeLayout` + `layout_alignBaseline` against an invisible `baseline_ref`
-TextView anchored at `layout_alignParentBottom="true"`. The reference's font size is set
-programmatically so its descent equals the target `baselineMarginPx`. The layout engine
-aligns the value's baseline to the reference's baseline in-process, so the baseline always
-tracks the real container bottom — the reported `cellH` is never consulted.
+Value centering uses a nested `baseline_box` RelativeLayout (`layout_below=header_spacer` +
+`layout_alignParentBottom`) containing `baseline_ref` (`layout_centerVertical` +
+`gravity=center_vertical` + `includeFontPadding=true`) and `field_value`
+(`layout_alignBaseline=baseline_ref`). The reference font size (`baselineRefSp`) is a
+per-layout lookup tuned visually.
 
-This is robust to all four scenarios (key icons on/off × toast on/off), because
-`layout_alignParentBottom` binds to whatever bottom actually exists at layout time,
-not to a cached value from `startView`.
+Robust to cell resizes (key icons, toast) because `layout_below` + `alignParentBottom`
+re-sizes `baseline_box`, and `layout_centerVertical` re-centers `baseline_ref` within
+the new bounds. No `viewSize` or `cellH` dependency.
+
+Remaining limitation: when the value font exceeds the centering box (common for 5-row
+cells with key icons ON), descent clips at the cell bottom. Native avoids this because
+ConstraintLayout allows `wrap_content` views larger than their constraint space — the
+value view overflows symmetrically without being clipped by a wrapper FrameLayout.
+See `docs/baseline-alignment.md` for full analysis.
