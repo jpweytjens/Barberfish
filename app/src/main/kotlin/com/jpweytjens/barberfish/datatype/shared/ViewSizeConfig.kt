@@ -56,37 +56,39 @@ fun ViewConfig.toViewSizeConfig(
         colSpan == THREE_COLS   -> 14
         else                    -> 12  // 4-col HUD
     }
-    // Minimum distance from cell bottom to value baseline (px).
-    // Floor for the centering formula in BarberfishView — the formula scales margin
-    // with cellH to approximate native centering, but never goes below this minimum.
-    // These match the native baseline position in the smallest expected cells (key icons ON).
-    val baselineMarginPx: Float =
-        when {
-            colSpan == ONE_COL && rowSpan >= THREE_ROWS  -> 5f  // 1-col 3-row
-            colSpan == ONE_COL && rowSpan >= FOUR_ROWS  -> 9f  // 1-col 4-row
-            colSpan == ONE_COL && rowSpan >= FIVE_ROWS  -> 5f  // 1-col 5-row
-            colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 9f  // 2-col 4-row
-            colSpan == TWO_COLS && rowSpan >= FIVE_ROWS -> 11.5f  // 2-col 5-row
-            colSpan == THREE_COLS                       -> 5f  // HUD 3-col
-            colSpan == FOUR_COLS                        -> 5f  // HUD 4-col
-            else                                        -> 5f
-        }
     val paddingH = if (colSpan <= THREE_COLS) 2.dp else 4.dp
+    val valueFontBase = textSizeEff.coerceAtLeast(20)
+    // baseline_ref font (sp) per layout. Controls the baseline position via
+    // gravity=center_vertical inside baseline_box. Larger → baseline higher (value
+    // appears higher). Smaller → baseline lower (value appears lower).
+    // Start from valueFontSizeBase and tweak visually per grid size.
+    val baselineRefSp: Float = when {
+        colSpan == ONE_COL && rowSpan >= THREE_ROWS  -> valueFontBase.toFloat() // 1-col 3-row
+        colSpan == ONE_COL && rowSpan >= FOUR_ROWS   -> valueFontBase.toFloat() // 1-col 4-row
+        colSpan == ONE_COL && rowSpan >= FIVE_ROWS   -> valueFontBase.toFloat() // 1-col 5-row
+        colSpan == TWO_COLS && rowSpan >= FOUR_ROWS  -> valueFontBase.toFloat() // 2-col 4-row
+        colSpan == TWO_COLS && rowSpan >= FIVE_ROWS  -> valueFontBase.toFloat() // 2-col 5-row
+        colSpan == THREE_COLS                        -> valueFontBase.toFloat() // HUD 3-col
+        colSpan == FOUR_COLS                         -> valueFontBase.toFloat() // HUD 4-col
+        else                                         -> valueFontBase.toFloat()
+    }
     return ViewSizeConfig.STANDARD.copy(
         colSpan = colSpan,
+        rowSpan = rowSpan,
         paddingH = paddingH,
-        valueFontSizeBase = textSizeEff.coerceAtLeast(20),
+        valueFontSizeBase = valueFontBase,
+        baselineRefSp = baselineRefSp,
         headerFontSize = labelSp.sp,
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
         labelMaxLines = labelMaxLines,
         wrapThresholdSp = wrapThresholdSp,
-        baselineMarginPx = baselineMarginPx,
     )
 }
 
 data class ViewSizeConfig(
     val colSpan: Int,
+    val rowSpan: Int,
     val paddingH: Dp,
     val headerIconSize: Dp,
     val headerIconLabelGap: Dp,
@@ -94,13 +96,14 @@ data class ViewSizeConfig(
     val labelMaxLines: Int,
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,
-    val baselineMarginPx: Float = 5f,
+    val baselineRefSp: Float = 49f,
     val cellWidthPxOverride: Float? = null,
 ) {
     companion object {
         val STANDARD =
             ViewSizeConfig(
                 colSpan = TWO_COLS,
+                rowSpan = FOUR_ROWS,
                 paddingH = 4.dp,
                 headerIconSize = 17.dp,
                 headerIconLabelGap = 6.dp,
@@ -114,6 +117,7 @@ data class ViewSizeConfig(
         val HUD_THREE =
             ViewSizeConfig(
                 colSpan = THREE_COLS,
+                rowSpan = FIVE_ROWS,
                 paddingH = 2.dp,
                 headerIconSize = 12.dp,
                 headerIconLabelGap = 2.dp,
@@ -127,6 +131,7 @@ data class ViewSizeConfig(
         val HUD_FOUR =
             ViewSizeConfig(
                 colSpan = FOUR_COLS,
+                rowSpan = FIVE_ROWS,
                 paddingH = 2.dp,
                 headerIconSize = 11.dp,
                 headerIconLabelGap = 2.dp,

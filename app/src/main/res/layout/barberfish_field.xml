@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Field layout: RIGHT-aligned.
-    RelativeLayout root: baseline_ref is an invisible anchor at the bottom at the native
-    font size. field_value aligns its baseline to baseline_ref, giving consistent baseline
-    positioning across font sizes without translationY. field_header overlays at top.
-    RemoteViews-safe: only RelativeLayout, LinearLayout, ImageView, TextView are used.
-    Horizontal padding and all text/icon properties are set programmatically.
+    Mirrors native data_element_single.xml ConstraintLayout in RemoteViews-safe views.
+    header_spacer (22dp) matches native DataHeaderView minHeight. baseline_box fills
+    below it to the cell bottom — a nested RelativeLayout that gives
+    layout_centerVertical a correctly-measured container. baseline_ref centers within
+    baseline_box at valueFontSizeBase; field_value.alignBaseline locks to that line.
+    Decoupled from field_header so 2-line labels don't push the value down.
+    clipChildren=false allows large text to overflow into the header zone.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
@@ -13,7 +15,7 @@
     android:layout_height="match_parent"
     android:clipChildren="false">
 
-    <!-- Stream state (Searching/NotAvailable/Idle): ibm-plex-sans-condensed, white. GONE by default. -->
+    <!-- Stream state (Searching/NotAvailable/Idle): GONE by default. -->
     <TextView
         android:id="@+id/stream_state_tv"
         android:layout_width="match_parent"
@@ -24,36 +26,17 @@
         android:textColor="@android:color/white"
         android:includeFontPadding="false"
         android:maxLines="2"
-        android:lineSpacingMultiplier="0.6"
+        android:lineSpacingMultiplier="0.7"
         android:visibility="gone" />
 
-    <!-- Invisible baseline anchor: native font size, at parent bottom.
-         The value aligns its baseline to this view's baseline.
-         Set font size programmatically to control baseline distance from bottom. -->
+    <!-- Invisible spacer: matches native DataHeaderView minHeight (22dp).
+         Decoupled from field_header so 2-line labels don't push the value down. -->
     <TextView
-        android:id="@+id/baseline_ref"
+        android:id="@+id/header_spacer"
         android:layout_width="1px"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:gravity="bottom"
-        android:fontFamily="monospace"
-        android:includeFontPadding="false"
-        android:text=" "
+        android:layout_height="22dp"
+        android:layout_alignParentTop="true"
         android:visibility="invisible" />
-
-    <!-- Value: baseline aligned to baseline_ref. Horizontal gravity baked in (end). -->
-    <TextView
-        android:id="@+id/field_value"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@id/baseline_ref"
-        android:gravity="end"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:fontFamily="monospace"
-        android:letterSpacing="-0.04" />
 
     <!-- Header row: at top. Mirrors native DataHeaderView. -->
     <LinearLayout
@@ -86,15 +69,50 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:lines="2"
+            android:lines="1"
             android:gravity="center_vertical|end"
             android:ellipsize="end"
             android:textAllCaps="true"
             android:fontFamily="ibm-plex-sans-condensed"
             android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.6"
+            android:lineSpacingMultiplier="0.7"
             android:breakStrategy="simple" />
 
     </LinearLayout>
+
+    <!-- Centering box: fills below-spacer to cell bottom. layout_centerVertical
+         inside this box centers baseline_ref in the correct measured bounds. -->
+    <RelativeLayout
+        android:id="@+id/baseline_box"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header_spacer"
+        android:layout_alignParentBottom="true"
+        android:clipChildren="false">
+
+        <TextView
+            android:id="@+id/baseline_ref"
+            android:layout_width="1px"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:fontFamily="monospace"
+            android:includeFontPadding="true"
+            android:text="REF"
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/field_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@id/baseline_ref"
+            android:gravity="end"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:fontFamily="monospace"
+            android:letterSpacing="-0.04" />
+
+    </RelativeLayout>
 
 </RelativeLayout>

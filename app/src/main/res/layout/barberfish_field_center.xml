@@ -20,32 +20,15 @@
         android:textColor="@android:color/white"
         android:includeFontPadding="false"
         android:maxLines="2"
-        android:lineSpacingMultiplier="0.6"
+        android:lineSpacingMultiplier="0.7"
         android:visibility="gone" />
 
     <TextView
-        android:id="@+id/baseline_ref"
+        android:id="@+id/header_spacer"
         android:layout_width="1px"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:gravity="bottom"
-        android:fontFamily="monospace"
-        android:includeFontPadding="false"
-        android:text=" "
+        android:layout_height="11dp"
+        android:layout_alignParentTop="true"
         android:visibility="invisible" />
-
-    <TextView
-        android:id="@+id/field_value"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignBaseline="@id/baseline_ref"
-        android:gravity="center_horizontal"
-        android:includeFontPadding="false"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:fontFamily="monospace"
-        android:letterSpacing="-0.04" />
 
     <LinearLayout
         android:id="@+id/field_header"
@@ -77,15 +60,48 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:lines="2"
+            android:lines="1"
             android:gravity="center_vertical|center_horizontal"
             android:ellipsize="end"
             android:textAllCaps="true"
             android:fontFamily="ibm-plex-sans-condensed"
             android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.6"
+            android:lineSpacingMultiplier="0.7"
             android:breakStrategy="simple" />
 
     </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/baseline_box"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header_spacer"
+        android:layout_alignParentBottom="true"
+        android:clipChildren="false">
+
+        <TextView
+            android:id="@+id/baseline_ref"
+            android:layout_width="1px"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:fontFamily="monospace"
+            android:includeFontPadding="true"
+            android:text=" "
+            android:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/field_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@id/baseline_ref"
+            android:gravity="center_horizontal"
+            android:includeFontPadding="false"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:fontFamily="monospace"
+            android:letterSpacing="-0.04" />
+
+    </RelativeLayout>
 
 </RelativeLayout>

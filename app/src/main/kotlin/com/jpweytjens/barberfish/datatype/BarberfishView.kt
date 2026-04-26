@@ -101,8 +101,14 @@ private fun makeFieldRemoteViews(
     val rv = RemoteViews(context.packageName, layoutRes)
 
     if (DEBUG_LAYOUT) {
-        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())
-        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt())
+        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())  // red: header
+        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt())   // green: value
+        rv.setViewVisibility(R.id.header_spacer, View.VISIBLE)
+        rv.setInt(R.id.header_spacer, "setBackgroundColor", 0x550000FF.toInt()) // blue: spacer
+        rv.setInt(R.id.header_spacer, "setMinimumWidth", 500)
+        rv.setViewVisibility(R.id.baseline_ref, View.VISIBLE)
+        rv.setInt(R.id.baseline_ref, "setBackgroundColor", 0x55FFFF00.toInt())  // yellow: centering box
+        rv.setInt(R.id.baseline_ref, "setMinimumWidth", 500)
     }
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
@@ -129,8 +135,8 @@ private fun makeFieldRemoteViews(
     rv.setTextViewText(R.id.field_label, displayLabel)
     rv.setTextColor(R.id.field_label, labelArgb)
     rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
-    // XML default is android:lines="2"; only override when 1 line is needed.
-    if (labelLines == 1) rv.setInt(R.id.field_label, "setLines", 1)
+    // XML default is android:lines="1"; override to 2 for HUD slots.
+    if (labelLines == 2) rv.setInt(R.id.field_label, "setLines", 2)
 
     // Icons
     val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
@@ -164,23 +170,18 @@ private fun makeFieldRemoteViews(
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Value — baseline aligned to an invisible reference TextView anchored at the
-    // container bottom. The reference font size controls baseline distance from bottom:
-    // baseline_from_bottom = descent_of_ref_font. Set ref font so its descent = baselineMarginPx.
-    // Monospace descent ≈ 0.244 * fontSizePx, so refFontPx = baselineMarginPx / 0.244.
-    val refFontPx = sizeConfig.baselineMarginPx / 0.244f
-    val refFontSp = refFontPx / density
-
-    if (DEBUG_LAYOUT) {
-        val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
-        Log.d("Barberfish", buildString {
-            append("VALUE POS: fontSp=$fontSp")
-            append(" baselineMarginPx=${sizeConfig.baselineMarginPx}")
-            append(" refFontSp=${refFontSp.toInt()} headerPx=$headerPx")
-        })
-    }
-
-    rv.setTextViewTextSize(R.id.baseline_ref, TypedValue.COMPLEX_UNIT_SP, refFontSp)
+    // baseline_ref is inside baseline_box (a nested RelativeLayout that fills from the
+    // header_spacer to the cell bottom). layout_centerVertical + gravity=center_vertical
+    // + includeFontPadding=true centers the reference text within baseline_box.
+    // baselineRefSp is a per-layout lookup (ViewSizeConfig) — tune visually per grid
+    // size to match native centering. field_value.alignBaseline locks to this baseline
+    // across fontSizeForCell shrinks. The layout engine re-centers on cell resize
+    // (key icons, rerouting toast) automatically.
+    rv.setTextViewTextSize(
+        R.id.baseline_ref,
+        TypedValue.COMPLEX_UNIT_SP,
+        sizeConfig.baselineRefSp,
+    )
     rv.setTextViewText(R.id.field_value, field.primary)
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
@@ -192,7 +193,6 @@ private fun makeFieldRemoteViews(
     // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
     // Size computed from "Searching…" — the widest single-line stream state (no space
     // to wrap on), so all other stream states fit at the same font size.
-    val headerPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
     if (field.color is FieldColor.StreamState) {
         val (stateFont, stateMaxLines) = fontSizeForCell(
             "Searching...", sizeConfig.valueFontSizeBase, cellWidthPx, density,
@@ -204,7 +204,8 @@ private fun makeFieldRemoteViews(
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
         rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, stateFont.coerceAtMost(19).toFloat())
-        rv.setViewPadding(R.id.stream_state_tv, 0, headerPx, 0, 0)
+        val actualHeaderPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
+        rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, 0)
         if (stateMaxLines == 2) {
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }
