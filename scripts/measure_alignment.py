@@ -525,12 +525,18 @@ def annotate(page: Page, out: Path) -> None:
     for c in page.cells:
         x0, y0, x1, y1 = c.bounds
         draw.rectangle([x0, y0, x1 - 1, y1 - 1], outline=(255, 255, 255))
-        col_baseline = (255, 0, 0) if c.side == "native" else (0, 255, 255)
+        col_value_bot = (255, 0, 0) if c.side == "native" else (0, 255, 255)
+        col_value_top = (255, 128, 0) if c.side == "native" else (0, 200, 255)
         col_header = (255, 255, 0)
-        if c.value_baseline is not None:
-            draw.line([x0, c.value_baseline, x1, c.value_baseline], fill=col_baseline, width=2)
+        # Top lines first, bottom lines last so they win the overlap.
+        if c.header_top is not None:
+            draw.line([x0, c.header_top, x1, c.header_top], fill=col_header, width=2)
+        if c.value_top is not None:
+            draw.line([x0, c.value_top, x1, c.value_top], fill=col_value_top, width=2)
         if c.header_bottom is not None:
             draw.line([x0, c.header_bottom, x1, c.header_bottom], fill=col_header, width=2)
+        if c.value_baseline is not None:
+            draw.line([x0, c.value_baseline, x1, c.value_baseline], fill=col_value_bot, width=2)
     img.save(out, "JPEG", quality=85)
 
 
