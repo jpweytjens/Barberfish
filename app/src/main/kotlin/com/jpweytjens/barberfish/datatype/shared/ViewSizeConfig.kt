@@ -57,6 +57,11 @@ fun ViewConfig.toViewSizeConfig(
         else                    -> 12  // 4-col HUD
     }
     val paddingH = if (colSpan <= THREE_COLS) 2.dp else 4.dp
+    // Native `dataHeader` style (styles.xml:3646) sets `minHeight=22dp`. The
+    // header GROWS naturally past that floor because the label is `lines=2`
+    // (pre-allocates two lines of vertical space) — that's what supplies the
+    // 5x2-narrow extra room without a per-layout override here.
+    val headerMinHeightDp = 22
     val valueFontBase = textSizeEff.coerceAtLeast(20)
     // baseline_ref font (sp) per layout. Controls the baseline position via
     // gravity=center_vertical inside baseline_box. Larger → baseline higher (value
@@ -81,6 +86,7 @@ fun ViewConfig.toViewSizeConfig(
         headerFontSize = labelSp.sp,
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
+        headerMinHeightDp = headerMinHeightDp,
         labelMaxLines = labelMaxLines,
         wrapThresholdSp = wrapThresholdSp,
     )
@@ -93,6 +99,7 @@ data class ViewSizeConfig(
     val headerIconSize: Dp,
     val headerIconLabelGap: Dp,
     val headerFontSize: TextUnit,
+    val headerMinHeightDp: Int = 26,
     val labelMaxLines: Int,
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,

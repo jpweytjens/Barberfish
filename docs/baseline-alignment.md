@@ -195,6 +195,85 @@ Compare with native fields in the same dump to verify baseline positions.
 (fails with "could not get idle state" even with animations disabled).
 `dumpsys activity top` works reliably.
 
+## Native style attribute mapping
+
+The decompiled rideapp resources at
+`docs/ride_decompiled/resources/res/values/styles.xml` give us the canonical
+attribute values for every text style the native field uses. Our XML mirrors
+these where possible. This is the source of truth for any attribute we copy.
+
+### `dataHeaderTextStyle` (header label TextView, `styles.xml:3655`)
+
+| Attribute | Native value | Our `field_label` | Mirror? |
+|---|---|---|---|
+| `textSize` | 17sp (default, overridden by code per `(colSpan, rowSpan)` lookup) | dynamic per `ViewSizeConfig.headerFontSize` | ✓ |
+| `textColor` | `elementViewHeaderColor` | set in code | ✓ |
+| `ellipsize` | end | end | ✓ |
+| `gravity` | `center_vertical \| end` | matches per variant | ✓ |
+| `lines` | 2 | 2 | ✓ |
+| `includeFontPadding` | false | false | ✓ |
+| `lineSpacingMultiplier` | 0.7 | 0.7 | ✓ |
+| `textAllCaps` | true | true | ✓ |
+| `fontFamily` | `@string/commonmodule_data_label_font` = `ibm-plex-sans-condensed` | `ibm-plex-sans-condensed` | ✓ |
+| `layout_marginStart` | 1dp | 1dp | ✓ |
+| `breakStrategy` | simple (0) | simple | ✓ |
+| `textAlignment` | textStart (1) | **deliberately unset** | ✗ (see below) |
+
+### `dataHeader` (header container, `styles.xml:3646`)
+
+| Attribute | Native value | Our `field_header` | Mirror? |
+|---|---|---|---|
+| `clipChildren` | false | inherited from root (`clipChildren=false`) | ✓ |
+| `clipToPadding` | false | false | ✓ |
+| `minHeight` | 22dp | 22dp (constant in `ViewSizeConfig.headerMinHeightDp`; the label's `lines=2` lets the header grow naturally for narrow layouts) | ✓ |
+| `paddingStart` / `paddingEnd` | 1dp | 1dp | ✓ |
+
+### `singleNumericDataStyle` (value TextView, `styles.xml:3714`)
+
+| Attribute | Native value | Our `field_value` | Mirror? |
+|---|---|---|---|
+| `gravity` | `center_vertical \| end` | end (vertical handled via `alignBaseline=baseline_ref`) | functionally ✓ |
+| `maxLines` | 1 | 1 | ✓ |
+| `includeFontPadding` | false | false | ✓ |
+| `fontFamily` | `@string/commonmodule_monospace_font` = `relative` | `relative` (Karoo system font; falls back to default monospace if absent) | ✓ |
+| `letterSpacing` | -0.04 | -0.04 | ✓ |
+| `baselineAligned` | false | false | ✓ |
+
+### Why we don't mirror `textAlignment`
+
+Native's `dataHeaderTextStyle` sets `textAlignment="textStart"` (= 1). We
+tried mirroring it and it broke right-alignment on every header label —
+the metric tool showed labels visibly left-aligned in their cells. The
+reason is a layout-engine difference, not a style bug:
+
+- **Native** places `headerTextView` inside a `ConstraintLayout` with
+  `layout_width=wrap_content` and `horizontal_bias=1` (right-biased).
+  The TextView itself is sized to the text, and its horizontal position
+  inside the parent is set by the constraint bias. `textAlignment=textStart`
+  is irrelevant — the view fits the text exactly, so "start" vs "end"
+  alignment within the view doesn't affect the visible result.
+- **Ours** places `field_label` inside a `LinearLayout` with
+  `layout_width=0dp` + `layout_weight=1`. That makes the TextView fill
+  *all* available horizontal space, so the view is much wider than the
+  text. With `gravity=end` the text naturally hugs the right edge — but
+  `textAlignment=textStart` overrides `gravity` for text positioning
+  (textAlignment wins when both are set on API 17+) and pushes the text
+  to the left edge.
+
+In other words, native's combination is harmless because the constraint
+geometry positions the view, not the text alignment attribute. Our
+RemoteViews-allowed `LinearLayout` doesn't have constraint bias, so we
+have to let `gravity` win — meaning we leave `textAlignment` unset.
+
+### Stream-state overlay vs `streamStateStyle`
+
+The native `streamStateStyle` (`styles.xml:3725`) governs the
+"Searching / Not available / Idle" overlay. We render our equivalent in
+the separate `stream_state_tv` TextView (declared in `barberfish_field.xml`).
+Native uses `lineSpacingMultiplier=0.6` and `maxLines=2`; we use
+`lineSpacingMultiplier=0.7` and `maxLines=2`. Close enough for now;
+tighten if the stream-state overlay drifts noticeably from native.
+
 ## K2 compatibility
 
 All layout attributes (`layout_centerVertical`, `layout_alignBaseline`,

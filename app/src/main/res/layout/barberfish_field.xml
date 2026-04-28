@@ -2,12 +2,16 @@
 <!--
     Field layout: RIGHT-aligned.
     Mirrors native data_element_single.xml ConstraintLayout in RemoteViews-safe views.
-    header_spacer (22dp) matches native DataHeaderView minHeight. baseline_box fills
-    below it to the cell bottom — a nested RelativeLayout that gives
-    layout_centerVertical a correctly-measured container. baseline_ref centers within
-    baseline_box at valueFontSizeBase; field_value.alignBaseline locks to that line.
-    Decoupled from field_header so 2-line labels don't push the value down.
-    clipChildren=false allows large text to overflow into the header zone.
+    field_header (wrap_content, minHeight=22dp) maps to native DataHeaderView; can
+    grow to 2 lines like native. baseline_box fills from field_header's bottom to
+    the cell bottom — a nested RelativeLayout whose layout_centerVertical mimics
+    ConstraintLayout's bias-0.5 centering between (headerBottom, cellBottom).
+    baseline_ref centers within baseline_box at valueFontSizeBase; field_value
+    alignBaseline locks to that line. clipChildren=false on every layer lets the
+    value's wrap_content bounding box overflow upward into the header zone — the
+    digit cap-line for monospace sits below the single-line label glyphs, so the
+    overlap is invisible (the same trade native makes via ConstraintLayout's
+    permissive overflow centering).
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
@@ -29,22 +33,19 @@
         android:lineSpacingMultiplier="0.7"
         android:visibility="gone" />
 
-    <!-- Invisible spacer: matches native DataHeaderView minHeight (22dp).
-         Decoupled from field_header so 2-line labels don't push the value down. -->
-    <TextView
-        android:id="@+id/header_spacer"
-        android:layout_width="1px"
-        android:layout_height="22dp"
-        android:layout_alignParentTop="true"
-        android:visibility="invisible" />
-
-    <!-- Header row: at top. Mirrors native DataHeaderView. -->
+    <!-- Header row: at top. Mirrors native DataHeaderView, which renders at ~48 px
+         (= 26dp) on most layouts because dataIconStyle's icon (20dp) + 3dp top/bottom
+         margins from layout_data_header.xml dominate the dataHeader style's 22dp
+         minHeight floor. 26dp here matches that effective height. -->
     <LinearLayout
         android:id="@+id/field_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:minHeight="22dp"
+        android:clipToPadding="false"
+        android:paddingStart="1dp"
+        android:paddingEnd="1dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -69,7 +70,8 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:lines="1"
+            android:layout_marginStart="1dp"
+            android:lines="2"
             android:gravity="center_vertical|end"
             android:ellipsize="end"
             android:textAllCaps="true"
@@ -80,13 +82,16 @@
 
     </LinearLayout>
 
-    <!-- Centering box: fills below-spacer to cell bottom. layout_centerVertical
-         inside this box centers baseline_ref in the correct measured bounds. -->
+    <!-- Centering box: fills from field_header's bottom to the cell bottom.
+         Anchored to field_header (not a fixed-22dp shim) so it shrinks when the
+         label wraps to 2 lines, preventing the second line from drawing into the
+         centering region. layout_centerVertical inside this box mirrors native
+         ConstraintLayout's default bias-0.5 between (headerBottom, cellBottom). -->
     <RelativeLayout
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/header_spacer"
+        android:layout_below="@id/field_header"
         android:layout_alignParentBottom="true"
         android:clipChildren="false">
 
@@ -106,11 +111,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignBaseline="@id/baseline_ref"
+            android:baselineAligned="false"
             android:gravity="end"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:ellipsize="end"
-            android:fontFamily="monospace"
+            android:fontFamily="relative"
             android:letterSpacing="-0.04" />
 
     </RelativeLayout>

@@ -24,19 +24,15 @@
         android:lineSpacingMultiplier="0.7"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/header_spacer"
-        android:layout_width="1px"
-        android:layout_height="22dp"
-        android:layout_alignParentTop="true"
-        android:visibility="invisible" />
-
     <LinearLayout
         android:id="@+id/field_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:minHeight="22dp"
+        android:clipToPadding="false"
+        android:paddingStart="1dp"
+        android:paddingEnd="1dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -45,7 +41,8 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:lines="1"
+            android:layout_marginStart="1dp"
+            android:lines="2"
             android:gravity="center_vertical|start"
             android:ellipsize="end"
             android:textAllCaps="true"
@@ -76,7 +73,7 @@
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/header_spacer"
+        android:layout_below="@id/field_header"
         android:layout_alignParentBottom="true"
         android:clipChildren="false">
 
@@ -96,11 +93,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignBaseline="@id/baseline_ref"
+            android:baselineAligned="false"
             android:gravity="start"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:ellipsize="end"
-            android:fontFamily="monospace"
+            android:fontFamily="relative"
             android:letterSpacing="-0.04" />
 
     </RelativeLayout>
