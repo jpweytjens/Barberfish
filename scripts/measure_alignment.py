@@ -430,21 +430,24 @@ class Cell:
     @property
     def dump_value_size_sp(self) -> float | None:
         """Effective field_value sp inferred from its wrap_content height.
-        Independent of any pixel-band detection — pure layout truth."""
+        For Karoo's Relative monospace at includeFontPadding=false,
+        view_h ≈ 1.2 × textSize_px, so sp ≈ view_h / (1.2 × density).
+        See FontMetricsProbe.kt for the runtime-verified ratio."""
         h = self.dump_value_h
         if h is None or h <= 0:
             return None
-        return round(h / DENSITY, 1)
+        return round(h / (1.2 * DENSITY), 1)
 
     @property
     def dump_baseline_ref_sp(self) -> float | None:
         """Effective baselineRefSp inferred from baseline_ref's wrap_content
-        height. If this is < the configured sp, the view was clipped to its
-        parent (baseline_box) bounds."""
+        height (1.2 × textSize_px). If the rendered height equals
+        `baseline_box.h`, the view was clipped to its parent — the actual
+        configured sp may have been larger than what fits."""
         h = self.dump_baseline_ref_h
         if h is None or h <= 0:
             return None
-        return round(h / DENSITY, 1)
+        return round(h / (1.2 * DENSITY), 1)
 
 
 @dataclass
@@ -1239,7 +1242,11 @@ def write_summary(pages: list[Page], path: Path) -> None:
             ref_h_str = f"{ref_h}" + (" ⚠️CLIP" if ref_clipped else "") if ref_h is not None else "—"
             base_calc: int | None = None
             if val_y0 is not None and val_h is not None and val_h > 0:
-                base_calc = int(round(val_y0 + 0.756 * val_h))
+                # baseline = view_top + ascent_px. For Karoo's `relative` font
+                # with includeFontPadding=false, view_h = 1.2 × textSize and
+                # ascent = 1.0 × textSize, so baseline_within_view =
+                # ascent / view_h × view_h = (1.0 / 1.2) × val_h ≈ 0.833 × val_h.
+                base_calc = int(round(val_y0 + (1.0 / 1.2) * val_h))
             base_meas = c.value_baseline
             delta_str = "—"
             if base_calc is not None and base_meas is not None:
