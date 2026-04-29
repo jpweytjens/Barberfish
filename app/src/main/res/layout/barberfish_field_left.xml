@@ -24,6 +24,21 @@
         android:lineSpacingMultiplier="0.7"
         android:visibility="gone" />
 
+    <!-- Hidden 1-line header probe. See barberfish_field.xml for documentation. -->
+    <TextView
+        android:id="@+id/header_ref"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="1dp"
+        android:lines="1"
+        android:textAllCaps="true"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="0.7"
+        android:text="M"
+        android:visibility="invisible" />
+
     <LinearLayout
         android:id="@+id/field_header"
         android:layout_width="match_parent"
@@ -42,7 +57,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:layout_marginStart="1dp"
-            android:lines="2"
+            android:maxLines="2"
             android:gravity="center_vertical|start"
             android:ellipsize="end"
             android:textAllCaps="true"
@@ -73,7 +88,7 @@
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/field_header"
+        android:layout_below="@id/header_ref"
         android:layout_alignParentBottom="true"
         android:clipChildren="false">
 
@@ -83,9 +98,10 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:gravity="center_vertical"
-            android:fontFamily="monospace"
-            android:includeFontPadding="true"
-            android:text="REF"
+            android:fontFamily="relative"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.04"
+            android:text="0"
             android:visibility="invisible" />
 
         <TextView

@@ -2,16 +2,14 @@
 <!--
     Field layout: RIGHT-aligned.
     Mirrors native data_element_single.xml ConstraintLayout in RemoteViews-safe views.
-    field_header (wrap_content, minHeight=22dp) maps to native DataHeaderView; can
-    grow to 2 lines like native. baseline_box fills from field_header's bottom to
-    the cell bottom — a nested RelativeLayout whose layout_centerVertical mimics
-    ConstraintLayout's bias-0.5 centering between (headerBottom, cellBottom).
-    baseline_ref centers within baseline_box at valueFontSizeBase; field_value
-    alignBaseline locks to that line. clipChildren=false on every layer lets the
-    value's wrap_content bounding box overflow upward into the header zone — the
-    digit cap-line for monospace sits below the single-line label glyphs, so the
-    overlap is invisible (the same trade native makes via ConstraintLayout's
-    permissive overflow centering).
+    header_ref (1-line, invisible) is a hidden 1-line probe styled like the native
+    dataHeaderTextStyle; baseline_box anchors to its bottom. The visible field_header
+    keeps layout_alignParentTop and overlaps header_ref; when its label wraps to 2
+    lines, the second line overflows downward into baseline_box (clipChildren=false
+    on field_root permits it). baseline_ref centers within baseline_box at
+    valueFontSizeBase via layout_centerVertical; field_value alignBaseline locks
+    to that line — value position stays constant across font shrinks AND across
+    visible header line counts.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
@@ -33,10 +31,29 @@
         android:lineSpacingMultiplier="0.7"
         android:visibility="gone" />
 
-    <!-- Header row: at top. Mirrors native DataHeaderView, which renders at ~48 px
-         (= 26dp) on most layouts because dataIconStyle's icon (20dp) + 3dp top/bottom
-         margins from layout_data_header.xml dominate the dataHeader style's 22dp
-         minHeight floor. 26dp here matches that effective height. -->
+    <!-- Hidden 1-line header probe. Native dataHeaderTextStyle mirror. Its bottom
+         anchors baseline_box, giving the value a stable centering region whose
+         top is independent of how many lines the visible field_header wraps to.
+         Text size set programmatically in BarberfishView.kt to match field_label.
+         The "M" glyph is the tallest cap so the measured band height is the
+         worst-case 1-line header height for the chosen font size. -->
+    <TextView
+        android:id="@+id/header_ref"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="1dp"
+        android:lines="1"
+        android:textAllCaps="true"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="0.7"
+        android:text="M"
+        android:visibility="invisible" />
+
+    <!-- Visible header row. Mirrors native DataHeaderView. Overlaps header_ref
+         at parent top; field_label's lines=2 may wrap downward and overflow
+         baseline_box (clipChildren=false on field_root absorbs it). -->
     <LinearLayout
         android:id="@+id/field_header"
         android:layout_width="match_parent"
@@ -71,7 +88,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:layout_marginStart="1dp"
-            android:lines="2"
+            android:maxLines="2"
             android:gravity="center_vertical|end"
             android:ellipsize="end"
             android:textAllCaps="true"
@@ -82,28 +99,37 @@
 
     </LinearLayout>
 
-    <!-- Centering box: fills from field_header's bottom to the cell bottom.
-         Anchored to field_header (not a fixed-22dp shim) so it shrinks when the
-         label wraps to 2 lines, preventing the second line from drawing into the
-         centering region. layout_centerVertical inside this box mirrors native
-         ConstraintLayout's default bias-0.5 between (headerBottom, cellBottom). -->
+    <!-- Centering box: fills from header_ref's bottom to the cell bottom.
+         Anchored to the hidden 1-line header probe so the centering region's
+         top is constant across visible-header line counts. The visible
+         field_header may wrap to 2 lines and overflow into this box;
+         clipChildren=false on field_root absorbs it. layout_centerVertical
+         inside this box mirrors native ConstraintLayout's default bias-0.5
+         between (headerBottom, cellBottom). -->
     <RelativeLayout
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/field_header"
+        android:layout_below="@id/header_ref"
         android:layout_alignParentBottom="true"
         android:clipChildren="false">
 
+        <!-- Mirrors native singleNumericDataStyle (relative, includeFontPadding=false,
+             letterSpacing=-0.04) so this 1px-wide invisible reference TextView
+             measures exactly like a one-char field_value. layout_centerVertical
+             inside baseline_box reproduces native's ConstraintLayout bias-0.5
+             centering between (headerBottom, cellBottom). field_value's
+             alignBaseline locks to this baseline across fontSizeForCell shrinks. -->
         <TextView
             android:id="@+id/baseline_ref"
             android:layout_width="1px"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:gravity="center_vertical"
-            android:fontFamily="monospace"
-            android:includeFontPadding="true"
-            android:text="REF"
+            android:fontFamily="relative"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.04"
+            android:text="0"
             android:visibility="invisible" />
 
         <TextView
