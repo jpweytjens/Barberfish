@@ -85,52 +85,80 @@ ours gets clipped at the cell bottom.
   between centering accuracy and descent overflow. No single scale worked for
   all layouts.
 
-## Current approach — nested baseline_box + per-layout ref font
+## Current approach — header_ref anchor + nested baseline_box + per-layout ref font
 
 ```
 field_root (RelativeLayout, clipChildren=false)
 ├── stream_state_tv (match_parent, GONE by default)
-├── header_spacer (22dp, alignParentTop, invisible)
-├── field_header (wrap_content, alignParentTop, draws on top via z-order)
-└── baseline_box (RelativeLayout, layout_below=spacer, alignParentBottom, clipChildren=false)
+├── header_ref (match_parent, wrap_content, alignParentTop, lines=1, invisible.
+│               Native dataHeaderTextStyle mirror — its bottom = where a 1-line
+│               header WOULD have ended, regardless of how many lines field_header wraps to)
+├── field_header (wrap_content, alignParentTop, lines=2 default, overlaps header_ref;
+│                 may overflow downward into baseline_box via clipChildren=false)
+└── baseline_box (RelativeLayout, layout_below=header_ref, alignParentBottom, clipChildren=false)
     ├── baseline_ref (1px, wrap_content, layout_centerVertical, gravity=center_vertical,
-    │                 includeFontPadding=true, invisible. Font: baselineRefSp from lookup)
+    │                 includeFontPadding=false, invisible. Font: baselineRefSp from lookup)
     └── field_value (match_parent, wrap_content, alignBaseline=baseline_ref)
 ```
 
 ### How it works
 
-`baseline_box` fills from `header_spacer` bottom to cell bottom — a nested
-RelativeLayout that provides correctly-measured bounds for centering.
-`layout_centerVertical` on `baseline_ref` inside this box centers the reference
-view within the box's actual laid-out height (no measurement ambiguity from the
-outer RelativeLayout). `gravity=center_vertical` centers the text within the
-(possibly stretched) view. `includeFontPadding=true` adds extra ascent/descent
-padding, making the `wrap_content` view taller and giving the centering more range.
+`baseline_box` fills from `header_ref`'s bottom to cell bottom — anchored to a
+hidden 1-line header probe rather than the visible `field_header`. This decouples
+the value's centering region from how many lines the visible header actually
+wraps to: stacked rows where the visible header wraps to 2 lines no longer push
+the value down. The visible second header line overflows downward into the
+`baseline_box` (`clipChildren=false` on `field_root` permits it), but the value
+position itself is constant.
 
-`field_value.alignBaseline` locks the value's baseline to the reference's baseline.
-When `fontSizeForCell` shrinks the value, the baseline stays locked.
+Inside `baseline_box`, `layout_centerVertical` on `baseline_ref` centers the
+reference view within the box's actual laid-out height. `field_value.alignBaseline`
+locks the value's baseline to the reference's baseline — when `fontSizeForCell`
+shrinks the value, the baseline stays locked.
+
+This mirrors native's `ConstraintLayout` bias-0.5 between (`headerLayout` bottom,
+parent bottom): we can't use ConstraintLayout in RemoteViews, but the
+`header_ref` + `baseline_box` + `baseline_ref` chain reproduces the same
+geometric centering using only RelativeLayout and TextView.
 
 ### Per-layout tuning via baselineRefSp
 
 `baselineRefSp` in `ViewSizeConfig` is a per-`(colSpan, rowSpan)` lookup that
 controls the reference font size. Larger ref → taller reference → baseline
 shifts up → value appears higher. Smaller ref → baseline shifts down → value
-appears lower. Seeded from `valueFontSizeBase` (native's font) and tuned visually.
+appears lower. Seeded from `valueFontSizeBase` (native's font) and tuned by
+running `scripts/measure_alignment.py --probe` against the native ↔ Barberfish
+comparison page set, then nudging the constants until rows that share line count
+and font size are within 2 px on header_top and value_top (or value_baseline
+when fonts differ).
 
-### Why the spacer height matters
+### Why anchor to header_ref, not field_header
 
-The spacer (22dp) acts as our substitute for native's `translationY="-15dp"`.
-Native shifts the SDK container UP, giving the value more centering room above.
-We can't use `translationY` (blocked on K2). Instead, the spacer defines where
-the centering box starts — a smaller spacer moves the center up (value more
-centered but overlaps header more), a larger spacer moves it down (less overlap
-but values sit lower).
+The visible `field_header` wraps to 1 or 2 lines depending on label length and
+cell width. Anchoring `baseline_box` to it means the value position depends on
+that wrap state — comparable native cells with a 1-line header end up with a
+different value position than ours when ours wraps to 2 lines.
 
-22dp matches native's `DataHeaderView minHeight`. This is a compromise: it
-prevents most header overlap while keeping the centering box large enough.
+`header_ref` is invisible, `lines=1`, and styled to mirror `dataHeaderTextStyle`
+exactly. Its measured height equals a single native header line. Anchoring
+`baseline_box` to it gives a stable centering region that is the same as
+native's, regardless of visible header wrap.
+
+The native value font is sized assuming this stable region AND assuming the
+visible header may bleed into it (stacking + clipChildren=false absorb the
+overflow). Computing spacing from "2-line header height" alone produces a
+centering region too small — the value collides with the header. The
+`header_ref` anchor matches what native does.
 
 ### Monospace font metrics (Karoo 3)
+
+> HISTORICAL — describes the abandoned `gravity=center_vertical` text-centering
+> approach (where text was centered within a stretched view via gravity, and
+> the formula below was needed to position the baseline). Current implementation
+> uses `layout_centerVertical` (centers the view) + `layout_alignBaseline`
+> (locks `field_value` baseline to `baseline_ref` baseline). Manual centering
+> math is no longer needed; baseline tuning happens via the `baselineRefSp`
+> lookup driven by `scripts/measure_alignment.py`. Kept for reasoning trail.
 
 ```
 ascent  = 0.756 * fontSize   (baseline to glyph top)

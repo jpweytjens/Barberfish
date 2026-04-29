@@ -123,27 +123,21 @@ Not allowed (even though they compile):
 
 ## Value-centering in RemoteViews
 
-The native field centers the value in the space below the header using a ConstraintLayout
-(`top_toBottomOf=header`, `bottom_toBottomOf=parent`, `wrap_content`). ConstraintLayout is
-not allowed in RemoteViews, so the equivalent pattern using allowed view types is:
+Native uses ConstraintLayout (`top_toBottomOf=header`, `bottom_toBottomOf=parent`,
+`wrap_content`, default bias 0.5) to center the value between the header bottom and the
+cell bottom. ConstraintLayout is not allowed in RemoteViews, so we mirror the geometry
+with a hidden 1-line header probe (`header_ref`), a nested `RelativeLayout` (`baseline_box`)
+anchored to its bottom, and an invisible centered `baseline_ref` whose baseline the value
+view aligns to.
 
-```xml
-<LinearLayout android:orientation="vertical">
-    <LinearLayout android:id="@+id/field_header"
-                  android:layout_height="wrap_content"> ... </LinearLayout>
-    <RelativeLayout android:layout_height="0dp"
-                    android:layout_weight="1">
-        <TextView android:id="@+id/field_value"
-                  android:layout_height="wrap_content"
-                  android:layout_centerVertical="true" />
-    </RelativeLayout>
-</LinearLayout>
-```
+`FrameLayout` + `match_parent` + `gravity=center_vertical` is NOT equivalent — gravity
+centers text within a stretched view, not the view within space. With
+`includeFontPadding=false` it produces visibly wrong alignment.
 
-`RelativeLayout` with `layout_centerVertical="true"` centers the view itself in the
-available space. The alternative (`FrameLayout` + `match_parent` + `gravity=center_vertical`)
-only centers the text within the view, not the view in the space — it produces incorrect
-vertical alignment when `includeFontPadding=false`.
+See `docs/baseline-alignment.md` § "Current approach — header_ref anchor + nested
+baseline_box + per-layout ref font" for the full pattern, including why we anchor to
+`header_ref` (a hidden 1-line probe) rather than the visible `field_header` (which may
+wrap to 2 lines and would otherwise shift the value down).
 
 ---
 
