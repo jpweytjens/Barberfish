@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
+import com.jpweytjens.barberfish.datatype.shared.logFontMetricsOnce
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
@@ -40,6 +41,7 @@ fun barberfishFieldRemoteViews(
 ): RemoteViews {
     val dm = context.resources.displayMetrics
     val paddingHPx = (sizeConfig.paddingH.value * dm.density).toInt()
+    logFontMetricsOnce(dm.density)
     // Always collapse \n to space — maxLines=2 + breakStrategy=simple in XML handles line breaking.
     val displayLabel = field.label.replace("\n", " ")
     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -217,6 +219,14 @@ private fun makeFieldRemoteViews(
         TypedValue.COMPLEX_UNIT_SP,
         sizeConfig.baselineRefSp,
     )
+    // paddingTop pushes baseline_ref's baseline DOWN beyond what increasing
+    // baselineRefSp could (capped to clip-safe). Lets us match native's
+    // baseline position in 2-col layouts where our centering math was
+    // landing the baseline ~9 px above native's. See ViewSizeConfig.kt.
+    if (sizeConfig.baselineRefPaddingTopDp > 0) {
+        val padTopPx = (sizeConfig.baselineRefPaddingTopDp * density).toInt()
+        rv.setViewPadding(R.id.baseline_ref, 0, padTopPx, 0, 0)
+    }
     rv.setTextViewText(R.id.field_value, field.primary)
     rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
     rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
