@@ -33,19 +33,18 @@ private const val VALUE_DESCENT_RATIO = 0.20f
 private const val VALUE_BASELINE_OFFSET_RATIO = 0.40f  // baseline below view-center, normalised to textSize
 
 /**
- * Empirical observed `baseline_box` height in dp per `(colSpan, rowSpan)`,
- * read from `screencaps/<page>.dumpsys.txt`. Karoo doesn't divide the
- * screen evenly by rows: 2-col layouts cap cell height at ~79 dp regardless
- * of `rowSpan ≥ 15`, leaving the bottom of the screen blank for `2×2` /
- * `3×2`. 1-col cells stretch with `rowSpan` until the same per-cell ceiling.
+ * Fallback `baseline_box` height in dp when the live `cellHeightPx` is not
+ * available (e.g. preview rendering). Empirical measurements with the key
+ * bar enabled. Used when `cellHeightPxOverride` is null in
+ * `clipSafeBaselineRefSp`.
  */
-private fun observedBoxHeightDp(colSpan: Int, rowSpan: Int): Int = when {
+private fun fallbackBoxHeightDp(colSpan: Int, rowSpan: Int): Int = when {
     colSpan == ONE_COL && rowSpan >= 60 -> 317   // 1×1
-    colSpan == ONE_COL && rowSpan >= 30 -> 150   // 2×1 (estimate; not directly measured)
+    colSpan == ONE_COL && rowSpan >= 30 -> 150   // 2×1
     colSpan == ONE_COL && rowSpan >= 20 -> 88    // 3×1
     colSpan == ONE_COL && rowSpan >= 15 -> 60    // 4×1
     colSpan == ONE_COL && rowSpan >= 12 -> 45    // 5×1
-    colSpan == TWO_COLS && rowSpan >= 15 -> 56   // 2×2 / 3×2 / 4×2 (same 79 dp cells)
+    colSpan == TWO_COLS && rowSpan >= 15 -> 56   // 2×2 / 3×2 / 4×2
     colSpan == TWO_COLS && rowSpan >= 12 -> 45   // 5×2
     else -> 45
 }
@@ -65,13 +64,26 @@ private const val CLIP_SAFE_DIVISOR = 1.20f
  * pushing the value's visible cap-bottom past the cell edge.
  *
  * Constraint: `view_h_ref = 1.2 × ref_sp_px ≤ box_h_px`. Since digits have
- * no descenders, no extra padding for descent is needed — the binding
- * constraint is simply that the ref view fits in the box. We use
- * `CLIP_SAFE_DIVISOR > 1.2` to leave a small safety margin for layout
- * rounding (a few px of cell padding the SDK adds invisibly).
+ * no descenders, the binding constraint is simply that the ref view fits in
+ * the box. `CLIP_SAFE_DIVISOR = 1.2` is exactly the font's view-height ratio.
+ *
+ * `cellHeightPx` is the live cell height from `ViewConfig.viewSize.second` —
+ * propagated by `BarberfishDataType.startView`. When null (e.g. preview
+ * rendering with no live SDK config), we fall back to a hardcoded
+ * `(colSpan, rowSpan)` lookup measured with the key bar enabled.
  */
-private fun clipSafeBaselineRefSp(colSpan: Int, rowSpan: Int): Float {
-    val boxHeightDp = observedBoxHeightDp(colSpan, rowSpan)
+private fun clipSafeBaselineRefSp(
+    colSpan: Int,
+    rowSpan: Int,
+    cellHeightPx: Float?,
+    headerMinHeightDp: Int,
+    density: Float,
+): Float {
+    val boxHeightDp = if (cellHeightPx != null) {
+        (cellHeightPx / density - headerMinHeightDp).coerceAtLeast(20f)
+    } else {
+        fallbackBoxHeightDp(colSpan, rowSpan).toFloat()
+    }
     return (boxHeightDp / CLIP_SAFE_DIVISOR).coerceAtLeast(20f)
 }
 
@@ -91,6 +103,8 @@ private fun clipSafeBaselineRefSp(colSpan: Int, rowSpan: Int): Float {
 fun ViewConfig.toViewSizeConfig(
     colSpanOverride: Int? = null,
     textSizeOverride: Int? = null,
+    cellHeightPx: Float? = null,
+    density: Float = 1.875f,
 ): ViewSizeConfig {
     val colSpan = colSpanOverride ?: gridSize.first
     val rowSpan = gridSize.second
@@ -123,6 +137,13 @@ fun ViewConfig.toViewSizeConfig(
     // 5x2-narrow extra room without a per-layout override here.
     val headerMinHeightDp = 22
     val valueFontBase = textSizeEff.coerceAtLeast(20)
+    // Bitmap height for field_value rendered as an ARGB image. Constant per
+    // layout (= 0.8 × valueFontBase rounded to dp). Independent of the
+    // per-render `fontSizeForCell` shrunk size — gives a stable baseline
+    // across content-driven font-size changes once Task 4 wires the bitmap
+    // path. Value chosen so the visible digit cap (≈ 0.7 × textSize) fits
+    // with ~0.1 × textSize of buffer above; baseline = bitmap bottom.
+    val valueBitmapHeightDp = (0.8f * valueFontBase).toInt().coerceAtLeast(16)
     // baseline_ref font (sp) per layout. Controls the baseline position via
     // layout_centerVertical inside baseline_box. Larger → baseline lower
     // (value appears lower). Smaller → baseline higher.
@@ -139,7 +160,7 @@ fun ViewConfig.toViewSizeConfig(
     // exceed `baseline_box` and trigger Android's clipping regime where
     // centering math collapses. Values below tuned against the script's
     // measured Δvalue_baseline against native.
-    val clipSafe = clipSafeBaselineRefSp(colSpan, rowSpan)
+    val clipSafe = clipSafeBaselineRefSp(colSpan, rowSpan, cellHeightPx, headerMinHeightDp, density)
     val baselineRefSp: Float = valueFontBase.toFloat().coerceAtMost(clipSafe)
 
     // Extra paddingTop applied to baseline_ref. In the clipped regime
@@ -169,6 +190,7 @@ fun ViewConfig.toViewSizeConfig(
         valueFontSizeBase = valueFontBase,
         baselineRefSp = baselineRefSp,
         baselineRefPaddingTopDp = baselineRefPaddingTopDp,
+        valueBitmapHeightDp = valueBitmapHeightDp,
         headerFontSize = labelSp.sp,
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
@@ -191,6 +213,7 @@ data class ViewSizeConfig(
     val valueFontSizeBase: Int,
     val baselineRefSp: Float = 49f,
     val baselineRefPaddingTopDp: Int = 0,
+    val valueBitmapHeightDp: Int = 32,
     val cellWidthPxOverride: Float? = null,
 ) {
     companion object {
