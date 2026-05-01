@@ -99,52 +99,46 @@
 
     </LinearLayout>
 
-    <!-- Centering box: fills from header_ref's bottom to the cell bottom.
-         Anchored to the hidden 1-line header probe so the centering region's
-         top is constant across visible-header line counts. The visible
-         field_header may wrap to 2 lines and overflow into this box;
-         clipChildren=false on field_root absorbs it. layout_centerVertical
-         inside this box mirrors native ConstraintLayout's default bias-0.5
-         between (headerBottom, cellBottom). -->
-    <RelativeLayout
+    <!-- Centering region: vertical LinearLayout with weight=1 spacers around
+         the field_value ImageView. Layout engine splits leftover space 50/50,
+         geometrically equivalent to native's bias=0.5 centering between
+         (headerBottom, cellBottom). Adapts automatically to runtime cell-h
+         changes (key bar toggle, reroute toast) — no cellHeightPx knowledge
+         needed in our code. -->
+    <LinearLayout
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/header_ref"
         android:layout_alignParentBottom="true"
+        android:orientation="vertical"
         android:clipChildren="false">
 
-        <!-- Mirrors native singleNumericDataStyle (relative, includeFontPadding=false,
-             letterSpacing=-0.04) so this 1px-wide invisible reference TextView
-             measures exactly like a one-char field_value. layout_centerVertical
-             inside baseline_box reproduces native's ConstraintLayout bias-0.5
-             centering between (headerBottom, cellBottom). field_value's
-             alignBaseline locks to this baseline across fontSizeForCell shrinks. -->
+        <!-- Top spacer (TextView, since android.widget.Space is blocked by
+             the rideapp's RemoteViews allowlist). -->
         <TextView
-            android:id="@+id/baseline_ref"
-            android:layout_width="1px"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:gravity="center_vertical"
-            android:fontFamily="relative"
-            android:includeFontPadding="false"
-            android:letterSpacing="-0.04"
-            android:text="0"
-            android:visibility="invisible" />
-
-        <TextView
-            android:id="@+id/field_value"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignBaseline="@id/baseline_ref"
-            android:baselineAligned="false"
-            android:gravity="end"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:fontFamily="relative"
-            android:letterSpacing="-0.04" />
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-    </RelativeLayout>
+        <!-- field_value: ImageView holding the bitmap-rendered digit string.
+             Bitmap height = 0.8 × valueFontBase × density (set programmatically
+             via setImageViewBitmap). Baseline lands at the bitmap's bottom edge.
+             layout_gravity=end positions the bitmap horizontally within the cell. -->
+        <ImageView
+            android:id="@+id/field_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_weight="0"
+            android:adjustViewBounds="true" />
+
+        <!-- Bottom spacer. -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
 
 </RelativeLayout>

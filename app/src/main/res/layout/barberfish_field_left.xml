@@ -84,39 +84,34 @@
 
     </LinearLayout>
 
-    <RelativeLayout
+    <!-- See barberfish_field.xml for rationale; left-aligned variant. -->
+    <LinearLayout
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/header_ref"
         android:layout_alignParentBottom="true"
+        android:orientation="vertical"
         android:clipChildren="false">
 
         <TextView
-            android:id="@+id/baseline_ref"
-            android:layout_width="1px"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/field_value"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:gravity="center_vertical"
-            android:fontFamily="relative"
-            android:includeFontPadding="false"
-            android:letterSpacing="-0.04"
-            android:text="0"
-            android:visibility="invisible" />
+            android:layout_gravity="start"
+            android:layout_weight="0"
+            android:adjustViewBounds="true" />
 
         <TextView
-            android:id="@+id/field_value"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignBaseline="@id/baseline_ref"
-            android:baselineAligned="false"
-            android:gravity="start"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:fontFamily="relative"
-            android:letterSpacing="-0.04" />
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-    </RelativeLayout>
+    </LinearLayout>
 
 </RelativeLayout>
