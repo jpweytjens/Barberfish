@@ -934,6 +934,11 @@ def pair_native_barberfish(pages: list[Page]):
 
     For 2-col layouts: pair native (col 0) and Barberfish (col 1) per row.
     For 1x1n + 1x1b: pair the two single-cell pages directly.
+    For single-column pages with mixed native+BF rows (e.g. 5x1 with
+    `TOTAL TIME` native rows and `ELAPSED TIME` BF rows): pair the first
+    native row with the first BF row that have the same `(colSpan, rowSpan)`.
+    Cells are vertically stacked, so per-cell `value_baseline_to_bottom`
+    is the directly comparable quantity.
     """
     pages_by_name = {p.name: p for p in pages}
 
@@ -944,17 +949,32 @@ def pair_native_barberfish(pages: list[Page]):
             yield "1x1 (n vs b)", n_cells[0], b_cells[0]
 
     for p in pages:
-        if p.cols < 2 or p.suffix:
+        if p.suffix:
             continue
-        rows = defaultdict(list)
-        for c in p.cells:
-            rows[c.row].append(c)
-        for r in sorted(rows):
-            row_cells = rows[r]
-            native = next((c for c in row_cells if c.side == "native"), None)
-            barberfish = next((c for c in row_cells if c.side == "barberfish"), None)
+        if p.cols >= 2:
+            rows = defaultdict(list)
+            for c in p.cells:
+                rows[c.row].append(c)
+            for r in sorted(rows):
+                row_cells = rows[r]
+                native = next((c for c in row_cells if c.side == "native"), None)
+                barberfish = next((c for c in row_cells if c.side == "barberfish"), None)
+                if native is not None and barberfish is not None:
+                    yield f"{p.name} row {r}", native, barberfish
+        elif p.cols == 1:
+            # On stacked single-col mixed pages (e.g. 5x1: native TOTAL TIME +
+            # BF ELAPSED TIME interleaved with stream-state rows), prefer the
+            # cell on each side with the LARGEST value font — that's the row
+            # holding an actual numeric value rather than a "Not available"
+            # stream-state TextView (which the band detector reports at ~19 sp).
+            def best(cs: list[Cell]) -> Cell | None:
+                with_sp = [c for c in cs if c.value_size_sp is not None]
+                return max(with_sp, key=lambda c: c.value_size_sp) if with_sp else None
+
+            native = best([c for c in p.cells if c.side == "native"])
+            barberfish = best([c for c in p.cells if c.side == "barberfish"])
             if native is not None and barberfish is not None:
-                yield f"{p.name} row {r}", native, barberfish
+                yield f"{p.name} (n r{native.row} vs b r{barberfish.row})", native, barberfish
 
 
 def fmt_delta(a: int | None, b: int | None) -> tuple[str, int | None]:
@@ -1029,19 +1049,41 @@ def write_summary(pages: list[Page], path: Path) -> None:
         sp_b = f"{b.value_size_sp:.1f}" if b.value_size_sp is not None else "?"
         meta = f"lines {ln_n}↔{ln_b}, sp {sp_n}↔{sp_b}"
 
+        # When the paired cells are in DIFFERENT rows (single-col mixed
+        # pages), absolute y comparisons are meaningless — they include the
+        # row stride. Rebase using each cell's own bottom edge: Δ becomes
+        # `(native.cell_bottom − native.measured_y) − (bf.cell_bottom −
+        # bf.measured_y)`, which is cell-local and directly comparable.
+        cross_row = n.row != b.row
+        n_y0, b_y0 = n.bounds[1], b.bounds[1]
+        n_y1, b_y1 = n.bounds[3], b.bounds[3]
+
+        def offset(c_y0: int, c_y1: int, v: int | None, *, from_bottom: bool) -> int | None:
+            if v is None:
+                return None
+            return (c_y1 - v) if from_bottom else (v - c_y0)
+
+        def fmt_pair(nv: int | None, bv: int | None, *, from_bottom: bool) -> tuple[str, int | None]:
+            if not cross_row:
+                return fmt_delta(nv, bv)
+            return fmt_delta(
+                offset(n_y0, n_y1, nv, from_bottom=from_bottom),
+                offset(b_y0, b_y1, bv, from_bottom=from_bottom),
+            )
+
         if lines_match(n, b):
-            ht_str, _ = fmt_delta(n.header_top, b.header_top)
-            hb_str, _ = fmt_delta(n.header_bottom, b.header_bottom)
+            ht_str, _ = fmt_pair(n.header_top, b.header_top, from_bottom=False)
+            hb_str, _ = fmt_pair(n.header_bottom, b.header_bottom, from_bottom=False)
         else:
             ht_str = fmt_na("line-count mismatch")
             hb_str = fmt_na("line-count mismatch")
 
         if fonts_match(n, b):
-            vt_str, _ = fmt_delta(n.value_top, b.value_top)
-            vb_str, vb_d = fmt_delta(n.value_baseline, b.value_baseline)
+            vt_str, _ = fmt_pair(n.value_top, b.value_top, from_bottom=False)
+            vb_str, vb_d = fmt_pair(n.value_baseline, b.value_baseline, from_bottom=True)
         else:
             vt_str = fmt_na("font mismatch")
-            vb_str, vb_d = fmt_delta(n.value_baseline, b.value_baseline)
+            vb_str, vb_d = fmt_pair(n.value_baseline, b.value_baseline, from_bottom=True)
 
         pair_rows.append((label, meta, ht_str, hb_str, vt_str, vb_str))
 
