@@ -90,10 +90,6 @@ BOTTOM_NAV_PX = 50
 # strips and isolated artefacts.
 MIN_BAND_HEIGHT = 12
 
-# Linear gain (HISTORICAL — see write_summary). Kept so callers that import
-# this module don't break.
-AUTO_TUNE_K = 2.0
-
 # Karoo 3 display density (300 dpi / 160 = 1.875). Used to convert measured
 # px → sp for diagnostic font-size estimation.
 DENSITY = 1.875
@@ -343,8 +339,6 @@ class Cell:
     dump_field_root_y1: int | None = None
     dump_baseline_box_y0: int | None = None
     dump_baseline_box_y1: int | None = None
-    dump_baseline_ref_y0: int | None = None
-    dump_baseline_ref_y1: int | None = None
     note: str = ""
 
     # --- derived geometry (filled in by measure_cell after raw bands) ---
@@ -395,31 +389,10 @@ class Cell:
         return None
 
     @property
-    def expected_native_value_band_px(self) -> int:
-        """Expected band height (top→baseline) for the configured native value
-        font at this layout — i.e. the room the value glyph needs."""
-        sp = native_value_size_sp(self.col_span, self.row_span)
-        return int(round(sp * DENSITY * GLYPH_HEIGHT_RATIO))
-
-    @property
-    def box_fits_native_font(self) -> bool | None:
-        """True if `box_height` can host a glyph at the configured native sp."""
-        bh = self.box_height
-        if bh is None:
-            return None
-        return bh >= self.expected_native_value_band_px
-
-    @property
     def dump_value_h(self) -> int | None:
         if self.dump_value_y0 is None or self.dump_value_y1 is None:
             return None
         return self.dump_value_y1 - self.dump_value_y0
-
-    @property
-    def dump_baseline_ref_h(self) -> int | None:
-        if self.dump_baseline_ref_y0 is None or self.dump_baseline_ref_y1 is None:
-            return None
-        return self.dump_baseline_ref_y1 - self.dump_baseline_ref_y0
 
     @property
     def dump_baseline_box_h(self) -> int | None:
@@ -431,20 +404,8 @@ class Cell:
     def dump_value_size_sp(self) -> float | None:
         """Effective field_value sp inferred from its wrap_content height.
         For Karoo's Relative monospace at includeFontPadding=false,
-        view_h ≈ 1.2 × textSize_px, so sp ≈ view_h / (1.2 × density).
-        See FontMetricsProbe.kt for the runtime-verified ratio."""
+        view_h ≈ 1.2 × textSize_px, so sp ≈ view_h / (1.2 × density)."""
         h = self.dump_value_h
-        if h is None or h <= 0:
-            return None
-        return round(h / (1.2 * DENSITY), 1)
-
-    @property
-    def dump_baseline_ref_sp(self) -> float | None:
-        """Effective baselineRefSp inferred from baseline_ref's wrap_content
-        height (1.2 × textSize_px). If the rendered height equals
-        `baseline_box.h`, the view was clipped to its parent — the actual
-        configured sp may have been larger than what fits."""
-        h = self.dump_baseline_ref_h
         if h is None or h <= 0:
             return None
         return round(h / (1.2 * DENSITY), 1)
@@ -860,8 +821,6 @@ def write_csv(pages: list[Page], path: Path) -> None:
                 "value_baseline_to_bottom",
                 "value_band_height",
                 "box_height",
-                "expected_native_value_band",
-                "box_fits_native_font",
                 # --- dumpsys-derived bounds (iteration 3) ---
                 "dump_cell_y0",
                 "dump_cell_y1",
@@ -869,12 +828,9 @@ def write_csv(pages: list[Page], path: Path) -> None:
                 "dump_header_y1",
                 "dump_value_y0",
                 "dump_value_y1",
-                "dump_baseline_ref_y0",
-                "dump_baseline_ref_y1",
                 "dump_baseline_box_y0",
                 "dump_baseline_box_y1",
                 "dump_value_size_sp",
-                "dump_baseline_ref_sp",
                 "note",
             ]
         )
@@ -910,20 +866,15 @@ def write_csv(pages: list[Page], path: Path) -> None:
                         c.value_baseline_to_bottom,
                         c.value_band_height,
                         c.box_height,
-                        c.expected_native_value_band_px,
-                        c.box_fits_native_font,
                         c.dump_cell_y0,
                         c.dump_cell_y1,
                         c.dump_header_y0,
                         c.dump_header_y1,
                         c.dump_value_y0,
                         c.dump_value_y1,
-                        c.dump_baseline_ref_y0,
-                        c.dump_baseline_ref_y1,
                         c.dump_baseline_box_y0,
                         c.dump_baseline_box_y1,
                         c.dump_value_size_sp,
-                        c.dump_baseline_ref_sp,
                         c.note,
                     ]
                 )
@@ -1107,29 +1058,18 @@ def write_summary(pages: list[Page], path: Path) -> None:
         lines.append(f"| {label} | {meta} | {ht} | {hb} | {vt} | {vb} |")
     lines.append("")
 
-    lines.append("## Auto-suggested baselineRefSp adjustments")
+    lines.append("## Δvalue_baseline averages by layout (comparable rows only)")
     lines.append("")
-    lines.append("> HISTORICAL — this block averages Δvalue_baseline across rows where line")
-    lines.append("> counts and fonts match. The previous version averaged across incomparable")
-    lines.append("> rows (1-line vs 2-line headers, font-mismatched 1×1 mis-pairings) and")
-    lines.append("> produced misleading suggestions. Even with the comparable-only filter,")
-    lines.append("> the K=2.0 gain is heuristic. Use the per-pair Δvalue_baseline directly")
-    lines.append("> when retuning `ViewSizeConfig.baselineRefSp`; do not blindly paste the")
-    lines.append("> snippet below.")
+    lines.append("Cross-reference for tuning `valueTranslationDp`. Positive Δ means BF")
+    lines.append("baseline sits below native; bump translation more negative.")
     lines.append("")
-    lines.append("```kotlin")
-    lines.append("// (comparable rows only) Δavg ↔ ViewSizeConfig.baselineRefSp nudge.")
+    lines.append("| (colSpan, rowSpan) | n pairs | Δvalue_baseline avg (px) |")
+    lines.append("|---|---|---|")
     if not deltas_by_layout:
-        lines.append("// No comparable rows — every pair has a line-count or font mismatch.")
+        lines.append("| — | 0 | no comparable rows |")
     for (col_span, row_span), ds in sorted(deltas_by_layout.items()):
         avg = sum(ds) / len(ds)
-        delta_sp = AUTO_TUNE_K * avg
-        sign = "+" if delta_sp >= 0 else ""
-        lines.append(
-            f"// colSpan={col_span} rowSpan={row_span}: Δavg={avg:+.1f}px ({len(ds)} pair) "
-            f"-> baselineRefSp {sign}{delta_sp:.1f}f"
-        )
-    lines.append("```")
+        lines.append(f"| ({col_span}, {row_span}) | {len(ds)} | {avg:+.1f} |")
     lines.append("")
 
     # --- Per-layout consistency ------------------------------------------
@@ -1214,91 +1154,29 @@ def write_summary(pages: list[Page], path: Path) -> None:
         )
     lines.append("")
 
-    # --- Box-vs-font fit -------------------------------------------------
-    lines.append("## Box-vs-font fit (Barberfish only)")
-    lines.append("")
-    lines.append("`box_height` = `cell_bottom − probe_bottom` (centering region).")
-    lines.append("`expected_band` = native value font glyph height for this layout.")
-    lines.append("If `box_height < expected_band`, the centering region is too small")
-    lines.append("for the configured native font — fix structurally (smaller header_ref")
-    lines.append("minHeight or smaller value font), NOT by tuning `baselineRefSp`.")
-    lines.append("")
-    lines.append("| page | r | c | (cs, rs) | native_sp | expected_band | box_h | fits? |")
-    lines.append("|---|---|---|---|---|---|---|---|")
-    any_misfit = False
-    for p in pages:
-        for c in p.cells:
-            if c.side != "barberfish":
-                continue
-            if c.box_height is None:
-                continue
-            native_sp = native_value_size_sp(c.col_span, c.row_span)
-            exp = c.expected_native_value_band_px
-            box = c.box_height
-            fits = c.box_fits_native_font
-            mark = "✓" if fits else f"✗ (−{exp - box}px)"
-            if not fits:
-                any_misfit = True
-            lines.append(
-                f"| `{c.page}` | {c.row} | {c.col} | ({c.col_span},{c.row_span}) | "
-                f"{native_sp:.0f} | {exp} | {box} | {mark} |"
-            )
-    if not any_misfit:
-        lines.append("")
-        lines.append("All Barberfish cells fit the native value font in their box.")
-    lines.append("")
-
     # --- Sysdump cross-check ---------------------------------------------
     lines.append("## Sysdump cross-check")
     lines.append("")
     lines.append("Bounds + sizes from `dumpsys activity top` (deterministic).")
-    lines.append("`baseline_ref h` is the wrap_content height the layout engine")
-    lines.append("gave it: if it equals `baseline_box h`, baseline_ref is being")
-    lines.append("CLIPPED to its parent (the configured `baselineRefSp` was too")
-    lines.append("large for the centering region) — geometry is then in the")
-    lines.append("clipped regime where px-per-sp is non-linear.")
+    lines.append("For Barberfish bitmap rendering, baseline = `val_y0 + val_h`.")
+    lines.append("For native TextView, baseline ≈ `val_y0 + 0.833 × val_h`.")
     lines.append("")
-    lines.append("`baseline_y_calc` = `field_value.y0 + 0.756 × field_value.h`")
-    lines.append("(IBM Plex / Relative monospace ascent ratio). Compare to the")
-    lines.append("screenshot-measured `value_baseline`. Big mismatch ⇒ clipping.")
-    lines.append("")
-    lines.append("| page | r | c | side | cell h | box h | ref h | ref sp | val h | val sp | val_y0 | base_y_calc | base_y_meas | Δ |")
-    lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+    lines.append("| page | r | c | side | cell h | box h | val h | val sp | val_y0 | base_y_meas |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for p in pages:
         for c in p.cells:
             if c.dump_cell_y0 is None:
                 continue
             cell_h = (c.dump_cell_y1 or 0) - (c.dump_cell_y0 or 0)
             box_h = c.dump_baseline_box_h
-            ref_h = c.dump_baseline_ref_h
-            ref_sp = c.dump_baseline_ref_sp
             val_h = c.dump_value_h
             val_sp = c.dump_value_size_sp
             val_y0 = c.dump_value_y0
-            ref_clipped = (
-                ref_h is not None
-                and box_h is not None
-                and ref_h >= box_h - 1
-                and ref_h > 0
-            )
-            ref_h_str = f"{ref_h}" + (" ⚠️CLIP" if ref_clipped else "") if ref_h is not None else "—"
-            base_calc: int | None = None
-            if val_y0 is not None and val_h is not None and val_h > 0:
-                # baseline = view_top + ascent_px. For Karoo's `relative` font
-                # with includeFontPadding=false, view_h = 1.2 × textSize and
-                # ascent = 1.0 × textSize, so baseline_within_view =
-                # ascent / view_h × view_h = (1.0 / 1.2) × val_h ≈ 0.833 × val_h.
-                base_calc = int(round(val_y0 + (1.0 / 1.2) * val_h))
             base_meas = c.value_baseline
-            delta_str = "—"
-            if base_calc is not None and base_meas is not None:
-                delta_str = f"{base_calc - base_meas:+d}"
             lines.append(
                 f"| `{c.page}` | {c.row} | {c.col} | {c.side} | {cell_h} | "
-                f"{box_h or '—'} | {ref_h_str} | {ref_sp or '—'} | "
-                f"{val_h or '—'} | {val_sp or '—'} | {val_y0 or '—'} | "
-                f"{base_calc if base_calc is not None else '—'} | "
-                f"{base_meas if base_meas is not None else '—'} | {delta_str} |"
+                f"{box_h or '—'} | {val_h or '—'} | {val_sp or '—'} | "
+                f"{val_y0 or '—'} | {base_meas if base_meas is not None else '—'} |"
             )
     lines.append("")
 
@@ -1380,8 +1258,6 @@ def attach_dump_bounds(page: Page) -> None:
             cell.dump_field_root_y0, cell.dump_field_root_y1 = shift(fr.y0), shift(fr.y1)
         if (bb := children.get("baseline_box")) is not None:
             cell.dump_baseline_box_y0, cell.dump_baseline_box_y1 = shift(bb.y0), shift(bb.y1)
-        if (br := children.get("baseline_ref")) is not None:
-            cell.dump_baseline_ref_y0, cell.dump_baseline_ref_y1 = shift(br.y0), shift(br.y1)
         if (fv := children.get("field_value")) is not None:
             cell.dump_value_y0, cell.dump_value_y1 = shift(fv.y0), shift(fv.y1)
         elif (dt := children.get("dataTextView")) is not None:
