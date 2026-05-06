@@ -16,7 +16,6 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
-import com.jpweytjens.barberfish.datatype.shared.logFontMetricsOnce
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -39,7 +38,6 @@ fun barberfishFieldRemoteViews(
 ): RemoteViews {
     val dm = context.resources.displayMetrics
     val paddingHPx = (sizeConfig.paddingH.value * dm.density).toInt()
-    logFontMetricsOnce(dm.density)
     val displayLabel = field.label.replace("\n", " ")
     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     val colors = field.color.toColorConfig(colorMode, isNightMode)
