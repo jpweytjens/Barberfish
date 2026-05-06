@@ -1,10 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Field layout: LEFT-aligned.
-    Same structure as barberfish_field.xml, but icon order is flipped: label first,
-    icon(s) trailing (icon anchors to alignment side).
-    See barberfish_field.xml for documentation.
--->
+<!-- Field layout: LEFT-aligned. Icon order flipped vs barberfish_field.xml. -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
     android:layout_width="match_parent"
@@ -21,10 +16,9 @@
         android:textColor="@android:color/white"
         android:includeFontPadding="false"
         android:maxLines="2"
-        android:lineSpacingMultiplier="0.7"
+        android:lineSpacingMultiplier="0.6"
         android:visibility="gone" />
 
-    <!-- Hidden 1-line header probe. See barberfish_field.xml for documentation. -->
     <TextView
         android:id="@+id/header_ref"
         android:layout_width="match_parent"
@@ -35,7 +29,7 @@
         android:textAllCaps="true"
         android:fontFamily="ibm-plex-sans-condensed"
         android:includeFontPadding="false"
-        android:lineSpacingMultiplier="0.7"
+        android:lineSpacingMultiplier="0.6"
         android:text="M"
         android:visibility="invisible" />
 
@@ -63,7 +57,7 @@
             android:textAllCaps="true"
             android:fontFamily="ibm-plex-sans-condensed"
             android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.7"
+            android:lineSpacingMultiplier="0.6"
             android:breakStrategy="simple" />
 
         <ImageView
@@ -84,7 +78,6 @@
 
     </LinearLayout>
 
-    <!-- See barberfish_field.xml for rationale; left-aligned variant. -->
     <LinearLayout
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
@@ -104,8 +97,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start"
-            android:layout_weight="0"
-            android:adjustViewBounds="true" />
+            android:layout_weight="0" />
 
         <TextView
             android:layout_width="match_parent"

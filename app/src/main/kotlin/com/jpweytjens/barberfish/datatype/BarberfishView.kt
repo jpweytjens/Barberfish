@@ -24,6 +24,11 @@ import io.hammerhead.karooext.models.ViewConfig
 
 private const val DEBUG_LAYOUT = false
 
+// Tints header_ref magenta so scripts/measure_alignment.py --probe can
+// distinguish Barberfish vs native cells on stacked 1-col mixed pages.
+private const val LAYOUT_PROBE_MODE = false
+private const val PROBE_MARKER_COLOR = 0xFFFF00FF.toInt()
+
 fun barberfishFieldRemoteViews(
     field: FieldState,
     alignment: ViewConfig.Alignment,
@@ -35,7 +40,6 @@ fun barberfishFieldRemoteViews(
     val dm = context.resources.displayMetrics
     val paddingHPx = (sizeConfig.paddingH.value * dm.density).toInt()
     logFontMetricsOnce(dm.density)
-    // Always collapse \n to space — maxLines=2 + breakStrategy=simple in XML handles line breaking.
     val displayLabel = field.label.replace("\n", " ")
     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     val colors = field.color.toColorConfig(colorMode, isNightMode)
@@ -110,17 +114,19 @@ private fun makeFieldRemoteViews(
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
 
-    // Per-layout header reservation matches native DataHeaderView's effective height.
-    // XML default is 26dp; on 5x2 narrow cells native reserves 73 px (= 39dp).
+    // header_ref anchors baseline_box's top via layout_below; its minHeight
+    // must match the visible header so the centering region mirrors native's.
     val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
     rv.setInt(R.id.field_header, "setMinimumHeight", headerMinHeightPx)
-    // header_ref's only role now is to anchor baseline_box's top via
-    // layout_below in XML. No programmatic sizing needed — the LinearLayout
-    // weights inside baseline_box adapt to whatever leftover space remains
-    // below header_ref's bottom.
+    rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
 
-    // Label — HUD slots: dynamic sizing from headerFontSize base using DEFAULT typeface.
-    // Regular (1/2-col): font and line count stay fixed from sizeConfig.
+    if (LAYOUT_PROBE_MODE) {
+        rv.setViewVisibility(R.id.header_ref, View.VISIBLE)
+        rv.setInt(R.id.header_ref, "setBackgroundColor", PROBE_MARKER_COLOR)
+    }
+
+    // HUD slots size labels dynamically from headerFontSize using the default
+    // typeface; regular cells use the per-layout values from sizeConfig.
     val labelFontSp: Float
     val labelLines: Int
     if (sizeConfig.colSpan < 30) {
@@ -141,16 +147,8 @@ private fun makeFieldRemoteViews(
     rv.setTextViewText(R.id.field_label, displayLabel)
     rv.setTextColor(R.id.field_label, labelArgb)
     rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
-    // XML default is android:maxLines="2" (cap at 2 lines, but `wrap_content`
-    // collapses to 1-line height when content fits). Per ViewSizeConfig.kt:
-    // - 1-col & HUD-1-line layouts (labelLines == 1) need `setMaxLines(1)` to
-    //   keep the cap at 1.
-    // - HUD slots and 2-col layouts (labelLines == 2): `setLines(2)` forces
-    //   both min and max to 2. Native renders 2-col headers at 2-line height
-    //   (`dataHeaderTextStyle` has `lines=2`), and HUD slots need uniform
-    //   2-line reservation for cross-slot baseline alignment. With XML default
-    //   `maxLines="2"` only, short labels collapse to 1-line height — that
-    //   shifts our header text 10-15 px above native's.
+    // setLines(2) forces a 2-line reservation; without it short 2-col labels
+    // collapse to 1-line height and the header sits ~12 px above native.
     when {
         labelLines == 1 -> rv.setInt(R.id.field_label, "setMaxLines", 1)
         labelLines == 2 -> rv.setInt(R.id.field_label, "setLines", 2)
@@ -188,13 +186,6 @@ private fun makeFieldRemoteViews(
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Render value as an ARGB Bitmap. Constant bitmapHeightPx per layout
-    // (sizeConfig.valueBitmapHeightDp × density) keeps the baseline locked
-    // even when fontSizeForCell shrinks the rendered text. LinearLayout 1:1
-    // spacers in baseline_box centre the ImageView, matching native's
-    // bias-0.5 centering between (headerBottom, cellBottom). Adaptive to
-    // runtime cell-h changes (key bar toggle, reroute toast) — no
-    // cellHeightPx knowledge needed in our code.
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
     val valueBitmap = renderValueBitmap(
         text = field.primary,
@@ -205,11 +196,13 @@ private fun makeFieldRemoteViews(
         alignment = alignment,
     )
     rv.setImageViewBitmap(R.id.field_value, valueBitmap)
+    // Paint-time transform; doesn't affect layout so the bitmap stays inside
+    // baseline_box regardless of translation magnitude.
+    val translationYPx = sizeConfig.valueTranslationDp * density
+    rv.setFloat(R.id.field_value, "setTranslationY", translationYPx)
 
-    // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
-    // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
-    // Size computed from "Searching…" — the widest single-line stream state (no space
-    // to wrap on), so all other stream states fit at the same font size.
+    // Stream state overlay (Searching / NotAvailable / Idle) replaces
+    // field_value. Sized from "Searching..." — widest single-line state.
     if (field.color is FieldColor.StreamState) {
         val (stateFont, stateMaxLines) = fontSizeForCell(
             "Searching...", sizeConfig.valueFontSizeBase, cellWidthPx, density,
