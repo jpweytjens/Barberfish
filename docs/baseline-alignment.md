@@ -4,319 +4,232 @@ Relates to [#2](https://github.com/jpweytjens/Barberfish/issues/2).
 
 ## Goal
 
-Consistent value baseline position for a given grid size, independent of cell
-height (survives rerouting toast and key-icon toggles that shrink cells mid-ride)
-and independent of font size (values shrunk by `fontSizeForCell` line up with
-unshrunk values in neighbouring cells).
+Consistent value baseline position for a given grid size, independent of:
 
-## Native approach (from decompiled data_element_single.xml)
+- Cell height (survives rerouting toast and key-icon toggles that shrink
+  cells mid-ride without re-calling `startView`).
+- Font size (values shrunk by `fontSizeForCell` line up with unshrunk
+  values in neighbouring cells).
 
-```xml
-<AppCompatTextView
-    android:id="@+id/dataTextView"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    app:layout_constraintBottom_toBottomOf="parent"
-    app:layout_constraintTop_toBottomOf="@+id/headerLayout"
-    style="@style/singleNumericDataStyle"/>
-```
+## Native approach (decompiled rideapp)
 
-Native uses ConstraintLayout with `wrap_content` height and opposing top/bottom
-constraints. In ConstraintLayout, this means: size to content, center between
-constraints (default bias 0.5). The view can be LARGER than the constraint space.
+Native uses a `ConstraintLayout` (`data_element_single.xml`) with the
+value view (`dataTextView`) constrained between `headerLayout` bottom and
+parent bottom (default bias 0.5). Per-layout sizing comes from
+`DataElementConstraints` (rideapp `hhv5/d.hha()`), which returns:
 
-Verified via `dumpsys activity top` on a 1x3 page:
-```
-dataElementRoot:  1,0-479,190      cell: 478x190px
-headerLayout:     0,0-478,48       header: 48px
-dataTextView:     0,24-470,214     value: 190px tall, extends 24px into header
-                                   and 24px past cell bottom
-```
+- `dataSize` — value font px
+- `dataTranslationY` — per-layout vertical shift, applied at runtime via
+  `dataTextView.setTranslationY(...)` (`hhu5/f.java:48`)
+- `labelSize`, `labelLineSpacingMultiplier`, etc.
 
-The value view is the same height as the cell (190px) even though the constraint
-space is only 142px (190-48). ConstraintLayout allows `wrap_content` views to
-overflow constraints symmetrically. The centering AXIS is between headerBottom
-and cellBottom; the VIEW extends equally past both.
+`ConstraintLayout` allows `wrap_content` views to overflow constraints
+symmetrically, so the value view's line metrics (1.2 × textSize) extend
+above the cap and below the descent without affecting the centering axis.
 
-For the SDK extension container (`data_element_sdk.xml`), native adds extra room:
-`translationY="-15dp"` shifts the container up, and a 25dp Space below the cell
-extends the bottom. This gives SDK views ~40dp of extra centering room beyond cell
-bounds. This container is for non-RemoteViews SDK views only — our RemoteViews are
-in a separate FrameLayout that fills the cell exactly.
+## Why we can't copy native directly
 
-## Why we can't copy native
+The Karoo rideapp's RemoteViews allowlist excludes `ConstraintLayout` and
+`Space`. Our value rendering lives inside a `RelativeLayout` →
+`LinearLayout`, where a `wrap_content` view cannot overflow its parent
+the way ConstraintLayout permits.
 
-RemoteViews cannot use ConstraintLayout. Our views live in a RelativeLayout inside
-the rideapp's FrameLayout. The fundamental constraint:
+## Current approach — `ImageView` + `Bitmap`
 
-In ConstraintLayout, a `wrap_content` view between opposing constraints can be
-LARGER than the space and is centered between the constraints. In RelativeLayout,
-views fill or fit within their parent — they cannot have bounds larger than their
-container. `layout_centerVertical` stretches a `wrap_content` view to fill the
-parent, then `gravity=center_vertical` centers the text within the stretched view.
-The geometric centering is the same, but the view bounds differ.
-
-The rideapp's FrameLayout wrapper clips overflow at the cell boundary. Native
-fields (direct ConstraintLayout children) have more forgiving clipping. When the
-value font is larger than the centering space, native's overflow is visible while
-ours gets clipped at the cell bottom.
-
-### Approaches tried and abandoned
-
-- `gravity="bottom"` + computed `refFontSp` from cellHeight arithmetic:
-  required reading `statusBarHeight` + `navBarHeight` to derive `cellHeightPx`.
-  Stale after key-icon toggles and rerouting toast (no `startView` re-call).
-
-- `gravity="center_vertical"` on baseline_ref directly in field_root:
-  `match_parent` height with `layout_below` offset created measurement ambiguity —
-  `gravity` may center in the measured height (full cell) rather than the
-  constrained height (below spacer). Values shifted when key icons toggled.
-
-- `gravity="bottom"` with `valueFontSizeBase`: zero downward overflow but
-  values sat too high (the descent gap below digits was visually prominent).
-
-- Capped reference font from `viewSize.second`: `viewSize` is stale after
-  cell resize (same as cellHeight arithmetic).
-
-- Computed reference font `R = (H/2 - 0.256*F) / 0.244` matching native centering:
-  correct math but required `viewSize` and didn't adapt to dynamic resizes.
-
-- Scaling `valueFontSizeBase` by a fixed factor (e.g. 0.85): linear tradeoff
-  between centering accuracy and descent overflow. No single scale worked for
-  all layouts.
-
-## Current approach — header_ref anchor + nested baseline_box + per-layout ref font
+`field_value` is an `ImageView` displaying a `Bitmap` rendered at ride
+time by `renderValueBitmap()` in `BitmapValue.kt`. The bitmap is sized to
+exactly the visible cap region (no line-metric padding) so it fits inside
+even the tightest `baseline_box` (5×1) without `ImageView.fitCenter`
+silently downscaling.
 
 ```
 field_root (RelativeLayout, clipChildren=false)
 ├── stream_state_tv (match_parent, GONE by default)
-├── header_ref (match_parent, wrap_content, alignParentTop, lines=1, invisible.
-│               Native dataHeaderTextStyle mirror — its bottom = where a 1-line
-│               header WOULD have ended, regardless of how many lines field_header wraps to)
-├── field_header (wrap_content, alignParentTop, lines=2 default, overlaps header_ref;
-│                 may overflow downward into baseline_box via clipChildren=false)
-└── baseline_box (RelativeLayout, layout_below=header_ref, alignParentBottom, clipChildren=false)
-    ├── baseline_ref (1px, wrap_content, layout_centerVertical, gravity=center_vertical,
-    │                 includeFontPadding=false, invisible. Font: baselineRefSp from lookup)
-    └── field_value (match_parent, wrap_content, alignBaseline=baseline_ref)
+├── header_ref (wrap_content, alignParentTop, lines=1, invisible.
+│               Anchors baseline_box's top via layout_below.)
+├── field_header (wrap_content, alignParentTop, overlaps header_ref;
+│                 may overflow downward via clipChildren=false)
+└── baseline_box (LinearLayout vertical, layout_below=header_ref,
+                  alignParentBottom, match_parent, clipChildren=false)
+    ├── TextView (height=0dp, weight=1)   — top spacer
+    ├── ImageView field_value (wrap_content, weight=0)
+    └── TextView (height=0dp, weight=1)   — bottom spacer
 ```
 
-### How it works
+The two `weight=1` `TextView`s (used because `Space` is blocked)
+geometrically reproduce native's bias-0.5 centering between
+`headerLayout` bottom and cell bottom: leftover space is split 50/50
+around the bitmap. The centering region adapts automatically when the
+rideapp shrinks the cell — no `cellHeightPx` plumbing needed.
 
-`baseline_box` fills from `header_ref`'s bottom to cell bottom — anchored to a
-hidden 1-line header probe rather than the visible `field_header`. This decouples
-the value's centering region from how many lines the visible header actually
-wraps to: stacked rows where the visible header wraps to 2 lines no longer push
-the value down. The visible second header line overflows downward into the
-`baseline_box` (`clipChildren=false` on `field_root` permits it), but the value
-position itself is constant.
-
-Inside `baseline_box`, `layout_centerVertical` on `baseline_ref` centers the
-reference view within the box's actual laid-out height. `field_value.alignBaseline`
-locks the value's baseline to the reference's baseline — when `fontSizeForCell`
-shrinks the value, the baseline stays locked.
-
-This mirrors native's `ConstraintLayout` bias-0.5 between (`headerLayout` bottom,
-parent bottom): we can't use ConstraintLayout in RemoteViews, but the
-`header_ref` + `baseline_box` + `baseline_ref` chain reproduces the same
-geometric centering using only RelativeLayout and TextView.
-
-### Per-layout tuning via baselineRefSp
-
-`baselineRefSp` in `ViewSizeConfig` is a per-`(colSpan, rowSpan)` lookup that
-controls the reference font size. Larger ref → taller reference → baseline
-shifts up → value appears higher. Smaller ref → baseline shifts down → value
-appears lower. Seeded from `valueFontSizeBase` (native's font) and tuned by
-running `scripts/measure_alignment.py --probe` against the native ↔ Barberfish
-comparison page set, then nudging the constants until rows that share line count
-and font size are within 2 px on header_top and value_top (or value_baseline
-when fonts differ).
-
-### Why anchor to header_ref, not field_header
-
-The visible `field_header` wraps to 1 or 2 lines depending on label length and
-cell width. Anchoring `baseline_box` to it means the value position depends on
-that wrap state — comparable native cells with a 1-line header end up with a
-different value position than ours when ours wraps to 2 lines.
-
-`header_ref` is invisible, `lines=1`, and styled to mirror `dataHeaderTextStyle`
-exactly. Its measured height equals a single native header line. Anchoring
-`baseline_box` to it gives a stable centering region that is the same as
-native's, regardless of visible header wrap.
-
-The native value font is sized assuming this stable region AND assuming the
-visible header may bleed into it (stacking + clipChildren=false absorb the
-overflow). Computing spacing from "2-line header height" alone produces a
-centering region too small — the value collides with the header. The
-`header_ref` anchor matches what native does.
-
-### Monospace font metrics (Karoo 3)
-
-> HISTORICAL — describes the abandoned `gravity=center_vertical` text-centering
-> approach (where text was centered within a stretched view via gravity, and
-> the formula below was needed to position the baseline). Current implementation
-> uses `layout_centerVertical` (centers the view) + `layout_alignBaseline`
-> (locks `field_value` baseline to `baseline_ref` baseline). Manual centering
-> math is no longer needed; baseline tuning happens via the `baselineRefSp`
-> lookup driven by `scripts/measure_alignment.py`. Kept for reasoning trail.
+### Bitmap geometry
 
 ```
-ascent  = 0.756 * fontSize   (baseline to glyph top)
-descent = 0.244 * fontSize   (baseline to glyph bottom)
-total   = 1.000 * fontSize
+bitmap_h_px = 0.74 × valueFontBaseSp × density
 ```
 
-When `gravity=center_vertical` centers text in a box:
+`0.74` is just enough to hold the visible glyph cap (~0.7 × textSize for
+Karoo's `relative` monospace) plus a small buffer above. Baseline is
+pinned to the bitmap's bottom edge — for digits (no descenders) that is
+also the visible bottom. `bitmap.density = Bitmap.DENSITY_NONE` so
+RemoteViews displays at native pixel size with no scaling.
+
+The height is a **constant function of `valueFontBaseSp`**, not the
+per-render `fontSizeForCell` shrunk size. When content forces a font
+shrink, the smaller text is drawn inside the same-size bitmap with the
+baseline still pinned to bitmap bottom — so the baseline stays at the
+same position across short and long content.
+
+### Per-layout vertical alignment
+
+Mirrors native's `DataElementConstraints.dataTranslationY`. Applied
+paint-time via:
+
+```kotlin
+rv.setFloat(R.id.field_value, "setTranslationY", translationYPx)
 ```
-baseline_from_bottom = box/2 - 0.256 * fontSize
-```
 
-The `0.256 = ascent_ratio - 0.5` is the asymmetry — digits are top-heavy
-(more ascent than descent), so centering shifts the baseline below the box
-midpoint. For numeric content without descenders, the visible digit bottom
-(at the baseline) is `0.244 * fontSize` above the descent bottom.
+`View.setTranslationY` is `@RemotableViewMethod` since API 21 (works on
+both K2 and K3). Paint-time transform — does not affect layout, so the
+bitmap stays inside `baseline_box` regardless of translation magnitude.
 
-### Cell resize behavior
+Per-layout values in `ViewSizeConfig.valueTranslationDp` were predicted
+from bitmap-centre maths and refined with `scripts/measure_alignment.py`.
 
-When key-icon toggles or rerouting toast shrink cells mid-ride:
-1. `baseline_box` (`layout_below` + `alignParentBottom`) re-sizes automatically
-2. `layout_centerVertical` re-centers `baseline_ref` in the new box
-3. `field_value.alignBaseline` follows
+### Header anchor
 
-No `startView` re-call needed. No `viewSize` dependency. The `baselineRefSp`
-is fixed (set once per render), so the centering shifts slightly from the ideal
-position for the new cell height. But the layout engine handles the reflow —
-overflow stays upward-biased into the header zone (`clipChildren=false`).
+`header_ref` (invisible, `lines=1`, styled to mirror
+`dataHeaderTextStyle`) anchors `baseline_box`'s top via
+`layout_below="@id/header_ref"`. Its programmatic `minHeight` is content-
+driven from `labelSp` and `labelMaxLines`, mirroring native's
+`headerLayout` height. The visible `field_header` (which may wrap to 2
+lines) overlaps via `layout_alignParentTop`, and any overflow into
+`baseline_box` is absorbed by `clipChildren=false`. The centering region
+top is therefore independent of how many lines the visible header
+actually wraps to.
 
-### Remaining limitation
+### Per-layout label sp
 
-When the value font is larger than the centering box (common for 5-row cells
-with key icons ON), the descent extends past the cell bottom. The rideapp's
-FrameLayout clips this overflow. Native's ConstraintLayout avoids this because
-the value VIEW can be larger than the constraint space — the overflow is
-"owned" by the ConstraintLayout and not clipped by a wrapper.
+Lookup in `ViewSizeConfig.toViewSizeConfig` mirrors native's
+`DataElementConstraints` lookup keyed on `(colSpan, rowSpan)`. Driving
+the same `labelSp` per layout makes our `header_ref` height equal
+native's `headerLayout` height, which in turn makes our centering region
+geometrically equivalent to native's.
 
-This is an inherent limitation of RemoteViews in a FrameLayout container.
-The `baselineRefSp` lookup mitigates it by allowing per-layout tuning of
-the baseline position.
+## Verification
+
+`scripts/walk_layouts.sh` captures every layout (1×1 through 5×2),
+including dumpsys for view bounds and a screencap. `scripts/measure_alignment.py`
+parses both, paying attention to:
+
+- Same-font 2-col paired rows: `Δvalue_baseline` should be within ±2 px.
+- Single-col 5×1 cells: bitmap height should match design (76 px) and
+  fit inside `baseline_box` (~79 px on K3 with key bar).
 
 ## Debugging layout bounds
 
-Use `dumpsys activity top` to inspect actual view bounds on-device:
-
 ```bash
-adb shell "dumpsys activity top" | grep -E "field_root|baseline_box|baseline_ref|field_value|header_spacer|dataTextView|headerLayout"
+adb shell "dumpsys activity top" | grep -E "field_root|baseline_box|field_value|dataTextView|headerLayout"
 ```
 
-Example output (5x2 layout):
+Example (5×1 cell):
+
 ```
-field_root:    0,0-238,126      → cell: 238x126px
-header_spacer: 7,0-8,41         → 22dp = 41px
-baseline_box:  7,41-231,126     → centering box: 224x85px
-baseline_ref:  0,0-1,85         → fills box (layout_centerVertical stretches)
-field_value:   0,0-224,85       → fills box, baseline-aligned to ref
+field_root:    7,0-471,143      cell: 464×143 px
+field_header:  7,0-471,48       header: 48 px
+baseline_box:  7,48-471,143     centering region: 95 px
+field_value:   276,10-464,85    bitmap: 188×75 px (right-aligned)
 ```
 
-Compare with native fields in the same dump to verify baseline positions.
-
-`uiautomator dump` does not work on Karoo during rides or the page builder
-(fails with "could not get idle state" even with animations disabled).
-`dumpsys activity top` works reliably.
+`uiautomator dump` does not work on Karoo during rides or the page
+builder; `dumpsys activity top` works reliably.
 
 ## Native style attribute mapping
 
-The decompiled rideapp resources at
-`docs/ride_decompiled/resources/res/values/styles.xml` give us the canonical
-attribute values for every text style the native field uses. Our XML mirrors
-these where possible. This is the source of truth for any attribute we copy.
+Source: `docs/ride_decompiled/resources/res/values/styles.xml`.
 
-### `dataHeaderTextStyle` (header label TextView, `styles.xml:3655`)
+### `dataHeaderTextStyle` (header label, `styles.xml:3655`)
 
-| Attribute | Native value | Our `field_label` | Mirror? |
+| Attribute | Native | Our `field_label` | Mirror? |
 |---|---|---|---|
-| `textSize` | 17sp (default, overridden by code per `(colSpan, rowSpan)` lookup) | dynamic per `ViewSizeConfig.headerFontSize` | ✓ |
+| `textSize` | per-layout via `DataElementConstraints` | dynamic per `ViewSizeConfig.headerFontSize` | ✓ |
 | `textColor` | `elementViewHeaderColor` | set in code | ✓ |
 | `ellipsize` | end | end | ✓ |
 | `gravity` | `center_vertical \| end` | matches per variant | ✓ |
-| `lines` | 2 | 2 | ✓ |
+| `lines` | 2 | 2 (forced via `setLines(2)`) | ✓ |
 | `includeFontPadding` | false | false | ✓ |
-| `lineSpacingMultiplier` | 0.7 | 0.7 | ✓ |
+| `lineSpacingMultiplier` | 0.6 (narrow cells) | 0.6 | ✓ |
 | `textAllCaps` | true | true | ✓ |
-| `fontFamily` | `@string/commonmodule_data_label_font` = `ibm-plex-sans-condensed` | `ibm-plex-sans-condensed` | ✓ |
-| `layout_marginStart` | 1dp | 1dp | ✓ |
+| `fontFamily` | `ibm-plex-sans-condensed` | `ibm-plex-sans-condensed` | ✓ |
+| `layout_marginStart` | 1 dp | 1 dp | ✓ |
 | `breakStrategy` | simple (0) | simple | ✓ |
-| `textAlignment` | textStart (1) | **deliberately unset** | ✗ (see below) |
+| `textAlignment` | textStart | **deliberately unset** | ✗ (see below) |
 
 ### `dataHeader` (header container, `styles.xml:3646`)
 
-| Attribute | Native value | Our `field_header` | Mirror? |
+| Attribute | Native | Our `field_header` | Mirror? |
 |---|---|---|---|
-| `clipChildren` | false | inherited from root (`clipChildren=false`) | ✓ |
+| `clipChildren` | false | inherited from root | ✓ |
 | `clipToPadding` | false | false | ✓ |
-| `minHeight` | 22dp | 22dp (constant in `ViewSizeConfig.headerMinHeightDp`; the label's `lines=2` lets the header grow naturally for narrow layouts) | ✓ |
-| `paddingStart` / `paddingEnd` | 1dp | 1dp | ✓ |
+| `minHeight` | 22 dp | content-driven via `headerMinHeightDp` (= max(26 dp, label band)) | ≈ |
+| `paddingStart` / `paddingEnd` | 1 dp | 1 dp | ✓ |
 
-### `singleNumericDataStyle` (value TextView, `styles.xml:3714`)
+### `singleNumericDataStyle` (value, `styles.xml:3714`)
 
-| Attribute | Native value | Our `field_value` | Mirror? |
+| Attribute | Native | Our `field_value` (bitmap render) | Mirror? |
 |---|---|---|---|
-| `gravity` | `center_vertical \| end` | end (vertical handled via `alignBaseline=baseline_ref`) | functionally ✓ |
-| `maxLines` | 1 | 1 | ✓ |
-| `includeFontPadding` | false | false | ✓ |
-| `fontFamily` | `@string/commonmodule_monospace_font` = `relative` | `relative` (Karoo system font; falls back to default monospace if absent) | ✓ |
+| `fontFamily` | `relative` | `Typeface.create("relative", NORMAL)` in `Paint` | ✓ |
 | `letterSpacing` | -0.04 | -0.04 | ✓ |
-| `baselineAligned` | false | false | ✓ |
+| `gravity` | `center_vertical \| end` | bitmap drawn at requested align; centering via LinearLayout weights | ≈ |
+| `includeFontPadding` | false | n/a (no TextView padding involved) | n/a |
 
 ### Why we don't mirror `textAlignment`
 
-Native's `dataHeaderTextStyle` sets `textAlignment="textStart"` (= 1). We
-tried mirroring it and it broke right-alignment on every header label —
-the metric tool showed labels visibly left-aligned in their cells. The
-reason is a layout-engine difference, not a style bug:
-
-- **Native** places `headerTextView` inside a `ConstraintLayout` with
-  `layout_width=wrap_content` and `horizontal_bias=1` (right-biased).
-  The TextView itself is sized to the text, and its horizontal position
-  inside the parent is set by the constraint bias. `textAlignment=textStart`
-  is irrelevant — the view fits the text exactly, so "start" vs "end"
-  alignment within the view doesn't affect the visible result.
-- **Ours** places `field_label` inside a `LinearLayout` with
-  `layout_width=0dp` + `layout_weight=1`. That makes the TextView fill
-  *all* available horizontal space, so the view is much wider than the
-  text. With `gravity=end` the text naturally hugs the right edge — but
-  `textAlignment=textStart` overrides `gravity` for text positioning
-  (textAlignment wins when both are set on API 17+) and pushes the text
-  to the left edge.
-
-In other words, native's combination is harmless because the constraint
-geometry positions the view, not the text alignment attribute. Our
-RemoteViews-allowed `LinearLayout` doesn't have constraint bias, so we
-have to let `gravity` win — meaning we leave `textAlignment` unset.
-
-### Stream-state overlay vs `streamStateStyle`
-
-The native `streamStateStyle` (`styles.xml:3725`) governs the
-"Searching / Not available / Idle" overlay. We render our equivalent in
-the separate `stream_state_tv` TextView (declared in `barberfish_field.xml`).
-Native uses `lineSpacingMultiplier=0.6` and `maxLines=2`; we use
-`lineSpacingMultiplier=0.7` and `maxLines=2`. Close enough for now;
-tighten if the stream-state overlay drifts noticeably from native.
+Native's `dataHeaderTextStyle` sets `textAlignment="textStart"` but
+positions the TextView via `ConstraintLayout` `horizontal_bias=1`. Our
+`LinearLayout` + `layout_weight=1` makes the TextView fill all
+horizontal space, so we rely on `gravity=end` for the visible right-edge
+hug. `textAlignment` overrides `gravity` for text positioning on API
+17+, so leaving it unset is required.
 
 ## K2 compatibility
 
-All layout attributes (`layout_centerVertical`, `layout_alignBaseline`,
-`layout_below`, `layout_alignParentBottom`, `gravity`) are baked into XML
-and processed at inflation time. K2 blocks `setTranslationY`, `setGravity`,
-and `setTextAlignment` at runtime, but XML-baked parameters are unaffected.
-
-`setTextViewTextSize` and `setViewPadding` (used for baseline_ref font and
-stream_state_tv padding) are standard RemoteViews methods, safe on both K2
-and K3.
+- Layout attributes (`layout_below`, `layout_alignParentBottom`,
+  `layout_weight`, `gravity`) are XML-baked, processed at inflation —
+  unaffected by K2's runtime restrictions.
+- `setImageViewBitmap` and `setFloat(viewId, "setTranslationY", v)` are
+  standard `@RemotableViewMethod` since API 21.
+- `setTextViewTextSize`, `setViewPadding`, `setMinimumHeight` are
+  standard RemoteViews methods.
 
 ## Stream state rendering
 
-`stream_state_tv` (Searching / Not available / Idle) is a separate overlay
-TextView, shown when `field.color is FieldColor.StreamState`. It uses
-`gravity="center_vertical|{end,start,center}"` with `paddingTop` set to
-`actualHeaderPx` (computed from `headerHeightPx` with real `labelLines`).
-`field_value` and `baseline_ref` are hidden (GONE) in this case.
+`stream_state_tv` (Searching / Not available / Idle) is a separate
+overlay TextView, shown when `field.color is FieldColor.StreamState`.
+It uses `gravity="center_vertical|{end,start,center}"` with `paddingTop`
+set to `headerHeightPx` so it sits below the header. `field_value` is
+hidden (GONE) in this case.
+
+## Historical — abandoned approaches
+
+> Kept as a reasoning trail. Current implementation uses bitmap rendering
+> as described above; the approaches below are no longer load-bearing.
+
+- **`baseline_ref` + `layout_alignBaseline` + `layout_centerVertical`:**
+  invisible reference TextView centred in `baseline_box` with
+  `field_value` baseline-locked to it. Worked well at moderate font sizes
+  but Android's RelativeLayout clipped `baseline_ref` to its parent when
+  `ref_view_h > box_h` (5×1, 5×2 with key bar), collapsing the centering
+  geometry. A clip-safe `baselineRefSp` cap mitigated it but couldn't
+  match native pixel-for-pixel on tight layouts.
+- **`gravity="bottom"` + computed `refFontSp` from cellHeight arithmetic:**
+  required `statusBarHeight + navBarHeight` to derive `cellHeightPx`;
+  stale after key-icon toggles and rerouting toast.
+- **`gravity="bottom"` with `valueFontSizeBase`:** zero downward
+  overflow but values sat too high; the descent gap below digits was
+  visually prominent.
+- **Asymmetric bitmap padding** (early bitmap iteration): translation
+  was baked into the bitmap by adding `2N` rows of padding on the
+  opposite side. Worked geometrically but inflated the bitmap, causing
+  `ImageView.fitCenter` to silently downscale on tight 1-col layouts.
+  Replaced by paint-time `setTranslationY`.
