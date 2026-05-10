@@ -133,12 +133,8 @@ data class ViewSizeConfig(
                 valueFontSizeBase = 40,
             )
 
-        // Config-screen preview: smaller font sizes to fit the preview composable
-        val PREVIEW_HUD_THREE = HUD_THREE.copy(valueFontSizeBase = 28, labelMaxLines = 2)
-        val PREVIEW_HUD_FOUR = HUD_FOUR.copy(
-            headerFontSize = 9.sp,
-            valueFontSizeBase = 20,
-            labelMaxLines = 2,
-        )
+        // Config-screen preview: same value/header sizing as on-device.
+        val PREVIEW_HUD_THREE = HUD_THREE.copy(labelMaxLines = 2)
+        val PREVIEW_HUD_FOUR = HUD_FOUR.copy(labelMaxLines = 2)
     }
 }
