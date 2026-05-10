@@ -702,15 +702,18 @@ internal fun SparklineCard(
             val posMin = fillRange.posMin
             val negMax = fillRange.negMax
             val readout = when {
-                hasDescentBands && posMin != null && negMax != null && config.skipBandsDescent > 0 ->
-                    "Grades between ${"%.0f".format(negMax)}% and ${"%.0f".format(posMin)}% stay uncoloured."
-                posMin != null && config.skipBands > 0 ->
+                hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
+                    val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
+                    val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
+                    "Grades between $lower% and $upper% stay uncoloured."
+                }
+                !hasDescentBands && config.skipBands > 0 && posMin != null ->
                     "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
                 else -> null
             }
-            Text("FLAT GRADES", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("EMPHASIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text(
-                "Grades close to flat are mostly noise. Bands marked as flat stay uncoloured.",
+                "Filter out gentle grades so meaningful climbs and descents stand out.",
                 fontSize = 12.sp, color = TextDark,
             )
             if (readout != null) {
