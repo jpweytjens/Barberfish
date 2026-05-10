@@ -1824,7 +1824,7 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
         GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
         GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
         GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
-        GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
+        GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
     }
     Row(modifier = Modifier.fillMaxWidth()) {
         thresholds.forEachIndexed { i, lower ->
