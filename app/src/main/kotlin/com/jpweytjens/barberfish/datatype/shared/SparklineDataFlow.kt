@@ -121,16 +121,23 @@ internal fun sparklineBitmapFlow(
             }
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
-            val climbRanges: List<Pair<Float, Float>> = route?.climbs.orEmpty().mapNotNull { climb ->
-                val startM = climb.startDistance.toFloat()
-                val endM = (climb.startDistance + climb.length).toFloat()
+            val rawClimbRanges: List<Pair<Float, Float>> = when {
+                route != null -> route.climbs.map { climb ->
+                    climb.startDistance.toFloat() to (climb.startDistance + climb.length).toFloat()
+                }
+                debugSweep -> rvvClimbsFixture()
+                else -> emptyList()
+            }
+            val climbRanges = rawClimbRanges.mapNotNull { (startM, endM) ->
                 val startElev = elevationAt(elevPoints, startM) ?: return@mapNotNull null
                 val endElev = elevationAt(elevPoints, endM) ?: return@mapNotNull null
                 if (endElev > startElev) startM to endM else null
             }
-            val poiDistances: List<Float> = route?.pois.orEmpty()
-                .flatMap { it.distancesAlongRoute }
-                .map { it.toFloat() }
+            val poiDistances: List<Float> = when {
+                route != null -> route.pois.flatMap { it.distancesAlongRoute }.map { it.toFloat() }
+                debugSweep -> rvvPoisFixture()
+                else -> emptyList()
+            }
             val (bitmap, updatedRange) = if (sparkCfg.enabled)
                 renderElevationSparkline(
                     elevationPoints = elevPoints,

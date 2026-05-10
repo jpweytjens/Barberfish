@@ -556,6 +556,27 @@ internal val ELEVATION_FIXTURES: LinkedHashMap<String, () -> List<Pair<Float, Fl
     "20m wall→flat→20m gentle" to ::wallThenGentleFixture,
 )
 
+/**
+ * Mock climb ranges for [rvvElevationFixture] — used in debug/preview to verify the
+ * blue climb overlay without needing a live route. Both ranges are clearly uphill in
+ * the polyline so the renderer's polyline-verified uphill check accepts them.
+ */
+internal fun rvvClimbsFixture(): List<Pair<Float, Float>> = listOf(
+    150f to 3270f,    // Muur — initial climb: ~13 m → ~100 m elevation
+    6500f to 7250f,   // second climb: ~42 m → ~73 m elevation
+)
+
+/**
+ * Mock POI distances for [rvvElevationFixture] — used in debug/preview to verify POI
+ * marker rendering without needing a live route. Includes a marker at the top of the
+ * Muur climb plus a couple of others so we can see clustering and spacing behaviour.
+ */
+internal fun rvvPoisFixture(): List<Float> = listOf(
+    3270f,    // top of the Muur
+    7250f,    // top of the second climb
+    14000f,   // mid-route plateau
+)
+
 /** Last 20 km of Tour of Flanders 2025 (RvV). Used for debug builds. */
 internal fun rvvElevationFixture(): List<Pair<Float, Float>> = listOf(
     97.1f to 13.0f, 171.4f to 13.0f, 213.6f to 14.0f, 247.8f to 14.0f, 300.6f to 14.0f, 399.5f to 14.0f,

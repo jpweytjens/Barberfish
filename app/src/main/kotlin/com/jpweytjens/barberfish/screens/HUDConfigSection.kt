@@ -61,6 +61,8 @@ import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
+import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
@@ -164,6 +166,7 @@ internal fun HUDConfigSection(
                 onSelect = { previewSweepSeconds = it },
             )
         }
+        val isRvvFixture = selectedFixtureName == "RvV (last 20km)"
         HUDPreview(
             hudConfig = hudConfig,
             sparklineConfig = sparklineConfig,
@@ -173,6 +176,8 @@ internal fun HUDConfigSection(
             selectedSlot = selectedSlot,
             onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
             fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
+            fixtureClimbRanges = if (isRvvFixture) rvvClimbsFixture() else emptyList(),
+            fixturePoiDistances = if (isRvvFixture) rvvPoisFixture() else emptyList(),
             previewSweepSeconds = previewSweepSeconds,
         )
     } else {
@@ -222,6 +227,8 @@ private fun HUDPreview(
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
     fixturePoints: List<Pair<Float, Float>>? = null,
+    fixtureClimbRanges: List<Pair<Float, Float>>? = null,
+    fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
 ) {
     val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
@@ -243,6 +250,8 @@ private fun HUDPreview(
     var boxWidthPx by remember { mutableIntStateOf(0) }
 
     val elevationPoints = fixturePoints ?: previewElevationFixture()
+    val climbRanges = fixtureClimbRanges ?: rvvClimbsFixture()
+    val poiDistances = fixturePoiDistances ?: rvvPoisFixture()
 
     // Animate position: sweep from route start to end, then loop
     var positionM by remember { mutableStateOf(elevationPoints.first().first) }
@@ -273,7 +282,7 @@ private fun HUDPreview(
         visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
     }
 
-    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
+    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM, climbRanges, poiDistances) {
         if (!sparklineConfig.enabled || boxWidthPx <= 0) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
@@ -294,6 +303,10 @@ private fun HUDPreview(
                 minElevRangeM   = sparklineConfig.yZoom.minRangeM,
                 logWarpK        = sparklineConfig.warp.k,
                 positionFraction = sparklineConfig.warp.positionFraction,
+                climbRanges     = climbRanges,
+                showClimbs      = sparklineConfig.showClimbs,
+                poiDistances    = poiDistances,
+                showPois        = sparklineConfig.showPois,
             )
             displayedRange = newRange
             bitmap
