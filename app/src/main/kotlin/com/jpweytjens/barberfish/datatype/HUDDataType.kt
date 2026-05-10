@@ -25,8 +25,9 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         val paddingPx = (2f * density).toInt()
         // Slot row fills full cell; sparkline overlays at bottom (FrameLayout root).
         // hud_slot_row gets bottom padding = sparklineHeightPx so each slot's real bottom
-        // sits above the sparkline. baseline_ref in the field layout anchors to
-        // layout_alignParentBottom, so values naturally position above the sparkline.
+        // sits above the sparkline. The field layout's baseline_box uses
+        // layout_alignParentBottom, so its centering region shrinks with the slot and
+        // keeps the bitmap value above the sparkline.
         val sizeConfig = if (state.columns == 4) ViewSizeConfig.HUD_FOUR else ViewSizeConfig.HUD_THREE
         val layoutRes =
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
