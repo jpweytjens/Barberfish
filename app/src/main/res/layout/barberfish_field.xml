@@ -10,7 +10,7 @@
         android:id="@+id/stream_state_tv"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center_vertical|end"
+        android:gravity="center"
         android:fontFamily="ibm-plex-sans-condensed"
         android:fontWeight="500"
         android:textColor="@android:color/white"
