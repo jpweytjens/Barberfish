@@ -15,6 +15,7 @@ internal val Grey500 = Color(0xFF7D7D7D)
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
 internal val ICON_TINT_TEAL = Color(0xFF31E09A)
+internal val CLIMBER_BLUE             = Color(0xFF2086d8)
 internal val KAROO_REJOIN_RED         = Color(0xFFfc292b)
 internal val KAROO_DESTINATION_PURPLE = Color(0xFFddacfa)
 internal val TextDark      = Color(0xFF1B2D2D)
