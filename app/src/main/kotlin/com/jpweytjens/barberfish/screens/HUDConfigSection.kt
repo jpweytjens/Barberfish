@@ -726,14 +726,14 @@ internal fun SparklineCard(
                 onSelect = { onUpdate(config.copy(yZoom = it)) },
             )
             Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Tint the outline blue on detected uphill climbs.", fontSize = 12.sp, color = TextDark)
+            Text("Tint the outline blue on climbs as detected by Karoo Climber.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(
                 options = listOf(false to "Off", true to "On"),
                 selected = config.showClimbs,
                 onSelect = { onUpdate(config.copy(showClimbs = it)) },
             )
-            Text("POIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Mark points of interest along the route.", fontSize = 12.sp, color = TextDark)
+            Text("POIs", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Mark points of interest (POIs) along the sparkline.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(
                 options = listOf(false to "Off", true to "On"),
                 selected = config.showPois,
