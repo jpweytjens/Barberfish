@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -238,7 +239,7 @@ private fun HUDPreview(
 
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
-    val sparklineDisplayHeightPx = (32f * density).toInt()
+    val sparklineDisplayHeightPx = (34f * density).toInt()
     var boxWidthPx by remember { mutableIntStateOf(0) }
 
     val elevationPoints = fixturePoints ?: previewElevationFixture()
@@ -299,10 +300,22 @@ private fun HUDPreview(
         }
     }
 
+    // Bleed 8 dp each side to reclaim the CollapsibleSection inner padding so the
+    // preview spans the section card's full width — wider than default but inside the
+    // section bounds (no screen-edge clipping of the rightmost label).
     Box(
         modifier = Modifier
+            .layout { measurable, constraints ->
+                val bleed = 12.dp.roundToPx()
+                val placeable = measurable.measure(
+                    constraints.copy(maxWidth = constraints.maxWidth + bleed)
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.place(-bleed / 2, 0)
+                }
+            }
             .fillMaxWidth()
-            .height(80.dp)
+            .height(90.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
             .onSizeChanged { boxWidthPx = it.width }
@@ -329,7 +342,7 @@ private fun HUDPreview(
             Image(
                 bitmap = sparklineBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(32.dp).align(Alignment.BottomCenter),
+                modifier = Modifier.fillMaxWidth().height(34.dp).align(Alignment.BottomCenter),
                 contentScale = ContentScale.FillBounds,
             )
         }
@@ -367,7 +380,7 @@ private fun HUDPreviewCell(
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sparklineMarginPx = if (sparklineEnabled) 32f * density else 0f
+        val sparklineMarginPx = if (sparklineEnabled) 34f * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
             baseConfig.copy(
@@ -698,6 +711,13 @@ internal fun SparklineCard(
                 options = ElevationZoom.entries.map { it to it.label },
                 selected = config.yZoom,
                 onSelect = { onUpdate(config.copy(yZoom = it)) },
+            )
+            Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Tint the outline blue on detected uphill climbs.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = listOf(true to "On", false to "Off"),
+                selected = config.showClimbs,
+                onSelect = { onUpdate(config.copy(showClimbs = it)) },
             )
         }
     }

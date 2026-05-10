@@ -163,6 +163,8 @@ internal fun renderElevationSparkline(
     minElevRangeM: Float = 50f,
     logWarpK: Float = 8f,
     positionFraction: Float = 0.05f,
+    climbRanges: List<Pair<Float, Float>> = emptyList(),
+    showClimbs: Boolean = false,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
@@ -319,12 +321,52 @@ internal fun renderElevationSparkline(
         canvas.drawPath(aheadPath, paint)
     }
 
+    // 4b. Blue climb overlay — overpaints past+ahead outlines on detected uphill climbs.
+    if (showClimbs && climbRanges.isNotEmpty()) {
+        paint.color = CLIMBER_BLUE.toArgb()
+        for ((startM, endM) in climbRanges) {
+            val s = startM.coerceAtLeast(windowStart)
+            val e = endM.coerceAtMost(windowEnd)
+            if (s >= e) continue
+            val startElev = elevationAt(visible, s) ?: continue
+            val endElev = elevationAt(visible, e) ?: continue
+            val path = Path().apply {
+                moveTo(toX(s), toY(startElev))
+                visible.forEach { (d, ee) ->
+                    if (d > s && d < e) lineTo(toX(d), toY(ee))
+                }
+                lineTo(toX(e), toY(endElev))
+            }
+            canvas.drawPath(path, paint)
+        }
+    }
+
     // 5. Position dot
     paint.style = Paint.Style.FILL
     paint.color = dotColor
     canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
     return ElevationSparklineResult(bitmap, newDisplayedRange)
+}
+
+/**
+ * Linear-interpolates the elevation at a given route distance from a sorted-by-distance list
+ * of `(distanceM, elevationM)` polyline points. Returns null on an empty input. Distances
+ * outside the polyline range clamp to the first/last sample.
+ */
+internal fun elevationAt(points: List<Pair<Float, Float>>, distanceM: Float): Float? {
+    if (points.isEmpty()) return null
+    if (distanceM <= points.first().first) return points.first().second
+    if (distanceM >= points.last().first) return points.last().second
+    for (i in 0 until points.lastIndex) {
+        val (d1, e1) = points[i]
+        val (d2, e2) = points[i + 1]
+        if (distanceM in d1..d2) {
+            val t = if (d2 > d1) (distanceM - d1) / (d2 - d1) else 0f
+            return e1 + (e2 - e1) * t
+        }
+    }
+    return null
 }
 
 /**
