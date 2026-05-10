@@ -130,7 +130,7 @@ data class ViewSizeConfig(
                 headerFontSize = 11.sp,
                 labelMaxLines = 1,
                 wrapThresholdSp = 12,
-                valueFontSizeBase = 40,
+                valueFontSizeBase = 32,
             )
 
         // Config-screen preview: same value/header sizing as on-device.
