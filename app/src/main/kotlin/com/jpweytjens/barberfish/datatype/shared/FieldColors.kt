@@ -128,14 +128,28 @@ private val KAROO_GRADE_BANDS_READABLE = listOf(
      0.0 to karooPowerColorsReadable[0], //  <4.6%     — dark green
 )
 
+// Turbo grade bands — readable by construction; the only palette that colors negative grades.
+// Single variant: no _READABLE split.
+private val TURBO_GRADE_BANDS = listOf(
+    15.0  to Color(0xFF8E1201),                   // [15, ∞)   — deep crimson
+    12.0  to Color(0xFFBC2900),                   // [12, 15)  — dark red
+     9.0  to Color(0xFFDD4700),                   //  [9, 12)  — red-orange
+     6.0  to Color(0xFFFE932C),                   //  [6, 9)   — orange
+     3.0  to Color(0xFFF1D749),                   //  [3, 6)   — yellow
+     0.0  to Color(0xFFB0F94D),                   //  [0, 3)   — lime green
+    -3.0  to Color(0xFF30F0A9),                   // [-3, 0)   — mint
+    -6.0  to Color(0xFF2BC7F0),                   // [-6, -3)  — light blue
+    Double.NEGATIVE_INFINITY to Color(0xFF5783E9) // (-∞, -6)  — blue
+)
+
 internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
-    if (percent < 0) return null
     val bands = when (palette) {
         GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE else WAHOO_GRADE_BANDS
         GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
         GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
         GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE else ZWIFT_GRADE_BANDS
+        GradePalette.TURBO -> TURBO_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second
 }
@@ -154,6 +168,7 @@ internal fun gradeThreshold(palette: GradePalette, skipBands: Int = 1): Double {
         GradePalette.HSLUV  -> HSLUV_GRADE_BANDS
         GradePalette.KAROO  -> KAROO_GRADE_BANDS
         GradePalette.ZWIFT  -> ZWIFT_GRADE_BANDS
+        GradePalette.TURBO  -> TURBO_GRADE_BANDS
     }
     val idx = (bands.lastIndex - skipBands).coerceAtLeast(0)
     return bands[idx].first
