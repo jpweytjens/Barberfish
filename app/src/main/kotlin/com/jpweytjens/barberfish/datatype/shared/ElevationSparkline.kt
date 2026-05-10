@@ -562,8 +562,8 @@ internal val ELEVATION_FIXTURES: LinkedHashMap<String, () -> List<Pair<Float, Fl
  * the polyline so the renderer's polyline-verified uphill check accepts them.
  */
 internal fun rvvClimbsFixture(): List<Pair<Float, Float>> = listOf(
-    150f to 3270f,    // Muur — initial climb: ~13 m → ~100 m elevation
-    6500f to 7250f,   // second climb: ~42 m → ~73 m elevation
+    150f to 4340f,    // Muur — long initial climb: ~13 m → ~112 m peak
+    6500f to 6875f,   // second climb: ~42 m → ~73 m peak
 )
 
 /**
@@ -572,8 +572,8 @@ internal fun rvvClimbsFixture(): List<Pair<Float, Float>> = listOf(
  * Muur climb plus a couple of others so we can see clustering and spacing behaviour.
  */
 internal fun rvvPoisFixture(): List<Float> = listOf(
-    3270f,    // top of the Muur
-    7250f,    // top of the second climb
+    4340f,    // top of the Muur (highest point in the fixture)
+    6875f,    // top of the second climb
     14000f,   // mid-route plateau
 )
 
