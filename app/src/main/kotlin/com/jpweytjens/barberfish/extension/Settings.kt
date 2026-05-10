@@ -136,6 +136,7 @@ data class SparklineConfig(
     val warp: SparklineWarp = SparklineWarp.MILD,
     val yZoom: ElevationZoom = ElevationZoom.NORMAL,
     val showClimbs: Boolean = true,
+    val showPois: Boolean = true,
 )
 
 @Serializable
