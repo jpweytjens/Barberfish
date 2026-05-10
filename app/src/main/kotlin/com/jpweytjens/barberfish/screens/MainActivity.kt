@@ -1357,7 +1357,7 @@ private fun ZonePaletteDropdown(
             }
         }
     }
-    if (readable) {
+    if (selected == ZonePalette.HSLUV) {
         Text(
             "HSLuv is designed for Karoo's dark screen",
             fontSize = 10.sp,
