@@ -342,7 +342,7 @@ private fun HUDPreview(
             Image(
                 bitmap = sparklineBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(34.dp).align(Alignment.BottomCenter),
+                modifier = Modifier.fillMaxWidth().height(30.dp).align(Alignment.BottomCenter),
                 contentScale = ContentScale.FillBounds,
             )
         }
