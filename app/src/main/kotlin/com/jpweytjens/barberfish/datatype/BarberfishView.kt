@@ -98,6 +98,7 @@ private fun makeFieldRemoteViews(
             "Barberfish",
             "makeFieldRemoteViews: label='$displayLabel' text='${field.primary}'" +
                 " fontSp=$fontSp valueFontSizeBase=${sizeConfig.valueFontSizeBase}" +
+                " cellWidthPx=$cellWidthPx" +
                 " headerFontSp=${sizeConfig.headerFontSize.value} headerIconSizeDp=${sizeConfig.headerIconSize.value}" +
                 " alignment=$alignment paddingHPx=$paddingHPx",
         )
