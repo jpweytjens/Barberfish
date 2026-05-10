@@ -58,10 +58,10 @@ fun ViewConfig.toViewSizeConfig(
     // paint-time via setTranslationY on field_value so the bitmap stays
     // inside baseline_box.
     val valueTranslationDp = when {
-        colSpan == ONE_COL && rowSpan == FIVE_ROWS   -> -3  // 5×1
-        colSpan == ONE_COL && rowSpan == FOUR_ROWS   -> -4  // 4×1
-        colSpan == ONE_COL && rowSpan == THREE_ROWS  -> -4  // 3×1
-        colSpan == ONE_COL                            -> -4  // 1×1, 2×1
+        colSpan == ONE_COL && rowSpan == FIVE_ROWS   -> -3   // 5×1
+        colSpan == ONE_COL && rowSpan == FOUR_ROWS   -> 0   // 4×1
+        colSpan == ONE_COL && rowSpan == THREE_ROWS  -> 0   // 3×1
+        colSpan == ONE_COL                            -> 4   // 1×1, 2×1
         else                                          -> 0
     }
     return ViewSizeConfig.STANDARD.copy(
