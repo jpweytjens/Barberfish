@@ -1839,7 +1839,7 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
         }
         Layout(
             modifier = Modifier.fillMaxWidth(),
-            content = { boundaries.forEach { Text(it, fontSize = 7.sp, color = TextDark) } },
+            content = { boundaries.forEach { Text(it, fontSize = 10.sp, color = TextDark) } },
         ) { measurables, constraints ->
             val totalWidth = constraints.maxWidth
             val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0)) }
