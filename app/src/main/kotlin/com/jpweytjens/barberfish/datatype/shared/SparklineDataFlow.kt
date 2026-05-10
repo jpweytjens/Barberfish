@@ -128,6 +128,9 @@ internal fun sparklineBitmapFlow(
                 val endElev = elevationAt(elevPoints, endM) ?: return@mapNotNull null
                 if (endElev > startElev) startM to endM else null
             }
+            val poiDistances: List<Float> = route?.pois.orEmpty()
+                .flatMap { it.distancesAlongRoute }
+                .map { it.toFloat() }
             val (bitmap, updatedRange) = if (sparkCfg.enabled)
                 renderElevationSparkline(
                     elevationPoints = elevPoints,
@@ -148,6 +151,8 @@ internal fun sparklineBitmapFlow(
                     positionFraction = sparkCfg.warp.positionFraction,
                     climbRanges = climbRanges,
                     showClimbs = sparkCfg.showClimbs,
+                    poiDistances = poiDistances,
+                    showPois = sparkCfg.showPois,
                 )
             else ElevationSparklineResult(null, ratchetRange)
             ratchetRange = updatedRange

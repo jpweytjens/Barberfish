@@ -719,6 +719,13 @@ internal fun SparklineCard(
                 selected = config.showClimbs,
                 onSelect = { onUpdate(config.copy(showClimbs = it)) },
             )
+            Text("POIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Mark points of interest along the route.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = listOf(true to "On", false to "Off"),
+                selected = config.showPois,
+                onSelect = { onUpdate(config.copy(showPois = it)) },
+            )
         }
     }
 }

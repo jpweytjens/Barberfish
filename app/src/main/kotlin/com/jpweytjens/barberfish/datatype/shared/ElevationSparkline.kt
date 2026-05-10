@@ -142,6 +142,7 @@ private const val MIN_FILL_PX = 1f          // skip colour fills narrower than t
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
 private const val DOT_RADIUS_PX = 6f
+private const val POI_RADIUS_PX = 7f
 
 /** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
 internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
@@ -165,6 +166,8 @@ internal fun renderElevationSparkline(
     positionFraction: Float = 0.05f,
     climbRanges: List<Pair<Float, Float>> = emptyList(),
     showClimbs: Boolean = false,
+    poiDistances: List<Float> = emptyList(),
+    showPois: Boolean = false,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
@@ -338,6 +341,27 @@ internal fun renderElevationSparkline(
                 lineTo(toX(e), toY(endElev))
             }
             canvas.drawPath(path, paint)
+        }
+    }
+
+    // 4c. POI markers — generic filled circle, drawn under the position dot.
+    if (showPois && poiDistances.isNotEmpty()) {
+        val poiRadius = POI_RADIUS_PX
+        val fillColor = if (isNightMode) android.graphics.Color.argb(230, 255, 255, 255)
+            else android.graphics.Color.argb(230, 0, 0, 0)
+        val strokeColor = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        for (d in poiDistances) {
+            if (d < windowStart || d > windowEnd) continue
+            val elev = elevationAt(visible, d) ?: continue
+            val cx = toX(d)
+            val cy = toY(elev).coerceIn(poiRadius, heightPx - poiRadius)
+            paint.style = Paint.Style.FILL
+            paint.color = fillColor
+            canvas.drawCircle(cx, cy, poiRadius, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 1.5f
+            paint.color = strokeColor
+            canvas.drawCircle(cx, cy, poiRadius, paint)
         }
     }
 
