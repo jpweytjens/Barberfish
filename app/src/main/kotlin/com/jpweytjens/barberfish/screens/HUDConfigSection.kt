@@ -297,6 +297,7 @@ private fun HUDPreview(
                 readable        = zoneConfig.readableColors,
                 lookaheadM      = sparklineConfig.lookaheadKm * 1_000f,
                 skipBands       = sparklineConfig.skipBands,
+                skipBandsDescent = sparklineConfig.skipBandsDescent,
                 displayedRange  = displayedRange,
                 distanceDeltaM  = distanceDeltaM,
                 isNightMode     = isNightMode,
@@ -692,18 +693,46 @@ internal fun SparklineCard(
                 selected = config.lookaheadKm,
                 onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
             )
-            val threshold = gradeFillRange(palette, skipBandsClimb = config.skipBands).posMin ?: 0.0
-            Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            val fillRange = gradeFillRange(
+                palette,
+                skipBandsClimb = config.skipBands,
+                skipBandsDescent = config.skipBandsDescent,
+            )
+            val hasDescentBands = gradeFillRange(palette).negMax != null
+            val posMin = fillRange.posMin
+            val negMax = fillRange.negMax
+            val readout = when {
+                hasDescentBands && posMin != null && negMax != null && config.skipBandsDescent > 0 ->
+                    "Grades between ${"%.0f".format(negMax)}% and ${"%.0f".format(posMin)}% stay uncoloured."
+                posMin != null && config.skipBands > 0 ->
+                    "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+                else -> null
+            }
+            Text("FLAT GRADES", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text(
-                if (config.skipBands == 0) "Skip the lowest color bands. Bands are set by the gradient palette."
-                else "Skip the lowest color bands. Bands are set by the gradient palette. Grades below ≥${"%.0f".format(threshold)}% stay uncolored.",
+                "Grades close to flat are mostly noise. Bands marked as flat stay uncoloured.",
                 fontSize = 12.sp, color = TextDark,
+            )
+            if (readout != null) {
+                Text(readout, fontSize = 12.sp, color = TextDark)
+            }
+            Text(
+                if (hasDescentBands) "Climbs" else "Bands",
+                fontSize = 11.sp, color = TextDark,
             )
             SegmentedRow(
                 options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
                 selected = config.skipBands,
                 onSelect = { onUpdate(config.copy(skipBands = it)) },
             )
+            if (hasDescentBands) {
+                Text("Descents", fontSize = 11.sp, color = TextDark)
+                SegmentedRow(
+                    options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                    selected = config.skipBandsDescent,
+                    onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
+                )
+            }
             Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(

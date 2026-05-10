@@ -149,6 +149,7 @@ internal fun sparklineBitmapFlow(
                     readable = zoneConfig.readableColors,
                     lookaheadM = sparkCfg.lookaheadKm * 1000f,
                     skipBands = sparkCfg.skipBands,
+                    skipBandsDescent = sparkCfg.skipBandsDescent,
                     displayedRange = ratchetRange,
                     distanceDeltaM = distanceDeltaM,
                     dotColor = dotColor,

@@ -132,6 +132,7 @@ data class SparklineConfig(
     val enabled: Boolean = true,
     val lookaheadKm: Int = 10,
     val skipBands: Int = 1,
+    val skipBandsDescent: Int = 0,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
     val warp: SparklineWarp = SparklineWarp.MILD,
     val yZoom: ElevationZoom = ElevationZoom.NORMAL,
