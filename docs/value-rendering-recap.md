@@ -84,28 +84,74 @@ within ±0–5 px of native on all measured pairs.
 
 ## K2 incompatibility
 
-**Karoo 2's rideapp does not accept `setTranslationY` as a remotable
-method.** Empirical confirmation: after deploying the current build to
-K2, the right column of a 2×4 native+BF page (where BF cells live) renders
-**entirely blank**. The `RemoteViews.setFloat(viewId, "setTranslationY",
-v)` call causes the rideapp to reject the entire RemoteViews application,
-leaving the cell empty.
+**`View.setTranslationY` is not a `@RemotableViewMethod` on Android 8.1
+(API 27 — Karoo 2's OS).** That annotation was added to the framework in
+API 28 (Android 9 / Pie). On K2, calling
+`RemoteViews.setFloat(viewId, "setTranslationY", v)` throws
+`ActionException` at apply time. The rideapp catches it, leaves the
+cell empty, and logs a warning.
 
-A previous version of `docs/baseline-alignment.md` had this caveat:
+### Empirical confirmation
 
-> All layout attributes (`layout_centerVertical`, `layout_alignBaseline`,
-> `layout_below`, `layout_alignParentBottom`, `gravity`) are baked into
-> XML and processed at inflation time. **K2 blocks `setTranslationY`,
-> `setGravity`, and `setTextAlignment` at runtime**, but XML-baked
-> parameters are unaffected.
+Logcat from K2 (Android 8.1.0, API 27) immediately after our extension
+attempts to render any BF cell with the `setFloat` call:
 
-That note was based on prior empirical testing. It was inadvertently
-removed during a doc rewrite, and the issue resurfaced when we adopted
-`setTranslationY` for the bitmap path.
+```
+W HHApp: Extensions: Error in view for TYPE_EXT::barberfish::power
+W HHApp: android.widget.RemoteViews$ActionException:
+  view: android.widget.ImageView can't use method with RemoteViews:
+  setTranslationY(float)
+```
 
-`View.setTranslationY` IS `@RemotableViewMethod` in stock Android since
-API 21. The rideapp on K2 has its own additional restrictions beyond
-stock Android, and `setTranslationY` is among the blocked methods.
+Repeated for every BF cell (`barberfish::power`, `::time-paused`,
+`::speed`, `::avg-speed-total`, …). On screen: native fields render
+normally, BF cells render entirely blank.
+
+### Why the rideapp's own use is fine
+
+The rideapp owns its native data field views directly. K2's
+`hhk5/f.java:46` (= K3's `hhu5/f.java:48`):
+
+```java
+((AppCompatTextView) c0032k.hhc).setTranslationY(constraints.f2347hhb);
+```
+
+This is a **direct method call** on a view the rideapp owns — not via
+RemoteViews. No `@RemotableViewMethod` check, no allowlist. The method
+exists on `View` since API 11; calling it directly works at any API
+level.
+
+Our path is different. We're an extension running in our own process; we
+describe view manipulations as a `RemoteViews` parcel, the karoo-ext SDK
+ships it to the rideapp via IPC, and the rideapp's `RemoteViews.apply()`
+dispatches actions through the framework's reflection machinery. That
+dispatch is gated on the framework's `@RemotableViewMethod` allowlist —
+a security boundary so extensions can't invoke arbitrary view methods on
+the rideapp's UI process.
+
+So:
+
+| Caller | Mechanism | API 27 result |
+|---|---|---|
+| Rideapp internal (native fields) | direct method call | ✅ works |
+| Extension via RemoteViews | reflective dispatch + allowlist check | ❌ throws on K2 |
+| Extension via RemoteViews (K3, API 33) | same | ✅ works (allowlist expanded in API 28+) |
+
+It's not the rideapp blocking us; it's the cross-process safety
+boundary in the Android framework itself. Lowering our app's
+`targetSdk` doesn't help — the check uses the **device's** framework
+annotations (the `View` class shipped with K2's OS image), not our
+app's targetSdk.
+
+### Reference
+
+- Decompiled K2 rideapp: `docs/ride_decompiled_k2/sources/hhk5/f.java`
+  (gitignored — pull from device with
+  `adb pull $(adb shell pm path io.hammerhead.rideapp | sed 's/package://') docs/ride_k2.apk`
+  then `./docs/decompile.sh` after pointing it at `ride_k2.apk`).
+- The K2 rideapp applies our RemoteViews via plain
+  `RemoteViews.apply(context, parent)` in `hhn5/C0402j.java:71` — same
+  unfiltered path as K3, no extra restrictions on the rideapp's side.
 
 ## Options to fix K2
 
