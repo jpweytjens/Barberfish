@@ -17,7 +17,7 @@ private const val FOUR_ROWS = 15
 private const val FIVE_ROWS = 12
 
 // Per-layout label sp mirrors native rideapp's DataElementConstraints lookup;
-// see `docs/baseline-alignment.md`.
+// see `docs/architecture.md` § "Value baseline alignment".
 fun ViewConfig.toViewSizeConfig(
     colSpanOverride: Int? = null,
     textSizeOverride: Int? = null,

@@ -28,16 +28,20 @@ All field rendering goes through a single function in `datatype/BarberfishView.k
 
 ```
 barberfishFieldRemoteViews(field, alignment, colorMode, sizeConfig, preview, context)
-  → RemoteViews (barberfish_field*.xml, selected by alignment)
-      ├── field_header  LinearLayout  (icon + label, wraps content, top of cell)
+  → RemoteViews (barberfish_field*.xml, selected by alignment + valueTranslationDp)
+      ├── stream_state_tv   TextView      (GONE by default; shown for non-Streaming SDK states)
+      ├── header_ref        TextView      (invisible 1-line probe; anchors baseline_box)
+      ├── field_header      LinearLayout  (icon + label, alignParentTop, may wrap to 2 lines)
       │   ├── field_icon            ImageView
       │   ├── field_icon_secondary  ImageView  (GONE by default)
       │   └── field_label           TextView
-      ├── field_value       TextView  (match_parent, gravity="top", positioned via paddingTop)
-      └── stream_state_tv   TextView  (GONE by default; shown for non-Streaming SDK states)
+      └── baseline_box      LinearLayout  (layout_below=header_ref, alignParentBottom)
+          ├── TextView (weight=1)         (top spacer)
+          ├── field_value   ImageView     (Bitmap, baseline pinned to bottom edge)
+          └── TextView (weight=1)         (bottom spacer)
 ```
 
-Alignment determines the layout file: `barberfish_field.xml` (right), `barberfish_field_left.xml` (left), `barberfish_field_center.xml` (center). Each layout bakes in the correct gravity for header and value text. No programmatic `setGravity()` calls are made.
+Alignment determines the layout file: `barberfish_field.xml` (right), `barberfish_field_left.xml` (left), `barberfish_field_center.xml` (center). Per-layout vertical translation is baked into `*_neg3.xml` variants via `android:translationY` on `field_value` (selected when `valueTranslationDp == -3`). No programmatic `setGravity()` or `setTranslationY()` calls are made — both are blacklisted on K2 (see `docs/karoo2-compatibility.md`).
 
 `barberfishFieldRemoteViews()` receives a `FieldState` and a `ViewSizeConfig`; it has no access to streams, DataStore, or configuration. All sizing decisions are made by the caller before this function is invoked.
 
@@ -101,8 +105,8 @@ All spacing and sizing constants for one rendering context live in a single `Vie
 
 ```
 Cell level   paddingH
-Header       headerIconSize, headerIconLabelGap, headerFontSize, labelMaxLines
-Value        valueFontSizeBase, wrapThresholdSp, baselineMarginPx
+Header       headerIconSize, headerIconLabelGap, headerFontSize, labelMaxLines, headerMinHeightDp
+Value        valueFontSizeBase, wrapThresholdSp, valueBitmapHeightDp, valueTranslationDp
 ```
 
 Presets:
@@ -180,27 +184,41 @@ parameters flow in through `ViewSizeConfig`; the view layer makes no sizing deci
 
 ## Value baseline alignment
 
-The value TextView's baseline is aligned to an invisible `baseline_ref` TextView using `layout_alignBaseline`. The reference is anchored to the real container bottom via `layout_alignParentBottom="true"`, with `gravity="bottom"`. Its font size is set programmatically so its descent equals the target `baselineMarginPx`:
+Goal: keep the visible value baseline stable regardless of (a) `fontSizeForCell` shrinking the text for long strings, (b) the rideapp resizing cells mid-ride without re-calling `startView` (rerouting toast, key-icon toggle), and (c) the visible header wrapping to one or two lines.
 
-```kotlin
-val refFontPx = sizeConfig.baselineMarginPx / 0.244f  // monospace descent ratio
-val refFontSp = refFontPx / density
-rv.setTextViewTextSize(R.id.baseline_ref, COMPLEX_UNIT_SP, refFontSp)
+### Why we can't copy native directly
+
+Native renders inside `ConstraintLayout` (`data_element_single.xml`), which lets a `wrap_content` value view overflow its constraint region symmetrically. The Karoo rideapp's RemoteViews allowlist excludes `ConstraintLayout` and `Space`, so we work inside `RelativeLayout` → `LinearLayout` → `TextView`/`ImageView`, where `wrap_content` cannot overflow the parent.
+
+### Bitmap-rendered value
+
+`field_value` is an `ImageView` displaying a `Bitmap` rendered at ride time by `renderValueBitmap()` in `shared/BitmapValue.kt`.
+
+- **Constant bitmap height per layout**: `bitmap_h_px = 0.74 × valueFontBaseSp × density`. Just enough to hold the visible glyph cap (~0.7 × textSize for the `relative` monospace) plus a small buffer.
+- **Baseline pinned to the bitmap's bottom edge**. Digits have no descenders, so bitmap bottom = visible cap bottom = baseline. When `fontSizeForCell` shrinks the text, the smaller glyphs draw inside the same-size bitmap with the baseline at the same position — content shrinks don't move the baseline.
+- **`Bitmap.density = DENSITY_NONE`** so the rideapp renders at native pixel size with no scaling.
+
+### `header_ref` + `baseline_box` centering
+
+The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. To keep the centering region top stable regardless, an invisible `header_ref` `TextView` (`lines=1`, mirrors `dataHeaderTextStyle`, `minHeight` set programmatically to match the visible header) anchors `baseline_box`'s top via `layout_below="@id/header_ref"`.
+
+Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value` `ImageView` (`Space` would have been the natural choice but is blocked by the allowlist). The 1:1 weights geometrically reproduce native's `bias=0.5` centering between header bottom and cell bottom, and adapt automatically when the rideapp shrinks the cell — no `cellHeightPx` plumbing.
+
+### Per-layout vertical translation
+
+Mirrors native's `DataElementConstraints.dataTranslationY` lookup. Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so we need a single extra XML variant per alignment.
+
+The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is **not** used — `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
+
+### Verification
+
+`scripts/walk_layouts.sh` captures every layout (1×1 through 5×2), screenshotting and dumping view bounds via `dumpsys`. `scripts/measure_alignment.py` parses both and reports per-pair `Δvalue_baseline` (target ±2 px on same-font 2-col paired rows).
+
+```bash
+adb shell "dumpsys activity top" | grep -E "field_root|baseline_box|field_value|dataTextView|headerLayout"
 ```
 
-The layout engine places the value's baseline `descent_ref` pixels above the real container bottom — independent of the value's own font size (which may shrink via `fontSizeForCell` for long strings) and independent of reported cell height (the `alignParentBottom` anchor always tracks the actual bottom, even when the rerouting toast shrinks cells mid-ride without re-calling `startView`).
-
-### `baselineMarginPx` per grid size
-
-| colSpan | rowSpan | baselineMarginPx | Layout context  |
-| ------- | ------- | ----------------- | --------------- |
-| 60      | 3-row   | 5                 | 1-col 3-row     |
-| 60      | 4-row   | 7                 | 1-col 4-row     |
-| 60      | 5-row   | 5                 | 1-col 5-row     |
-| 30      | 4-row   | 7                 | 2-col 4-row     |
-| 30      | 5-row   | 9                 | 2-col 5-row     |
-| 20      | any     | 5                 | HUD 3-col       |
-| 15      | any     | 5                 | HUD 4-col       |
+`uiautomator dump` does not work on Karoo during rides or in the page builder; `dumpsys activity top` works reliably.
 
 ---
 

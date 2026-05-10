@@ -37,7 +37,7 @@ cell) to make grid detection trivial. If borders aren't visible in the
 screenshot, the script falls back to uniform subdivision of the detected
 content area according to the rows×cols implied by the page filename.
 
-Why pixel analysis over ADB: see ``docs/baseline-alignment.md`` and the plan
+Why pixel analysis over ADB: see ``docs/architecture.md`` § "Value baseline alignment" and the plan
 under ``~/.claude/plans/``. Briefly: no ADB tool exposes the rendered baseline
 directly, ``uiautomator dump`` is dead on Karoo, and computing the baseline
 from view bounds + font metrics requires reverse-engineered constants per

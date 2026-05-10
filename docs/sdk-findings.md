@@ -121,26 +121,6 @@ Not allowed (even though they compile):
 
 ---
 
-## Value-centering in RemoteViews
-
-Native uses ConstraintLayout (`top_toBottomOf=header`, `bottom_toBottomOf=parent`,
-`wrap_content`, default bias 0.5) to center the value between the header bottom and the
-cell bottom. ConstraintLayout is not allowed in RemoteViews, so we mirror the geometry
-with a hidden 1-line header probe (`header_ref`), a nested `RelativeLayout` (`baseline_box`)
-anchored to its bottom, and an invisible centered `baseline_ref` whose baseline the value
-view aligns to.
-
-`FrameLayout` + `match_parent` + `gravity=center_vertical` is NOT equivalent — gravity
-centers text within a stretched view, not the view within space. With
-`includeFontPadding=false` it produces visibly wrong alignment.
-
-See `docs/baseline-alignment.md` § "Current approach — header_ref anchor + nested
-baseline_box + per-layout ref font" for the full pattern, including why we anchor to
-`header_ref` (a hidden 1-line probe) rather than the visible `field_header` (which may
-wrap to 2 lines and would otherwise shift the value down).
-
----
-
 ## SDK container geometry
 
 When `emitter.updateView(rv)` is called, the ride app creates a `FrameLayout` and inserts
@@ -275,18 +255,8 @@ the appropriate variant at render time via `removeAllViews` / `addView` (both wo
 
 ### Barberfish layout approach
 
-Value centering uses a nested `baseline_box` RelativeLayout (`layout_below=header_spacer` +
-`layout_alignParentBottom`) containing `baseline_ref` (`layout_centerVertical` +
-`gravity=center_vertical` + `includeFontPadding=true`) and `field_value`
-(`layout_alignBaseline=baseline_ref`). The reference font size (`baselineRefSp`) is a
-per-layout lookup tuned visually.
-
-Robust to cell resizes (key icons, toast) because `layout_below` + `alignParentBottom`
-re-sizes `baseline_box`, and `layout_centerVertical` re-centers `baseline_ref` within
-the new bounds. No `viewSize` or `cellH` dependency.
-
-Remaining limitation: when the value font exceeds the centering box (common for 5-row
-cells with key icons ON), descent clips at the cell bottom. Native avoids this because
-ConstraintLayout allows `wrap_content` views larger than their constraint space — the
-value view overflows symmetrically without being clipped by a wrapper FrameLayout.
-See `docs/baseline-alignment.md` for full analysis.
+Value centering uses `baseline_box` (LinearLayout with `weight=1` `TextView` spacers
+around `field_value`), which adapts automatically when the rideapp shrinks the cell —
+`layout_below=header_ref` + `alignParentBottom` re-sizes the box, and the spacer
+weights re-center the bitmap within the new bounds. No `viewSize` or `cellH` dependency.
+See `docs/architecture.md` § "Value baseline alignment".
