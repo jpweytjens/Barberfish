@@ -54,14 +54,10 @@ fun ViewConfig.toViewSizeConfig(
     val headerMinHeightDp = maxOf(26, labelBandDp.toInt())
     val valueFontBase = textSizeEff.coerceAtLeast(20)
     val valueBitmapHeightDp = (0.74f * valueFontBase).toInt().coerceAtLeast(16)
-    // Mirrors native's DataElementConstraints.dataTranslationY; applied
-    // paint-time via setTranslationY on field_value so the bitmap stays
-    // inside baseline_box.
+    // Mirrors native's DataElementConstraints.dataTranslationY. Applied
+    // via XML-baked android:translationY (see BarberfishView.layoutRes).
     val valueTranslationDp = when {
         colSpan == ONE_COL && rowSpan == FIVE_ROWS   -> -3   // 5×1
-        colSpan == ONE_COL && rowSpan == FOUR_ROWS   -> 0   // 4×1
-        colSpan == ONE_COL && rowSpan == THREE_ROWS  -> 0   // 3×1
-        colSpan == ONE_COL                            -> 4   // 1×1, 2×1
         else                                          -> 0
     }
     return ViewSizeConfig.STANDARD.copy(

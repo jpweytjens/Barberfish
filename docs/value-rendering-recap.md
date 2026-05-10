@@ -243,26 +243,136 @@ K2-compatible: yes.
 **Pros:** zero special-casing, identical render path on K2 and K3.
 **Cons:** 1×1/2×1 and 5×1 will be visibly misaligned with native (~6 px).
 
-## Recommendation
+## Resolution: XML-baked `android:translationY`
 
-Either:
+**Adopted**. We bake the per-layout translation into XML via
+`android:translationY` on the `field_value` `ImageView`. XML attributes
+are processed by `LayoutInflater` at inflate time — direct method
+dispatch on the freshly inflated view, bypassing the
+`@RemotableViewMethod` allowlist entirely. K2-compatible.
 
-- **Option A with T_5×1 = 0** — restore bitmap-baked padding, drop only
-  5×1's translation. 1×1/2×1 keep their +4 dp via `extraTop=15` (bitmap
-  fits comfortably in those tall cells), 3×1/4×1 unchanged, 5×1 takes a
-  small residual.
-- **Option D** — the cleaner long-term path; reproduces native's
-  structural overflow behavior. Worth prototyping if memory is not a
-  concern (~30% per-cell increase, still small in absolute terms).
+Implementation (commit on the branch):
 
-## Current state on the branch
+- Three new XML files mirror the existing alignment variants but add
+  `android:translationY="-3dp"` to `field_value`:
+  - `barberfish_field_neg3.xml` (right)
+  - `barberfish_field_left_neg3.xml` (left)
+  - `barberfish_field_center_neg3.xml` (center)
+- `BarberfishView.layoutRes(alignment, translationDp)` selects the
+  `−3 dp` variant for 5×1, the base XML otherwise.
+- `rv.setFloat(R.id.field_value, "setTranslationY", ...)` is removed.
+- The `valueTranslationDp` table in `ViewSizeConfig.kt` stays at
+  `5×1 = -3 dp`, everything else `0 dp` — no retuning, K3 alignment
+  preserved.
 
-- K3: aligned within ±0–5 px on most paired rows after the
-  `setTranslationY` tune (commit `395bf95`).
-- K2: BF cells fail to render entirely on the right column (and any
-  position where 1-col/2-col layouts trigger the `setFloat` call with
-  non-zero translation).
-- No K2 fix committed yet.
+Why this works on K2 but `setFloat` doesn't:
+
+| Path | Mechanism | Allowlist check | API 27 |
+|---|---|---|---|
+| Inline XML `android:translationY` | LayoutInflater → direct method call on inflated view | none | ✅ |
+| `RemoteViews.setFloat(...)` | `applyActions` → reflective dispatch | `@RemotableViewMethod` | ❌ |
+
+Why this is sufficient (no need for the alternatives below): with only
+two distinct `valueTranslationDp` values (0 dp and −3 dp) in the current
+table, we only need 1 extra XML variant per alignment. If the table
+grew more diverse offsets, the XML count would scale with the number of
+distinct values × 3 alignments.
+
+## Other options considered (not adopted)
+
+### A — Asymmetric padding inside the bitmap
+
+Add `2T` empty pixel rows above the cap (positive T → shift down) or
+`2|T|` rows below the baseline (negative T → shift up). Bitmap grows by
+`2|T|` px. With 1:1 spacer centering, the visible baseline shifts by
+exactly `T`, identical effect to `setTranslationY(T)`.
+
+K2-compatible: yes (only `setImageViewBitmap` is needed).
+
+**Issue:** 5×1 at T = −3 dp needs `bitmap_h + 2|T|` = 75 + 11 = 86 px,
+which exceeds the 79 px `baseline_box` → ImageView fitCenter downscales
+(the original problem we tried to avoid).
+
+**Mitigation:** drop T_5×1 to 0 (or −1 dp ⇒ 4 px padding ⇒ 79 px total,
+exact fit). Accept small residual on 5×1.
+
+### B — Center across the full cell
+
+Replace `baseline_box`'s anchor-below-`header_ref` with full-cell
+centering (FrameLayout or RelativeLayout `centerVertical`). This is what
+native effectively does for fields where `headerLayout` is GONE.
+
+K2-compatible: yes (XML-baked).
+
+**Issue:** changes the centering region for all layouts. Native 2-col
+fields use `(header_b → cell_b)` centering, so BF baselines on 2-col
+would drift relative to native, regressing the currently-passing
+2-col cases.
+
+**Variant:** per-layout XML (1-col uses full cell, 2-col keeps current).
+Adds two more layout XMLs and a runtime selector.
+
+### C — `setViewPadding` on `field_value`
+
+Use the K2-supported `setViewPadding(viewId, l, t, r, b)` to apply
+asymmetric padding to the ImageView. The bitmap shifts visually inside
+the ImageView; the ImageView grows by the padding amount.
+
+K2-compatible: yes (`setViewPadding` is a standard remotable method).
+
+**Issue:** same size-growth concern as Option A — at 5×1 with T = −3 dp,
+`paddingBottom = 11` makes ImageView height 86 px vs 79 px box.
+
+### D — Line-height bitmap with overflow
+
+Make `bitmap_h = 1.03 × textSize × density` (= native's `wrap_content`
+TextView line height for `relative` font). Allow overflow above and below
+via `clipChildren=false` (already set on `field_root` and `baseline_box`).
+Encode translation via where the digit baseline is drawn within the
+bitmap.
+
+This most closely mirrors native's behavior — its TextView line metrics
+overflow the constraint region the same way our bitmap would.
+
+K2-compatible: yes.
+
+**Pros:** structural parity with native, less special-casing.
+**Cons:** ~30% more bitmap pixels per render (memory + draw cost). Need
+to verify the rideapp's outer FrameLayout doesn't clip the overflow at
+the cell boundary.
+
+### E — Hybrid: `setTranslationY` on K3, padding on K2
+
+Detect the device at runtime and use the appropriate mechanism per
+platform.
+
+K2-compatible: yes (when on K2, uses padding path).
+
+**Pros:** preserves K3's optimal alignment (the current state).
+**Cons:** two code paths to maintain; runtime branching adds a small
+amount of complexity.
+
+### F — Drop all translations (T=0 everywhere)
+
+Simplest fix. Removes the `setTranslationY` call entirely and uses T=0
+for every layout.
+
+| Layout | Current value | Effect of dropping |
+|---|---|---|
+| 1×1 / 2×1 | +4 dp | BF baseline ~7.5 px UP (further from cell bottom) |
+| 3×1 / 4×1 | 0 | unchanged |
+| 5×1 | −3 dp | BF baseline ~5.6 px DOWN (closer to cell bottom) |
+
+K2-compatible: yes.
+
+**Pros:** zero special-casing, identical render path on K2 and K3.
+**Cons:** 1×1/2×1 and 5×1 will be visibly misaligned with native (~6 px).
+
+## Status
+
+- K3: aligned within ±0–5 px on most paired rows (commit `395bf95`).
+- K2: **RESOLVED** via XML-baked `android:translationY`. BF cells render
+  on K2 alongside native fields; logcat shows no `ActionException`.
 
 ## Related references
 
@@ -270,10 +380,11 @@ Either:
 - `app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/BitmapValue.kt`
   — `renderValueBitmap()` and `valueBitmapHeightPx()`.
 - `app/src/main/kotlin/com/jpweytjens/barberfish/datatype/BarberfishView.kt`
-  — `rv.setFloat(R.id.field_value, "setTranslationY", ...)` (the K2
-  incompatible call).
+  — `layoutRes(alignment, translationDp)` selects the per-layout XML.
 - `app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ViewSizeConfig.kt`
   — per-layout `valueTranslationDp` table.
+- `app/src/main/res/layout/barberfish_field*_neg3.xml` — the −3 dp
+  XML variants.
 - Decompiled native: `docs/ride_decompiled/sources/hhu5/f.java:48`
   (`dataTextView.setTranslationY(constraints.f4284hhb)`) and
   `hhv5/d.hha()` (the `DataElementConstraints` factory).

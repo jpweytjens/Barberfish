@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 5×1 variant of barberfish_field.xml. translationY baked into XML
+     because setTranslationY isn't @RemotableViewMethod on K2 (API 27). -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/field_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:clipChildren="false">
+
+    <TextView
+        android:id="@+id/stream_state_tv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical|end"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:fontWeight="500"
+        android:textColor="@android:color/white"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:lineSpacingMultiplier="0.6"
+        android:visibility="gone" />
+
+    <!-- Invisible probe whose bottom anchors baseline_box. minHeight is set
+         programmatically to mirror the visible field_header. -->
+    <TextView
+        android:id="@+id/header_ref"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="1dp"
+        android:lines="1"
+        android:textAllCaps="true"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="0.6"
+        android:text="M"
+        android:visibility="invisible" />
+
+    <LinearLayout
+        android:id="@+id/field_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:minHeight="22dp"
+        android:clipToPadding="false"
+        android:paddingStart="1dp"
+        android:paddingEnd="1dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/field_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/field_icon_secondary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/field_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="1dp"
+            android:maxLines="2"
+            android:gravity="center_vertical|end"
+            android:ellipsize="end"
+            android:textAllCaps="true"
+            android:fontFamily="ibm-plex-sans-condensed"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="0.6"
+            android:breakStrategy="simple" />
+
+    </LinearLayout>
+
+    <!-- Centering region: weight=1 spacers (TextView since Space is blocked
+         by the RemoteViews allowlist) frame field_value to mirror native's
+         bias=0.5 centering between (headerBottom, cellBottom). -->
+    <LinearLayout
+        android:id="@+id/baseline_box"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/header_ref"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:clipChildren="false">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/field_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_weight="0"
+            android:translationY="-3dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+    </LinearLayout>
+
+</RelativeLayout>

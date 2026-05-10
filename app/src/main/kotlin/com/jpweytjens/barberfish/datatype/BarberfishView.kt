@@ -80,7 +80,7 @@ private fun makeFieldRemoteViews(
     val dm = context.resources.displayMetrics
     val density = dm.density
     val labelArgb = colors.headerText.toArgb()
-    val layoutRes = alignment.toLayoutRes()
+    val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
     val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
         ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
     val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
@@ -194,10 +194,6 @@ private fun makeFieldRemoteViews(
         alignment = alignment,
     )
     rv.setImageViewBitmap(R.id.field_value, valueBitmap)
-    // Paint-time transform; doesn't affect layout so the bitmap stays inside
-    // baseline_box regardless of translation magnitude.
-    val translationYPx = sizeConfig.valueTranslationDp * density
-    rv.setFloat(R.id.field_value, "setTranslationY", translationYPx)
 
     // Stream state overlay (Searching / NotAvailable / Idle) replaces
     // field_value. Sized from "Searching..." — widest single-line state.
@@ -224,10 +220,20 @@ private fun makeFieldRemoteViews(
     return rv
 }
 
-private fun ViewConfig.Alignment.toLayoutRes(): Int =
-    when (this) {
-        ViewConfig.Alignment.LEFT -> R.layout.barberfish_field_left
-        ViewConfig.Alignment.CENTER -> R.layout.barberfish_field_center
-        ViewConfig.Alignment.RIGHT -> R.layout.barberfish_field
-    }
+// translationY is baked into the *_neg3 XML variants because
+// setTranslationY isn't @RemotableViewMethod on K2 (API 27).
+private fun layoutRes(
+    alignment: ViewConfig.Alignment,
+    translationDp: Int,
+): Int = when (alignment) {
+    ViewConfig.Alignment.RIGHT ->
+        if (translationDp == -3) R.layout.barberfish_field_neg3
+        else R.layout.barberfish_field
+    ViewConfig.Alignment.LEFT ->
+        if (translationDp == -3) R.layout.barberfish_field_left_neg3
+        else R.layout.barberfish_field_left
+    ViewConfig.Alignment.CENTER ->
+        if (translationDp == -3) R.layout.barberfish_field_center_neg3
+        else R.layout.barberfish_field_center
+}
 
