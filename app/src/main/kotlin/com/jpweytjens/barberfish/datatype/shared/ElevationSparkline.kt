@@ -213,18 +213,9 @@ internal fun renderElevationSparkline(
     val aheadSilPts = visible.subList(aheadStart, visible.size)
 
     val dotX = toX(positionM)
-    // Nearest point to positionM sits at the split: the last past point or the first ahead point.
-    val nearestElev = when {
-        pastSilPts.isEmpty() && aheadSilPts.isEmpty()  -> null
-        pastSilPts.isEmpty()                           -> aheadSilPts.first().second
-        aheadSilPts.isEmpty()                          -> pastSilPts.last().second
-        else -> {
-            val p = pastSilPts.last()
-            val a = aheadSilPts.first()
-            if (kotlin.math.abs(p.first - positionM) <= kotlin.math.abs(a.first - positionM)) p.second else a.second
-        }
-    }
-    val dotY = nearestElev?.let { toY(it) } ?: (heightPx * 0.9f)
+    // Linear-interpolated elevation at positionM keeps the dot on the outline since
+    // the outline pass below uses the same interpolation at the positionM breakpoint.
+    val dotY = elevationAt(visible, positionM)?.let { toY(it) } ?: (heightPx * 0.9f)
 
     val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888).also {
         it.density = Bitmap.DENSITY_NONE  // prevent RemoteViews auto-scaling; fitXY handles fill
@@ -302,45 +293,83 @@ internal fun renderElevationSparkline(
         canvas.drawPath(path, paint)
     }
 
-    // 3 & 4. Outlines (past = dimmed, ahead = bright) — reuse the past/ahead partitions.
-    paint.style = Paint.Style.STROKE
-    paint.strokeWidth = 3f
-    paint.strokeJoin = Paint.Join.ROUND
-    if (pastSilPts.isNotEmpty()) {
-        paint.color = android.graphics.Color.argb(255, 100, 100, 100)
-        val pastPath = Path().apply {
-            moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
-            pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
-            lineTo(dotX, dotY)
-        }
-        canvas.drawPath(pastPath, paint)
-    }
-    if (aheadSilPts.isNotEmpty()) {
-        paint.color = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
-        val aheadPath = Path().apply {
-            moveTo(dotX, dotY)
-            aheadSilPts.forEach { (d, e) -> lineTo(toX(d), toY(e)) }
-        }
-        canvas.drawPath(aheadPath, paint)
-    }
+    // 3+4. Outline — single walk over `visible` with per-segment colour. Splits each
+    // polyline segment at positionM and at climb boundaries so colour transitions land
+    // on the exact breakpoint rather than at polyline-sample midpoints. Colour roles:
+    //   past + climb  → muted blue   (CLIMBER_BLUE blended halfway with the past grey)
+    //   past          → past grey    (matches the existing dim-past treatment)
+    //   ahead + climb → CLIMBER_BLUE
+    //   ahead         → white (night) / black (day)
+    if (visible.size >= 2) {
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 3f
+        paint.strokeJoin = Paint.Join.ROUND
 
-    // 4b. Blue climb overlay — overpaints past+ahead outlines on detected uphill climbs.
-    if (showClimbs && climbRanges.isNotEmpty()) {
-        paint.color = CLIMBER_BLUE.toArgb()
-        for ((startM, endM) in climbRanges) {
-            val s = startM.coerceAtLeast(windowStart)
-            val e = endM.coerceAtMost(windowEnd)
-            if (s >= e) continue
-            val startElev = elevationAt(visible, s) ?: continue
-            val endElev = elevationAt(visible, e) ?: continue
-            val path = Path().apply {
-                moveTo(toX(s), toY(startElev))
-                visible.forEach { (d, ee) ->
-                    if (d > s && d < e) lineTo(toX(d), toY(ee))
+        val pastGrey = android.graphics.Color.argb(255, 100, 100, 100)
+        val aheadColor = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+        val aheadClimb = CLIMBER_BLUE.toArgb()
+        val pastClimb = android.graphics.Color.argb(255, 66, 117, 158)  // CLIMBER_BLUE blended with pastGrey
+
+        val visibleStart = visible.first().first
+        val visibleEnd = visible.last().first
+        val breakpoints = sortedSetOf<Float>().apply {
+            if (positionM in visibleStart..visibleEnd) add(positionM)
+            if (showClimbs) {
+                climbRanges.forEach { (s, e) ->
+                    if (s in visibleStart..visibleEnd) add(s)
+                    if (e in visibleStart..visibleEnd) add(e)
                 }
-                lineTo(toX(e), toY(endElev))
             }
+        }
+
+        // Build a walkable polyline that includes interpolated points at every breakpoint.
+        val walkable = ArrayList<Pair<Float, Float>>(visible.size + breakpoints.size)
+        walkable.add(visible[0])
+        for (i in 0 until visible.lastIndex) {
+            val (d1, e1) = visible[i]
+            val (d2, e2) = visible[i + 1]
+            if (d2 > d1) {
+                breakpoints.subSet(d1, false, d2, false).forEach { c ->
+                    val t = (c - d1) / (d2 - d1)
+                    walkable.add(c to (e1 + (e2 - e1) * t))
+                }
+            }
+            walkable.add(visible[i + 1])
+        }
+
+        fun colorAt(d: Float): Int {
+            val isPast = d < positionM
+            val isClimb = showClimbs && climbRanges.any { (s, e) -> d in s..e }
+            return when {
+                isPast && isClimb -> pastClimb
+                isPast -> pastGrey
+                isClimb -> aheadClimb
+                else -> aheadColor
+            }
+        }
+
+        // Walk walkable, batching consecutive same-colour sub-segments into one Path each.
+        var runStart = 0
+        while (runStart < walkable.lastIndex) {
+            val midD = (walkable[runStart].first + walkable[runStart + 1].first) / 2f
+            val runColor = colorAt(midD)
+            var runEnd = runStart + 1
+            while (runEnd < walkable.lastIndex) {
+                val nextMidD = (walkable[runEnd].first + walkable[runEnd + 1].first) / 2f
+                if (colorAt(nextMidD) != runColor) break
+                runEnd++
+            }
+            val path = Path().apply {
+                val (d0, e0) = walkable[runStart]
+                moveTo(toX(d0), toY(e0))
+                for (j in runStart + 1..runEnd) {
+                    val (d, e) = walkable[j]
+                    lineTo(toX(d), toY(e))
+                }
+            }
+            paint.color = runColor
             canvas.drawPath(path, paint)
+            runStart = runEnd
         }
     }
 
