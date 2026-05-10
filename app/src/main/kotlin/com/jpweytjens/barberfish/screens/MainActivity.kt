@@ -91,6 +91,7 @@ import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
@@ -1826,20 +1827,30 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
         GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
         GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
     }
-    Row(modifier = Modifier.fillMaxWidth()) {
-        thresholds.forEachIndexed { i, lower ->
-            val color = gradeColor(lower, palette, readable)
-            val label = when {
-                lower == Double.NEGATIVE_INFINITY -> "<${formatGradePct(thresholds[i + 1])}%"
-                i == thresholds.lastIndex -> "${formatGradePct(lower)}%+"
-                else -> "${formatGradePct(lower)}-${formatGradePct(thresholds[i + 1])}%"
+    val boundaries: List<String> = thresholds.map {
+        if (it == Double.NEGATIVE_INFINITY) "-∞" else formatGradePct(it)
+    } + "∞"
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            thresholds.forEach { lower ->
+                val color = gradeColor(lower, palette, readable)
+                Box(modifier = Modifier.weight(1f).height(16.dp).background(color ?: Color.Transparent))
             }
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(color ?: Color.Transparent))
-                Text(text = label, fontSize = 7.sp, color = TextDark)
+        }
+        Layout(
+            modifier = Modifier.fillMaxWidth(),
+            content = { boundaries.forEach { Text(it, fontSize = 7.sp, color = TextDark) } },
+        ) { measurables, constraints ->
+            val totalWidth = constraints.maxWidth
+            val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0)) }
+            val height = placeables.maxOf { it.height }
+            val lastBoundary = (placeables.size - 1).coerceAtLeast(1)
+            layout(totalWidth, height) {
+                placeables.forEachIndexed { i, p ->
+                    val xCenter = totalWidth.toLong() * i / lastBoundary
+                    val x = (xCenter.toInt() - p.width / 2).coerceIn(0, (totalWidth - p.width).coerceAtLeast(0))
+                    p.placeRelative(x, 0)
+                }
             }
         }
     }
