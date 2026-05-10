@@ -130,7 +130,7 @@ enum class ElevationZoom(val label: String, val minRangeM: Float) {
 @Serializable
 data class SparklineConfig(
     val enabled: Boolean = true,
-    val lookaheadKm: Int = 10,
+    val lookaheadKm: Int = 5,
     val skipBands: Int = 1,
     val skipBandsDescent: Int = 0,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
