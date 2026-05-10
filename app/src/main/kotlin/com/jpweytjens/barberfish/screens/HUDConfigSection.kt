@@ -677,7 +677,7 @@ internal fun SparklineCard(
         Text("ELEVATION SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
         Text("Shows elevation ahead when a route is loaded.", fontSize = 12.sp, color = TextDark)
         SegmentedRow(
-            options = listOf(true to "On", false to "Off"),
+            options = listOf(false to "Off", true to "On"),
             selected = config.enabled,
             onSelect = { onUpdate(config.copy(enabled = it)) },
         )
@@ -728,14 +728,14 @@ internal fun SparklineCard(
             Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text("Tint the outline blue on detected uphill climbs.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(
-                options = listOf(true to "On", false to "Off"),
+                options = listOf(false to "Off", true to "On"),
                 selected = config.showClimbs,
                 onSelect = { onUpdate(config.copy(showClimbs = it)) },
             )
             Text("POIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text("Mark points of interest along the route.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(
-                options = listOf(true to "On", false to "Off"),
+                options = listOf(false to "Off", true to "On"),
                 selected = config.showPois,
                 onSelect = { onUpdate(config.copy(showPois = it)) },
             )
