@@ -121,32 +121,6 @@ Not allowed (even though they compile):
 
 ---
 
-## Value-centering in RemoteViews
-
-The native field centers the value in the space below the header using a ConstraintLayout
-(`top_toBottomOf=header`, `bottom_toBottomOf=parent`, `wrap_content`). ConstraintLayout is
-not allowed in RemoteViews, so the equivalent pattern using allowed view types is:
-
-```xml
-<LinearLayout android:orientation="vertical">
-    <LinearLayout android:id="@+id/field_header"
-                  android:layout_height="wrap_content"> ... </LinearLayout>
-    <RelativeLayout android:layout_height="0dp"
-                    android:layout_weight="1">
-        <TextView android:id="@+id/field_value"
-                  android:layout_height="wrap_content"
-                  android:layout_centerVertical="true" />
-    </RelativeLayout>
-</LinearLayout>
-```
-
-`RelativeLayout` with `layout_centerVertical="true"` centers the view itself in the
-available space. The alternative (`FrameLayout` + `match_parent` + `gravity=center_vertical`)
-only centers the text within the view, not the view in the space — it produces incorrect
-vertical alignment when `includeFontPadding=false`.
-
----
-
 ## SDK container geometry
 
 When `emitter.updateView(rv)` is called, the ride app creates a `FrameLayout` and inserts
@@ -219,12 +193,12 @@ Source: decompiled ride app, `hhp7/m.java` (`TYPE_TIME_TO_DESTINATION_ID`).
 
 The native ETA data type declares four dependencies:
 
-| Dependency       | Obfuscated class | Data type ID                      |
-| ---------------- | ---------------- | --------------------------------- |
-| Dist to dest     | `hha7.g`         | `TYPE_DISTANCE_TO_DESTINATION_ID` |
-| Avg speed (moving)| `hhl7.g`        | `TYPE_AVERAGE_SPEED_ID`           |
-| 1hr avg speed    | `hhl7.c`         | `TYPE_1HR_AVERAGE_SPEED_ID`       |
-| Ride time (total)| `hhp7.j`         | `TYPE_RIDE_TIME_ID`               |
+| Dependency         | Obfuscated class | Data type ID                      |
+| ------------------ | ---------------- | --------------------------------- |
+| Dist to dest       | `hha7.g`         | `TYPE_DISTANCE_TO_DESTINATION_ID` |
+| Avg speed (moving) | `hhl7.g`         | `TYPE_AVERAGE_SPEED_ID`           |
+| 1hr avg speed      | `hhl7.c`         | `TYPE_1HR_AVERAGE_SPEED_ID`       |
+| Ride time (total)  | `hhp7.j`         | `TYPE_RIDE_TIME_ID`               |
 
 `TYPE_AVERAGE_SPEED_ID` is constructed with `TYPE_ELAPSED_TIME_ID` as its time
 dependency (`hhp7.b`), meaning it computes distance / moving time (excluding paused
@@ -241,3 +215,48 @@ code and could not be reconstructed. What we know:
 - The processor class (`hhm7.c`, case 1) selects between a "loading" and "no route"
   state but the computation itself is dispatched through further obfuscated layers
   that could not be traced.
+
+---
+
+## Container resize on route toast (GitHub issue #2)
+
+When a rerouting/turn-cue toast appears, the rideapp adjusts the data grid bottom margin
+via `hho9.e.hho()`. The grid cells physically shrink, but `startView` is not re-called
+with updated `ViewConfig.viewSize` — the extension receives stale dimensions.
+
+### How the rideapp handles it
+
+1. `PersistentNavBarPresenter` (`hhu0/q.java`) detects `NavigationRerouting`,
+   `NavigationRerouted`, or `NavigationAlert` instructions
+2. Emits `PersistentNavIsShowing` / `PersistentNavIsHidden` events (internal, not in SDK)
+3. `DataElementPageFragment` (`hho9/e.java`) sets RecyclerView bottom margin:
+   - Nav bar or key buttons visible: `persistent_nav_bottom_padding` = 52dp
+   - Neither visible: `no_keys_bottom_padding` = 10dp
+4. Cells resize proportionally; the `OnLayoutChangeListener` on itemView fires
+5. The `distinctUntilChanged` → `switchMap` chain exists in the code but does NOT
+   trigger a new `startView` on firmware 1.628+
+
+### What the SDK does not expose
+
+- `PersistentNavIsShowing` / `PersistentNavIsHidden` events (rideapp-internal)
+- `UserProfile.getShowKeyButtons()` (rideapp-internal, not in SDK `UserProfile`)
+- Any callback for container resize after `startView`
+
+### RemoteViews constraints on K2 (API 26)
+
+Hammerhead's K2 ROM blocks several `@RemotableViewMethod` calls that work on stock AOSP:
+
+- `setGravity(int)` — CRASH
+- `setTextAlignment(int)` — CRASH
+- `setTranslationY(float)` — CRASH
+
+Workaround: bake gravity, alignment, and translationY into XML layout files and select
+the appropriate variant at render time via `removeAllViews` / `addView` (both work on K2).
+
+### Barberfish layout approach
+
+Value centering uses `baseline_box` (LinearLayout with `weight=1` `TextView` spacers
+around `field_value`), which adapts automatically when the rideapp shrinks the cell —
+`layout_below=header_ref` + `alignParentBottom` re-sizes the box, and the spacer
+weights re-center the bitmap within the new bounds. No `viewSize` or `cellH` dependency.
+See `docs/architecture.md` § "Value baseline alignment".

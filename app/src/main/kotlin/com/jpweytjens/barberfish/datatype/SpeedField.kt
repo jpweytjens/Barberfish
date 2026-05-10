@@ -52,10 +52,10 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             val label =
                 if (smoothing == SpeedSmoothingStream.S0) "Speed"
                 else "${smoothing.label} Speed"
-            state.toErrorFieldState(label)?.let { return it }
+            state.toErrorFieldState(label, R.drawable.ic_col_speed)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
-                    ?: return FieldState.unavailable(label)
+                    ?: return FieldState.unavailable(label, R.drawable.ic_col_speed)
             val converted = ConvertType.SPEED.apply(raw, profile)
             return FieldState(
                 "%.1f".format(converted),

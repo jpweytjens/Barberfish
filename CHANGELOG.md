@@ -1,5 +1,34 @@
 # Changelog
 
+## 3.2
+
+### Sparkline
+
+- Smoother rendering near the current position dot
+- Default lookahead lowered to 5 km
+- Detected uphill climbs are tinted blue along the outline (Climber-style highlight)
+- Route POIs now appear as outline markers; past POIs fade to grey
+- Symmetric flat-band skipping on descents for cleaner gradient bands near zero grade
+- New config toggles: show climbs, show POIs, and an independent descent-skip strength
+
+### Palettes
+
+- New Turbo grade palette, with full negative-grade coloring across 10 distinct descent shades
+
+### General
+
+- Fix value text clipping when the rerouting navigation toast appears mid-ride with key icons off. Thanks to [LucasHuber](https://github.com/LucasHuber) for the report. 
+- Improved data field rendering: values are now bitmap-rendered for pixel-accurate baseline alignment with native Karoo fields, on both Karoo 2 and Karoo 3
+- More Karoo-like streaming state: header icon stays visible during "Searching…", stream-state text is sized to match, and is correctly centered.
+- "No Laps Yet" placeholder on last-lap fields during the first lap
+
+### Config UI
+
+- Renamed the sparkline emphasis section and corrected its readout
+- HUD preview uses on-device font sizing so it more closely matches the rendered field
+- Grade band bar shows zone boundary labels for clearer reading
+
+
 ## 3.1 — Sparkline update
 
 ### Accuracy

@@ -102,7 +102,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             val label = cadenceLabel(smoothing)
             val raw =
                 (state as? StreamState.Streaming)?.dataPoint?.values?.get(smoothing.fieldId)
-                    ?: return FieldState.unavailable(label)
+                    ?: return FieldState.unavailable(label, R.drawable.ic_cadence)
             return FieldState(
                 raw.toInt().toString(),
                 label = label,

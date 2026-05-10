@@ -15,6 +15,7 @@ internal val Grey500 = Color(0xFF7D7D7D)
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
 internal val ICON_TINT_TEAL = Color(0xFF31E09A)
+internal val CLIMBER_BLUE             = Color(0xFF2086d8)
 internal val KAROO_REJOIN_RED         = Color(0xFFfc292b)
 internal val KAROO_DESTINATION_PURPLE = Color(0xFFddacfa)
 internal val TextDark      = Color(0xFF1B2D2D)
@@ -127,35 +128,77 @@ private val KAROO_GRADE_BANDS_READABLE = listOf(
      0.0 to karooPowerColorsReadable[0], //  <4.6%     — dark green
 )
 
+// Turbo grade bands — readable by construction; the only palette that colors negative grades.
+// Single variant: no _READABLE split.
+private val TURBO_GRADE_BANDS = listOf(
+    15.0 to Color(0xFF8E1201),                   // [15, ∞)  — deep crimson
+    12.0 to Color(0xFFBC2900),                   // [12, 15) — dark red
+     9.0 to Color(0xFFDD4700),                   //  [9, 12) — red-orange
+     6.0 to Color(0xFFFE932C),                   //  [6, 9)  — orange
+     3.0 to Color(0xFFF1D749),                   //  [3, 6)  — yellow
+     0.0 to Color(0xFFB0F94D),                   //  [0, 3)  — lime green
+    -3.0 to Color(0xFF30F0A9),                   // [-3, 0)  — mint
+    -6.0 to Color(0xFF2BC7F0),                   // [-6, -3) — light blue
+    -9.0 to Color(0xFF5783E9),                   // [-9, -6) — blue
+    Double.NEGATIVE_INFINITY to Color(0xFF401C4C) // (-∞, -9) — dark purple
+)
+
 internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
-    if (percent < 0) return null
     val bands = when (palette) {
         GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE else WAHOO_GRADE_BANDS
         GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
         GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
         GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE else ZWIFT_GRADE_BANDS
+        GradePalette.TURBO -> TURBO_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second
 }
 
 /**
- * Returns the minimum grade (%) that receives a colour fill in the elevation sparkline.
+ * Range of grades that receive a colour fill in the elevation sparkline. Symmetric
+ * palettes (Turbo) colour both climbs and descents; one-sided palettes only climbs.
  *
- * [skipBands] controls how many of the lowest-grade bands are suppressed (0 = colour
- * everything including flat terrain, 1 = skip the lowest band (default), 2 = skip the
- * two lowest, etc.). Clamped so it never exceeds the band count.
+ * - [posMin] (climbs): fill when grade >= posMin. null = never fill on the climb side.
+ * - [negMax] (descents): fill when grade < negMax. null = never fill on the descent side.
  */
-internal fun gradeThreshold(palette: GradePalette, skipBands: Int = 1): Double {
+internal data class GradeFillRange(val posMin: Double?, val negMax: Double?)
+
+/**
+ * [skipBandsClimb]: how many of the flattest *positive* bands stay uncoloured. 0 colours
+ * everything from grade=0 up; 1 (default) skips the lowest positive band; etc.
+ *
+ * [skipBandsDescent]: same idea on the descent side. 0 colours everything below 0;
+ * 1 skips the flattest negative band; etc. No effect on palettes without negative bands.
+ *
+ * Both counts clamp to the available band count.
+ */
+internal fun gradeFillRange(
+    palette: GradePalette,
+    skipBandsClimb: Int = 1,
+    skipBandsDescent: Int = 0,
+): GradeFillRange {
     val bands = when (palette) {
         GradePalette.WAHOO  -> WAHOO_GRADE_BANDS
         GradePalette.GARMIN -> GARMIN_GRADE_BANDS
         GradePalette.HSLUV  -> HSLUV_GRADE_BANDS
         GradePalette.KAROO  -> KAROO_GRADE_BANDS
         GradePalette.ZWIFT  -> ZWIFT_GRADE_BANDS
+        GradePalette.TURBO  -> TURBO_GRADE_BANDS
     }
-    val idx = (bands.lastIndex - skipBands).coerceAtLeast(0)
-    return bands[idx].first
+    val thresholds = bands.map { it.first }
+    val positives = thresholds.filter { it >= 0.0 }.sorted()
+    val negatives = thresholds
+        .filter { it < 0.0 && it != Double.NEGATIVE_INFINITY }
+        .sortedDescending()
+
+    val posMin = positives.getOrNull(skipBandsClimb.coerceAtMost(positives.lastIndex))
+    val negMax = when {
+        negatives.isEmpty() -> null
+        skipBandsDescent <= 0 -> 0.0
+        else -> negatives.getOrNull((skipBandsDescent - 1).coerceAtMost(negatives.lastIndex))
+    }
+    return GradeFillRange(posMin, negMax)
 }
 
 data class ColorConfig(

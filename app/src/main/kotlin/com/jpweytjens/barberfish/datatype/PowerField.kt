@@ -65,10 +65,10 @@ class PowerField(private val karooSystem: KarooSystemService) :
             val label =
                 if (smoothing == PowerSmoothingStream.S0) "Power"
                 else "${smoothing.label} Power"
-            state.toErrorFieldState(label)?.let { return it }
+            state.toErrorFieldState(label, R.drawable.ic_col_power)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
-                    ?: return FieldState.unavailable(label)
+                    ?: return FieldState.unavailable(label, R.drawable.ic_col_power)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(

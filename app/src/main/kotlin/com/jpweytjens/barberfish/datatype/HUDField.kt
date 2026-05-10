@@ -27,6 +27,7 @@ import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
@@ -218,9 +219,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     .streamDataFlow(DataType.Type.POWER_LAP)
                     .map { LapPowerField.toFieldState(it, profile, zones, slot.colorMode, isLastLap = false) }
             HUDSlotField.LastLapPower ->
-                karooSystem
-                    .streamDataFlow(DataType.Type.AVERAGE_POWER_LAST_LAP)
-                    .map { LapPowerField.toFieldState(it, profile, zones, slot.colorMode, isLastLap = true) }
+                combine(
+                    karooSystem.streamDataFlow(DataType.Type.AVERAGE_POWER_LAST_LAP),
+                    karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER),
+                ) { state, lapState ->
+                    LapPowerField.toFieldState(state, profile, zones, slot.colorMode, isLastLap = true, lapNumber = lapNumberFrom(lapState))
+                }
             HUDSlotField.AvgHR ->
                 karooSystem
                     .streamDataFlow(DataType.Type.AVERAGE_HR)
@@ -230,17 +234,35 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     .streamDataFlow(DataType.Type.AVERAGE_LAP_HR)
                     .map { AvgHRField.toFieldState(it, profile, zones, slot.colorMode, "Lap Avg HR", R.drawable.ic_lap, R.drawable.ic_avg_hr) }
             HUDSlotField.LastLapAvgHR ->
-                karooSystem
-                    .streamDataFlow(DataType.Type.AVERAGE_HR_LAST_LAP)
-                    .map { AvgHRField.toFieldState(it, profile, zones, slot.colorMode, "LL Avg HR", R.drawable.ic_last_lap, R.drawable.ic_avg_hr) }
+                combine(
+                    karooSystem.streamDataFlow(DataType.Type.AVERAGE_HR_LAST_LAP),
+                    karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER),
+                ) { state, lapState ->
+                    AvgHRField.toFieldState(
+                        state, profile, zones, slot.colorMode,
+                        "LL Avg HR", R.drawable.ic_last_lap, R.drawable.ic_avg_hr,
+                        isLastLap = true, lapNumber = lapNumberFrom(lapState),
+                    )
+                }
             HUDSlotField.Grade ->
                 GradeField.gradeEmaFlow(karooSystem)
                     .map { GradeField.toGradeFieldState(it, GradeFieldConfig(slot.colorMode), zones.gradePalette, zones.readableColors) }
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(karooSystem, slot.avgSpeedConfig, profile, slot.field.includePaused)
             is HUDSlotField.Time ->
-                combine(TimeField.secondsFlow(karooSystem, slot.field.kind), context.streamTimeConfig()) { seconds, cfg ->
-                    TimeField.toFieldState(seconds, slot.field.kind, cfg.format)
+                if (slot.field.kind == TimeKind.LAST_LAP) {
+                    combine(
+                        TimeField.secondsFlow(karooSystem, slot.field.kind),
+                        karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER).map { lapNumberFrom(it) },
+                        context.streamTimeConfig(),
+                    ) { seconds, lapNumber, cfg ->
+                        if (lapNumber <= 1) FieldState.noLapsYet(slot.field.kind.label, slot.field.kind.iconRes)
+                        else TimeField.toFieldState(seconds, slot.field.kind, cfg.format)
+                    }
+                } else {
+                    combine(TimeField.secondsFlow(karooSystem, slot.field.kind), context.streamTimeConfig()) { seconds, cfg ->
+                        TimeField.toFieldState(seconds, slot.field.kind, cfg.format)
+                    }
                 }
             is HUDSlotField.ETA ->
                 combine(context.streamETAConfig(), context.streamTimeConfig()) { etaCfg, timeCfg ->

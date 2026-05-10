@@ -2,8 +2,6 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import android.content.res.Configuration
-import kotlin.math.roundToInt
-import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
@@ -18,11 +16,17 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
+import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
 private const val DEBUG_LAYOUT = false
+
+// Tints header_ref magenta so scripts/measure_alignment.py --probe can
+// distinguish Barberfish vs native cells on stacked 1-col mixed pages.
+private const val LAYOUT_PROBE_MODE = false
+private const val PROBE_MARKER_COLOR = 0xFFFF00FF.toInt()
 
 fun barberfishFieldRemoteViews(
     field: FieldState,
@@ -34,7 +38,6 @@ fun barberfishFieldRemoteViews(
 ): RemoteViews {
     val dm = context.resources.displayMetrics
     val paddingHPx = (sizeConfig.paddingH.value * dm.density).toInt()
-    // Always collapse \n to space — maxLines=2 + breakStrategy=simple in XML handles line breaking.
     val displayLabel = field.label.replace("\n", " ")
     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     val colors = field.color.toColorConfig(colorMode, isNightMode)
@@ -77,7 +80,7 @@ private fun makeFieldRemoteViews(
     val dm = context.resources.displayMetrics
     val density = dm.density
     val labelArgb = colors.headerText.toArgb()
-    val layoutRes = alignment.toLayoutRes()
+    val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
     val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
         ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
     val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
@@ -95,6 +98,7 @@ private fun makeFieldRemoteViews(
             "Barberfish",
             "makeFieldRemoteViews: label='$displayLabel' text='${field.primary}'" +
                 " fontSp=$fontSp valueFontSizeBase=${sizeConfig.valueFontSizeBase}" +
+                " cellWidthPx=$cellWidthPx" +
                 " headerFontSp=${sizeConfig.headerFontSize.value} headerIconSizeDp=${sizeConfig.headerIconSize.value}" +
                 " alignment=$alignment paddingHPx=$paddingHPx",
         )
@@ -103,14 +107,25 @@ private fun makeFieldRemoteViews(
     val rv = RemoteViews(context.packageName, layoutRes)
 
     if (DEBUG_LAYOUT) {
-        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())
-        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt())
+        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())  // red: header
+        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt())   // green: value
     }
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
 
-    // Label — HUD slots: dynamic sizing from headerFontSize base using DEFAULT typeface.
-    // Regular (1/2-col): font and line count stay fixed from sizeConfig.
+    // header_ref anchors baseline_box's top via layout_below; its minHeight
+    // must match the visible header so the centering region mirrors native's.
+    val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
+    rv.setInt(R.id.field_header, "setMinimumHeight", headerMinHeightPx)
+    rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
+
+    if (LAYOUT_PROBE_MODE) {
+        rv.setViewVisibility(R.id.header_ref, View.VISIBLE)
+        rv.setInt(R.id.header_ref, "setBackgroundColor", PROBE_MARKER_COLOR)
+    }
+
+    // HUD slots size labels dynamically from headerFontSize using the default
+    // typeface; regular cells use the per-layout values from sizeConfig.
     val labelFontSp: Float
     val labelLines: Int
     if (sizeConfig.colSpan < 30) {
@@ -131,8 +146,12 @@ private fun makeFieldRemoteViews(
     rv.setTextViewText(R.id.field_label, displayLabel)
     rv.setTextColor(R.id.field_label, labelArgb)
     rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
-    // XML default is android:lines="2"; only override when 1 line is needed.
-    if (labelLines == 1) rv.setInt(R.id.field_label, "setLines", 1)
+    // setLines(2) forces a 2-line reservation; without it short 2-col labels
+    // collapse to 1-line height and the header sits ~12 px above native.
+    when {
+        labelLines == 1 -> rv.setInt(R.id.field_label, "setMaxLines", 1)
+        labelLines == 2 -> rv.setInt(R.id.field_label, "setLines", 2)
+    }
 
     // Icons
     val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
@@ -166,38 +185,22 @@ private fun makeFieldRemoteViews(
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
 
-    // Value — gravity="top" in XML: text starts at paddingTop, baseline = padTop + |ascent|.
-    // Target baseline position: cellH - baselineMarginPx (grid-size dependent).
-    val headerPadPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
-    val valueFm = Paint().apply {
-        typeface = Typeface.MONOSPACE
-        textSize = fontSp * density
-    }.fontMetrics
-    val cellH = sizeConfig.cellHeightPx ?: (dm.heightPixels.toFloat() * 15f / 60f)
-    val valuePadTop = (cellH - sizeConfig.baselineMarginPx + valueFm.ascent).roundToInt().coerceAtLeast(0)
+    val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
+    val valueBitmap = renderValueBitmap(
+        text = field.primary,
+        fontSizePx = fontSp * density,
+        bitmapHeightPx = bitmapHeightPx,
+        cellWidthPx = cellWidthPx,
+        color = colors.valueText.toArgb(),
+        alignment = alignment,
+    )
+    rv.setImageViewBitmap(R.id.field_value, valueBitmap)
 
-    if (DEBUG_LAYOUT) {
-        val baseline = valuePadTop + (-valueFm.ascent).roundToInt()
-        Log.d("Barberfish", buildString {
-            append("VALUE POS: fontSp=$fontSp")
-            append(" cellH=${cellH.toInt()} valuePadTop=$valuePadTop")
-            append(" baseline=$baseline distFromBottom=${cellH.toInt() - baseline}")
-        })
-    }
-
-    rv.setTextViewText(R.id.field_value, field.primary)
-    rv.setTextColor(R.id.field_value, colors.valueText.toArgb())
-    rv.setTextViewTextSize(R.id.field_value, TypedValue.COMPLEX_UNIT_SP, fontSp.toFloat())
-    rv.setViewPadding(R.id.field_value, 0, valuePadTop, 0, 0)
-    if (maxLines == 2) {
-        rv.setInt(R.id.field_value, "setMaxLines", 2)
-    }
-    // Stream state overlay: ibm-plex-sans-condensed, white — replaces field_value for
-    // SDK non-Streaming states (Searching / NotAvailable / Idle). Font capped at 19sp.
-    // Size computed from the longest state text so baselines align across HUD slots.
+    // Stream state overlay (Searching / NotAvailable / Idle) replaces
+    // field_value. Sized from "Searching..." — widest single-line state.
     if (field.color is FieldColor.StreamState) {
         val (stateFont, stateMaxLines) = fontSizeForCell(
-            "Not available", sizeConfig.valueFontSizeBase, cellWidthPx, density,
+            "Searching...", sizeConfig.valueFontSizeBase, cellWidthPx, density,
             wrapThresholdSp = sizeConfig.wrapThresholdSp,
         )
         rv.setViewVisibility(R.id.field_value, View.GONE)
@@ -205,7 +208,8 @@ private fun makeFieldRemoteViews(
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
         rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, stateFont.coerceAtMost(19).toFloat())
-        rv.setViewPadding(R.id.stream_state_tv, 0, headerPadPx, 0, 0)
+        val actualHeaderPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
+        rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, 0)
         if (stateMaxLines == 2) {
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }
@@ -217,9 +221,20 @@ private fun makeFieldRemoteViews(
     return rv
 }
 
-private fun ViewConfig.Alignment.toLayoutRes(): Int =
-    when (this) {
-        ViewConfig.Alignment.LEFT -> R.layout.barberfish_field_left
-        ViewConfig.Alignment.CENTER -> R.layout.barberfish_field_center
-        ViewConfig.Alignment.RIGHT -> R.layout.barberfish_field
-    }
+// translationY is baked into the *_neg3 XML variants because
+// setTranslationY isn't @RemotableViewMethod on K2 (API 27).
+private fun layoutRes(
+    alignment: ViewConfig.Alignment,
+    translationDp: Int,
+): Int = when (alignment) {
+    ViewConfig.Alignment.RIGHT ->
+        if (translationDp == -3) R.layout.barberfish_field_neg3
+        else R.layout.barberfish_field
+    ViewConfig.Alignment.LEFT ->
+        if (translationDp == -3) R.layout.barberfish_field_left_neg3
+        else R.layout.barberfish_field_left
+    ViewConfig.Alignment.CENTER ->
+        if (translationDp == -3) R.layout.barberfish_field_center_neg3
+        else R.layout.barberfish_field_center
+}
+

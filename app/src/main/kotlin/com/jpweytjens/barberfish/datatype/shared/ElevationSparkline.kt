@@ -128,7 +128,7 @@ internal fun visvalingamWhyatt(
  *
  * Rendering layers (bottom to top):
  *  1. Ahead silhouette fill (~6% alpha; white on night, black on day)
- *  2. Climb fills for grade ≥ gradeThreshold(palette), from gradeColor(); consecutive
+ *  2. Climb (and optionally descent) fills via gradeFillRange(palette), coloured by gradeColor(); consecutive
  *     same-colour segments are merged into a single polygon to eliminate seams.
  *  2b. Overlay on the past region to grey out grade fills behind the dot
  *      (night: 55% alpha black; day: 78% alpha mid-grey — grey desaturates
@@ -141,7 +141,11 @@ internal fun visvalingamWhyatt(
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
-private const val DOT_RADIUS_PX = 6f
+private const val DOT_RADIUS_PX = 7f
+private const val POI_RADIUS_PX = 7f
+private const val MARKER_STROKE_PX = 1.5f
+// Half-stroke + radius, ceil'd: keeps the stroked outer edge of the dot/POI inside the bitmap.
+private const val MARKER_PAD_PX = 8f
 
 /** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
 internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
@@ -156,6 +160,7 @@ internal fun renderElevationSparkline(
     readable: Boolean,
     lookaheadM: Float = 10_000f,
     skipBands: Int = 1,
+    skipBandsDescent: Int = 0,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
     dotColor: Int = ICON_TINT_TEAL.toArgb(),
@@ -163,6 +168,10 @@ internal fun renderElevationSparkline(
     minElevRangeM: Float = 50f,
     logWarpK: Float = 8f,
     positionFraction: Float = 0.05f,
+    climbRanges: List<Pair<Float, Float>> = emptyList(),
+    showClimbs: Boolean = false,
+    poiDistances: List<Float> = emptyList(),
+    showPois: Boolean = false,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
@@ -197,7 +206,7 @@ internal fun renderElevationSparkline(
         else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
 
     val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, logWarpK)
-    fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * DOT_RADIUS_PX) - DOT_RADIUS_PX).coerceIn(0f, heightPx.toFloat())
+    fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * MARKER_PAD_PX) - MARKER_PAD_PX).coerceIn(0f, heightPx.toFloat())
 
     // Partition `visible` around positionM once. Points exactly at positionM appear in
     // both lists so past/ahead polygons meet cleanly at the dot (mirrors the old
@@ -208,18 +217,9 @@ internal fun renderElevationSparkline(
     val aheadSilPts = visible.subList(aheadStart, visible.size)
 
     val dotX = toX(positionM)
-    // Nearest point to positionM sits at the split: the last past point or the first ahead point.
-    val nearestElev = when {
-        pastSilPts.isEmpty() && aheadSilPts.isEmpty()  -> null
-        pastSilPts.isEmpty()                           -> aheadSilPts.first().second
-        aheadSilPts.isEmpty()                          -> pastSilPts.last().second
-        else -> {
-            val p = pastSilPts.last()
-            val a = aheadSilPts.first()
-            if (kotlin.math.abs(p.first - positionM) <= kotlin.math.abs(a.first - positionM)) p.second else a.second
-        }
-    }
-    val dotY = nearestElev?.let { toY(it) } ?: (heightPx * 0.9f)
+    // Linear-interpolated elevation at positionM keeps the dot on the outline since
+    // the outline pass below uses the same interpolation at the positionM breakpoint.
+    val dotY = elevationAt(visible, positionM)?.let { toY(it) } ?: (heightPx * 0.9f)
 
     val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888).also {
         it.density = Bitmap.DENSITY_NONE  // prevent RemoteViews auto-scaling; fitXY handles fill
@@ -243,7 +243,7 @@ internal fun renderElevationSparkline(
     }
 
     // 2. Climb fills — merge consecutive same-color segments into one polygon to eliminate seams.
-    val threshold = gradeThreshold(palette, skipBands)
+    val fillRange = gradeFillRange(palette, skipBandsClimb = skipBands, skipBandsDescent = skipBandsDescent)
     paint.style = Paint.Style.FILL
     run {
         var runColor: Int? = null
@@ -272,7 +272,10 @@ internal fun renderElevationSparkline(
             val distDelta = d2 - d1
             if (distDelta <= 0f) { flushRun(); continue }
             val grade = (e2 - e1) / distDelta * 100.0
-            val segColor = if (grade >= threshold) gradeColor(grade, palette, readable)?.toArgb() else null
+            val withinFill =
+                (fillRange.posMin != null && grade >= fillRange.posMin) ||
+                (fillRange.negMax != null && grade < fillRange.negMax)
+            val segColor = if (withinFill) gradeColor(grade, palette, readable)?.toArgb() else null
             if (segColor == null) { flushRun(); continue }
             if (segColor != runColor) { flushRun(); runColor = segColor }
             if (runPts.isEmpty()) runPts.add(d1 to e1)
@@ -297,34 +300,142 @@ internal fun renderElevationSparkline(
         canvas.drawPath(path, paint)
     }
 
-    // 3 & 4. Outlines (past = dimmed, ahead = bright) — reuse the past/ahead partitions.
-    paint.style = Paint.Style.STROKE
-    paint.strokeWidth = 3f
-    paint.strokeJoin = Paint.Join.ROUND
-    if (pastSilPts.isNotEmpty()) {
-        paint.color = android.graphics.Color.argb(255, 100, 100, 100)
-        val pastPath = Path().apply {
-            moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
-            pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
-            lineTo(dotX, dotY)
+    // 3+4. Outline — single walk over `visible` with per-segment colour. Splits each
+    // polyline segment at positionM and at climb boundaries so colour transitions land
+    // on the exact breakpoint rather than at polyline-sample midpoints. Colour roles:
+    //   past + climb  → muted blue   (CLIMBER_BLUE blended halfway with the past grey)
+    //   past          → past grey    (matches the existing dim-past treatment)
+    //   ahead + climb → CLIMBER_BLUE
+    //   ahead         → white (night) / black (day)
+    if (visible.size >= 2) {
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 3f
+        paint.strokeJoin = Paint.Join.ROUND
+
+        val pastGrey = android.graphics.Color.argb(255, 100, 100, 100)
+        val aheadColor = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
+        val aheadClimb = CLIMBER_BLUE.toArgb()
+        val pastClimb = android.graphics.Color.argb(255, 66, 117, 158)  // CLIMBER_BLUE blended with pastGrey
+
+        val visibleStart = visible.first().first
+        val visibleEnd = visible.last().first
+        val breakpoints = sortedSetOf<Float>().apply {
+            if (positionM in visibleStart..visibleEnd) add(positionM)
+            if (showClimbs) {
+                climbRanges.forEach { (s, e) ->
+                    if (s in visibleStart..visibleEnd) add(s)
+                    if (e in visibleStart..visibleEnd) add(e)
+                }
+            }
         }
-        canvas.drawPath(pastPath, paint)
-    }
-    if (aheadSilPts.isNotEmpty()) {
-        paint.color = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
-        val aheadPath = Path().apply {
-            moveTo(dotX, dotY)
-            aheadSilPts.forEach { (d, e) -> lineTo(toX(d), toY(e)) }
+
+        // Build a walkable polyline that includes interpolated points at every breakpoint.
+        val walkable = ArrayList<Pair<Float, Float>>(visible.size + breakpoints.size)
+        walkable.add(visible[0])
+        for (i in 0 until visible.lastIndex) {
+            val (d1, e1) = visible[i]
+            val (d2, e2) = visible[i + 1]
+            if (d2 > d1) {
+                breakpoints.subSet(d1, false, d2, false).forEach { c ->
+                    val t = (c - d1) / (d2 - d1)
+                    walkable.add(c to (e1 + (e2 - e1) * t))
+                }
+            }
+            walkable.add(visible[i + 1])
         }
-        canvas.drawPath(aheadPath, paint)
+
+        fun colorAt(d: Float): Int {
+            val isPast = d < positionM
+            val isClimb = showClimbs && climbRanges.any { (s, e) -> d in s..e }
+            return when {
+                isPast && isClimb -> pastClimb
+                isPast -> pastGrey
+                isClimb -> aheadClimb
+                else -> aheadColor
+            }
+        }
+
+        // Walk walkable, batching consecutive same-colour sub-segments into one Path each.
+        var runStart = 0
+        while (runStart < walkable.lastIndex) {
+            val midD = (walkable[runStart].first + walkable[runStart + 1].first) / 2f
+            val runColor = colorAt(midD)
+            var runEnd = runStart + 1
+            while (runEnd < walkable.lastIndex) {
+                val nextMidD = (walkable[runEnd].first + walkable[runEnd + 1].first) / 2f
+                if (colorAt(nextMidD) != runColor) break
+                runEnd++
+            }
+            val path = Path().apply {
+                val (d0, e0) = walkable[runStart]
+                moveTo(toX(d0), toY(e0))
+                for (j in runStart + 1..runEnd) {
+                    val (d, e) = walkable[j]
+                    lineTo(toX(d), toY(e))
+                }
+            }
+            paint.color = runColor
+            canvas.drawPath(path, paint)
+            runStart = runEnd
+        }
     }
 
-    // 5. Position dot
+    // 4c. POI markers — generic filled circle, drawn under the position dot.
+    // Past markers use the past-outline grey to match the muting applied to the past
+    // outline; ahead markers keep their bright fill so upcoming POIs stay legible.
+    if (showPois && poiDistances.isNotEmpty()) {
+        val poiRadius = POI_RADIUS_PX
+        val aheadFill = if (isNightMode) android.graphics.Color.argb(230, 255, 255, 255)
+            else android.graphics.Color.argb(230, 0, 0, 0)
+        val aheadStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        val pastFill = android.graphics.Color.argb(255, 100, 100, 100)
+        val pastStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        for (d in poiDistances) {
+            if (d < windowStart || d > windowEnd) continue
+            val elev = elevationAt(visible, d) ?: continue
+            val cx = toX(d)
+            val cy = toY(elev).coerceIn(MARKER_PAD_PX, heightPx - MARKER_PAD_PX)
+            val isPast = d < positionM
+            paint.style = Paint.Style.FILL
+            paint.color = if (isPast) pastFill else aheadFill
+            canvas.drawCircle(cx, cy, poiRadius, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = MARKER_STROKE_PX
+            paint.color = if (isPast) pastStroke else aheadStroke
+            canvas.drawCircle(cx, cy, poiRadius, paint)
+        }
+    }
+
+    // 5. Position dot — matches POI markers in size and outline so they share visual weight.
     paint.style = Paint.Style.FILL
     paint.color = dotColor
     canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = MARKER_STROKE_PX
+    paint.color = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+    canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
     return ElevationSparklineResult(bitmap, newDisplayedRange)
+}
+
+/**
+ * Linear-interpolates the elevation at a given route distance from a sorted-by-distance list
+ * of `(distanceM, elevationM)` polyline points. Returns null on an empty input. Distances
+ * outside the polyline range clamp to the first/last sample.
+ */
+internal fun elevationAt(points: List<Pair<Float, Float>>, distanceM: Float): Float? {
+    if (points.isEmpty()) return null
+    if (distanceM <= points.first().first) return points.first().second
+    if (distanceM >= points.last().first) return points.last().second
+    for (i in 0 until points.lastIndex) {
+        val (d1, e1) = points[i]
+        val (d2, e2) = points[i + 1]
+        if (distanceM in d1..d2) {
+            val t = if (d2 > d1) (distanceM - d1) / (d2 - d1) else 0f
+            return e1 + (e2 - e1) * t
+        }
+    }
+    return null
 }
 
 /**
@@ -488,6 +599,27 @@ internal val ELEVATION_FIXTURES: LinkedHashMap<String, () -> List<Pair<Float, Fl
     "50m — 1.7km @ 3%" to ::gain50GentleFixture,
     "2× 50m @ 10%, 2km gap" to ::doubleRampFixture,
     "20m wall→flat→20m gentle" to ::wallThenGentleFixture,
+)
+
+/**
+ * Mock climb ranges for [rvvElevationFixture] — used in debug/preview to verify the
+ * blue climb overlay without needing a live route. Both ranges are clearly uphill in
+ * the polyline so the renderer's polyline-verified uphill check accepts them.
+ */
+internal fun rvvClimbsFixture(): List<Pair<Float, Float>> = listOf(
+    1100f to 4340f,   // Muur — climb begins at the ~10 m trough, peaks at ~112 m
+    6300f to 6875f,   // second climb — foot at the ~33 m dip, peaks at ~73 m
+)
+
+/**
+ * Mock POI distances for [rvvElevationFixture] — used in debug/preview to verify POI
+ * marker rendering without needing a live route. Includes a marker at the top of the
+ * Muur climb plus a couple of others so we can see clustering and spacing behaviour.
+ */
+internal fun rvvPoisFixture(): List<Float> = listOf(
+    4340f,    // top of the Muur (highest point in the fixture)
+    6875f,    // top of the second climb
+    14000f,   // mid-route plateau
 )
 
 /** Last 20 km of Tour of Flanders 2025 (RvV). Used for debug builds. */

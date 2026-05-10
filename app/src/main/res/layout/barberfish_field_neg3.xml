@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Field layout: CENTER-aligned. Same structure as barberfish_field.xml. -->
+<!-- 5×1 variant of barberfish_field.xml. translationY baked into XML
+     because setTranslationY isn't @RemotableViewMethod on K2 (API 27). -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
     android:layout_width="match_parent"
@@ -18,6 +19,8 @@
         android:lineSpacingMultiplier="0.6"
         android:visibility="gone" />
 
+    <!-- Invisible probe whose bottom anchors baseline_box. minHeight is set
+         programmatically to mirror the visible field_header. -->
     <TextView
         android:id="@+id/header_ref"
         android:layout_width="match_parent"
@@ -67,7 +70,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="1dp"
             android:maxLines="2"
-            android:gravity="center_vertical|center_horizontal"
+            android:gravity="center_vertical|end"
             android:ellipsize="end"
             android:textAllCaps="true"
             android:fontFamily="ibm-plex-sans-condensed"
@@ -77,6 +80,9 @@
 
     </LinearLayout>
 
+    <!-- Centering region: weight=1 spacers (TextView since Space is blocked
+         by the RemoteViews allowlist) frame field_value to mirror native's
+         bias=0.5 centering between (headerBottom, cellBottom). -->
     <LinearLayout
         android:id="@+id/baseline_box"
         android:layout_width="match_parent"
@@ -95,8 +101,9 @@
             android:id="@+id/field_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_weight="0" />
+            android:layout_gravity="end"
+            android:layout_weight="0"
+            android:translationY="-3dp" />
 
         <TextView
             android:layout_width="match_parent"

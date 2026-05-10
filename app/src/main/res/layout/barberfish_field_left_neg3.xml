@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Field layout: CENTER-aligned. Same structure as barberfish_field.xml. -->
+<!-- 5×1 variant of barberfish_field_left.xml. See barberfish_field_neg3.xml. -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/field_root"
     android:layout_width="match_parent"
@@ -44,6 +44,21 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <TextView
+            android:id="@+id/field_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="1dp"
+            android:maxLines="2"
+            android:gravity="center_vertical|start"
+            android:ellipsize="end"
+            android:textAllCaps="true"
+            android:fontFamily="ibm-plex-sans-condensed"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="0.6"
+            android:breakStrategy="simple" />
+
         <ImageView
             android:id="@+id/field_icon"
             android:layout_width="wrap_content"
@@ -59,21 +74,6 @@
             android:adjustViewBounds="true"
             android:scaleType="fitCenter"
             android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/field_label"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="1dp"
-            android:maxLines="2"
-            android:gravity="center_vertical|center_horizontal"
-            android:ellipsize="end"
-            android:textAllCaps="true"
-            android:fontFamily="ibm-plex-sans-condensed"
-            android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.6"
-            android:breakStrategy="simple" />
 
     </LinearLayout>
 
@@ -95,8 +95,9 @@
             android:id="@+id/field_value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_weight="0" />
+            android:layout_gravity="start"
+            android:layout_weight="0"
+            android:translationY="-3dp" />
 
         <TextView
             android:layout_width="match_parent"

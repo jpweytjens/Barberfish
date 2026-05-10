@@ -38,11 +38,14 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             label: String,
             iconRes: Int,
             secondaryIconRes: Int? = null,
+            isLastLap: Boolean = false,
+            lapNumber: Int = 0,
         ): FieldState {
-            state.toErrorFieldState(label)?.let { return it }
+            if (isLastLap && lapNumber <= 1) return FieldState.noLapsYet(label, iconRes)
+            state.toErrorFieldState(label, iconRes)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVG_HR]
-                    ?: return FieldState.unavailable(label)
+                    ?: return FieldState.unavailable(label, iconRes)
             val zone = hrZone(raw, profile.heartRateZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = true)
             return FieldState(

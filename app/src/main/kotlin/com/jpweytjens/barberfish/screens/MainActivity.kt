@@ -91,6 +91,7 @@ import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
@@ -731,13 +732,21 @@ class MainActivity : ComponentActivity() {
                     ReadabilityToggle(
                         readable = zoneConfig.readableColors,
                         onSelected = { readable ->
-                            zoneConfig = zoneConfig.copy(readableColors = readable)
+                            val newGrade =
+                                if (!readable && zoneConfig.gradePalette == GradePalette.TURBO)
+                                    GradePalette.KAROO
+                                else zoneConfig.gradePalette
+                            zoneConfig = zoneConfig.copy(
+                                readableColors = readable,
+                                gradePalette = newGrade,
+                            )
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
                     GradePaletteDropdown(
                         title = "Grade",
                         selected = zoneConfig.gradePalette,
+                        readable = zoneConfig.readableColors,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(gradePalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
@@ -1075,7 +1084,6 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     val sizeConfig = remember {
         ViewSizeConfig.STANDARD.copy(
             cellWidthPxOverride = widthPx.toFloat(),
-            cellHeightPx = heightPx.toFloat(),
         )
     }
     var index by remember { mutableIntStateOf(0) }
@@ -1349,7 +1357,7 @@ private fun ZonePaletteDropdown(
             }
         }
     }
-    if (readable) {
+    if (selected == ZonePalette.HSLUV) {
         Text(
             "HSLuv is designed for Karoo's dark screen",
             fontSize = 10.sp,
@@ -1779,7 +1787,15 @@ private fun NullableCadenceThresholdInput(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun GradePaletteDropdown(title: String, selected: GradePalette, onSelected: (GradePalette) -> Unit) {
+private fun GradePaletteDropdown(
+    title: String,
+    selected: GradePalette,
+    readable: Boolean,
+    onSelected: (GradePalette) -> Unit,
+) {
+    val options =
+        if (readable) GradePalette.entries
+        else GradePalette.entries.filter { it != GradePalette.TURBO }
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
@@ -1791,7 +1807,7 @@ private fun GradePaletteDropdown(title: String, selected: GradePalette, onSelect
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            GradePalette.entries.forEach { palette ->
+            options.forEach { palette ->
                 DropdownMenuItem(
                     text = { Text(palette.label) },
                     onClick = { onSelected(palette); expanded = false },
@@ -1809,19 +1825,32 @@ private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
         GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
         GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
         GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
+        GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
     }
-    Row(modifier = Modifier.fillMaxWidth()) {
-        thresholds.forEachIndexed { i, lower ->
-            val color = gradeColor(lower, palette, readable)
-            val label =
-                if (i == thresholds.lastIndex) "${formatGradePct(lower)}%+"
-                else "${formatGradePct(lower)}-${formatGradePct(thresholds[i + 1])}%"
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Box(modifier = Modifier.fillMaxWidth().height(16.dp).background(color ?: Color.Transparent))
-                Text(text = label, fontSize = 7.sp, color = TextDark)
+    val boundaries: List<String> = thresholds.map {
+        if (it == Double.NEGATIVE_INFINITY) "-∞" else formatGradePct(it)
+    } + "∞"
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            thresholds.forEach { lower ->
+                val color = gradeColor(lower, palette, readable)
+                Box(modifier = Modifier.weight(1f).height(16.dp).background(color ?: Color.Transparent))
+            }
+        }
+        Layout(
+            modifier = Modifier.fillMaxWidth(),
+            content = { boundaries.forEach { Text(it, fontSize = 10.sp, color = TextDark) } },
+        ) { measurables, constraints ->
+            val totalWidth = constraints.maxWidth
+            val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0)) }
+            val height = placeables.maxOf { it.height }
+            val lastBoundary = (placeables.size - 1).coerceAtLeast(1)
+            layout(totalWidth, height) {
+                placeables.forEachIndexed { i, p ->
+                    val xCenter = totalWidth.toLong() * i / lastBoundary
+                    val x = (xCenter.toInt() - p.width / 2).coerceIn(0, (totalWidth - p.width).coerceAtLeast(0))
+                    p.placeRelative(x, 0)
+                }
             }
         }
     }

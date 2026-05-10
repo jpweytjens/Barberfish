@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -55,11 +56,13 @@ import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
-import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
+import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
 import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
+import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
@@ -163,6 +166,7 @@ internal fun HUDConfigSection(
                 onSelect = { previewSweepSeconds = it },
             )
         }
+        val isRvvFixture = selectedFixtureName == "RvV (last 20km)"
         HUDPreview(
             hudConfig = hudConfig,
             sparklineConfig = sparklineConfig,
@@ -172,6 +176,8 @@ internal fun HUDConfigSection(
             selectedSlot = selectedSlot,
             onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
             fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
+            fixtureClimbRanges = if (isRvvFixture) rvvClimbsFixture() else emptyList(),
+            fixturePoiDistances = if (isRvvFixture) rvvPoisFixture() else emptyList(),
             previewSweepSeconds = previewSweepSeconds,
         )
     } else {
@@ -221,6 +227,8 @@ private fun HUDPreview(
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
     fixturePoints: List<Pair<Float, Float>>? = null,
+    fixtureClimbRanges: List<Pair<Float, Float>>? = null,
+    fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
 ) {
     val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
@@ -238,10 +246,12 @@ private fun HUDPreview(
 
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
-    val sparklineDisplayHeightPx = (32f * density).toInt()
+    val sparklineDisplayHeightPx = (34f * density).toInt()
     var boxWidthPx by remember { mutableIntStateOf(0) }
 
     val elevationPoints = fixturePoints ?: previewElevationFixture()
+    val climbRanges = fixtureClimbRanges ?: rvvClimbsFixture()
+    val poiDistances = fixturePoiDistances ?: rvvPoisFixture()
 
     // Animate position: sweep from route start to end, then loop
     var positionM by remember { mutableStateOf(elevationPoints.first().first) }
@@ -272,7 +282,7 @@ private fun HUDPreview(
         visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
     }
 
-    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM) {
+    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM, climbRanges, poiDistances) {
         if (!sparklineConfig.enabled || boxWidthPx <= 0) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
@@ -287,22 +297,39 @@ private fun HUDPreview(
                 readable        = zoneConfig.readableColors,
                 lookaheadM      = sparklineConfig.lookaheadKm * 1_000f,
                 skipBands       = sparklineConfig.skipBands,
+                skipBandsDescent = sparklineConfig.skipBandsDescent,
                 displayedRange  = displayedRange,
                 distanceDeltaM  = distanceDeltaM,
                 isNightMode     = isNightMode,
                 minElevRangeM   = sparklineConfig.yZoom.minRangeM,
                 logWarpK        = sparklineConfig.warp.k,
                 positionFraction = sparklineConfig.warp.positionFraction,
+                climbRanges     = climbRanges,
+                showClimbs      = sparklineConfig.showClimbs,
+                poiDistances    = poiDistances,
+                showPois        = sparklineConfig.showPois,
             )
             displayedRange = newRange
             bitmap
         }
     }
 
+    // Bleed 8 dp each side to reclaim the CollapsibleSection inner padding so the
+    // preview spans the section card's full width — wider than default but inside the
+    // section bounds (no screen-edge clipping of the rightmost label).
     Box(
         modifier = Modifier
+            .layout { measurable, constraints ->
+                val bleed = 12.dp.roundToPx()
+                val placeable = measurable.measure(
+                    constraints.copy(maxWidth = constraints.maxWidth + bleed)
+                )
+                layout(constraints.maxWidth, placeable.height) {
+                    placeable.place(-bleed / 2, 0)
+                }
+            }
             .fillMaxWidth()
-            .height(80.dp)
+            .height(90.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
             .onSizeChanged { boxWidthPx = it.width }
@@ -329,7 +356,7 @@ private fun HUDPreview(
             Image(
                 bitmap = sparklineBitmap.asImageBitmap(),
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(32.dp).align(Alignment.BottomCenter),
+                modifier = Modifier.fillMaxWidth().height(30.dp).align(Alignment.BottomCenter),
                 contentScale = ContentScale.FillBounds,
             )
         }
@@ -367,12 +394,11 @@ private fun HUDPreviewCell(
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sparklineMarginPx = if (sparklineEnabled) 32f * density else 0f
+        val sparklineMarginPx = if (sparklineEnabled) 34f * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
             baseConfig.copy(
                 cellWidthPxOverride = widthPx.toFloat(),
-                cellHeightPx = slotHeightPx.toFloat(),
             )
         }
         val bitmap = remember(field, colorMode, sizeConfig, slotHeightPx) {
@@ -652,7 +678,7 @@ internal fun SparklineCard(
         Text("ELEVATION SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
         Text("Shows elevation ahead when a route is loaded.", fontSize = 12.sp, color = TextDark)
         SegmentedRow(
-            options = listOf(true to "On", false to "Off"),
+            options = listOf(false to "Off", true to "On"),
             selected = config.enabled,
             onSelect = { onUpdate(config.copy(enabled = it)) },
         )
@@ -667,18 +693,49 @@ internal fun SparklineCard(
                 selected = config.lookaheadKm,
                 onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
             )
-            val threshold = gradeThreshold(palette, config.skipBands)
-            Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            val fillRange = gradeFillRange(
+                palette,
+                skipBandsClimb = config.skipBands,
+                skipBandsDescent = config.skipBandsDescent,
+            )
+            val hasDescentBands = gradeFillRange(palette).negMax != null
+            val posMin = fillRange.posMin
+            val negMax = fillRange.negMax
+            val readout = when {
+                hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
+                    val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
+                    val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
+                    "Grades between $lower% and $upper% stay uncoloured."
+                }
+                !hasDescentBands && config.skipBands > 0 && posMin != null ->
+                    "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+                else -> null
+            }
+            Text("EMPHASIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text(
-                if (config.skipBands == 0) "Skip the lowest color bands. Bands are set by the gradient palette."
-                else "Skip the lowest color bands. Bands are set by the gradient palette. Grades below ≥${"%.0f".format(threshold)}% stay uncolored.",
+                "Filter out gentle grades so meaningful climbs and descents stand out.",
                 fontSize = 12.sp, color = TextDark,
+            )
+            if (readout != null) {
+                Text(readout, fontSize = 12.sp, color = TextDark)
+            }
+            Text(
+                if (hasDescentBands) "Climbs" else "Bands",
+                fontSize = 11.sp, color = TextDark,
             )
             SegmentedRow(
                 options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
                 selected = config.skipBands,
                 onSelect = { onUpdate(config.copy(skipBands = it)) },
             )
+            if (hasDescentBands) {
+                Text("Descents", fontSize = 11.sp, color = TextDark)
+                SegmentedRow(
+                    options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                    selected = config.skipBandsDescent,
+                    onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
+                )
+            }
             Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
             SegmentedRow(
@@ -699,6 +756,20 @@ internal fun SparklineCard(
                 options = ElevationZoom.entries.map { it to it.label },
                 selected = config.yZoom,
                 onSelect = { onUpdate(config.copy(yZoom = it)) },
+            )
+            Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Tint the outline blue on climbs as detected by Karoo Climber.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = listOf(false to "Off", true to "On"),
+                selected = config.showClimbs,
+                onSelect = { onUpdate(config.copy(showClimbs = it)) },
+            )
+            Text("POIs", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text("Mark points of interest (POIs) along the sparkline.", fontSize = 12.sp, color = TextDark)
+            SegmentedRow(
+                options = listOf(false to "Off", true to "On"),
+                selected = config.showPois,
+                onSelect = { onUpdate(config.copy(showPois = it)) },
             )
         }
     }

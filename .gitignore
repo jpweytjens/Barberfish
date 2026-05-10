@@ -55,7 +55,11 @@ screencaps/
 
 # Decompiled files
 docs/ride_decompiled/
+docs/ride_decompiled_cfr/
+docs/ride_decompiled_k2/
+docs/ride_smali/
 docs/ride.apk
+docs/ride_k2.apk
 docs/karoo-ext_decompiled/
 
 # Superpowers

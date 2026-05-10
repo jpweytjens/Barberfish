@@ -99,7 +99,7 @@ class ETAField(
                 }
                 .map { (state, raw) ->
                     if (raw == null || raw.distToDestM == null) {
-                        return@map FieldState.unavailable(kind.label)
+                        return@map FieldState.unavailable(kind.label, kind.iconRes)
                     }
 
                     val input = ETAInput(

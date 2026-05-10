@@ -8,6 +8,7 @@ import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
+import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import io.hammerhead.karooext.KarooSystemService
@@ -105,6 +106,14 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     override fun liveFlow(context: Context): Flow<FieldState> {
         val secondsFlow = secondsFlow(karooSystem, kind)
+        if (kind == TimeKind.LAST_LAP) {
+            val lapNumberFlow = karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER)
+                .map { lapNumberFrom(it) }
+            return combine(secondsFlow, lapNumberFlow, context.streamTimeConfig()) { seconds, lapNumber, cfg ->
+                if (lapNumber <= 1) FieldState.noLapsYet(kind.label, kind.iconRes)
+                else toFieldState(seconds, kind, cfg.format)
+            }
+        }
         return combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->
             toFieldState(seconds, kind, cfg.format)
         }

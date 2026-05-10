@@ -13,6 +13,7 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
@@ -44,9 +45,13 @@ class LapPowerField(
                 Triple(cfg, profile, zones)
             }
             .flatMapLatest { (cfg, profile, zones) ->
-                karooSystem.streamDataFlow(sdkType).map { state ->
-                    toFieldState(state, profile, zones, cfg.colorMode, isLastLap)
-                }
+                combine(
+                    karooSystem.streamDataFlow(sdkType),
+                    karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER),
+                ) { state, lapState -> state to lapNumberFrom(lapState) }
+                    .map { (state, lapNumber) ->
+                        toFieldState(state, profile, zones, cfg.colorMode, isLastLap, lapNumber)
+                    }
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
@@ -68,13 +73,15 @@ class LapPowerField(
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
             isLastLap: Boolean,
+            lapNumber: Int = 0,
         ): FieldState {
             val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
             val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
-            state.toErrorFieldState(label)?.let { return it }
+            if (isLastLap && lapNumber <= 1) return FieldState.noLapsYet(label, iconRes)
+            state.toErrorFieldState(label, iconRes)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
-                    ?: return FieldState.unavailable(label)
+                    ?: return FieldState.unavailable(label, iconRes)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(

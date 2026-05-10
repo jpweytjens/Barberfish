@@ -23,7 +23,10 @@ import hsluv
 # Paths
 # ---------------------------------------------------------------------------
 
-_SHARED = Path(__file__).parent.parent / "app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared"
+_SHARED = (
+    Path(__file__).parent.parent
+    / "app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared"
+)
 
 ZONE_COLORING_KT = _SHARED / "ZoneColoring.kt"
 FIELD_COLORS_KT = _SHARED / "FieldColors.kt"
@@ -63,11 +66,7 @@ def apca_contrast(text_hex: str, bg_hex: str) -> float:
     yb = _soft_clamp(_luminance(*_hex_to_rgb(bg_hex)))
     if abs(yb - yt) < 0.0005:
         return 0.0
-    sapc = (
-        (yb**0.56 - yt**0.57) * 1.14
-        if yt < yb
-        else (yb**0.65 - yt**0.62) * 1.14
-    )
+    sapc = (yb**0.56 - yt**0.57) * 1.14 if yt < yb else (yb**0.65 - yt**0.62) * 1.14
     if abs(sapc) < 0.1:
         return 0.0
     return (sapc - 0.027) * 100 if sapc > 0 else (sapc + 0.027) * 100
@@ -99,6 +98,7 @@ def is_readable(
 # ---------------------------------------------------------------------------
 # Conversion
 # ---------------------------------------------------------------------------
+
 
 def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
     """Parse a hex color string into RGB components.
@@ -258,6 +258,7 @@ def _hsluv_to_hex(h: float, s: float, l: float) -> str:
 # ---------------------------------------------------------------------------
 # Contrast correction
 # ---------------------------------------------------------------------------
+
 
 def adjust_for_readability(
     hex_color: str,
@@ -455,6 +456,7 @@ def parse_grade_bands(path: Path) -> dict[str, list[tuple[float, str, str]]]:
 # Output
 # ---------------------------------------------------------------------------
 
+
 def _print_comparison_rows(hex_values: list[str], bg: str, min_lc: float) -> None:
     header = f"{'Original':<10}  {'HSL':<10}  {'HSLuv':<10}  {'Δ':<4}  {'Lc(HSL)':<10}  Lc(HSLuv)"
     sep = "-" * len(header)
@@ -500,7 +502,9 @@ def print_comparison(
     if grade_bands:
         for name, entries in grade_bands.items():
             print(f"\n{name}")
-            _print_comparison_rows([f"#{hex_val}" for _, hex_val, _ in entries], bg, min_lc)
+            _print_comparison_rows(
+                [f"#{hex_val}" for _, hex_val, _ in entries], bg, min_lc
+            )
 
 
 def main() -> None:
@@ -538,7 +542,9 @@ def main() -> None:
             changed = corrected_hex != hex_val
             suffix = f"  // was #{hex_val}" if changed else ""
             comment_str = f"  {comment}" if comment else ""
-            print(f"    {threshold} to Color(0xFF{corrected_hex}),{comment_str}{suffix}")
+            print(
+                f"    {threshold} to Color(0xFF{corrected_hex}),{comment_str}{suffix}"
+            )
         print(")")
         print()
 

@@ -61,10 +61,10 @@ class NPField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState("NP")?.let { return it }
+            state.toErrorFieldState("NP", R.drawable.ic_col_power)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
-                    ?: return FieldState.unavailable("NP")
+                    ?: return FieldState.unavailable("NP", R.drawable.ic_col_power)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(
