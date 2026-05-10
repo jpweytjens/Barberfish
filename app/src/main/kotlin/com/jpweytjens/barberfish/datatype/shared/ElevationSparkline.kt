@@ -128,7 +128,7 @@ internal fun visvalingamWhyatt(
  *
  * Rendering layers (bottom to top):
  *  1. Ahead silhouette fill (~6% alpha; white on night, black on day)
- *  2. Climb fills for grade ≥ gradeThreshold(palette), from gradeColor(); consecutive
+ *  2. Climb (and optionally descent) fills via gradeFillRange(palette), coloured by gradeColor(); consecutive
  *     same-colour segments are merged into a single polygon to eliminate seams.
  *  2b. Overlay on the past region to grey out grade fills behind the dot
  *      (night: 55% alpha black; day: 78% alpha mid-grey — grey desaturates
@@ -160,6 +160,7 @@ internal fun renderElevationSparkline(
     readable: Boolean,
     lookaheadM: Float = 10_000f,
     skipBands: Int = 1,
+    skipBandsDescent: Int = 0,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
     dotColor: Int = ICON_TINT_TEAL.toArgb(),
@@ -242,7 +243,7 @@ internal fun renderElevationSparkline(
     }
 
     // 2. Climb fills — merge consecutive same-color segments into one polygon to eliminate seams.
-    val threshold = gradeThreshold(palette, skipBands)
+    val fillRange = gradeFillRange(palette, skipBandsClimb = skipBands, skipBandsDescent = skipBandsDescent)
     paint.style = Paint.Style.FILL
     run {
         var runColor: Int? = null
@@ -271,7 +272,10 @@ internal fun renderElevationSparkline(
             val distDelta = d2 - d1
             if (distDelta <= 0f) { flushRun(); continue }
             val grade = (e2 - e1) / distDelta * 100.0
-            val segColor = if (grade >= threshold) gradeColor(grade, palette, readable)?.toArgb() else null
+            val withinFill =
+                (fillRange.posMin != null && grade >= fillRange.posMin) ||
+                (fillRange.negMax != null && grade < fillRange.negMax)
+            val segColor = if (withinFill) gradeColor(grade, palette, readable)?.toArgb() else null
             if (segColor == null) { flushRun(); continue }
             if (segColor != runColor) { flushRun(); runColor = segColor }
             if (runPts.isEmpty()) runPts.add(d1 to e1)

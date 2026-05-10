@@ -56,7 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
-import com.jpweytjens.barberfish.datatype.shared.gradeThreshold
+import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
 import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
@@ -692,7 +692,7 @@ internal fun SparklineCard(
                 selected = config.lookaheadKm,
                 onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
             )
-            val threshold = gradeThreshold(palette, config.skipBands)
+            val threshold = gradeFillRange(palette, skipBandsClimb = config.skipBands).posMin ?: 0.0
             Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text(
                 if (config.skipBands == 0) "Skip the lowest color bands. Bands are set by the gradient palette."

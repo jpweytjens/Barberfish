@@ -155,13 +155,28 @@ internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolea
 }
 
 /**
- * Returns the minimum grade (%) that receives a colour fill in the elevation sparkline.
+ * Range of grades that receive a colour fill in the elevation sparkline. Symmetric
+ * palettes (Turbo) colour both climbs and descents; one-sided palettes only climbs.
  *
- * [skipBands] controls how many of the lowest-grade bands are suppressed (0 = colour
- * everything including flat terrain, 1 = skip the lowest band (default), 2 = skip the
- * two lowest, etc.). Clamped so it never exceeds the band count.
+ * - [posMin] (climbs): fill when grade >= posMin. null = never fill on the climb side.
+ * - [negMax] (descents): fill when grade < negMax. null = never fill on the descent side.
  */
-internal fun gradeThreshold(palette: GradePalette, skipBands: Int = 1): Double {
+internal data class GradeFillRange(val posMin: Double?, val negMax: Double?)
+
+/**
+ * [skipBandsClimb]: how many of the flattest *positive* bands stay uncoloured. 0 colours
+ * everything from grade=0 up; 1 (default) skips the lowest positive band; etc.
+ *
+ * [skipBandsDescent]: same idea on the descent side. 0 colours everything below 0;
+ * 1 skips the flattest negative band; etc. No effect on palettes without negative bands.
+ *
+ * Both counts clamp to the available band count.
+ */
+internal fun gradeFillRange(
+    palette: GradePalette,
+    skipBandsClimb: Int = 1,
+    skipBandsDescent: Int = 0,
+): GradeFillRange {
     val bands = when (palette) {
         GradePalette.WAHOO  -> WAHOO_GRADE_BANDS
         GradePalette.GARMIN -> GARMIN_GRADE_BANDS
@@ -170,8 +185,19 @@ internal fun gradeThreshold(palette: GradePalette, skipBands: Int = 1): Double {
         GradePalette.ZWIFT  -> ZWIFT_GRADE_BANDS
         GradePalette.TURBO  -> TURBO_GRADE_BANDS
     }
-    val idx = (bands.lastIndex - skipBands).coerceAtLeast(0)
-    return bands[idx].first
+    val thresholds = bands.map { it.first }
+    val positives = thresholds.filter { it >= 0.0 }.sorted()
+    val negatives = thresholds
+        .filter { it < 0.0 && it != Double.NEGATIVE_INFINITY }
+        .sortedDescending()
+
+    val posMin = positives.getOrNull(skipBandsClimb.coerceAtMost(positives.lastIndex))
+    val negMax = when {
+        negatives.isEmpty() -> null
+        skipBandsDescent <= 0 -> 0.0
+        else -> negatives.getOrNull((skipBandsDescent - 1).coerceAtMost(negatives.lastIndex))
+    }
+    return GradeFillRange(posMin, negMax)
 }
 
 data class ColorConfig(
