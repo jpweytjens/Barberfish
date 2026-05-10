@@ -13,7 +13,6 @@
         android:layout_height="match_parent"
         android:gravity="center"
         android:fontFamily="ibm-plex-sans-condensed"
-        android:fontWeight="500"
         android:textColor="@android:color/white"
         android:includeFontPadding="false"
         android:maxLines="2"
