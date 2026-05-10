@@ -345,22 +345,27 @@ internal fun renderElevationSparkline(
     }
 
     // 4c. POI markers — generic filled circle, drawn under the position dot.
+    // Past markers use the past-outline grey to match the muting applied to the past
+    // outline; ahead markers keep their bright fill so upcoming POIs stay legible.
     if (showPois && poiDistances.isNotEmpty()) {
         val poiRadius = POI_RADIUS_PX
-        val fillColor = if (isNightMode) android.graphics.Color.argb(230, 255, 255, 255)
+        val aheadFill = if (isNightMode) android.graphics.Color.argb(230, 255, 255, 255)
             else android.graphics.Color.argb(230, 0, 0, 0)
-        val strokeColor = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        val aheadStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+        val pastFill = android.graphics.Color.argb(255, 100, 100, 100)
+        val pastStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
         for (d in poiDistances) {
             if (d < windowStart || d > windowEnd) continue
             val elev = elevationAt(visible, d) ?: continue
             val cx = toX(d)
             val cy = toY(elev).coerceIn(poiRadius, heightPx - poiRadius)
+            val isPast = d < positionM
             paint.style = Paint.Style.FILL
-            paint.color = fillColor
+            paint.color = if (isPast) pastFill else aheadFill
             canvas.drawCircle(cx, cy, poiRadius, paint)
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 1.5f
-            paint.color = strokeColor
+            paint.color = if (isPast) pastStroke else aheadStroke
             canvas.drawCircle(cx, cy, poiRadius, paint)
         }
     }
