@@ -141,8 +141,11 @@ internal fun visvalingamWhyatt(
 private const val MIN_FILL_PX = 1f          // skip colour fills narrower than this many pixels
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f  // 40 m scale decay per 1000 m ridden
 private const val WARP_STEP_TARGET_M = 25f  // finer than typical elevation polyline spacing (~80-100m), GPS movement per render irrelevant
-private const val DOT_RADIUS_PX = 6f
+private const val DOT_RADIUS_PX = 7f
 private const val POI_RADIUS_PX = 7f
+private const val MARKER_STROKE_PX = 1.5f
+// Half-stroke + radius, ceil'd: keeps the stroked outer edge of the dot/POI inside the bitmap.
+private const val MARKER_PAD_PX = 8f
 
 /** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
 internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
@@ -202,7 +205,7 @@ internal fun renderElevationSparkline(
         else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
 
     val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, logWarpK)
-    fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * DOT_RADIUS_PX) - DOT_RADIUS_PX).coerceIn(0f, heightPx.toFloat())
+    fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * MARKER_PAD_PX) - MARKER_PAD_PX).coerceIn(0f, heightPx.toFloat())
 
     // Partition `visible` around positionM once. Points exactly at positionM appear in
     // both lists so past/ahead polygons meet cleanly at the dot (mirrors the old
@@ -387,21 +390,25 @@ internal fun renderElevationSparkline(
             if (d < windowStart || d > windowEnd) continue
             val elev = elevationAt(visible, d) ?: continue
             val cx = toX(d)
-            val cy = toY(elev).coerceIn(poiRadius, heightPx - poiRadius)
+            val cy = toY(elev).coerceIn(MARKER_PAD_PX, heightPx - MARKER_PAD_PX)
             val isPast = d < positionM
             paint.style = Paint.Style.FILL
             paint.color = if (isPast) pastFill else aheadFill
             canvas.drawCircle(cx, cy, poiRadius, paint)
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 1.5f
+            paint.strokeWidth = MARKER_STROKE_PX
             paint.color = if (isPast) pastStroke else aheadStroke
             canvas.drawCircle(cx, cy, poiRadius, paint)
         }
     }
 
-    // 5. Position dot
+    // 5. Position dot — matches POI markers in size and outline so they share visual weight.
     paint.style = Paint.Style.FILL
     paint.color = dotColor
+    canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = MARKER_STROKE_PX
+    paint.color = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
     canvas.drawCircle(dotX, dotY, DOT_RADIUS_PX, paint)
 
     return ElevationSparklineResult(bitmap, newDisplayedRange)
