@@ -103,6 +103,7 @@ data class ViewSizeConfig(
                 labelMaxLines = 2,
                 wrapThresholdSp = 18,
                 valueFontSizeBase = 49,
+                valueBitmapHeightDp = 36,
             )
 
         // On-device HUD 3-column slots (colSpan=20)
