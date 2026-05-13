@@ -245,7 +245,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     )
                 }
             HUDSlotField.Grade ->
-                GradeField.gradeEmaFlow(karooSystem)
+                GradeField.gradeOlsFlow(karooSystem)
                     .map { GradeField.toGradeFieldState(it, GradeFieldConfig(slot.colorMode), zones.gradePalette, zones.readableColors) }
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(karooSystem, slot.avgSpeedConfig, profile, slot.field.includePaused)
