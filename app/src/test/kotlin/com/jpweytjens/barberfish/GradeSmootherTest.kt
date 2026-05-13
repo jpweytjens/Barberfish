@@ -95,4 +95,36 @@ class GradeSmootherTest {
             s.update(100.0f, i.toFloat(), 5.0f) // throws if ring buffer overflows
         }
     }
+
+    // --- Moving guard ---
+
+    @Test
+    fun pausedSamples_returnNullAndDoNotPollute() {
+        // 60 m of flat road, then 30 stopped ticks at the same coordinates, then resume.
+        val moving = (0..59).map { i -> Triple(100.0f, i.toFloat(), 5.0f) }
+        val stopped = (1..30).map { Triple(100.0f, 59.0f, 0.0f) }       // speed 0 → not moving
+        val resume  = (1..10).map { i -> Triple(100.0f, 59.0f + i.toFloat(), 5.0f) }
+        val out = run(moving + stopped + resume)
+
+        val pausedSlice = out.subList(moving.size, moving.size + stopped.size)
+        pausedSlice.forEach { assertNull(it) }
+
+        // After resume, since elevation didn't change during the pause, no barrier should fire.
+        // The buffer still holds 30 m of pre-pause road, so the smoother should return ~0% promptly.
+        val firstAfterResume = out[moving.size + stopped.size]
+        assertNotNull(firstAfterResume)
+        assertEquals(0.0f, firstAfterResume!!, 0.01f)
+    }
+
+    @Test
+    fun belowSpeedThreshold_skipsBufferEvenIfDistanceAdvances() {
+        // Pathological input: distance advances while speed is below threshold (e.g. GPS drift).
+        // The sample must be dropped.
+        val s = GradeSmoother()
+        repeat(40) { i ->
+            s.update(100.0f, i.toFloat(), 0.3f) // speed 0.3 m/s < 0.5 threshold
+        }
+        // No moving samples → still null after enough distance.
+        assertNull(s.update(100.0f, 40.0f, 0.3f))
+    }
 }
