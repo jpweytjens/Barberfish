@@ -68,4 +68,31 @@ class GradeSmootherTest {
         assertNotNull(finalGrade)
         assertEquals(-5.0f, finalGrade!!, 0.01f)
     }
+
+    // --- Window sliding ---
+
+    @Test
+    fun slopeTracksLeadingEdge_whenWindowSlidesPastOldRoad() {
+        // 60 m of flat road, then 60 m of 10% climb.
+        val flat = (0..59).map { i -> Triple(100.0f, i.toFloat(), 5.0f) }
+        val climb = (1..60).map { i ->
+            Triple(100.0f + 0.10f * i, 59.0f + i.toFloat(), 5.0f)
+        }
+        val samples = flat + climb
+        val out = run(samples)
+        // Final 30 m of road are pure 10% climb → output should equal 10% within tolerance.
+        val finalGrade = out.last()
+        assertNotNull(finalGrade)
+        assertEquals(10.0f, finalGrade!!, 0.1f)
+    }
+
+    @Test
+    fun ringBufferDoesNotOverflow_onLongRide() {
+        // 5 minutes at 5 m/s = 1500 m / 1500 samples. Capacity is 64.
+        // Eviction must keep buffer ≤ capacity throughout.
+        val s = GradeSmoother()
+        repeat(1500) { i ->
+            s.update(100.0f, i.toFloat(), 5.0f) // throws if ring buffer overflows
+        }
+    }
 }
