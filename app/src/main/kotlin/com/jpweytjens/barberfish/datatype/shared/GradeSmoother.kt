@@ -49,7 +49,7 @@ class GradeSmoother(
     private var sumXX = 0.0
     private var minAnchorD: Float = 0.0f
 
-    // Pause-state fields are declared now but unused until Task 5.
+    // Moving-state tracking for the snapshot/barrier mechanism (see update()).
     private var elevAtPause: Float? = null
     private var wasMoving = false
     private var lastMovingElev: Float = 0.0f
@@ -61,6 +61,27 @@ class GradeSmoother(
             initialised = true
         }
         val moving = speedMs >= speedThresholdMs
+
+        // Track the elevation at the last moving sample. This is what we snapshot at
+        // the moving → not-moving transition, so the snapshot represents the elev BEFORE
+        // any gap, deadband fire, or sensor drop that occurs across the boundary.
+        if (moving) lastMovingElev = elevM
+
+        if (!moving && wasMoving) {
+            // Just stopped — snapshot the elev from the LAST moving sample.
+            elevAtPause = lastMovingElev
+        } else if (moving && !wasMoving) {
+            // Just resumed — if elev differs from snapshot, the buffer is no longer
+            // continuous with the road. Insert a barrier; the eviction loop below
+            // will pop every pre-barrier sample on this tick.
+            val snap = elevAtPause
+            if (snap != null && elevM != snap) {
+                minAnchorD = distM
+            }
+            elevAtPause = null
+        }
+        wasMoving = moving
+
         if (!moving) return null
 
         // Push current sample.
