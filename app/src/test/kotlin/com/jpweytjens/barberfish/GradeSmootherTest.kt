@@ -180,4 +180,26 @@ class GradeSmootherTest {
         assertNotNull(afterWarmup)
         assertEquals(0.0f, afterWarmup!!, 0.01f)
     }
+
+    // --- Numerical stability ---
+
+    @Test
+    fun longRide_doesNotLoseSignificance_at_100km() {
+        // Simulate 100 km of flat-then-5%-climb road. The OLS denominator
+        // `n * sumXX - sumX * sumX` becomes a difference of two ~1e15-scale doubles, which is
+        // why sumX/sumY/sumXY/sumXX are stored as Double (~16 sig digits). Verify the slope
+        // is still accurate to 0.05% at 100 km.
+        val s = GradeSmoother()
+        var result: Float? = null
+        // 95 km flat
+        for (i in 0..94_999) {
+            s.update(100.0f, i.toFloat(), 5.0f)
+        }
+        // 5 km of 5% climb
+        for (i in 1..5_000) {
+            result = s.update(100.0f + 0.05f * i, 94_999.0f + i.toFloat(), 5.0f)
+        }
+        assertNotNull(result)
+        assertEquals(5.0f, result!!, 0.05f)
+    }
 }
