@@ -29,7 +29,6 @@ private class GradeRingBuffer(private val capacity: Int) {
     }
 
     fun oldestDist(): Float = dist[tail]
-    fun oldestElev(): Float = elev[tail]
 
     fun peekDist(indexFromOldest: Int): Float {
         require(indexFromOldest in 0 until size)

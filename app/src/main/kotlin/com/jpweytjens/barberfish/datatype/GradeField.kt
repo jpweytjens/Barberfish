@@ -84,7 +84,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                     if (e == null || d == null || v == null) null
                     else smoother.update(e, d, v)
                 }
-                .scan(GradeReading.Unavailable as GradeReading) { acc, fresh ->
+                .scan<Float?, GradeReading>(GradeReading.Unavailable) { acc, fresh ->
                     gradeReadingReducer(acc, fresh)
                 }
         }
