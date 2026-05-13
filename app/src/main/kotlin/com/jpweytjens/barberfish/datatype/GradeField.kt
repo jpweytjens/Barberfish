@@ -19,10 +19,8 @@ import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.scan
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GradeField(private val karooSystem: KarooSystemService) :
@@ -33,8 +31,15 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 cfg to zones
             }
             .flatMapLatest { (cfg, zones) ->
-                gradeEmaFlow(karooSystem)
-                    .map { emaPercent -> toGradeFieldState(emaPercent, cfg, zones.gradePalette, zones.readableColors) }
+                gradeOlsFlow(karooSystem)
+                    .map { percent ->
+                        toGradeFieldState(
+                            percent?.toDouble(),
+                            cfg,
+                            zones.gradePalette,
+                            zones.readableColors,
+                        )
+                    }
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
@@ -46,18 +51,6 @@ class GradeField(private val karooSystem: KarooSystemService) :
             }
 
     companion object {
-        const val EMA_ALPHA = 0.15
-
-        fun gradeEmaFlow(karooSystem: KarooSystemService): Flow<Double> =
-            karooSystem
-                .streamDataFlow(DataType.Type.ELEVATION_GRADE)
-                .map { state ->
-                    (state as? StreamState.Streaming)
-                        ?.dataPoint?.values?.get(DataType.Field.ELEVATION_GRADE)
-                }
-                .filterNotNull()
-                .scan(0.0) { ema, raw -> EMA_ALPHA * raw + (1 - EMA_ALPHA) * ema }
-
         fun gradeOlsFlow(karooSystem: KarooSystemService): Flow<Float?> {
             val elevFlow =
                 karooSystem
