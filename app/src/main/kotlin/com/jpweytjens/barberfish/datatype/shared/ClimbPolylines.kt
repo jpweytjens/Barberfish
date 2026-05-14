@@ -82,6 +82,7 @@ internal fun buildClimbOverlaySpecs(
     cfg: ClimberMapConfig,
     includeChevrons: Boolean = true,
     chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
+    chevronWindowHalfM: Double = 0.0,
     chevronHeadingThresholdDeg: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
 ): ClimbOverlaySpecs {
@@ -135,6 +136,7 @@ internal fun buildClimbOverlaySpecs(
                 gps = gps,
                 cumDist = cumDist,
                 spacingM = chevronSpacingM,
+                windowHalfM = chevronWindowHalfM,
                 headingThresholdDeg = chevronHeadingThresholdDeg,
                 colorArgb = run.colorArgb,
             )
@@ -155,6 +157,7 @@ private fun chevronsForRun(
     gps: List<LatLng>,
     cumDist: DoubleArray,
     spacingM: Double,
+    windowHalfM: Double,
     headingThresholdDeg: Double,
     colorArgb: Int,
 ): List<ClimbChevronSpec> {
@@ -165,9 +168,6 @@ private fun chevronsForRun(
     // chevron — at wide zoom the gradient colour alone is sufficient.
     val count = (lengthM / spacingM).toInt()
     if (count == 0) return emptyList()
-    // Seed reference bearing at the run entry so the first candidate emits only when
-    // the route has already turned by [headingThresholdDeg] before reaching it.
-    var lastEmittedBearing = bearingAtDistance(gps, cumDist, startM, total)
     val specs = ArrayList<ClimbChevronSpec>(count)
     var emittedIdx = 0
     for (i in 0 until count) {
@@ -175,13 +175,15 @@ private fun chevronsForRun(
         // sit off the run endpoints (avoids stacking at run boundaries).
         val t = (i + 0.5) / count
         val d = (startM + lengthM * t).coerceIn(0.0, total)
+        // Suppress chevrons where the route is curving too sharply for a single rotation
+        // to faithfully indicate direction — matches the rideapp's `hhk` ceiling on the
+        // local bearing spread (xdpi × 0.05 × groundResolution window half-width).
+        if (headingThresholdDeg > 0.0 && windowHalfM > 0.0) {
+            val spread = bearingSpreadInWindow(gps, cumDist, d, windowHalfM)
+            if (spread >= headingThresholdDeg) continue
+        }
         val here = interpolateAt(gps, cumDist, d)
         val bearing = bearingAtDistance(gps, cumDist, d, total)
-        if (headingThresholdDeg > 0.0 &&
-            angularDistanceDeg(bearing, lastEmittedBearing) < headingThresholdDeg
-        ) {
-            continue
-        }
         specs += ClimbChevronSpec(
             id = "barberfish-chev-$runIdx-$emittedIdx",
             lat = here.lat,
@@ -189,7 +191,6 @@ private fun chevronsForRun(
             bearingDeg = bearing,
             colorArgb = colorArgb,
         )
-        lastEmittedBearing = bearing
         emittedIdx += 1
     }
     return specs
@@ -213,10 +214,35 @@ private fun bearingAtDistance(
     else (bearingDeg(ahead, here) + 180f) % 360f
 }
 
-/** Shortest unsigned angular distance in degrees between two bearings, range [0, 180]. */
-private fun angularDistanceDeg(a: Float, b: Float): Double {
-    val diff = (((a - b) % 360f) + 360f) % 360f
-    return (if (diff > 180f) 360f - diff else diff).toDouble()
+/**
+ * Spread (max − min) in degrees of edge bearings whose start vertex falls inside
+ * `[centerM − halfM, centerM + halfM]`. Result is folded to `[0°, 180°]` so spans
+ * that cross the 0/360 wraparound report the shorter arc. Returns 0 when fewer than
+ * two edges fall in the window.
+ */
+private fun bearingSpreadInWindow(
+    gps: List<LatLng>,
+    cumDist: DoubleArray,
+    centerM: Double,
+    halfM: Double,
+): Double {
+    val minD = centerM - halfM
+    val maxD = centerM + halfM
+    var minB = Float.POSITIVE_INFINITY
+    var maxB = Float.NEGATIVE_INFINITY
+    var n = 0
+    for (i in 0 until gps.size - 1) {
+        val d = cumDist[i]
+        if (d < minD) continue
+        if (d > maxD) break
+        val b = bearingDeg(gps[i], gps[i + 1])
+        if (b < minB) minB = b
+        if (b > maxB) maxB = b
+        n++
+    }
+    if (n < 2) return 0.0
+    val raw = (maxB - minB).toDouble()
+    return if (raw > 180.0) 360.0 - raw else raw
 }
 
 /**

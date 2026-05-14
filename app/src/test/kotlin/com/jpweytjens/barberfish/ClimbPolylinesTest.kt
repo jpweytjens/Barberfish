@@ -221,29 +221,33 @@ class ClimbPolylinesTest {
         assertTrue(overlay.chevrons.isEmpty())
     }
 
-    @Test fun straight_route_emits_no_chevrons_with_heading_threshold() {
+    @Test fun straight_route_keeps_all_chevrons_with_curvature_filter() {
         // The default route is 4 points along the equator — bearing is constant 90° (east).
-        // With any non-zero heading threshold, no chevrons should be emitted on this route.
-        val overlay = buildClimbOverlaySpecs(
+        // With the curvature filter enabled, every spacing interval emits a chevron because
+        // the local bearing spread is 0°.
+        val unfiltered = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             cfg = noneCfg,
+        )
+        val filtered = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            chevronWindowHalfM = 40.0,
             chevronHeadingThresholdDeg = 30.0,
         )
-        assertEquals(2, overlay.polylines.size)
-        assertTrue(
-            "expected no chevrons on a straight route with 30° threshold, got ${overlay.chevrons.size}",
-            overlay.chevrons.isEmpty(),
-        )
+        assertEquals(unfiltered.chevrons.size, filtered.chevrons.size)
     }
 
-    @Test fun bendy_route_emits_chevrons_with_heading_threshold() {
+    @Test fun tight_bend_suppresses_chevrons_near_the_corner() {
         // L-shaped route: 200 m east, then 200 m north — a single 90° turn at the corner.
-        // Climb covers the full path (gentle 4% across all 400 m).
-        // At ~60 m spacing on the second leg, the bearing rotates from 90° (east) to 0° (north)
-        // — the first chevron on the north leg easily exceeds the 30° threshold.
+        // Climb covers the full path. With a window wide enough to contain both edges
+        // at the corner, the bearing spread is 90° → corner-spanning chevrons are dropped.
         val lEast = 0.001813  // ~200 m east at equator (1° longitude ≈ 111_320 m)
         val lNorth = 0.001797 // ~200 m north (1° latitude ≈ 111_320 m)
         val bendyPolyline = encodeGpsManually(
@@ -259,17 +263,25 @@ class ClimbPolylinesTest {
                 400f to 116f,    // 4% climb over the full 400 m — falls in the KAROO yellow band
             ),
         )
-        val overlay = buildClimbOverlaySpecs(
+        val unfiltered = buildClimbOverlaySpecs(
             routePolyline = bendyPolyline,
             routeElevationPolyline = climbPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             cfg = noneCfg,
+        )
+        val filtered = buildClimbOverlaySpecs(
+            routePolyline = bendyPolyline,
+            routeElevationPolyline = climbPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            chevronWindowHalfM = 250.0, // wide enough that the corner sample sees both legs
             chevronHeadingThresholdDeg = 30.0,
         )
         assertTrue(
-            "expected at least one chevron on the bendy leg, got ${overlay.chevrons.size}",
-            overlay.chevrons.isNotEmpty(),
+            "expected fewer chevrons with curvature filter (unfiltered=${unfiltered.chevrons.size}, filtered=${filtered.chevrons.size})",
+            filtered.chevrons.size < unfiltered.chevrons.size,
         )
     }
 

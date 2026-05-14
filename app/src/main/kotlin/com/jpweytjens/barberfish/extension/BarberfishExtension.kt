@@ -23,6 +23,7 @@ import com.jpweytjens.barberfish.datatype.shared.DEFAULT_CHEVRON_SPACING_M
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
+import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -142,10 +143,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         return@collect
                     }
                     val hasLocation = viewport.lat != 0.0 || viewport.lng != 0.0
-                    val chevronStep = if (hasLocation) {
-                        nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
+                    val chevronStep: Double
+                    val chevronWindow: Double
+                    if (hasLocation) {
+                        chevronStep = nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
+                        chevronWindow = nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
                     } else {
-                        DEFAULT_CHEVRON_SPACING_M
+                        chevronStep = DEFAULT_CHEVRON_SPACING_M
+                        chevronWindow = 0.0  // disables curve suppression until we have a fix
                     }
                     val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
@@ -161,10 +166,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         cfg = inputs.cfg,
                         includeChevrons = inputs.showChevrons,
                         chevronSpacingM = chevronStep,
+                        chevronWindowHalfM = chevronWindow,
                         chevronHeadingThresholdDeg = headingThreshold,
                         chevronViewport = bounds,
                     )
-                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
+                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
                     chevronController.emit(emitter, specs.chevrons)
                 }

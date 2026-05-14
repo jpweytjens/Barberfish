@@ -82,8 +82,18 @@ internal fun nativeChevronSpacingM(xdpi: Float, lat: Double, zoomLevel: Double):
     xdpi * 0.4 * groundResolution(lat, zoomLevel)
 
 /**
- * Minimum bearing change (degrees) required to emit a chevron at the next candidate
- * position, matching the rideapp's zoom-dependent threshold.
+ * Half-width in metres of the neighbourhood around a candidate chevron position used
+ * to measure local bearing spread, matching the rideapp's `hhj` constant
+ * (`xdpi × 0.05 × groundResolution`).
+ */
+internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
+    xdpi * 0.05 * groundResolution(lat, zoomLevel)
+
+/**
+ * Maximum bearing spread (degrees) allowed inside the local window for a chevron to be
+ * emitted. Spreads at or above this threshold suppress the chevron because the route is
+ * curving too sharply for a single rotation to faithfully indicate direction. Matches
+ * the rideapp's zoom-dependent `hhk` constant.
  */
 internal fun nativeChevronHeadingThresholdDeg(zoomLevel: Double): Double =
     when {
