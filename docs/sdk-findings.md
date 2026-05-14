@@ -81,6 +81,101 @@ with an actual ride comparing native vs Barberfish fields in imperial mode.
 
 ---
 
+## Grade calculation
+
+How the rideapp produces `FIELD_ELEVATION_GRADE` (`TYPE_ELEVATION_GRADE_ID`). The public
+SDK only documents "Current Grade % - Steepness of current surface" — nothing about the
+algorithm. The notes below are reverse-engineered from the decompiled rideapp.
+
+Inputs. Grade is derived from four data types:
+
+- Barometric elevation (raw pressure-derived, not GPS altitude, and not the
+  altitude-corrected variant).
+- Distance with paused time excluded.
+- Current speed.
+- A boolean "is moving" flag.
+
+Elevation deadband. Before reaching the grade calculator, pressure elevation passes
+through a 0.75 m deadband: if a new altimeter sample differs from the previous by less
+than 0.75 m, the previous value is held and only the timestamp updates. Sub-half-meter
+barometric jitter is therefore filtered out upstream. When the deadband does accept a
+step, the elevation stream jumps by at least 0.75 m all at once — the input feeding the
+grade calc is piecewise constant with infrequent steps, not a continuous noisy signal.
+
+Live grade formula. The exact closed-form is not directly recoverable from the obfuscated
+code (the transform is collapsed into a generic switch in shared lambda infrastructure),
+but the dependency list and the absence of any filter coefficients on the path between
+elevation and grade are enough to characterise it:
+
+- Numerator: change in (deadbanded) barometric elevation.
+- Denominator: change in distance-no-pause.
+- Gated by the moving flag and/or low speed, so grade is suppressed or frozen when the
+  rider is stopped (paused distance does not advance anyway, which would otherwise blow up
+  the denominator).
+- No EWMA, Kalman, or IIR-filter coefficients applied to grade itself. The only smoothing
+  in the chain is the elevation deadband.
+
+Output. Stored as percent in `[0.0, 100.0]` (matches the units table above), formatted to
+2 decimal places for display.
+
+Implication for Barberfish's `GradeField` EWMA. The SDK grade is filtered for sub-0.75 m
+altimeter noise but is not time-smoothed. Our EWMA is therefore smoothing the
+step-function character that the deadband produces when it accepts a step of 0.75 m or
+more, not raw altimeter noise. Useful when tuning the half-life: the input is piecewise
+constant with infrequent jumps, so a smoother that handles step responses gracefully is
+the right shape of tool.
+
+---
+
+## Distance calculation
+
+How the rideapp produces `FIELD_DISTANCE` (`TYPE_DISTANCE_ID`, and the derived
+`TYPE_DISTANCE_NO_PAUSE_ID` that feeds grade and other paused-time-aware fields). The
+public SDK does not document the algorithm; the notes below are reverse-engineered from
+the decompiled rideapp.
+
+Distance is fused from five per-sample diff sources, each emitting `FIELD_DISTANCE`
+deltas:
+
+| Source                           | What it is                                               |
+| -------------------------------- | -------------------------------------------------------- |
+| `TYPE_POWER_DISTANCE_DIFF_ID`    | Power meter that also reports wheel speed                |
+| `TYPE_CSC_DISTANCE_DIFF_ID`      | Combined speed+cadence sensor (ANT+/BLE CSC profile)     |
+| `TYPE_SPD_DISTANCE_DIFF_ID`      | Dedicated wheel-speed sensor (rotations × circumference) |
+| `TYPE_LEV_DISTANCE_DIFF_ID`      | E-bike / Light Electric Vehicle system                   |
+| `TYPE_LOCATION_DISTANCE_DIFF_ID` | GPS — per-fix lat/lon delta                              |
+
+The GPS branch's upstream is `TYPE_LOCATION_ID`, which carries
+lat/lon/bearing/accuracy/altitude/speed. So the GPS fusion has accuracy information
+available to it, even if how that information is used is not visible from this layer.
+
+`TYPE_DISTANCE_NO_PAUSE_ID` is the same distance with paused samples filtered out; its
+declaration reuses the base distance field list and applies the no-pause behaviour
+elsewhere in the pipeline.
+
+What we could not reconstruct: the selector / combiner that picks among (or sums across)
+the five sources and adds the chosen delta to a running total. As with grade, the actual
+combiner is collapsed into shared lambda infrastructure and is not pinpoint-identifiable.
+Common-sense ordering would prefer wheel-sensor-based sources over GPS, but that is
+inference, not observation.
+
+Implication for Barberfish. Distance noise — and therefore the grade-denominator noise
+that drives most grade spikes — depends entirely on which source wins:
+
+- With any wheel-speed source paired (CSC, SPD, or a power meter that reports speed),
+  distance is essentially exact. Residual grade noise can then only come from the
+  elevation deadband-step.
+- With GPS only, distance comes from per-fix position deltas. The GPS branch may or may
+  not be internally smoothed before producing diffs (`LOC_ACCURACY` is available, but we
+  cannot see how it is used). At low speeds this denominator is the more likely source of
+  grade spikes.
+
+The Karoo silently switches sources based on what is paired and reporting, so the same
+rider can see different grade noise characteristics on different rides depending on their
+sensor setup.
+
+---
+
 ## Preview update rate floor
 
 The ride app silently cancels preview flows that emit faster than approximately 900 ms.
