@@ -730,67 +730,74 @@ class MainActivity : ComponentActivity() {
                         },
                     )
 
-                    Text("Climber map overlay", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Gradient-colour upcoming climbs along the route on the map. Tunes independently from the sparkline.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    ClimberOverlayToggle(
-                        enabled = climberMapConfig.enabled,
-                        onSelected = { enabled ->
-                            climberMapConfig = climberMapConfig.copy(enabled = enabled)
-                            lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
-                        },
-                    )
-                    val climberThreshold = gradeFillRange(
-                        zoneConfig.gradePalette,
-                        skipBandsClimb = climberMapConfig.skipBands,
-                    ).posMin
-                    Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                    Text("Grades below this band stay uncoloured.", fontSize = 12.sp, color = TextDark)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Column(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Grey200)
+                                .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        ElevationSkipBandsRow(
-                            selected = climberMapConfig.skipBands,
-                            onSelect = { skip ->
-                                climberMapConfig = climberMapConfig.copy(skipBands = skip)
-                                lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
+                        Text("CLIMBER MAP OVERLAY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
                         Text(
-                            if (climberThreshold != null) "≥${"%.0f".format(climberThreshold)}%" else "—",
-                            fontSize = 11.sp,
-                            color = TextDark,
+                            "Gradient-colour upcoming climbs along the route on the map. Tunes independently from the sparkline.",
+                            fontSize = 12.sp, color = TextDark,
                         )
-                    }
-                    Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                    Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
-                    ElevationSimplificationRow(
-                        selected = climberMapConfig.simplification,
-                        onSelect = { s ->
-                            climberMapConfig = climberMapConfig.copy(simplification = s)
-                            lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
-                        },
-                    )
-                    if (climberMapConfig.enabled) {
-                        Text("CHEVRONS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                        Text(
-                            "Draw black direction chevrons inside each coloured segment to distinguish climbs from the route line.",
-                            fontSize = 12.sp,
-                            color = TextDark,
-                        )
-                        ClimberChevronsToggle(
-                            enabled = climberMapConfig.showChevrons,
+                        ClimberOverlayToggle(
+                            enabled = climberMapConfig.enabled,
                             onSelected = { enabled ->
-                                climberMapConfig = climberMapConfig.copy(showChevrons = enabled)
+                                climberMapConfig = climberMapConfig.copy(enabled = enabled)
                                 lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
                             },
                         )
+                        if (climberMapConfig.enabled) {
+                            val climberThreshold = gradeFillRange(
+                                zoneConfig.gradePalette,
+                                skipBandsClimb = climberMapConfig.skipBands,
+                            ).posMin
+                            Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text("Grades below this band stay uncoloured.", fontSize = 12.sp, color = TextDark)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                ElevationSkipBandsRow(
+                                    selected = climberMapConfig.skipBands,
+                                    onSelect = { skip ->
+                                        climberMapConfig = climberMapConfig.copy(skipBands = skip)
+                                        lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Text(
+                                    if (climberThreshold != null) "≥${"%.0f".format(climberThreshold)}%" else "—",
+                                    fontSize = 11.sp,
+                                    color = TextDark,
+                                )
+                            }
+                            Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
+                            ElevationSimplificationRow(
+                                selected = climberMapConfig.simplification,
+                                onSelect = { s ->
+                                    climberMapConfig = climberMapConfig.copy(simplification = s)
+                                    lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
+                                },
+                            )
+                            Text("CHEVRONS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text(
+                                "Draw black direction chevrons inside each coloured segment to distinguish climbs from the route line.",
+                                fontSize = 12.sp, color = TextDark,
+                            )
+                            ClimberChevronsToggle(
+                                enabled = climberMapConfig.showChevrons,
+                                onSelected = { enabled ->
+                                    climberMapConfig = climberMapConfig.copy(showChevrons = enabled)
+                                    lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
+                                },
+                            )
+                        }
                     }
 
                     Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
@@ -1360,7 +1367,7 @@ private fun ClimberBooleanPill(enabled: Boolean, onSelected: (Boolean) -> Unit) 
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Grey100)
+                .background(Color.White)
                 .padding(3.dp)
                 .pointerInput(enabled, onSelected) {
                     val slotWidthPx = size.width.toFloat() / options.size
