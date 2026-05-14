@@ -755,27 +755,25 @@ class MainActivity : ComponentActivity() {
                                 zoneConfig.gradePalette,
                                 skipBandsClimb = climberMapConfig.skipBands,
                             ).posMin
-                            Text("MINIMUM GRADE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                            Text("Grades below this band stay uncoloured.", fontSize = 12.sp, color = TextDark)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                ElevationSkipBandsRow(
-                                    selected = climberMapConfig.skipBands,
-                                    onSelect = { skip ->
-                                        climberMapConfig = climberMapConfig.copy(skipBands = skip)
-                                        lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                )
-                                Text(
-                                    if (climberThreshold != null) "≥${"%.0f".format(climberThreshold)}%" else "—",
-                                    fontSize = 11.sp,
-                                    color = TextDark,
-                                )
+                            val emphasisReadout =
+                                if (climberMapConfig.skipBands > 0 && climberThreshold != null)
+                                    "Grades below ${"%.0f".format(climberThreshold)}% stay uncoloured."
+                                else null
+                            Text("EMPHASIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                            Text(
+                                "Filter out gentle grades so meaningful climbs stand out.",
+                                fontSize = 12.sp, color = TextDark,
+                            )
+                            if (emphasisReadout != null) {
+                                Text(emphasisReadout, fontSize = 12.sp, color = TextDark)
                             }
+                            ElevationSkipBandsRow(
+                                selected = climberMapConfig.skipBands,
+                                onSelect = { skip ->
+                                    climberMapConfig = climberMapConfig.copy(skipBands = skip)
+                                    lifecycleScope.launch { saveClimberMapConfig(climberMapConfig) }
+                                },
+                            )
                             Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
                             Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
                             ElevationSimplificationRow(
@@ -1441,7 +1439,7 @@ private fun ElevationSkipBandsRow(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = value.toString(),
+                    text = if (value == 0) "Off" else value.toString(),
                     fontSize = 10.sp,
                     color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
