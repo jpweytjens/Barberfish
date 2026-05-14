@@ -71,6 +71,27 @@ internal fun mapDiagonalMeters(lat: Double, lng: Double, zoomLevel: Double): Dou
     )
 }
 
+// Native chevron geometry (reverse-engineered from rideapp hhq5/m.java):
+// spacing = xdpi * 0.4 * groundResolution(zoom), heading threshold per zoom band.
+
+/**
+ * Spacing in metres between consecutive direction chevrons, matching the rideapp's
+ * native route-arrow placement. On Karoo 3 (~240 dpi) at zoom 14 this is ~50 m.
+ */
+internal fun nativeChevronSpacingM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
+    xdpi * 0.4 * groundResolution(lat, zoomLevel)
+
+/**
+ * Minimum bearing change (degrees) required to emit a chevron at the next candidate
+ * position, matching the rideapp's zoom-dependent threshold.
+ */
+internal fun nativeChevronHeadingThresholdDeg(zoomLevel: Double): Double =
+    when {
+        zoomLevel > 12.0 -> 30.0
+        zoomLevel > 10.0 -> 45.0
+        else -> 60.0
+    }
+
 /**
  * Decodes a Google encoded polyline at the given precision (default 5 for GPS).
  * Returns an empty list on blank input.
