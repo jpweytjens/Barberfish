@@ -20,12 +20,14 @@ internal data class ClimbPolylineSpec(
 /**
  * A single chevron symbol placed along a coloured gradient run. The bearing is the
  * direction the chevron points (derived from two adjacent route vertices ~10 m apart).
+ * [colorArgb] is the gradient-band colour of the polyline run the chevron sits on.
  */
 internal data class ClimbChevronSpec(
     val id: String,
     val lat: Double,
     val lng: Double,
     val bearingDeg: Float,
+    val colorArgb: Int,
 )
 
 /** Specs produced by [buildClimbOverlaySpecs]. */
@@ -80,6 +82,7 @@ internal fun buildClimbOverlaySpecs(
     cfg: ClimberMapConfig,
     includeChevrons: Boolean = true,
     chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
+    chevronHeadingThresholdDeg: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
 ): ClimbOverlaySpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
@@ -125,7 +128,16 @@ internal fun buildClimbOverlaySpecs(
             colorArgb = run.colorArgb,
         )
         if (includeChevrons) {
-            chevrons += chevronsForRun(runIdx, run.startM, run.endM, gps, cumDist, chevronSpacingM)
+            chevrons += chevronsForRun(
+                runIdx = runIdx,
+                startM = run.startM,
+                endM = run.endM,
+                gps = gps,
+                cumDist = cumDist,
+                spacingM = chevronSpacingM,
+                headingThresholdDeg = chevronHeadingThresholdDeg,
+                colorArgb = run.colorArgb,
+            )
         }
     }
     val filteredChevrons = if (chevronViewport != null) {
@@ -143,6 +155,8 @@ private fun chevronsForRun(
     gps: List<LatLng>,
     cumDist: DoubleArray,
     spacingM: Double,
+    headingThresholdDeg: Double,
+    colorArgb: Int,
 ): List<ClimbChevronSpec> {
     val lengthM = endM - startM
     if (lengthM <= 0.0 || spacingM <= 0.0) return emptyList()
@@ -151,31 +165,58 @@ private fun chevronsForRun(
     // chevron — at wide zoom the gradient colour alone is sufficient.
     val count = (lengthM / spacingM).toInt()
     if (count == 0) return emptyList()
+    // Seed reference bearing at the run entry so the first candidate emits only when
+    // the route has already turned by [headingThresholdDeg] before reaching it.
+    var lastEmittedBearing = bearingAtDistance(gps, cumDist, startM, total)
     val specs = ArrayList<ClimbChevronSpec>(count)
+    var emittedIdx = 0
     for (i in 0 until count) {
         // Place chevrons at the centre of each equal-length sub-span so the first and last
         // sit off the run endpoints (avoids stacking at run boundaries).
         val t = (i + 0.5) / count
         val d = (startM + lengthM * t).coerceIn(0.0, total)
         val here = interpolateAt(gps, cumDist, d)
-        // Bearing: point 10 m further along (or 10 m backwards if the run ends first).
-        val lookaheadD = (d + 10.0).coerceAtMost(total)
-        val aheadD = if (lookaheadD > d) lookaheadD else (d - 10.0).coerceAtLeast(0.0)
-        val ahead = interpolateAt(gps, cumDist, aheadD)
-        val bearing = if (aheadD >= d) {
-            bearingDeg(here, ahead)
-        } else {
-            // Flip 180° if we had to look backwards to keep the chevron pointing forward.
-            (bearingDeg(ahead, here) + 180f) % 360f
+        val bearing = bearingAtDistance(gps, cumDist, d, total)
+        if (headingThresholdDeg > 0.0 &&
+            angularDistanceDeg(bearing, lastEmittedBearing) < headingThresholdDeg
+        ) {
+            continue
         }
         specs += ClimbChevronSpec(
-            id = "barberfish-chev-$runIdx-$i",
+            id = "barberfish-chev-$runIdx-$emittedIdx",
             lat = here.lat,
             lng = here.lng,
             bearingDeg = bearing,
+            colorArgb = colorArgb,
         )
+        lastEmittedBearing = bearing
+        emittedIdx += 1
     }
     return specs
+}
+
+/**
+ * Bearing at [distanceM] looking 10 m forward (or 10 m backward at end-of-route,
+ * flipped by 180° so the chevron still points along travel direction).
+ */
+private fun bearingAtDistance(
+    gps: List<LatLng>,
+    cumDist: DoubleArray,
+    distanceM: Double,
+    totalM: Double,
+): Float {
+    val here = interpolateAt(gps, cumDist, distanceM)
+    val lookaheadD = (distanceM + 10.0).coerceAtMost(totalM)
+    val aheadD = if (lookaheadD > distanceM) lookaheadD else (distanceM - 10.0).coerceAtLeast(0.0)
+    val ahead = interpolateAt(gps, cumDist, aheadD)
+    return if (aheadD >= distanceM) bearingDeg(here, ahead)
+    else (bearingDeg(ahead, here) + 180f) % 360f
+}
+
+/** Shortest unsigned angular distance in degrees between two bearings, range [0, 180]. */
+private fun angularDistanceDeg(a: Float, b: Float): Double {
+    val diff = (((a - b) % 360f) + 360f) % 360f
+    return (if (diff > 180f) 360f - diff else diff).toDouble()
 }
 
 /**

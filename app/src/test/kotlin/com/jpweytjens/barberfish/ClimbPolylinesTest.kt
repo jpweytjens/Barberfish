@@ -221,6 +221,72 @@ class ClimbPolylinesTest {
         assertTrue(overlay.chevrons.isEmpty())
     }
 
+    @Test fun straight_route_emits_no_chevrons_with_heading_threshold() {
+        // The default route is 4 points along the equator — bearing is constant 90° (east).
+        // With any non-zero heading threshold, no chevrons should be emitted on this route.
+        val overlay = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            chevronHeadingThresholdDeg = 30.0,
+        )
+        assertEquals(2, overlay.polylines.size)
+        assertTrue(
+            "expected no chevrons on a straight route with 30° threshold, got ${overlay.chevrons.size}",
+            overlay.chevrons.isEmpty(),
+        )
+    }
+
+    @Test fun bendy_route_emits_chevrons_with_heading_threshold() {
+        // L-shaped route: 200 m east, then 200 m north — a single 90° turn at the corner.
+        // Climb covers the full path (gentle 4% across all 400 m).
+        // At ~60 m spacing on the second leg, the bearing rotates from 90° (east) to 0° (north)
+        // — the first chevron on the north leg easily exceeds the 30° threshold.
+        val lEast = 0.001813  // ~200 m east at equator (1° longitude ≈ 111_320 m)
+        val lNorth = 0.001797 // ~200 m north (1° latitude ≈ 111_320 m)
+        val bendyPolyline = encodeGpsManually(
+            listOf(
+                0.0 to 0.0,
+                0.0 to lEast,
+                lNorth to lEast,
+            ),
+        )
+        val climbPolyline = encodeElevationManually(
+            listOf(
+                0f to 100f,
+                400f to 116f,    // 4% climb over the full 400 m — falls in the KAROO yellow band
+            ),
+        )
+        val overlay = buildClimbOverlaySpecs(
+            routePolyline = bendyPolyline,
+            routeElevationPolyline = climbPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            chevronHeadingThresholdDeg = 30.0,
+        )
+        assertTrue(
+            "expected at least one chevron on the bendy leg, got ${overlay.chevrons.size}",
+            overlay.chevrons.isNotEmpty(),
+        )
+    }
+
+    @Test fun chevron_carries_run_color() {
+        // The default fixture's first run is yellow (8% + 12% in the KAROO yellow band).
+        val overlay = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+        )
+        assertTrue(overlay.chevrons.isNotEmpty())
+        val expectedYellow = gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb()
+        assertEquals(expectedYellow, overlay.chevrons[0].colorArgb)
+    }
+
     @Test fun short_run_gets_no_chevron_at_default_spacing() {
         // A single 40 m above-threshold segment shorter than DEFAULT_CHEVRON_SPACING_M
         // (60 m) gets a polyline but no chevron — at this zoom level the gradient colour

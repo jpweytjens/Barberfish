@@ -21,8 +21,8 @@ import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.DEFAULT_CHEVRON_SPACING_M
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
-import com.jpweytjens.barberfish.datatype.shared.mapDiagonalMeters
-import com.jpweytjens.barberfish.datatype.shared.mapViewportBounds
+import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
+import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -41,11 +41,6 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune via screencaps
-
-// Number of chevrons we aim to show along one visible map diagonal. Matches
-// timklge/karoo-routegraph's MEDIUM frequency — dense enough to read climbs as
-// climbs, sparse enough to not clutter the map.
-private const val CHEVRONS_PER_DIAGONAL = 6
 
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
@@ -106,6 +101,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         Timber.d("climber: startMap invoked")
         val polylineController = ClimbMapController()
         val chevronController = ClimbChevronController()
+        val xdpi = applicationContext.resources.displayMetrics.xdpi
         val scope = CoroutineScope(Dispatchers.IO)
         val job: Job = scope.launch {
             // Branch A: config + nav (changes rarely — route load, settings edit).
@@ -146,12 +142,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         return@collect
                     }
                     val hasLocation = viewport.lat != 0.0 || viewport.lng != 0.0
-                    val diagonal = mapDiagonalMeters(viewport.lat, viewport.lng, viewport.zoomLevel)
                     val chevronStep = if (hasLocation) {
-                        (diagonal / CHEVRONS_PER_DIAGONAL).coerceAtLeast(20.0)
+                        nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
                     } else {
                         DEFAULT_CHEVRON_SPACING_M
                     }
+                    val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
                     // between HideSymbols and ShowSymbols causes chevrons to vanish when
                     // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
@@ -165,9 +161,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         cfg = inputs.cfg,
                         includeChevrons = inputs.showChevrons,
                         chevronSpacingM = chevronStep,
+                        chevronHeadingThresholdDeg = headingThreshold,
                         chevronViewport = bounds,
                     )
-                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
+                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
                     chevronController.emit(emitter, specs.chevrons)
                 }
