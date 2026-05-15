@@ -47,7 +47,7 @@ private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune 
 
 // Chevron icon height in dp — keep in sync with ic_climber_chevron*.xml. Drives the
 // collision-dedup spacing so chevrons never overlap regardless of zoom.
-private const val CHEVRON_ICON_HEIGHT_DP = 21f
+private const val CHEVRON_ICON_HEIGHT_DP = 17f
 
 // Zoom at/above which every climb segment is guaranteed a chevron. Below it, chevrons
 // thin out with the route-distance grid like the native rideapp and the coloured
