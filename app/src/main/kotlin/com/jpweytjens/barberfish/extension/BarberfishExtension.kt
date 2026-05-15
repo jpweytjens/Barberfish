@@ -45,7 +45,7 @@ private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune 
 // Zoom at/above which every climb segment is guaranteed a chevron. Below it, chevrons
 // thin out with the route-distance grid like the native rideapp and the coloured
 // polyline alone marks the climb. 12 matches the native `hhk` heading-threshold breakpoint.
-private const val CHEVRON_PER_SEGMENT_MIN_ZOOM = 14.0
+private const val CHEVRON_PER_SEGMENT_MIN_ZOOM = 12.0
 
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
