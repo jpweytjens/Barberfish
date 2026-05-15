@@ -22,6 +22,7 @@ import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
+import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
@@ -169,8 +170,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
                     // already prevents excessive rebuilds.
                     val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? = null
+                    // Climb.startDistance is measured from the rider's position including
+                    // the off-route rejoin path; our elevation polyline is pure route
+                    // distance (0..routeDistance). Subtract rejoinDistance to align them.
+                    val rejoinOffset = route.rejoinDistance ?: 0.0
                     val climbRanges = route.climbs.map {
-                        it.startDistance to (it.startDistance + it.length)
+                        (it.startDistance - rejoinOffset) to
+                            (it.startDistance + it.length - rejoinOffset)
                     }
                     val specs = buildClimbOverlaySpecs(
                         routePolyline = route.routePolyline,
@@ -189,6 +195,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     )
                     Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° guarantee=$guaranteePerRun zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     if (BuildConfig.DEBUG) {
+                        val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
+                        Timber.d("climber: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}")
                         val segLen = specs.polylines
                             .map { decodeGpsPolyline(it.encoded) }
                             .map { if (it.size < 2) 0.0 else cumulativeDistancesM(it).last() }
@@ -227,6 +235,9 @@ private data class ClimbMapConfigInputs(
             routeElevationHash = route?.routeElevationPolyline?.hashCode() ?: 0,
             routePolylineHash = route?.routePolyline?.hashCode() ?: 0,
             climbsHash = route?.climbs?.hashCode() ?: 0,
+            // Bucket the rejoin offset to ~50 m so the filler tracks the rider riding the
+            // rejoin path without rebuilding on every metre.
+            rejoinBucket = ((route?.rejoinDistance ?: 0.0) / 50.0).toInt(),
         )
     }
 }
@@ -241,6 +252,7 @@ private data class ClimbMapConfigSignature(
     val routeElevationHash: Int,
     val routePolylineHash: Int,
     val climbsHash: Int,
+    val rejoinBucket: Int,
 )
 
 private data class ViewportInputs(
