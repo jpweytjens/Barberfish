@@ -93,6 +93,28 @@ _ARRAY_BLOCK = re.compile(
 _COLOR_REF = re.compile(r"Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
 # An indexed reference into a named colour array, e.g. `karooPowerColors[6]`.
 _INDEX_REF = re.compile(r"(\w+)\[(\d+)\]")
+# `LemonYellow` is the route-yellow filler the climber overlay paints on below-threshold
+# segments inside a climb — chevrons there need a matching drawable too.
+_FILLER_REF = re.compile(r"val\s+LemonYellow\s*=\s*Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
+
+
+def extract_filler_color(field_colors: str) -> str:
+    """Return the RGB hex of `LemonYellow`, the overlay's filler colour.
+
+    Parameters
+    ----------
+    field_colors : str
+        Contents of `FieldColors.kt`.
+
+    Returns
+    -------
+    str
+        Lowercase six-character hex string.
+    """
+    match = _FILLER_REF.search(field_colors)
+    if match is None:
+        raise SystemExit("LemonYellow not found in FieldColors.kt")
+    return match.group(1).lower()
 
 
 def parse_color_arrays(source: str) -> dict[str, list[str]]:
@@ -226,8 +248,12 @@ def write_lookup(colors: list[str]) -> None:
 
 
 def main() -> None:
+    field_colors = FIELD_COLORS_KT.read_text()
     arrays = parse_color_arrays(ZONE_COLORING_KT.read_text())
-    colors = extract_palette_colors(FIELD_COLORS_KT.read_text(), arrays)
+    colors = sorted(
+        set(extract_palette_colors(field_colors, arrays))
+        | {extract_filler_color(field_colors)}
+    )
     written, removed = sync_drawables(colors)
     write_lookup(colors)
     print(f"{written} chevron drawables written, {removed} stale removed.")

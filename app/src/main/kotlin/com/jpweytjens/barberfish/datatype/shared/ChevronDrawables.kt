@@ -55,5 +55,6 @@ internal fun gradeChevronDrawable(colorArgb: Int): Int = when (colorArgb) {
     0xFFff5959.toInt() -> R.drawable.ic_climber_chevron_ff5959
     0xFFff5c23.toInt() -> R.drawable.ic_climber_chevron_ff5c23
     0xFFff5f68.toInt() -> R.drawable.ic_climber_chevron_ff5f68
+    0xFFffe900.toInt() -> R.drawable.ic_climber_chevron_ffe900
     else -> R.drawable.ic_climber_chevron
 }
