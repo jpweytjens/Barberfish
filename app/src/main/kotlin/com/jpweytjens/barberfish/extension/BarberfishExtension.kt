@@ -19,7 +19,6 @@ import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
-import com.jpweytjens.barberfish.datatype.shared.DEFAULT_CHEVRON_SPACING_M
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
@@ -46,7 +45,7 @@ private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune 
 // Zoom at/above which every climb segment is guaranteed a chevron. Below it, chevrons
 // thin out with the route-distance grid like the native rideapp and the coloured
 // polyline alone marks the climb. 12 matches the native `hhk` heading-threshold breakpoint.
-private const val CHEVRON_PER_SEGMENT_MIN_ZOOM = 12.0
+private const val CHEVRON_PER_SEGMENT_MIN_ZOOM = 14.0
 
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
@@ -147,16 +146,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronController.clearAll(emitter)
                         return@collect
                     }
-                    val hasLocation = viewport.lat != 0.0 || viewport.lng != 0.0
-                    val chevronStep: Double
-                    val chevronWindow: Double
-                    if (hasLocation) {
-                        chevronStep = nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
-                        chevronWindow = nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
-                    } else {
-                        chevronStep = DEFAULT_CHEVRON_SPACING_M
-                        chevronWindow = 0.0  // disables curve suppression until we have a fix
-                    }
+                    // Spacing/window are zoom-driven; latitude only scales the cos(lat)
+                    // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
+                    // sparsest case — which is the safe direction to err. Once a fix lands
+                    // it tightens to the true value.
+                    val chevronStep = nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
+                    val chevronWindow = nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
                     val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
                     val guaranteePerRun = viewport.zoomLevel >= CHEVRON_PER_SEGMENT_MIN_ZOOM
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
