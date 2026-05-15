@@ -61,11 +61,12 @@ internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
  * Algorithm:
  * 1. Decode the GPS polyline and compute cumulative distance.
  * 2. Decode the elevation polyline and run Visvalingam–Whyatt simplification.
- * 3. Walk adjacent elevation-vertex pairs, computing local grade. Below-threshold segments
- *    get skipped. Above-threshold segments are grouped into runs of consecutive same-colour
- *    segments, and each run emits a single polyline spanning `[runStartM, runEndM]`.
- *    Merging same-colour runs eliminates the visible double-stroke at each elevation-vertex
- *    junction and cuts the emission count.
+ * 3. Walk adjacent elevation-vertex pairs, computing local grade. Above-threshold segments
+ *    take a grade colour; below-threshold segments that fall inside a [climbRanges] entry
+ *    take the native route yellow so our overlay fully covers Karoo's blue `CLIMB_LINE`;
+ *    all other below-threshold segments are skipped (the native route line shows there).
+ *    Consecutive same-colour segments are grouped into runs, each emitting a single
+ *    polyline spanning `[runStartM, runEndM]`.
  * 4. For each run, sample chevron positions every [chevronSpacingM] metres, computing
  *    each chevron's bearing from two route points 10 m apart. Short runs still get at
  *    least one chevron at their midpoint so climbs shorter than the spacing remain marked.
@@ -81,6 +82,7 @@ internal fun buildClimbOverlaySpecs(
     palette: GradePalette,
     readable: Boolean,
     cfg: ClimberMapConfig,
+    climbRanges: List<Pair<Double, Double>> = emptyList(),
     includeChevrons: Boolean = true,
     chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
     chevronWindowHalfM: Double = 0.0,
@@ -101,7 +103,11 @@ internal fun buildClimbOverlaySpecs(
     val threshold = gradeFillRange(palette, skipBandsClimb = cfg.skipBands).posMin
         ?: return ClimbOverlaySpecs(emptyList(), emptyList())
 
-    // Collect same-colour runs, then emit one polyline per run.
+    // Collect same-colour runs, then emit one polyline per run. A below-threshold segment
+    // inside a Karoo climb range is kept as a route-yellow run so our overlay covers the
+    // whole climb — the native CLIMB_LINE (blue) can never show through a gap; below-
+    // threshold segments outside any climb are skipped and the native route line shows.
+    val fillerArgb = LemonYellow.toArgb()
     data class Run(val startM: Double, var endM: Double, val colorArgb: Int)
     val runs = mutableListOf<Run>()
     elevPoints.windowed(2).forEach { pair ->
@@ -111,8 +117,12 @@ internal fun buildClimbOverlaySpecs(
         val e0 = pair[0].second.toDouble()
         val e1 = pair[1].second.toDouble()
         val localGradePct = ((e1 - e0) / (d1 - d0)) * 100.0
-        if (localGradePct < threshold) return@forEach
-        val color = (gradeColor(localGradePct, palette, readable) ?: return@forEach).toArgb()
+        val color = when {
+            localGradePct >= threshold ->
+                gradeColor(localGradePct, palette, readable)?.toArgb() ?: fillerArgb
+            climbRanges.any { (s, e) -> d0 < e && d1 > s } -> fillerArgb
+            else -> return@forEach
+        }
         val last = runs.lastOrNull()
         if (last != null && last.colorArgb == color && last.endM == d0) {
             last.endM = d1

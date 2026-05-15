@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.toArgb
+import com.jpweytjens.barberfish.datatype.shared.LemonYellow
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.ClimberMapConfig
@@ -286,6 +287,44 @@ class ClimbPolylinesTest {
             filtered.chevrons.size < unfiltered.chevrons.size,
         )
         assertTrue("corner suppression should not wipe the whole run", filtered.chevrons.isNotEmpty())
+    }
+
+    @Test fun below_threshold_segment_inside_climb_gets_yellow_filler() {
+        // skipBands=1 → KAROO climb threshold is 4.6%. A 3% segment is below it.
+        val cfg = ClimberMapConfig(
+            enabled = true,
+            simplification = ElevationSimplification.NONE,
+            skipBands = 1,
+        )
+        val poly = encodeElevationManually(
+            listOf(
+                0f to 100f,
+                100f to 103f,    // 3% — below the 4.6% threshold
+                200f to 113f,    // 10% — above → KAROO yellow band
+            ),
+        )
+        // No climb ranges: the gentle 3% segment is skipped entirely.
+        val plain = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = poly,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = cfg,
+        )
+        assertEquals(1, plain.polylines.size)
+
+        // With a climb spanning the route, the 3% segment becomes a yellow filler run so
+        // the overlay covers the whole climb.
+        val withClimb = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = poly,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = cfg,
+            climbRanges = listOf(0.0 to 220.0),
+        )
+        assertEquals(2, withClimb.polylines.size)
+        assertEquals(LemonYellow.toArgb(), withClimb.polylines[0].colorArgb)
     }
 
     @Test fun chevron_carries_run_color() {

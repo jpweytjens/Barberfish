@@ -169,12 +169,16 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
                     // already prevents excessive rebuilds.
                     val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? = null
+                    val climbRanges = route.climbs.map {
+                        it.startDistance to (it.startDistance + it.length)
+                    }
                     val specs = buildClimbOverlaySpecs(
                         routePolyline = route.routePolyline,
                         routeElevationPolyline = route.routeElevationPolyline,
                         palette = inputs.palette,
                         readable = inputs.readable,
                         cfg = inputs.cfg,
+                        climbRanges = climbRanges,
                         includeChevrons = inputs.showChevrons,
                         chevronSpacingM = chevronStep,
                         chevronWindowHalfM = chevronWindow,
@@ -222,6 +226,7 @@ private data class ClimbMapConfigInputs(
             skipBands = cfg.skipBands,
             routeElevationHash = route?.routeElevationPolyline?.hashCode() ?: 0,
             routePolylineHash = route?.routePolyline?.hashCode() ?: 0,
+            climbsHash = route?.climbs?.hashCode() ?: 0,
         )
     }
 }
@@ -235,6 +240,7 @@ private data class ClimbMapConfigSignature(
     val skipBands: Int,
     val routeElevationHash: Int,
     val routePolylineHash: Int,
+    val climbsHash: Int,
 )
 
 private data class ViewportInputs(
