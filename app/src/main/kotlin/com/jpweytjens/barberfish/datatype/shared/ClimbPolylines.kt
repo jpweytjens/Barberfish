@@ -146,19 +146,17 @@ internal fun buildClimbOverlaySpecs(
             )
         }
     }
-    // Collision pass: chevrons are appended in route order, so a single sweep dropping
-    // any chevron closer than [chevronMinSpacingM] to the last kept one removes the
-    // near-overlaps that per-run placement (grid + guarantee) produces at run boundaries.
+    // Collision pass: drop any chevron within [chevronMinSpacingM] of an already-kept
+    // one. Checked against ALL kept chevrons, not just the route-previous one — where the
+    // route loops, switchbacks or passes near itself, two chevrons can be far apart in
+    // route distance yet geographically overlap. Matches the rideapp's full marker scan.
     val dedupedChevrons = if (chevronMinSpacingM > 0.0) {
         val kept = ArrayList<ClimbChevronSpec>(chevrons.size)
         for (c in chevrons) {
-            val prev = kept.lastOrNull()
-            if (prev != null &&
-                latLngDistanceM(LatLng(prev.lat, prev.lng), LatLng(c.lat, c.lng)) < chevronMinSpacingM
-            ) {
-                continue
+            val collides = kept.any { k ->
+                latLngDistanceM(LatLng(k.lat, k.lng), LatLng(c.lat, c.lng)) < chevronMinSpacingM
             }
-            kept += c
+            if (!collides) kept += c
         }
         kept
     } else {
