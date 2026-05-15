@@ -24,7 +24,7 @@ private const val KAROO3_SCREEN_HEIGHT_PX = 800
 /**
  * Metres per pixel at [lat] degrees latitude and the given VTM [zoomLevel].
  */
-private fun groundResolution(lat: Double, zoomLevel: Double): Double {
+internal fun groundResolution(lat: Double, zoomLevel: Double): Double {
     val scale = 2.0.pow(zoomLevel)
     return cos(lat * PI / 180.0) * EARTH_CIRCUMFERENCE_M / (VTM_TILE_SIZE * scale)
 }
@@ -90,12 +90,17 @@ internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Doubl
     xdpi * 0.05 * groundResolution(lat, zoomLevel)
 
 /**
- * Minimum metres allowed between two chevrons before they visually collide, matching the
- * rideapp's `hhi` constant (`xdpi × 0.1 × groundResolution`). Roughly the on-screen
- * chevron icon width, so chevrons closer than this overlap.
+ * Ground length in metres of a chevron icon [heightDp] tall at display [density] and the
+ * given [zoomLevel]. Two chevrons closer than this overlap on screen, so it doubles as
+ * the collision-dedup minimum spacing. Unlike the rideapp's fixed `hhi`, this tracks our
+ * actual (enlarged) icon rather than the native 10×12 dp arrow.
  */
-internal fun nativeChevronCollisionM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
-    xdpi * 0.1 * groundResolution(lat, zoomLevel)
+internal fun chevronIconLengthM(
+    heightDp: Float,
+    density: Float,
+    lat: Double,
+    zoomLevel: Double,
+): Double = heightDp * density * groundResolution(lat, zoomLevel)
 
 /**
  * Maximum bearing spread (degrees) allowed inside the local window for a chevron to be

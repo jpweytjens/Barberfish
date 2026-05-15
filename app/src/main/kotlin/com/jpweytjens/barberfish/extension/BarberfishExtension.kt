@@ -20,9 +20,9 @@ import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
+import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
-import com.jpweytjens.barberfish.datatype.shared.nativeChevronCollisionM
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
@@ -44,6 +44,10 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune via screencaps
+
+// Chevron icon height in dp — keep in sync with ic_climber_chevron*.xml. Drives the
+// collision-dedup spacing so chevrons never overlap regardless of zoom.
+private const val CHEVRON_ICON_HEIGHT_DP = 21f
 
 // Zoom at/above which every climb segment is guaranteed a chevron. Below it, chevrons
 // thin out with the route-distance grid like the native rideapp and the coloured
@@ -110,6 +114,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         val polylineController = ClimbMapController()
         val chevronController = ClimbChevronController()
         val xdpi = applicationContext.resources.displayMetrics.xdpi
+        val density = applicationContext.resources.displayMetrics.density
         val scope = CoroutineScope(Dispatchers.IO)
         val job: Job = scope.launch {
             // Branch A: config + nav (changes rarely — route load, settings edit).
@@ -155,7 +160,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     // it tightens to the true value.
                     val chevronStep = nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
                     val chevronWindow = nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
-                    val chevronCollision = nativeChevronCollisionM(xdpi, viewport.lat, viewport.zoomLevel)
+                    val chevronCollision =
+                        chevronIconLengthM(CHEVRON_ICON_HEIGHT_DP, density, viewport.lat, viewport.zoomLevel)
                     val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
                     val guaranteePerRun = viewport.zoomLevel >= CHEVRON_PER_SEGMENT_MIN_ZOOM
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
