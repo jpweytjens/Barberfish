@@ -188,11 +188,11 @@ class ClimbPolylinesTest {
         )
     }
 
-    @Test fun chevrons_are_emitted_per_run_with_fixed_spacing() {
-        // The merged_adjacent_same_colour fixture yields two runs: a 200 m yellow run
-        // (8% + 12% segments, merged) and a 100 m dark-green flat run. At 60 m spacing,
-        // the yellow run gets floor(200/60) = 3 chevrons and the flat run gets
-        // floor(100/60) = 1 chevron.
+    @Test fun chevrons_sit_on_a_shared_route_distance_grid() {
+        // Two runs: a 200 m yellow run and a 100 m flat run. At 60 m spacing the grid is
+        // phase + k·60 with phase = 30 (half-spacing), measured from the route start:
+        // 30/90/150 fall in the yellow run, 210/270 in the flat run. Both runs draw from
+        // the same global grid — they are not sampled run-relative.
         val overlay = buildClimbOverlaySpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
@@ -201,11 +201,11 @@ class ClimbPolylinesTest {
             cfg = noneCfg,
         )
         assertEquals(2, overlay.polylines.size)
-        assertEquals(4, overlay.chevrons.size)
+        assertEquals(5, overlay.chevrons.size)
         assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
-        assertEquals("barberfish-chev-0-1", overlay.chevrons[1].id)
         assertEquals("barberfish-chev-0-2", overlay.chevrons[2].id)
         assertEquals("barberfish-chev-1-0", overlay.chevrons[3].id)
+        assertEquals("barberfish-chev-1-1", overlay.chevrons[4].id)
     }
 
     @Test fun chevrons_omitted_when_includeChevrons_false() {
@@ -276,13 +276,16 @@ class ClimbPolylinesTest {
             palette = GradePalette.KAROO,
             readable = true,
             cfg = noneCfg,
-            chevronWindowHalfM = 250.0, // wide enough that the corner sample sees both legs
+            // 250 m window: grid points whose neighbourhood spans both legs (the 90° corner)
+            // see a 90° spread and drop; points past the corner keep their chevrons.
+            chevronWindowHalfM = 250.0,
             chevronHeadingThresholdDeg = 30.0,
         )
         assertTrue(
             "expected fewer chevrons with curvature filter (unfiltered=${unfiltered.chevrons.size}, filtered=${filtered.chevrons.size})",
             filtered.chevrons.size < unfiltered.chevrons.size,
         )
+        assertTrue("corner suppression should not wipe the whole run", filtered.chevrons.isNotEmpty())
     }
 
     @Test fun chevron_carries_run_color() {
@@ -299,15 +302,14 @@ class ClimbPolylinesTest {
         assertEquals(expectedYellow, overlay.chevrons[0].colorArgb)
     }
 
-    @Test fun short_run_gets_no_chevron_at_default_spacing() {
-        // A single 40 m above-threshold segment shorter than DEFAULT_CHEVRON_SPACING_M
-        // (60 m) gets a polyline but no chevron — at this zoom level the gradient colour
-        // alone is sufficient. Chevrons only appear when the run is at least as long as
-        // the spacing.
+    @Test fun short_run_gets_exactly_one_chevron() {
+        // A 25 m climb is shorter than the grid's half-spacing phase (30 m at 60 m
+        // spacing), so no grid point lands inside it. The per-segment guarantee still
+        // places a single chevron at the run midpoint so no coloured segment is bare.
         val shortPoly = encodeElevationManually(
             listOf(
                 0f to 100f,
-                40f to 103.2f,    // 8% grade → yellow band
+                25f to 102f,    // 8% grade → KAROO yellow band
             ),
         )
         val overlay = buildClimbOverlaySpecs(
@@ -318,7 +320,8 @@ class ClimbPolylinesTest {
             cfg = noneCfg,
         )
         assertEquals(1, overlay.polylines.size)
-        assertTrue(overlay.chevrons.isEmpty())
+        assertEquals(1, overlay.chevrons.size)
+        assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
     }
 
     // --- inline polyline encoders (test-only) -----------------------------------

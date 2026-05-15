@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.extension.ClimberMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -164,17 +165,19 @@ private fun chevronsForRun(
     val lengthM = endM - startM
     if (lengthM <= 0.0 || spacingM <= 0.0) return emptyList()
     val total = cumDist.last()
-    // Sample count: floor(length / spacing). Runs shorter than the step get no
-    // chevron — at wide zoom the gradient colour alone is sufficient.
-    val count = (lengthM / spacingM).toInt()
-    if (count == 0) return emptyList()
-    val specs = ArrayList<ClimbChevronSpec>(count)
+
+    // Route-distance grid: chevron candidates sit at `phase + k·spacing` measured from
+    // the route start, the same grid the rideapp uses, so ours align with (and occlude)
+    // the native chevrons. The half-spacing phase mirrors the rideapp's `d6 = d5 × 0.5`.
+    val phase = spacingM * 0.5
+    val specs = ArrayList<ClimbChevronSpec>()
     var emittedIdx = 0
-    for (i in 0 until count) {
-        // Place chevrons at the centre of each equal-length sub-span so the first and last
-        // sit off the run endpoints (avoids stacking at run boundaries).
-        val t = (i + 0.5) / count
-        val d = (startM + lengthM * t).coerceIn(0.0, total)
+    var k = ceil((startM - phase) / spacingM).toInt().coerceAtLeast(0)
+    while (true) {
+        val d = phase + k * spacingM
+        if (d >= endM) break
+        k += 1
+        if (d < startM) continue
         // Suppress chevrons where the route is curving too sharply for a single rotation
         // to faithfully indicate direction — matches the rideapp's `hhk` ceiling on the
         // local bearing spread (xdpi × 0.05 × groundResolution window half-width).
@@ -182,18 +185,37 @@ private fun chevronsForRun(
             val spread = bearingSpreadInWindow(gps, cumDist, d, windowHalfM)
             if (spread >= headingThresholdDeg) continue
         }
-        val here = interpolateAt(gps, cumDist, d)
-        val bearing = bearingAtDistance(gps, cumDist, d, total)
-        specs += ClimbChevronSpec(
-            id = "barberfish-chev-$runIdx-$emittedIdx",
-            lat = here.lat,
-            lng = here.lng,
-            bearingDeg = bearing,
-            colorArgb = colorArgb,
-        )
+        specs += chevronSpecAt(runIdx, emittedIdx, d, gps, cumDist, total, colorArgb)
         emittedIdx += 1
     }
+
+    // Guarantee one chevron per climb segment: a run shorter than the grid step — or one
+    // whose every grid point was curve-suppressed — still gets a single marker at its
+    // midpoint so no coloured segment is left without a chevron.
+    if (specs.isEmpty()) {
+        specs += chevronSpecAt(runIdx, 0, (startM + endM) * 0.5, gps, cumDist, total, colorArgb)
+    }
     return specs
+}
+
+private fun chevronSpecAt(
+    runIdx: Int,
+    idx: Int,
+    distanceM: Double,
+    gps: List<LatLng>,
+    cumDist: DoubleArray,
+    totalM: Double,
+    colorArgb: Int,
+): ClimbChevronSpec {
+    val d = distanceM.coerceIn(0.0, totalM)
+    val here = interpolateAt(gps, cumDist, d)
+    return ClimbChevronSpec(
+        id = "barberfish-chev-$runIdx-$idx",
+        lat = here.lat,
+        lng = here.lng,
+        bearingDeg = bearingAtDistance(gps, cumDist, d, totalM),
+        colorArgb = colorArgb,
+    )
 }
 
 /**
