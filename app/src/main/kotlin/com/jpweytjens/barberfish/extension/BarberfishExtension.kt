@@ -20,6 +20,7 @@ import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
+import com.jpweytjens.barberfish.datatype.shared.nativeChevronCollisionM
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
@@ -152,6 +153,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     // it tightens to the true value.
                     val chevronStep = nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
                     val chevronWindow = nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
+                    val chevronCollision = nativeChevronCollisionM(xdpi, viewport.lat, viewport.zoomLevel)
                     val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
                     val guaranteePerRun = viewport.zoomLevel >= CHEVRON_PER_SEGMENT_MIN_ZOOM
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
@@ -170,9 +172,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronWindowHalfM = chevronWindow,
                         chevronHeadingThresholdDeg = headingThreshold,
                         chevronGuaranteePerRun = guaranteePerRun,
+                        chevronMinSpacingM = chevronCollision,
                         chevronViewport = bounds,
                     )
-                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m thresh=${headingThreshold.toInt()}° guarantee=$guaranteePerRun zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
+                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° guarantee=$guaranteePerRun zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
                     chevronController.emit(emitter, specs.chevrons)
                 }

@@ -90,6 +90,14 @@ internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Doubl
     xdpi * 0.05 * groundResolution(lat, zoomLevel)
 
 /**
+ * Minimum metres allowed between two chevrons before they visually collide, matching the
+ * rideapp's `hhi` constant (`xdpi × 0.1 × groundResolution`). Roughly the on-screen
+ * chevron icon width, so chevrons closer than this overlap.
+ */
+internal fun nativeChevronCollisionM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
+    xdpi * 0.1 * groundResolution(lat, zoomLevel)
+
+/**
  * Maximum bearing spread (degrees) allowed inside the local window for a chevron to be
  * emitted. Spreads at or above this threshold suppress the chevron because the route is
  * curving too sharply for a single rotation to faithfully indicate direction. Matches
@@ -175,15 +183,22 @@ private fun encodeSigned(v: Long, sb: StringBuilder) {
 internal fun cumulativeDistancesM(points: List<LatLng>): DoubleArray {
     val out = DoubleArray(points.size)
     for (i in 1 until points.size) {
-        val a = points[i - 1]
-        val b = points[i]
-        val meanLatRad = (a.lat + b.lat) * 0.5 * (PI / 180.0)
-        val dLatRad = (b.lat - a.lat) * (PI / 180.0)
-        val dLngRad = (b.lng - a.lng) * (PI / 180.0)
-        val x = dLngRad * cos(meanLatRad)
-        out[i] = out[i - 1] + EARTH_RADIUS_M * sqrt(x * x + dLatRad * dLatRad)
+        out[i] = out[i - 1] + latLngDistanceM(points[i - 1], points[i])
     }
     return out
+}
+
+/**
+ * Distance in metres between two points using the same equirectangular approximation
+ * as [cumulativeDistancesM] — accurate enough for the sub-kilometre spans Barberfish
+ * works with.
+ */
+internal fun latLngDistanceM(a: LatLng, b: LatLng): Double {
+    val meanLatRad = (a.lat + b.lat) * 0.5 * (PI / 180.0)
+    val dLatRad = (b.lat - a.lat) * (PI / 180.0)
+    val dLngRad = (b.lng - a.lng) * (PI / 180.0)
+    val x = dLngRad * cos(meanLatRad)
+    return EARTH_RADIUS_M * sqrt(x * x + dLatRad * dLatRad)
 }
 
 /**

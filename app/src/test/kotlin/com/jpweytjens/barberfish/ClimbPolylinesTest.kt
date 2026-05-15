@@ -302,6 +302,37 @@ class ClimbPolylinesTest {
         assertEquals(expectedYellow, overlay.chevrons[0].colorArgb)
     }
 
+    @Test fun near_overlapping_chevrons_are_deduped() {
+        // Two adjacent sub-grid runs in different bands: 6% mint [0,10] m and 8% yellow
+        // [10,25] m. Each is shorter than the grid phase, so each gets a guaranteed
+        // fallback chevron — at 5 m and 17.5 m, only 12.5 m apart. The collision pass
+        // drops the second; with no min-spacing both survive.
+        val twoShortRuns = encodeElevationManually(
+            listOf(
+                0f to 100f,
+                10f to 100.6f,   // 6% → KAROO mint band
+                25f to 101.8f,   // 8% → KAROO yellow band
+            ),
+        )
+        val noDedup = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = twoShortRuns,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+        )
+        val deduped = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = twoShortRuns,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            chevronMinSpacingM = 20.0,
+        )
+        assertEquals(2, noDedup.chevrons.size)
+        assertEquals(1, deduped.chevrons.size)
+    }
+
     @Test fun short_run_gets_exactly_one_chevron() {
         // A 25 m climb is shorter than the grid's half-spacing phase (30 m at 60 m
         // spacing), so no grid point lands inside it. The per-segment guarantee still

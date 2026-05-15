@@ -86,6 +86,7 @@ internal fun buildClimbOverlaySpecs(
     chevronWindowHalfM: Double = 0.0,
     chevronHeadingThresholdDeg: Double = 0.0,
     chevronGuaranteePerRun: Boolean = true,
+    chevronMinSpacingM: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
 ): ClimbOverlaySpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
@@ -145,10 +146,28 @@ internal fun buildClimbOverlaySpecs(
             )
         }
     }
-    val filteredChevrons = if (chevronViewport != null) {
-        chevrons.filter { chevronViewport.contains(it.lat, it.lng) }
+    // Collision pass: chevrons are appended in route order, so a single sweep dropping
+    // any chevron closer than [chevronMinSpacingM] to the last kept one removes the
+    // near-overlaps that per-run placement (grid + guarantee) produces at run boundaries.
+    val dedupedChevrons = if (chevronMinSpacingM > 0.0) {
+        val kept = ArrayList<ClimbChevronSpec>(chevrons.size)
+        for (c in chevrons) {
+            val prev = kept.lastOrNull()
+            if (prev != null &&
+                latLngDistanceM(LatLng(prev.lat, prev.lng), LatLng(c.lat, c.lng)) < chevronMinSpacingM
+            ) {
+                continue
+            }
+            kept += c
+        }
+        kept
     } else {
         chevrons
+    }
+    val filteredChevrons = if (chevronViewport != null) {
+        dedupedChevrons.filter { chevronViewport.contains(it.lat, it.lng) }
+    } else {
+        dedupedChevrons
     }
     return ClimbOverlaySpecs(polylines, filteredChevrons)
 }
