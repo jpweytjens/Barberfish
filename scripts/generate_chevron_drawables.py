@@ -38,6 +38,7 @@ _SHARED_KT = (
     _ROOT / "app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared"
 )
 FIELD_COLORS_KT = _SHARED_KT / "FieldColors.kt"
+ZONE_COLORING_KT = _SHARED_KT / "ZoneColoring.kt"
 CHEVRON_DRAWABLES_KT = _SHARED_KT / "ChevronDrawables.kt"
 DRAWABLE_DIR = _ROOT / "app/src/main/res/drawable"
 FALLBACK_NAME = "ic_climber_chevron.xml"  # hand-maintained, never overwritten
@@ -83,16 +84,56 @@ _BAND_BLOCK = re.compile(
     r"_GRADE_BANDS(?:_READABLE)?\s*=\s*listOf\(\n(.*?)\n\)",
     re.DOTALL,
 )
-_COLOR_REF = re.compile(r"Color\(0x([Ff]{2})([0-9A-Fa-f]{6})\)")
+# `val name = [\n] listOf(\n ... \n)` — a named colour array (e.g. karooPowerColors).
+_ARRAY_BLOCK = re.compile(
+    r"val\s+(\w+)\s*=\s*(?:\n\s*)?listOf\(\n(.*?)\n\s*\)",
+    re.DOTALL,
+)
+_COLOR_REF = re.compile(r"Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
+# An indexed reference into a named colour array, e.g. `karooPowerColors[6]`.
+_INDEX_REF = re.compile(r"(\w+)\[(\d+)\]")
 
 
-def extract_palette_colors(source: str) -> list[str]:
-    """Return the unique 6-character RGB hex codes used in grade-band palettes.
+def parse_color_arrays(source: str) -> dict[str, list[str]]:
+    """Return ordered RGB hex codes for each named `Color(0x...)` array.
+
+    Grade-band palettes index into shared palettes (`karooPowerColors[6]`,
+    `hsluvPowerColors[0]`, ...) defined in `ZoneColoring.kt`. This resolves
+    those array names to their colour lists.
 
     Parameters
     ----------
     source : str
+        Contents of `ZoneColoring.kt`.
+
+    Returns
+    -------
+    dict[str, list[str]]
+        Array name -> ordered lowercase six-character hex strings.
+    """
+    arrays: dict[str, list[str]] = {}
+    for name, body in _ARRAY_BLOCK.findall(source):
+        hexes = [m.lower() for m in _COLOR_REF.findall(body)]
+        if hexes:
+            arrays[name] = hexes
+    return arrays
+
+
+def extract_palette_colors(
+    field_colors: str,
+    arrays: dict[str, list[str]],
+) -> list[str]:
+    """Return the unique RGB hex codes used in every grade-band palette.
+
+    Resolves both inline `Color(0x...)` literals and indexed references into
+    the shared colour [arrays].
+
+    Parameters
+    ----------
+    field_colors : str
         Contents of `FieldColors.kt`.
+    arrays : dict[str, list[str]]
+        Named colour arrays from `parse_color_arrays`.
 
     Returns
     -------
@@ -100,9 +141,18 @@ def extract_palette_colors(source: str) -> list[str]:
         Lowercase six-character hex strings, sorted for stable output.
     """
     colors: set[str] = set()
-    for block in _BAND_BLOCK.finditer(source):
-        for _, rgb in _COLOR_REF.findall(block.group(1)):
+    for block in _BAND_BLOCK.finditer(field_colors):
+        body = block.group(1)
+        for rgb in _COLOR_REF.findall(body):
             colors.add(rgb.lower())
+        for name, index in _INDEX_REF.findall(body):
+            palette = arrays.get(name)
+            if palette is None:
+                raise SystemExit(
+                    f"Unknown colour array '{name}' referenced in a grade band. "
+                    f"Add it to ZoneColoring.kt or update this script."
+                )
+            colors.add(palette[int(index)])
     return sorted(colors)
 
 
@@ -175,8 +225,8 @@ def write_lookup(colors: list[str]) -> None:
 
 
 def main() -> None:
-    source = FIELD_COLORS_KT.read_text()
-    colors = extract_palette_colors(source)
+    arrays = parse_color_arrays(ZONE_COLORING_KT.read_text())
+    colors = extract_palette_colors(FIELD_COLORS_KT.read_text(), arrays)
     written, removed = sync_drawables(colors)
     write_lookup(colors)
     print(f"{written} chevron drawables written, {removed} stale removed.")

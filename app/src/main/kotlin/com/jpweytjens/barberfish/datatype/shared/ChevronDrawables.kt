@@ -8,34 +8,52 @@ import com.jpweytjens.barberfish.R
 
 @DrawableRes
 internal fun gradeChevronDrawable(colorArgb: Int): Int = when (colorArgb) {
+    0xFF00a5b8.toInt() -> R.drawable.ic_climber_chevron_00a5b8
+    0xFF00aa86.toInt() -> R.drawable.ic_climber_chevron_00aa86
     0xFF04fe00.toInt() -> R.drawable.ic_climber_chevron_04fe00
+    0xFF1a8c3a.toInt() -> R.drawable.ic_climber_chevron_1a8c3a
+    0xFF22aa48.toInt() -> R.drawable.ic_climber_chevron_22aa48
     0xFF2bc7f0.toInt() -> R.drawable.ic_climber_chevron_2bc7f0
     0xFF30f0a9.toInt() -> R.drawable.ic_climber_chevron_30f0a9
     0xFF39a7d6.toInt() -> R.drawable.ic_climber_chevron_39a7d6
     0xFF401c4c.toInt() -> R.drawable.ic_climber_chevron_401c4c
+    0xFF40d078.toInt() -> R.drawable.ic_climber_chevron_40d078
     0xFF540000.toInt() -> R.drawable.ic_climber_chevron_540000
     0xFF5783e9.toInt() -> R.drawable.ic_climber_chevron_5783e9
     0xFF6ebe43.toInt() -> R.drawable.ic_climber_chevron_6ebe43
+    0xFF71a500.toInt() -> R.drawable.ic_climber_chevron_71a500
     0xFF8e1201.toInt() -> R.drawable.ic_climber_chevron_8e1201
+    0xFF9020a0.toInt() -> R.drawable.ic_climber_chevron_9020a0
+    0xFF9395a1.toInt() -> R.drawable.ic_climber_chevron_9395a1
     0xFFaa0200.toInt() -> R.drawable.ic_climber_chevron_aa0200
     0xFFb0f94d.toInt() -> R.drawable.ic_climber_chevron_b0f94d
+    0xFFbb9000.toInt() -> R.drawable.ic_climber_chevron_bb9000
     0xFFbc2900.toInt() -> R.drawable.ic_climber_chevron_bc2900
+    0xFFd01020.toInt() -> R.drawable.ic_climber_chevron_d01020
     0xFFdd4700.toInt() -> R.drawable.ic_climber_chevron_dd4700
+    0xFFde5af3.toInt() -> R.drawable.ic_climber_chevron_de5af3
     0xFFea5147.toInt() -> R.drawable.ic_climber_chevron_ea5147
     0xFFeb6d66.toInt() -> R.drawable.ic_climber_chevron_eb6d66
     0xFFed1b24.toInt() -> R.drawable.ic_climber_chevron_ed1b24
+    0xFFf06020.toInt() -> R.drawable.ic_climber_chevron_f06020
+    0xFFf08868.toInt() -> R.drawable.ic_climber_chevron_f08868
+    0xFFf0d800.toInt() -> R.drawable.ic_climber_chevron_f0d800
     0xFFf1d749.toInt() -> R.drawable.ic_climber_chevron_f1d749
     0xFFf2c510.toInt() -> R.drawable.ic_climber_chevron_f2c510
     0xFFf36c72.toInt() -> R.drawable.ic_climber_chevron_f36c72
+    0xFFf86421.toInt() -> R.drawable.ic_climber_chevron_f86421
     0xFFf9ee44.toInt() -> R.drawable.ic_climber_chevron_f9ee44
     0xFFfa5e60.toInt() -> R.drawable.ic_climber_chevron_fa5e60
     0xFFfbad41.toInt() -> R.drawable.ic_climber_chevron_fbad41
+    0xFFfc5c61.toInt() -> R.drawable.ic_climber_chevron_fc5c61
     0xFFfe8253.toInt() -> R.drawable.ic_climber_chevron_fe8253
     0xFFfe932c.toInt() -> R.drawable.ic_climber_chevron_fe932c
     0xFFfeff00.toInt() -> R.drawable.ic_climber_chevron_feff00
+    0xFFff41df.toInt() -> R.drawable.ic_climber_chevron_ff41df
     0xFFff5501.toInt() -> R.drawable.ic_climber_chevron_ff5501
     0xFFff5958.toInt() -> R.drawable.ic_climber_chevron_ff5958
     0xFFff5959.toInt() -> R.drawable.ic_climber_chevron_ff5959
     0xFFff5c23.toInt() -> R.drawable.ic_climber_chevron_ff5c23
+    0xFFff5f68.toInt() -> R.drawable.ic_climber_chevron_ff5f68
     else -> R.drawable.ic_climber_chevron
 }
