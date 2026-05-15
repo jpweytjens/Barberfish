@@ -85,6 +85,7 @@ internal fun buildClimbOverlaySpecs(
     chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
     chevronWindowHalfM: Double = 0.0,
     chevronHeadingThresholdDeg: Double = 0.0,
+    chevronGuaranteePerRun: Boolean = true,
     chevronViewport: LatLngBounds? = null,
 ): ClimbOverlaySpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
@@ -139,6 +140,7 @@ internal fun buildClimbOverlaySpecs(
                 spacingM = chevronSpacingM,
                 windowHalfM = chevronWindowHalfM,
                 headingThresholdDeg = chevronHeadingThresholdDeg,
+                guaranteePerRun = chevronGuaranteePerRun,
                 colorArgb = run.colorArgb,
             )
         }
@@ -160,6 +162,7 @@ private fun chevronsForRun(
     spacingM: Double,
     windowHalfM: Double,
     headingThresholdDeg: Double,
+    guaranteePerRun: Boolean,
     colorArgb: Int,
 ): List<ClimbChevronSpec> {
     val lengthM = endM - startM
@@ -191,8 +194,9 @@ private fun chevronsForRun(
 
     // Guarantee one chevron per climb segment: a run shorter than the grid step — or one
     // whose every grid point was curve-suppressed — still gets a single marker at its
-    // midpoint so no coloured segment is left without a chevron.
-    if (specs.isEmpty()) {
+    // midpoint. Disabled when zoomed out, where (like native) chevrons thin to nothing
+    // and the coloured polyline alone marks the climb.
+    if (guaranteePerRun && specs.isEmpty()) {
         specs += chevronSpecAt(runIdx, 0, (startM + endM) * 0.5, gps, cumDist, total, colorArgb)
     }
     return specs

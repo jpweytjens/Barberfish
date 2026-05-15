@@ -324,6 +324,28 @@ class ClimbPolylinesTest {
         assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
     }
 
+    @Test fun short_run_gets_no_chevron_when_guarantee_disabled() {
+        // Same 25 m climb, but with the per-segment guarantee off (zoomed-out behaviour):
+        // no grid point lands inside, and nothing forces a fallback — the run gets a
+        // coloured polyline but zero chevrons, like the native rideapp when zoomed out.
+        val shortPoly = encodeElevationManually(
+            listOf(
+                0f to 100f,
+                25f to 102f,    // 8% grade → KAROO yellow band
+            ),
+        )
+        val overlay = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = shortPoly,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            chevronGuaranteePerRun = false,
+        )
+        assertEquals(1, overlay.polylines.size)
+        assertTrue(overlay.chevrons.isEmpty())
+    }
+
     // --- inline polyline encoders (test-only) -----------------------------------
 
     // Precision-5 Google polyline encoder.

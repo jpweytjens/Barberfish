@@ -43,6 +43,11 @@ import timber.log.Timber
 
 private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune via screencaps
 
+// Zoom at/above which every climb segment is guaranteed a chevron. Below it, chevrons
+// thin out with the route-distance grid like the native rideapp and the coloured
+// polyline alone marks the climb. 12 matches the native `hhk` heading-threshold breakpoint.
+private const val CHEVRON_PER_SEGMENT_MIN_ZOOM = 12.0
+
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
 
@@ -153,6 +158,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronWindow = 0.0  // disables curve suppression until we have a fix
                     }
                     val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
+                    val guaranteePerRun = viewport.zoomLevel >= CHEVRON_PER_SEGMENT_MIN_ZOOM
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
                     // between HideSymbols and ShowSymbols causes chevrons to vanish when
                     // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
@@ -168,9 +174,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronSpacingM = chevronStep,
                         chevronWindowHalfM = chevronWindow,
                         chevronHeadingThresholdDeg = headingThreshold,
+                        chevronGuaranteePerRun = guaranteePerRun,
                         chevronViewport = bounds,
                     )
-                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
+                    Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m thresh=${headingThreshold.toInt()}° guarantee=$guaranteePerRun zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
                     chevronController.emit(emitter, specs.chevrons)
                 }
