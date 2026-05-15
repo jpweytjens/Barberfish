@@ -3,8 +3,8 @@
      native rideapp directional_arrow.xml; viewport 49×41 is identical, only the dp
      size is slightly larger so we cleanly occlude the underlying native chevron. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="14dp"
-    android:height="17dp"
+    android:width="17dp"
+    android:height="21dp"
     android:viewportWidth="49"
     android:viewportHeight="41">
     <path
