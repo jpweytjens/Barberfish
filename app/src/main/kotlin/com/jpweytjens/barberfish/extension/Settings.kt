@@ -233,8 +233,21 @@ enum class SpeedSmoothingStream(val label: String, val typeId: String, val field
     S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_SPEED, DataType.Field.SMOOTHED_10S_AVERAGE_SPEED),
 }
 
+// SpeedThresholdSource selects what the live speed is compared against for color:
+// FIXED — the user-entered thresholdKph (0.0 disables coloring).
+// AVG_TOTAL / AVG_MOVING — the ride's running average (including / excluding paused time).
+// AVG sources are gated by ELAPSED_TIME >= 30 s so a near-zero startup avg doesn't flash colors.
 @Serializable
-data class SpeedFieldConfig(val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S3)
+enum class SpeedThresholdSource { FIXED, AVG_TOTAL, AVG_MOVING }
+
+@Serializable
+data class SpeedFieldConfig(
+    val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S3,
+    val source: SpeedThresholdSource = SpeedThresholdSource.FIXED,
+    val thresholdKph: Double = 0.0,
+    val rangePercentBelow: Double = 10.0,
+    val rangePercentAbove: Double = 10.0,
+)
 
 private val speedFieldConfigKey = stringPreferencesKey("speed_field_config")
 
