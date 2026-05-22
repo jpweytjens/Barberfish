@@ -60,16 +60,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         profile: UserProfile,
         includePaused: Boolean,
     ): Flow<FieldState> {
-        val timeType = if (includePaused) DataType.Type.RIDE_TIME else DataType.Type.ELAPSED_TIME
-        val timeField = if (includePaused) DataType.Field.RIDE_TIME else DataType.Field.ELAPSED_TIME
-        val distanceFlow =
-            karooSystem.streamDataFlow(DataType.Type.DISTANCE).map { state ->
-                (state as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.DISTANCE) ?: 0.0
-            }
-        val timeFlow =
-            karooSystem.streamDataFlow(timeType).map { state ->
-                (state as? StreamState.Streaming)?.dataPoint?.values?.get(timeField) ?: 0.0
-            }
+        val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused)
         // Warmup gate: ELAPSED_TIME (moving time) >= 30 s. ELAPSED_TIME excludes paused
         // time, so 30 s cumulative motion means the rider has actually moved — handles both
         // "first move" and "warmup elapsed" with one stateless check. Used regardless of
@@ -78,12 +69,9 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
                 (state as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
             }
-        return combine(liveFlow, distanceFlow, timeFlow, elapsedFlow) { state, distanceM, timeMs, elapsedMs ->
-            val seconds = ConvertType.TIME.apply(timeMs)
-            val avgRawMs = if (seconds > 0) distanceM / seconds else 0.0
-            val warmupMet = elapsedMs >= WARMUP_MS
+        return combine(liveFlow, avgFlow, elapsedFlow) { state, avgRawMs, elapsedMs ->
             val threshDisplay =
-                if (warmupMet) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
+                if (elapsedMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
             toFieldState(state, profile, cfg.smoothing, threshDisplay, cfg.rangePercentBelow, cfg.rangePercentAbove)
         }
     }

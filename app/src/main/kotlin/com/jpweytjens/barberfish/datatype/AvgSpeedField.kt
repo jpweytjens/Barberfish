@@ -110,12 +110,14 @@ class AvgSpeedField(
             }
 
     companion object {
-        fun streamFlow(
+        // Raw average speed in m/s, derived from DISTANCE / elapsed time. Total-vs-moving
+        // is controlled by includePaused (RIDE_TIME vs ELAPSED_TIME). Returns 0.0 until
+        // the time field has accumulated at least one second. Shared between AvgSpeedField
+        // and SpeedField (which uses it as a dynamic threshold source).
+        fun avgSpeedRawMsFlow(
             karooSystem: KarooSystemService,
-            cfg: AvgSpeedConfig,
-            profile: UserProfile,
             includePaused: Boolean,
-        ): Flow<FieldState> {
+        ): Flow<Double> {
             val timeType = if (includePaused) DataType.Type.RIDE_TIME else DataType.Type.ELAPSED_TIME
             val timeField = if (includePaused) DataType.Field.RIDE_TIME else DataType.Field.ELAPSED_TIME
             val distanceFlow =
@@ -134,10 +136,19 @@ class AvgSpeedField(
                 }
             return combine(distanceFlow, timeFlow) { distanceM: Double, timeMs: Double ->
                 val seconds = ConvertType.TIME.apply(timeMs)
-                val rawMs = if (seconds > 0) distanceM / seconds else 0.0
-                avgSpeedFieldState(rawMs, cfg, profile, includePaused)
+                if (seconds > 0) distanceM / seconds else 0.0
             }
         }
+
+        fun streamFlow(
+            karooSystem: KarooSystemService,
+            cfg: AvgSpeedConfig,
+            profile: UserProfile,
+            includePaused: Boolean,
+        ): Flow<FieldState> =
+            avgSpeedRawMsFlow(karooSystem, includePaused).map { rawMs ->
+                avgSpeedFieldState(rawMs, cfg, profile, includePaused)
+            }
         fun previewStates(
             cfg: AvgSpeedConfig,
             profile: UserProfile,
