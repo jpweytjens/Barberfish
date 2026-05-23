@@ -82,6 +82,7 @@ internal fun avgSpeedFieldState(
         label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
         color = color,
         iconRes = R.drawable.ic_speed_average,
+        colorMode = cfg.colorMode,
     )
 }
 
