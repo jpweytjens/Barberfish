@@ -247,6 +247,7 @@ data class SpeedFieldConfig(
     val thresholdKph: Double = 0.0,
     val rangePercentBelow: Double = 10.0,
     val rangePercentAbove: Double = 10.0,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
 private val speedFieldConfigKey = stringPreferencesKey("speed_field_config")
@@ -277,6 +278,7 @@ data class AvgSpeedConfig(
     val rangePercentBelow: Double = 10.0,
     val minKph: Double? = null,
     val maxKph: Double? = null,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
 fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedConfig> =
@@ -335,6 +337,7 @@ data class CadenceThresholdConfig(
 data class CadenceFieldConfig(
     val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0,
     val threshold: CadenceThresholdConfig = CadenceThresholdConfig(),
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
 fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
