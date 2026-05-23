@@ -9,6 +9,7 @@ import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import io.hammerhead.karooext.KarooSystemService
@@ -81,7 +82,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
     override fun liveFlow(context: Context): Flow<FieldState> =
         context.streamCadenceFieldConfig().flatMapLatest { cfg ->
             karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
-                toFieldState(state, cfg.smoothing, cfg.threshold)
+                toFieldState(state, cfg.smoothing, cfg.threshold, cfg.colorMode)
             }
         }
 
@@ -98,6 +99,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             state: StreamState,
             smoothing: CadenceSmoothingStream,
             threshold: CadenceThresholdConfig,
+            colorMode: ZoneColorMode = ZoneColorMode.TEXT,
         ): FieldState {
             val label = cadenceLabel(smoothing)
             val raw =
@@ -108,6 +110,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
                 label = label,
                 color = cadenceFieldColor(raw, threshold),
                 iconRes = R.drawable.ic_cadence,
+                colorMode = colorMode,
             )
         }
 
@@ -126,6 +129,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
                         label = label,
                         color = FieldColor.Default,
                         iconRes = R.drawable.ic_cadence,
+                        colorMode = cfg.colorMode,
                     )
                 }
             }
@@ -150,6 +154,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
                     label = label,
                     color = cadenceFieldColor(rpm, cfg.threshold),
                     iconRes = R.drawable.ic_cadence,
+                    colorMode = cfg.colorMode,
                 )
             }
         }
