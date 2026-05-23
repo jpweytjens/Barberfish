@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.UserProfile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -121,5 +122,17 @@ class SpeedThresholdTest {
         )
         val states = SpeedField.previewStates(cfg, metricProfile)
         assertTrue(states.all { it.color is FieldColor.Threshold })
+    }
+
+    @Test fun preview_propagates_background_color_mode() {
+        val cfg = SpeedFieldConfig(
+            smoothing = SpeedSmoothingStream.S3,
+            source = SpeedThresholdSource.FIXED,
+            thresholdKph = 30.0,
+            colorMode = ZoneColorMode.BACKGROUND,
+        )
+        val states = SpeedField.previewStates(cfg, metricProfile)
+        assertTrue(states.isNotEmpty())
+        assertTrue(states.all { it.colorMode == ZoneColorMode.BACKGROUND })
     }
 }

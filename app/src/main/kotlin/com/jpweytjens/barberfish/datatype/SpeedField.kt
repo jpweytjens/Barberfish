@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -47,7 +48,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         return when (cfg.source) {
             SpeedThresholdSource.FIXED -> {
                 val threshDisplay = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile)
-                liveFlow.map { state -> toFieldState(state, profile, cfg.smoothing, threshDisplay, cfg.rangePercentBelow, cfg.rangePercentAbove) }
+                liveFlow.map { state -> toFieldState(state, profile, cfg.smoothing, threshDisplay, cfg.rangePercentBelow, cfg.rangePercentAbove, cfg.colorMode) }
             }
             SpeedThresholdSource.AVG_TOTAL -> avgColoredFlow(liveFlow, cfg, profile, includePaused = true)
             SpeedThresholdSource.AVG_MOVING -> avgColoredFlow(liveFlow, cfg, profile, includePaused = false)
@@ -72,7 +73,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         return combine(liveFlow, avgFlow, elapsedFlow) { state, avgRawMs, elapsedMs ->
             val threshDisplay =
                 if (elapsedMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
-            toFieldState(state, profile, cfg.smoothing, threshDisplay, cfg.rangePercentBelow, cfg.rangePercentAbove)
+            toFieldState(state, profile, cfg.smoothing, threshDisplay, cfg.rangePercentBelow, cfg.rangePercentAbove, cfg.colorMode)
         }
     }
 
@@ -86,6 +87,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             threshDisplay: Double = 0.0,
             rangePercentBelow: Double = 10.0,
             rangePercentAbove: Double = 10.0,
+            colorMode: ZoneColorMode = ZoneColorMode.TEXT,
         ): FieldState {
             val label =
                 if (smoothing == SpeedSmoothingStream.S0) "Speed"
@@ -106,6 +108,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 label = label,
                 color = color,
                 iconRes = R.drawable.ic_col_speed,
+                colorMode = colorMode,
             )
         }
 
@@ -143,6 +146,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                     label = label,
                     color = color,
                     iconRes = R.drawable.ic_col_speed,
+                    colorMode = cfg.colorMode,
                 )
             }
         }
