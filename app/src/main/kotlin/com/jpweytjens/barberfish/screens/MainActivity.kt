@@ -775,11 +775,16 @@ class MainActivity : ComponentActivity() {
                                 if (!readable && zoneConfig.hrPalette == ZonePalette.HSLUV)
                                     ZonePalette.KAROO
                                 else zoneConfig.hrPalette
+                            val newGrade =
+                                if (!readable && zoneConfig.gradePalette == GradePalette.TURBO)
+                                    GradePalette.KAROO
+                                else zoneConfig.gradePalette
                             zoneConfig =
                                 zoneConfig.copy(
                                     readableColors = readable,
                                     powerPalette = newPower,
                                     hrPalette = newHr,
+                                    gradePalette = newGrade,
                                 )
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
