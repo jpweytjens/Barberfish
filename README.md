@@ -77,58 +77,80 @@ DEWMA is a proof of concept rather than a production-ready alternative to the na
 
 ## Data fields
 
-Complete list of data fields provided by Barberfish.
+Complete list of data fields provided by Barberfish, grouped by category.
 
 ### HUD
 
-- HUD (configurable 3 or 4 columns with optional elevation sparkline)
+| Field |
+|-------|
+| HUD (3 or 4 columns with optional elevation sparkline) |
 
-### Power & Heart Rate
+### Power
 
-- Power (Instant, 3s, 5s, 10s, 30s, 20m, 1h smoothing)
-- Avg Power
-- Normalized Power
-- Lap Power
-- Last Lap Power
-- Heart Rate
-- Avg Heart Rate
-- Lap Avg Heart Rate
-- Last Lap Avg Heart Rate
+| Field              | Smoothing                                | Zone color |
+|--------------------|------------------------------------------|------------|
+| Power              | Instant / 3s / 5s / 10s / 30s / 20m / 1h | ✓          |
+| Avg Power          | —                                        | ✓          |
+| Lap Avg Power      | —                                        | ✓          |
+| Last Lap Avg Power | —                                        | ✓          |
+| NP                 | —                                        | ✓          |
+
+### Heart Rate
+
+| Field           | Zone color |
+|-----------------|------------|
+| HR              | ✓          |
+| Avg HR          | ✓          |
+| Lap Avg HR      | ✓          |
+| Last Lap Avg HR | ✓          |
 
 ### Speed
 
-- Speed (Instant, 3s, 5s, 10s smoothing)
-- Total average speed (including paused time)
-- Moving-time average speed (excluding paused time)
+| Field              | Smoothing               | Threshold |
+|--------------------|-------------------------|-----------|
+| Speed              | Instant / 3s / 5s / 10s | —         |
+| Avg Speed (Total)  | —                       | ✓         |
+| Avg Speed (Moving) | —                       | ✓         |
 
 ### Cadence
 
-- Cadence (Instant, 3s, 5s, 10s smoothing)
+| Field   | Smoothing               | Threshold |
+|---------|-------------------------|-----------|
+| Cadence | Instant / 3s / 5s / 10s | ✓         |
 
-### Grade
+### Climbing
 
-- Grade (EWMA smoothed)
+| Field     | Smoothing      | Zone color (palette) |
+|-----------|----------------|----------------------|
+| Grade     | EWMA (fixed α) | ✓ (grade)            |
+| Sparkline | —              | ✓ (grade)            |
 
 ### Time
 
-- Elapsed time
-- Moving time
-- Paused time
-- Lap Time
-- Last Lap Time
+| Field    |
+|----------|
+| Elapsed  |
+| Moving   |
+| Paused   |
+| Lap      |
+| Last lap |
 
 ### Navigation & ETA
 
-- Time to destination
-- Remaining ride time
-- Time of arrival
+| Field               |
+|---------------------|
+| Time to destination |
+| Remaining ride time |
+| Time of arrival     |
 
 ### Daylight
 
-- Time to sunrise
-- Time to sunset
-- Time to civil dawn
-- Time to civil dusk
+| Field              |
+|--------------------|
+| Time to sunrise    |
+| Time to sunset     |
+| Time to civil dawn |
+| Time to civil dusk |
 
 ## Examples
 
