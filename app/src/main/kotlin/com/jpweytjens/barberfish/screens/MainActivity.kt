@@ -676,14 +676,16 @@ class MainActivity : ComponentActivity() {
                     expanded = climberExpanded,
                     onToggle = { climberExpanded = !climberExpanded },
                 ) {
-                    var selectedSparkline by remember { mutableStateOf(false) }
-
                     SparklineCard(
                         config = sparklineConfig,
                         zoneConfig = zoneConfig,
                         profile = userProfile,
-                        selected = selectedSparkline,
-                        onSelect = { selectedSparkline = !selectedSparkline },
+                        selected = sparklineConfig.enabled,
+                        onSelect = {
+                            val updated = sparklineConfig.copy(enabled = !sparklineConfig.enabled)
+                            sparklineConfig = updated
+                            lifecycleScope.launch { saveSparklineConfig(updated) }
+                        },
                         onUpdate = { updated ->
                             sparklineConfig = updated
                             lifecycleScope.launch { saveSparklineConfig(updated) }
