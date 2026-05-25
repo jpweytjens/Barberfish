@@ -1551,6 +1551,7 @@ internal fun AvgSpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
+    Text("THRESHOLD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     ThresholdLegend()
     val modeOptions =
         listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
@@ -1672,6 +1673,7 @@ internal fun CadenceThresholdControls(
     config: CadenceThresholdConfig,
     onConfigChange: (CadenceThresholdConfig) -> Unit,
 ) {
+    Text("THRESHOLD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
     ThresholdLegend()
     val modeOptions =
         listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
