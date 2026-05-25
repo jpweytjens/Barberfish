@@ -495,6 +495,31 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    val avgTotalPreviewStates = remember(avgTotalConfig, userProfile) {
+                        AvgSpeedField.previewStates(avgTotalConfig, userProfile, includePaused = true)
+                    }
+
+                    FieldCard(
+                        title = "AVG SPEED (TOTAL)",
+                        description = "Average speed including paused time.",
+                        previewFields = avgTotalPreviewStates,
+                        colorMode = ZoneColorMode.TEXT,
+                        selected = selectedDataField == "AVG SPEED (TOTAL)",
+                        onSelect = {
+                            selectedDataField =
+                                if (selectedDataField == "AVG SPEED (TOTAL)") null else "AVG SPEED (TOTAL)"
+                        },
+                    ) {
+                        AvgSpeedThresholdControls(
+                            config = avgTotalConfig,
+                            profile = userProfile,
+                            onConfigChange = { cfg ->
+                                avgTotalConfig = cfg
+                                lifecycleScope.launch { saveAvgSpeedConfig(includePaused = true, cfg) }
+                            },
+                        )
+                    }
+
                     Text("HEART RATE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "HEART RATE",
@@ -584,9 +609,6 @@ class MainActivity : ComponentActivity() {
 
                 } // end Fields
 
-                val avgTotalPreviewStates = remember(avgTotalConfig, userProfile) {
-                    AvgSpeedField.previewStates(avgTotalConfig, userProfile, includePaused = true)
-                }
                 val avgMovingPreviewStates = remember(avgMovingConfig, userProfile) {
                     AvgSpeedField.previewStates(avgMovingConfig, userProfile, includePaused = false)
                 }
@@ -631,26 +653,6 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     var selectedThresholdField by remember { mutableStateOf<String?>(null) }
-
-                    FieldCard(
-                        title = "AVG SPEED (TOTAL)",
-                        description = "Average speed including paused time",
-                        previewFields = avgTotalPreviewStates,
-                        colorMode = ZoneColorMode.TEXT,
-                        selected = selectedThresholdField == "AVG SPEED (TOTAL)",
-                        onSelect = { selectedThresholdField = if (selectedThresholdField == "AVG SPEED (TOTAL)") null else "AVG SPEED (TOTAL)" },
-                    ) {
-                        AvgSpeedThresholdControls(
-                            config = avgTotalConfig,
-                            profile = userProfile,
-                            onConfigChange = { cfg ->
-                                avgTotalConfig = cfg
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = true, cfg)
-                                }
-                            },
-                        )
-                    }
 
                     FieldCard(
                         title = "AVG SPEED (MOVING)",
