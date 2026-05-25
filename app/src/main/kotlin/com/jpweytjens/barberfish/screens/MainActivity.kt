@@ -545,6 +545,42 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    Text("CADENCE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
+                    FieldCard(
+                        title = "CADENCE",
+                        description = "Current cadence with threshold coloring.",
+                        previewFields = cadencePreviewStates,
+                        colorMode = ZoneColorMode.TEXT,
+                        selected = selectedDataField == "CADENCE",
+                        onSelect = {
+                            selectedDataField = if (selectedDataField == "CADENCE") null else "CADENCE"
+                        },
+                    ) {
+                        Text(
+                            "SMOOTHING",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark,
+                        )
+                        SmoothingSlider(
+                            options = CadenceSmoothingStream.entries,
+                            selected = cadenceFieldConfig.smoothing,
+                            label = { it.label },
+                            thumbIcon = R.drawable.ic_cadence,
+                            onSelected = { stream ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                        CadenceThresholdControls(
+                            config = cadenceFieldConfig.threshold,
+                            onConfigChange = { cfg ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                    }
+
                     Text("HEART RATE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "HEART RATE",
@@ -674,39 +710,6 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     var selectedThresholdField by remember { mutableStateOf<String?>(null) }
-
-                    FieldCard(
-                        title = "CADENCE",
-                        description = "Current cadence with threshold coloring",
-                        previewFields = cadencePreviewStates,
-                        colorMode = ZoneColorMode.TEXT,
-                        selected = selectedThresholdField == "CADENCE",
-                        onSelect = { selectedThresholdField = if (selectedThresholdField == "CADENCE") null else "CADENCE" },
-                    ) {
-                        Text(
-                            "SMOOTHING",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark,
-                        )
-                        SmoothingSlider(
-                            options = CadenceSmoothingStream.entries,
-                            selected = cadenceFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_cadence,
-                            onSelected = { stream ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                        CadenceThresholdControls(
-                            config = cadenceFieldConfig.threshold,
-                            onConfigChange = { cfg ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                    }
                 } // end Threshold Fields
 
                 CollapsibleSection(
