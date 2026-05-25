@@ -221,7 +221,6 @@ internal fun HUDConfigSection(
 internal fun SparklinePreview(
     sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
-    profile: UserProfile,
     fixturePoints: List<Pair<Float, Float>>? = null,
     fixtureClimbRanges: List<Pair<Float, Float>>? = null,
     fixturePoiDistances: List<Float>? = null,
@@ -385,7 +384,6 @@ private fun HUDPreview(
             SparklinePreview(
                 sparklineConfig = sparklineConfig,
                 zoneConfig = zoneConfig,
-                profile = profile,
                 fixturePoints = fixturePoints,
                 fixtureClimbRanges = fixtureClimbRanges,
                 fixturePoiDistances = fixturePoiDistances,
