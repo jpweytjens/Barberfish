@@ -689,37 +689,6 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveSparklineConfig(updated) }
                         },
                     )
-
-                    Text("Gradient colors", style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        "Used by the grade data field and the sparkline gradient overlay.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    ReadabilityToggle(
-                        readable = zoneConfig.readableColors,
-                        onSelected = { readable ->
-                            val newGrade =
-                                if (!readable && zoneConfig.gradePalette == GradePalette.TURBO)
-                                    GradePalette.KAROO
-                                else zoneConfig.gradePalette
-                            zoneConfig = zoneConfig.copy(
-                                readableColors = readable,
-                                gradePalette = newGrade,
-                            )
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradePaletteDropdown(
-                        title = "Grade",
-                        selected = zoneConfig.gradePalette,
-                        readable = zoneConfig.readableColors,
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(gradePalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
                 } // end Climbing
 
                 CollapsibleSection(
@@ -844,6 +813,17 @@ class MainActivity : ComponentActivity() {
                                 ZonePalette.HSLUV -> hsluvHrColors
                             }
                     )
+
+                    GradePaletteDropdown(
+                        title = "Grade",
+                        selected = zoneConfig.gradePalette,
+                        readable = zoneConfig.readableColors,
+                        onSelected = { palette ->
+                            zoneConfig = zoneConfig.copy(gradePalette = palette)
+                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                        },
+                    )
+                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
 
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
