@@ -1,10 +1,15 @@
 package com.jpweytjens.barberfish.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -68,7 +73,6 @@ import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
-import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
@@ -693,114 +697,155 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 @Composable
 internal fun SparklineCard(
     config: SparklineConfig,
-    palette: GradePalette,
+    zoneConfig: ZoneConfig,
     profile: UserProfile,
+    selected: Boolean,
+    onSelect: () -> Unit,
     onUpdate: (SparklineConfig) -> Unit,
 ) {
     Column(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Grey200)
-                .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
     ) {
-        Text("ELEVATION SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-        Text("Shows elevation ahead when a route is loaded.", fontSize = 12.sp, color = TextDark)
-        SegmentedRow(
-            options = listOf(false to "Off", true to "On"),
-            selected = config.enabled,
-            onSelect = { onUpdate(config.copy(enabled = it)) },
-        )
-        if (config.enabled) {
-            Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = listOf(5, 10, 20).map { km ->
-                    val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-                    km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-                },
-                selected = config.lookaheadKm,
-                onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
-            )
-            val fillRange = gradeFillRange(
-                palette,
-                skipBandsClimb = config.skipBands,
-                skipBandsDescent = config.skipBandsDescent,
-            )
-            val hasDescentBands = gradeFillRange(palette).negMax != null
-            val posMin = fillRange.posMin
-            val negMax = fillRange.negMax
-            val readout = when {
-                hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
-                    val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
-                    val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
-                    "Grades between $lower% and $upper% stay uncoloured."
-                }
-                !hasDescentBands && config.skipBands > 0 && posMin != null ->
-                    "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
-                else -> null
-            }
-            Text("EMPHASIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text(
-                "Filter out gentle grades so meaningful climbs and descents stand out.",
-                fontSize = 12.sp, color = TextDark,
-            )
-            if (readout != null) {
-                Text(readout, fontSize = 12.sp, color = TextDark)
-            }
-            Text(
-                if (hasDescentBands) "Climbs" else "Bands",
-                fontSize = 11.sp, color = TextDark,
-            )
-            SegmentedRow(
-                options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                selected = config.skipBands,
-                onSelect = { onUpdate(config.copy(skipBands = it)) },
-            )
-            if (hasDescentBands) {
-                Text("Descents", fontSize = 11.sp, color = TextDark)
-                SegmentedRow(
-                    options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                    selected = config.skipBandsDescent,
-                    onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
+        if (selected) {
+            Column(
+                modifier = Modifier.fillMaxWidth().background(Grey100)
+                    .padding(12.dp)
+                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text("SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                Text(
+                    "Elevation profile shown ahead when a route is loaded.",
+                    fontSize = 12.sp,
+                    color = TextDark,
                 )
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(60.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+                ) {
+                    SparklinePreview(
+                        sparklineConfig = config,
+                        zoneConfig = zoneConfig,
+                    )
+                }
             }
-            Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = ElevationSimplification.entries.map { it to it.label },
-                selected = config.simplification,
-                onSelect = { onUpdate(config.copy(simplification = it)) },
-            )
-            Text("X-WARP", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = SparklineWarp.entries.map { it to it.label },
-                selected = config.warp,
-                onSelect = { onUpdate(config.copy(warp = it)) },
-            )
-            Text("Y-ZOOM", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = ElevationZoom.entries.map { it to it.label },
-                selected = config.yZoom,
-                onSelect = { onUpdate(config.copy(yZoom = it)) },
-            )
-            Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Tint the outline blue on climbs as detected by Karoo Climber.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = listOf(false to "Off", true to "On"),
-                selected = config.showClimbs,
-                onSelect = { onUpdate(config.copy(showClimbs = it)) },
-            )
-            Text("POIs", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Mark points of interest (POIs) along the sparkline.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = listOf(false to "Off", true to "On"),
-                selected = config.showPois,
-                onSelect = { onUpdate(config.copy(showPois = it)) },
-            )
+            AnimatedVisibility(
+                visible = selected,
+                enter = expandVertically(animationSpec = tween(200)),
+                exit = shrinkVertically(animationSpec = tween(200)),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    SegmentedRow(
+                        options = listOf(false to "Off", true to "On"),
+                        selected = config.enabled,
+                        onSelect = { onUpdate(config.copy(enabled = it)) },
+                    )
+                    if (config.enabled) {
+                        Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
+                        SegmentedRow(
+                            options = listOf(5, 10, 20).map { km ->
+                                val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                                km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+                            },
+                            selected = config.lookaheadKm,
+                            onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+                        )
+                        val fillRange = gradeFillRange(
+                            zoneConfig.gradePalette,
+                            skipBandsClimb = config.skipBands,
+                            skipBandsDescent = config.skipBandsDescent,
+                        )
+                        val hasDescentBands = gradeFillRange(zoneConfig.gradePalette).negMax != null
+                        val posMin = fillRange.posMin
+                        val negMax = fillRange.negMax
+                        val readout = when {
+                            hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
+                                val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
+                                val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
+                                "Grades between $lower% and $upper% stay uncoloured."
+                            }
+                            !hasDescentBands && config.skipBands > 0 && posMin != null ->
+                                "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+                            else -> null
+                        }
+                        Text("EMPHASIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text(
+                            "Filter out gentle grades so meaningful climbs and descents stand out.",
+                            fontSize = 12.sp, color = TextDark,
+                        )
+                        if (readout != null) {
+                            Text(readout, fontSize = 12.sp, color = TextDark)
+                        }
+                        Text(
+                            if (hasDescentBands) "Climbs" else "Bands",
+                            fontSize = 11.sp, color = TextDark,
+                        )
+                        SegmentedRow(
+                            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                            selected = config.skipBands,
+                            onSelect = { onUpdate(config.copy(skipBands = it)) },
+                        )
+                        if (hasDescentBands) {
+                            Text("Descents", fontSize = 11.sp, color = TextDark)
+                            SegmentedRow(
+                                options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                                selected = config.skipBandsDescent,
+                                onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
+                            )
+                        }
+                        Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
+                        SegmentedRow(
+                            options = ElevationSimplification.entries.map { it to it.label },
+                            selected = config.simplification,
+                            onSelect = { onUpdate(config.copy(simplification = it)) },
+                        )
+                        Text("X-WARP", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)
+                        SegmentedRow(
+                            options = SparklineWarp.entries.map { it to it.label },
+                            selected = config.warp,
+                            onSelect = { onUpdate(config.copy(warp = it)) },
+                        )
+                        Text("Y-ZOOM", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.", fontSize = 12.sp, color = TextDark)
+                        SegmentedRow(
+                            options = ElevationZoom.entries.map { it to it.label },
+                            selected = config.yZoom,
+                            onSelect = { onUpdate(config.copy(yZoom = it)) },
+                        )
+                        Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Tint the outline blue on climbs as detected by Karoo Climber.", fontSize = 12.sp, color = TextDark)
+                        SegmentedRow(
+                            options = listOf(false to "Off", true to "On"),
+                            selected = config.showClimbs,
+                            onSelect = { onUpdate(config.copy(showClimbs = it)) },
+                        )
+                        Text("POIs", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text("Mark points of interest (POIs) along the sparkline.", fontSize = 12.sp, color = TextDark)
+                        SegmentedRow(
+                            options = listOf(false to "Off", true to "On"),
+                            selected = config.showPois,
+                            onSelect = { onUpdate(config.copy(showPois = it)) },
+                        )
+                    }
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth().background(Grey100).padding(12.dp)
+                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            }
         }
     }
 }
