@@ -81,9 +81,7 @@ Complete list of data fields provided by Barberfish, grouped by category.
 
 ### HUD
 
-| Field |
-|-------|
-| HUD (3 or 4 columns with optional elevation sparkline) |
+- HUD (3 or 4 columns with optional elevation sparkline)
 
 ### Power
 
@@ -127,30 +125,24 @@ Complete list of data fields provided by Barberfish, grouped by category.
 
 ### Time
 
-| Field    |
-|----------|
-| Elapsed  |
-| Moving   |
-| Paused   |
-| Lap      |
-| Last lap |
+- Elapsed
+- Moving
+- Paused
+- Lap
+- Last lap
 
 ### Navigation & ETA
 
-| Field               |
-|---------------------|
-| Time to destination |
-| Remaining ride time |
-| Time of arrival     |
+- Time to destination
+- Remaining ride time
+- Time of arrival
 
 ### Daylight
 
-| Field              |
-|--------------------|
-| Time to sunrise    |
-| Time to sunset     |
-| Time to civil dawn |
-| Time to civil dusk |
+- Time to sunrise
+- Time to sunset
+- Time to civil dawn
+- Time to civil dusk
 
 ## Examples
 
