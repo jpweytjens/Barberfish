@@ -1180,6 +1180,43 @@ private fun FieldCard(
 }
 
 @Composable
+private fun ThresholdLegend() {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            buildAnnotatedString {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Target\n") }
+                withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
+                append(" · target · ")
+                withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            buildAnnotatedString {
+                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Min / Max\n") }
+                withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
+                append(" · ")
+                withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
+                append(" · min · ")
+                withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
+                append(" · max · ")
+                withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
+                append(" · ")
+                withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            "Leave fields empty to disable.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
     val options = ZoneColorMode.entries
     Text("ZONE COLOR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
@@ -1508,6 +1545,7 @@ internal fun AvgSpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
+    ThresholdLegend()
     val modeOptions =
         listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
     Row(
