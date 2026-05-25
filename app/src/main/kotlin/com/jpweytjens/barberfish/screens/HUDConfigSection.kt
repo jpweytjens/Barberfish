@@ -236,10 +236,12 @@ internal fun SparklinePreview(
     val climbRanges = fixtureClimbRanges ?: rvvClimbsFixture()
     val poiDistances = fixturePoiDistances ?: rvvPoisFixture()
 
+    // Animate position: sweep from route start to end, then loop
     var positionM by remember { mutableStateOf(elevationPoints.first().first) }
     var lastPositionM by remember { mutableStateOf(elevationPoints.first().first) }
     var displayedRange by remember { mutableStateOf(0f) }
     val routeEndM = remember(elevationPoints) { elevationPoints.last().first }
+    // Total seconds to complete one full sweep at 30 fps.
     val speedMPerTick = remember(elevationPoints, previewSweepSeconds) {
         (routeEndM - elevationPoints.first().first) / (previewSweepSeconds * 30f)
     }
@@ -248,7 +250,7 @@ internal fun SparklinePreview(
         lastPositionM = elevationPoints.first().first
         displayedRange = 0f
         while (true) {
-            delay(33L)
+            delay(33L) // ~30fps
             positionM += speedMPerTick
             if (positionM > routeEndM) {
                 positionM = elevationPoints.first().first
@@ -258,6 +260,7 @@ internal fun SparklinePreview(
         }
     }
 
+    // VW runs once per (fixture, preset) change — not once per animation frame.
     val simplifiedElevationPoints = remember(elevationPoints, sparklineConfig.simplification) {
         visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
     }
