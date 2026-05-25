@@ -255,7 +255,6 @@ class MainActivity : ComponentActivity() {
         }
 
         var fieldsExpanded by remember { mutableStateOf(false) }
-        var thresholdsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
         var climberExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
@@ -669,48 +668,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                 } // end Fields
-
-                CollapsibleSection(
-                    title = "Threshold fields",
-                    description =
-                        "Color data fields by distance from a target or zone",
-                    icon = R.drawable.ic_section_speed,
-                    expanded = thresholdsExpanded,
-                    onToggle = { thresholdsExpanded = !thresholdsExpanded },
-                ) {
-                    Text(
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Target\n") }
-                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
-                            append(" · target · ")
-                            withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        buildAnnotatedString {
-                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append("Min / Max\n") }
-                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
-                            append(" · ")
-                            withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
-                            append(" · min · ")
-                            withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
-                            append(" · max · ")
-                            withStyle(SpanStyle(color = DANGER_ORANGE)) { append("orange") }
-                            append(" · ")
-                            withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        "Leave fields empty to disable.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    var selectedThresholdField by remember { mutableStateOf<String?>(null) }
-                } // end Threshold Fields
 
                 CollapsibleSection(
                     title = "Climbing",
