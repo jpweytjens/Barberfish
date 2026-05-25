@@ -218,32 +218,15 @@ internal fun HUDConfigSection(
 }
 
 @Composable
-private fun HUDPreview(
-    hudConfig: HUDConfig,
+internal fun SparklinePreview(
     sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
-    timeCfg: TimeConfig,
     profile: UserProfile,
-    selectedSlot: Int?,
-    onSlotSelected: (Int) -> Unit,
     fixturePoints: List<Pair<Float, Float>>? = null,
     fixtureClimbRanges: List<Pair<Float, Float>>? = null,
     fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
 ) {
-    val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
-        HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
-    }
-    var index by remember { mutableIntStateOf(0) }
-    LaunchedEffect(states) {
-        index = 0
-        while (true) {
-            delay(Delay.PREVIEW.time)
-            index = (index + 1) % states.size
-        }
-    }
-    val current = states[index.coerceIn(states.indices)]
-
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
     val sparklineDisplayHeightPx = (34f * density).toInt()
@@ -253,12 +236,10 @@ private fun HUDPreview(
     val climbRanges = fixtureClimbRanges ?: rvvClimbsFixture()
     val poiDistances = fixturePoiDistances ?: rvvPoisFixture()
 
-    // Animate position: sweep from route start to end, then loop
     var positionM by remember { mutableStateOf(elevationPoints.first().first) }
     var lastPositionM by remember { mutableStateOf(elevationPoints.first().first) }
     var displayedRange by remember { mutableStateOf(0f) }
     val routeEndM = remember(elevationPoints) { elevationPoints.last().first }
-    // Total seconds to complete one full sweep at 30 fps.
     val speedMPerTick = remember(elevationPoints, previewSweepSeconds) {
         (routeEndM - elevationPoints.first().first) / (previewSweepSeconds * 30f)
     }
@@ -267,7 +248,7 @@ private fun HUDPreview(
         lastPositionM = elevationPoints.first().first
         displayedRange = 0f
         while (true) {
-            delay(33L) // ~30fps
+            delay(33L)
             positionM += speedMPerTick
             if (positionM > routeEndM) {
                 positionM = elevationPoints.first().first
@@ -277,12 +258,14 @@ private fun HUDPreview(
         }
     }
 
-    // VW runs once per (fixture, preset) change — not once per animation frame.
     val simplifiedElevationPoints = remember(elevationPoints, sparklineConfig.simplification) {
         visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
     }
 
-    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM, climbRanges, poiDistances) {
+    val sparklineBitmap = remember(
+        sparklineConfig, zoneConfig, boxWidthPx, isNightMode,
+        simplifiedElevationPoints, positionM, climbRanges, poiDistances,
+    ) {
         if (!sparklineConfig.enabled || boxWidthPx <= 0) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
@@ -314,6 +297,45 @@ private fun HUDPreview(
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize().onSizeChanged { boxWidthPx = it.width }) {
+        if (sparklineBitmap != null) {
+            Image(
+                bitmap = sparklineBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HUDPreview(
+    hudConfig: HUDConfig,
+    sparklineConfig: SparklineConfig,
+    zoneConfig: ZoneConfig,
+    timeCfg: TimeConfig,
+    profile: UserProfile,
+    selectedSlot: Int?,
+    onSlotSelected: (Int) -> Unit,
+    fixturePoints: List<Pair<Float, Float>>? = null,
+    fixtureClimbRanges: List<Pair<Float, Float>>? = null,
+    fixturePoiDistances: List<Float>? = null,
+    previewSweepSeconds: Int = 10,
+) {
+    val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
+        HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
+    }
+    var index by remember { mutableIntStateOf(0) }
+    LaunchedEffect(states) {
+        index = 0
+        while (true) {
+            delay(Delay.PREVIEW.time)
+            index = (index + 1) % states.size
+        }
+    }
+    val current = states[index.coerceIn(states.indices)]
+
     // Bleed 8 dp each side to reclaim the CollapsibleSection inner padding so the
     // preview spans the section card's full width — wider than default but inside the
     // section bounds (no screen-edge clipping of the rightmost label).
@@ -332,7 +354,6 @@ private fun HUDPreview(
             .height(90.dp)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
-            .onSizeChanged { boxWidthPx = it.width }
     ) {
         Row(Modifier.fillMaxSize()) {
             buildList {
@@ -352,12 +373,20 @@ private fun HUDPreview(
                 )
             }
         }
-        if (sparklineBitmap != null) {
-            Image(
-                bitmap = sparklineBitmap.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(30.dp).align(Alignment.BottomCenter),
-                contentScale = ContentScale.FillBounds,
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(30.dp)
+                .align(Alignment.BottomCenter)
+        ) {
+            SparklinePreview(
+                sparklineConfig = sparklineConfig,
+                zoneConfig = zoneConfig,
+                profile = profile,
+                fixturePoints = fixturePoints,
+                fixtureClimbRanges = fixtureClimbRanges,
+                fixturePoiDistances = fixturePoiDistances,
+                previewSweepSeconds = previewSweepSeconds,
             )
         }
     }
