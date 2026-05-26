@@ -64,3 +64,6 @@ docs/karoo-ext_decompiled/
 
 # Superpowers
 docs/superpowers/
+
+# Diagnostic script output (regenerated via scripts/preview_bg_text_picks.py)
+scripts/output/

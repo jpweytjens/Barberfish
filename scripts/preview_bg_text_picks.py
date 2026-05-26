@@ -1,0 +1,384 @@
+"""
+Diagnostic: visualize the runtime text-color picker for every palette × bg.
+
+Mirrors the Kotlin rule `bestTextOnBackground(bg)` in
+`app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ZoneColoring.kt`:
+in BACKGROUND color mode, pick whichever of white/black yields the higher
+APCA |Lc| against the cell's fill color.
+
+Output is a single SVG (`scripts/output/bg_text_picks.svg`) with every
+palette swatch rendered using its picked text color and annotated with the
+chosen hex + signed Lc value. Wrong picks would make the text disappear —
+that's the diagnostic signal.
+
+Not a code generator. Not a README asset. Open it in a browser.
+
+Usage
+-----
+uv run scripts/preview_bg_text_picks.py
+"""
+
+from __future__ import annotations
+
+import math
+from pathlib import Path
+
+from apca_hsluv import apca_contrast
+
+# ---------------------------------------------------------------------------
+# Picker (mirror of `bestTextOnBackground` in ZoneColoring.kt)
+# ---------------------------------------------------------------------------
+
+WHITE = "#FFFFFF"
+BLACK = "#000000"
+
+
+def best_text_on_background(bg: str) -> str:
+    """Return whichever of `WHITE`/`BLACK` has higher APCA |Lc| against `bg`."""
+    lc_w = abs(apca_contrast(WHITE, bg))
+    lc_b = abs(apca_contrast(BLACK, bg))
+    return WHITE if lc_w >= lc_b else BLACK
+
+
+# ---------------------------------------------------------------------------
+# Palette data — duplicated from ZoneColoring.kt / FieldColors.kt.
+# Update here when palettes change. Diagnostic only; not consumed by the app.
+# ---------------------------------------------------------------------------
+
+POWER_ZONE_LABELS = [f"Z{i}" for i in range(1, 8)]
+HR_ZONE_LABELS = [f"Z{i}" for i in range(1, 6)]
+
+POWER_PALETTES = {
+    "Karoo": [
+        "#1A8C3A", "#40D078", "#F0D800", "#F08868", "#F06020", "#D01020", "#9020A0",
+    ],
+    "Karoo (readable)": [
+        "#22AA48", "#40D078", "#F0D800", "#F08868", "#F86421", "#FC5C61", "#DE5AF3",
+    ],
+    "Wahoo": [
+        "#C0C0C0", "#253070", "#4E90CC", "#48B830", "#F0D818", "#E06818", "#E03020",
+    ],
+    "Wahoo (readable)": [
+        "#C0C0C0", "#868FDC", "#549AD9", "#48B830", "#F0D818", "#ED6F1A", "#F86159",
+    ],
+    "Intervals": [
+        "#3DB39F", "#3DB33F", "#FCD549", "#FC9C49", "#E34074", "#8963D8", "#797388",
+    ],
+    "Intervals (readable)": [
+        "#3DB39F", "#3DB33F", "#FCD549", "#FC9C49", "#EB688B", "#A086E2", "#9793A3",
+    ],
+    "Zwift": [
+        "#7B7E80", "#368AF4", "#59B962", "#F0C649", "#F06B45", "#F8431F", "#F8431F",
+    ],
+    "Zwift (readable)": [
+        "#929698", "#5594F5", "#59B962", "#F0C649", "#F06B45", "#FA604D", "#FA604D",
+    ],
+    "HSLuv": [
+        "#9395A1", "#00A5B8", "#00AA86", "#71A500", "#BB9000", "#FF5F68", "#FF41DF",
+    ],
+}
+
+# HR palettes are index subsets of their power palette. Mirror the Kotlin
+# `.take(5)` and `listOf(0, 1, 3, 5, 6).map { ... }` patterns.
+_KAROO_HR_IDX = [0, 1, 2, 3, 5]
+_WAHOO_HR_IDX = [0, 1, 3, 5, 6]
+_INTERVALS_HR_IDX = [0, 1, 2, 3, 4]  # .take(5)
+_ZWIFT_HR_IDX = [0, 1, 2, 3, 4]      # .take(5)
+_HSLUV_HR_IDX = [0, 1, 3, 5, 6]
+
+HR_PALETTES = {
+    "Karoo": [POWER_PALETTES["Karoo"][i] for i in _KAROO_HR_IDX],
+    "Karoo (readable)": [POWER_PALETTES["Karoo (readable)"][i] for i in _KAROO_HR_IDX],
+    "Wahoo": [POWER_PALETTES["Wahoo"][i] for i in _WAHOO_HR_IDX],
+    "Wahoo (readable)": [POWER_PALETTES["Wahoo (readable)"][i] for i in _WAHOO_HR_IDX],
+    "Intervals": [POWER_PALETTES["Intervals"][i] for i in _INTERVALS_HR_IDX],
+    "Intervals (readable)": [POWER_PALETTES["Intervals (readable)"][i] for i in _INTERVALS_HR_IDX],
+    "Zwift": [POWER_PALETTES["Zwift"][i] for i in _ZWIFT_HR_IDX],
+    "Zwift (readable)": [POWER_PALETTES["Zwift (readable)"][i] for i in _ZWIFT_HR_IDX],
+    "HSLuv": [POWER_PALETTES["HSLuv"][i] for i in _HSLUV_HR_IDX],
+}
+
+# Grade bands — (label, hex). Order = highest grade band first to match the Kotlin lists.
+GRADE_PALETTES: dict[str, list[tuple[str, str]]] = {
+    "Karoo": [
+        (">23.5%",   POWER_PALETTES["Karoo"][6]),
+        ("19.6–23.5%", POWER_PALETTES["Karoo"][5]),
+        ("15.6–19.5%", POWER_PALETTES["Karoo"][4]),
+        ("12.6–15.5%", POWER_PALETTES["Karoo"][3]),
+        ("7.6–12.5%",  POWER_PALETTES["Karoo"][2]),
+        ("4.6–7.5%",   POWER_PALETTES["Karoo"][1]),
+        ("<4.6%",      POWER_PALETTES["Karoo"][0]),
+    ],
+    "Karoo (readable)": [
+        (">23.5%",   POWER_PALETTES["Karoo (readable)"][6]),
+        ("19.6–23.5%", POWER_PALETTES["Karoo (readable)"][5]),
+        ("15.6–19.5%", POWER_PALETTES["Karoo (readable)"][4]),
+        ("12.6–15.5%", POWER_PALETTES["Karoo (readable)"][3]),
+        ("7.6–12.5%",  POWER_PALETTES["Karoo (readable)"][2]),
+        ("4.6–7.5%",   POWER_PALETTES["Karoo (readable)"][1]),
+        ("<4.6%",      POWER_PALETTES["Karoo (readable)"][0]),
+    ],
+    "Wahoo": [
+        ("20%+",   "#540000"),
+        ("12–20%", "#AA0200"),
+        ("8–12%",  "#FF5501"),
+        ("4–8%",   "#FEFF00"),
+        ("0–4%",   "#04FE00"),
+    ],
+    "Wahoo (readable)": [
+        ("20%+",   "#FF5959"),
+        ("12–20%", "#FF5958"),
+        ("8–12%",  "#FF5C23"),
+        ("4–8%",   "#FEFF00"),
+        ("0–4%",   "#04FE00"),
+    ],
+    "Garmin": [
+        ("HC >12%", "#ED1B24"),
+        ("Cat1 9–12%", "#F36C72"),
+        ("Cat2 6–9%",  "#FBAD41"),
+        ("Cat3 3–6%",  "#F9EE44"),
+        ("Cat4 0–3%",  "#6EBE43"),
+    ],
+    "Garmin (readable)": [
+        ("HC >12%", "#FA5E60"),
+        ("Cat1 9–12%", "#F36C72"),
+        ("Cat2 6–9%",  "#FBAD41"),
+        ("Cat3 3–6%",  "#F9EE44"),
+        ("Cat4 0–3%",  "#6EBE43"),
+    ],
+    "Zwift": [
+        ("9%+",  "#EA5147"),
+        ("6–9%", "#FE8253"),
+        ("3–6%", "#F2C510"),
+        ("0–3%", "#39A7D6"),
+    ],
+    "Zwift (readable)": [
+        ("9%+",  "#EB6D66"),
+        ("6–9%", "#FE8253"),
+        ("3–6%", "#F2C510"),
+        ("0–3%", "#39A7D6"),
+    ],
+    "HSLuv": [
+        (">18%",   POWER_PALETTES["HSLuv"][6]),
+        ("15–18%", POWER_PALETTES["HSLuv"][5]),
+        ("12–15%", POWER_PALETTES["HSLuv"][4]),
+        ("9–12%",  POWER_PALETTES["HSLuv"][3]),
+        ("6–9%",   POWER_PALETTES["HSLuv"][2]),
+        ("3–6%",   POWER_PALETTES["HSLuv"][1]),
+        ("<3%",    POWER_PALETTES["HSLuv"][0]),
+    ],
+    "Turbo": [
+        ("15%+",     "#8E1201"),
+        ("12–15%",   "#BC2900"),
+        ("9–12%",    "#DD4700"),
+        ("6–9%",     "#FE932C"),
+        ("3–6%",     "#F1D749"),
+        ("0–3%",     "#B0F94D"),
+        ("-3–0%",    "#30F0A9"),
+        ("-6–-3%",   "#2BC7F0"),
+        ("-9–-6%",   "#5783E9"),
+        ("<-9%",     "#401C4C"),
+    ],
+}
+
+# Threshold gradient — reconstructs `thresholdBackgroundColor(factor, isNight)`
+# from FieldColors.kt:
+#   neutral = Black (night) | White (day)
+#   end     = RDYLGN_GREEN (#1A9850) if factor>=0 else RDYLGN_RED (#D73027)
+#   bg      = lerp(neutral, end, sqrt(|factor|))
+_RDYLGN_RED = "#D73027"
+_RDYLGN_GREEN = "#1A9850"
+
+
+def _hex_to_rgb(h: str) -> tuple[float, float, float]:
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4))  # type: ignore[return-value]
+
+
+def _rgb_to_hex(r: float, g: float, b: float) -> str:
+    return "#{:02X}{:02X}{:02X}".format(
+        max(0, min(255, round(r * 255))),
+        max(0, min(255, round(g * 255))),
+        max(0, min(255, round(b * 255))),
+    )
+
+
+def _lerp_hex(a_hex: str, b_hex: str, t: float) -> str:
+    a, b = _hex_to_rgb(a_hex), _hex_to_rgb(b_hex)
+    return _rgb_to_hex(*[a[i] + (b[i] - a[i]) * t for i in range(3)])
+
+
+def _threshold_bg(factor: float, is_night: bool) -> str:
+    neutral = BLACK if is_night else WHITE
+    end = _RDYLGN_GREEN if factor >= 0 else _RDYLGN_RED
+    return _lerp_hex(neutral, end, math.sqrt(abs(factor)))
+
+
+THRESHOLD_FACTORS = [i / 10 for i in range(-10, 11)]  # -1.0 .. +1.0 step 0.1
+THRESHOLD_PALETTES = {
+    "Threshold (dark neutral, factor -1.0 → +1.0)": [
+        (f"{f:+.1f}", _threshold_bg(f, is_night=True)) for f in THRESHOLD_FACTORS
+    ],
+    "Threshold (light neutral, factor -1.0 → +1.0)": [
+        (f"{f:+.1f}", _threshold_bg(f, is_night=False)) for f in THRESHOLD_FACTORS
+    ],
+}
+
+# Danger gradient samples — mirrors `dangerZoneColor` in FieldColors.kt.
+_DANGER_ORANGE = "#FFA726"
+
+
+def _danger_bg(outside: float, border: float, has_safe: bool) -> str:
+    if outside > 0:
+        return _lerp_hex(_DANGER_ORANGE, _RDYLGN_RED, math.sqrt(outside))
+    base = _RDYLGN_GREEN if has_safe else WHITE
+    return _lerp_hex(base, _DANGER_ORANGE, math.sqrt(border))
+
+
+DANGER_PALETTES = {
+    "DangerZone outside (0 → 1, ORANGE → RED)": [
+        (f"{t:.1f}", _danger_bg(outside=t, border=0.0, has_safe=True))
+        for t in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    ],
+    "DangerZone border (safe zone, 0 → 1, GREEN → ORANGE)": [
+        (f"{t:.1f}", _danger_bg(outside=0.0, border=t, has_safe=True))
+        for t in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    ],
+    "DangerZone border (one-sided, 0 → 1, WHITE → ORANGE)": [
+        (f"{t:.1f}", _danger_bg(outside=0.0, border=t, has_safe=False))
+        for t in [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    ],
+}
+
+# ---------------------------------------------------------------------------
+# SVG rendering
+# ---------------------------------------------------------------------------
+
+SWATCH_W = 130
+SWATCH_H = 80
+LABEL_GAP = 16
+ROW_GAP = 28
+SECTION_GAP = 36
+ROW_LABEL_W = 220
+H_MARGIN = 24
+V_MARGIN = 24
+TITLE_H = 28
+SECTION_HEADER_H = 24
+
+
+def _esc(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+    )
+
+
+def _swatch_svg(x: float, y: float, bg: str, col_label: str) -> str:
+    pick = best_text_on_background(bg)
+    lc = apca_contrast(pick, bg)
+    parts = [
+        f'<rect x="{x:.1f}" y="{y:.1f}" width="{SWATCH_W}" height="{SWATCH_H}" '
+        f'fill="{bg}" stroke="#444" stroke-width="0.5" />',
+        # Column label centered above swatch
+        f'<text x="{x + SWATCH_W / 2:.1f}" y="{y - 6:.1f}" '
+        f'font-family="-apple-system, system-ui, sans-serif" font-size="11" '
+        f'fill="#222" text-anchor="middle">{_esc(col_label)}</text>',
+        # Hex (top of cell)
+        f'<text x="{x + SWATCH_W / 2:.1f}" y="{y + SWATCH_H / 2 - 4:.1f}" '
+        f'font-family="-apple-system, system-ui, monospace" font-size="14" '
+        f'font-weight="600" fill="{pick}" text-anchor="middle">{bg.upper()}</text>',
+        # Lc (below hex)
+        f'<text x="{x + SWATCH_W / 2:.1f}" y="{y + SWATCH_H / 2 + 14:.1f}" '
+        f'font-family="-apple-system, system-ui, sans-serif" font-size="12" '
+        f'fill="{pick}" text-anchor="middle">Lc={lc:+.1f}</text>',
+    ]
+    return "\n".join(parts)
+
+
+def _row_svg(y: float, label: str, entries: list[tuple[str, str]]) -> str:
+    parts = [
+        f'<text x="{H_MARGIN}" y="{y + SWATCH_H / 2 + 4:.1f}" '
+        f'font-family="-apple-system, system-ui, sans-serif" font-size="13" '
+        f'font-weight="600" fill="#222">{_esc(label)}</text>',
+    ]
+    for i, (col_label, bg) in enumerate(entries):
+        x = H_MARGIN + ROW_LABEL_W + i * (SWATCH_W + LABEL_GAP)
+        parts.append(_swatch_svg(x, y, bg, col_label))
+    return "\n".join(parts)
+
+
+def _section_svg(y: float, title: str, rows: list[tuple[str, list[tuple[str, str]]]]) -> tuple[str, float]:
+    parts = [
+        f'<text x="{H_MARGIN}" y="{y + 16:.1f}" '
+        f'font-family="-apple-system, system-ui, sans-serif" font-size="16" '
+        f'font-weight="700" fill="#111">{_esc(title)}</text>',
+    ]
+    row_y = y + SECTION_HEADER_H + LABEL_GAP
+    for label, entries in rows:
+        parts.append(_row_svg(row_y, label, entries))
+        row_y += SWATCH_H + ROW_GAP
+    return "\n".join(parts), row_y
+
+
+def render_svg() -> str:
+    max_cols = max(
+        max((len(v) for v in POWER_PALETTES.values()), default=0),
+        max((len(v) for v in HR_PALETTES.values()), default=0),
+        max((len(v) for v in GRADE_PALETTES.values()), default=0),
+        max((len(v) for v in THRESHOLD_PALETTES.values()), default=0),
+        max((len(v) for v in DANGER_PALETTES.values()), default=0),
+    )
+    width = H_MARGIN * 2 + ROW_LABEL_W + max_cols * (SWATCH_W + LABEL_GAP) - LABEL_GAP
+
+    sections: list[tuple[str, list[tuple[str, list[tuple[str, str]]]]]] = [
+        ("Power zones",
+            [(name, list(zip(POWER_ZONE_LABELS, hexes))) for name, hexes in POWER_PALETTES.items()]),
+        ("HR zones",
+            [(name, list(zip(HR_ZONE_LABELS, hexes))) for name, hexes in HR_PALETTES.items()]),
+        ("Grade bands", list(GRADE_PALETTES.items())),
+        ("Threshold gradient", list(THRESHOLD_PALETTES.items())),
+        ("DangerZone gradient", list(DANGER_PALETTES.items())),
+    ]
+
+    parts: list[str] = []
+    y = V_MARGIN
+    parts.append(
+        f'<text x="{H_MARGIN}" y="{y + 20:.1f}" '
+        f'font-family="-apple-system, system-ui, sans-serif" font-size="20" '
+        f'font-weight="700" fill="#111">'
+        f'BACKGROUND-mode text picker: white vs black by max APCA |Lc|</text>'
+    )
+    parts.append(
+        f'<text x="{H_MARGIN}" y="{y + 40:.1f}" '
+        f'font-family="-apple-system, system-ui, sans-serif" font-size="12" '
+        f'fill="#444">Hex + Lc in each swatch is rendered with the picked text color. '
+        f'If text is hard to read, the rule failed.</text>'
+    )
+    y += TITLE_H + 28
+
+    for title, rows in sections:
+        section_svg, y = _section_svg(y, title, rows)
+        parts.append(section_svg)
+        y += SECTION_GAP
+
+    height = y + V_MARGIN
+    header = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{int(width)}" height="{int(height)}" '
+        f'viewBox="0 0 {int(width)} {int(height)}" '
+        f'style="background:#FAFAFA">'
+    )
+    return header + "\n" + "\n".join(parts) + "\n</svg>\n"
+
+
+def main() -> None:
+    out_dir = Path(__file__).parent / "output"
+    out_dir.mkdir(exist_ok=True)
+    out_path = out_dir / "bg_text_picks.svg"
+    out_path.write_text(render_svg(), encoding="utf-8")
+    print(f"wrote {out_path}")
+
+
+if __name__ == "__main__":
+    main()
