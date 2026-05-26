@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 
 class SparklineTapReceiver : BroadcastReceiver() {
     companion object {
@@ -27,8 +28,10 @@ class SparklineTapReceiver : BroadcastReceiver() {
         val job = Job()
         CoroutineScope(Dispatchers.IO + job).launch {
             try {
-                val cfg = context.streamSparklineConfig().first()
-                context.saveSparklineConfig(cfg.copy(lookaheadKm = next))
+                withTimeout(5_000L) {
+                    val cfg = context.streamSparklineConfig().first()
+                    context.saveSparklineConfig(cfg.copy(lookaheadKm = next))
+                }
             } finally {
                 result.finish()
                 job.cancel()
