@@ -1130,12 +1130,15 @@ private fun CollapsibleSection(
     }
 }
 
+private val FIELD_PREVIEW_WIDTH = 120.dp
+private val FIELD_PREVIEW_HEIGHT = 80.dp
+
 @Composable
 private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColorMode) {
     val context = LocalContext.current
     val densityValue = LocalDensity.current.density
-    val widthPx = (120.dp.value * densityValue).toInt()
-    val heightPx = (80.dp.value * densityValue).toInt()
+    val widthPx = (FIELD_PREVIEW_WIDTH.value * densityValue).toInt()
+    val heightPx = (FIELD_PREVIEW_HEIGHT.value * densityValue).toInt()
     val sizeConfig = remember(widthPx) {
         ViewSizeConfig.STANDARD.copy(
             cellWidthPxOverride = widthPx.toFloat(),
@@ -1164,7 +1167,7 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     Image(
         bitmap = bitmap.asImageBitmap(),
         contentDescription = null,
-        modifier = Modifier.width(120.dp).height(80.dp)
+        modifier = Modifier.width(FIELD_PREVIEW_WIDTH).height(FIELD_PREVIEW_HEIGHT)
             .clip(RoundedCornerShape(6.dp))
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
         contentScale = ContentScale.FillBounds,
