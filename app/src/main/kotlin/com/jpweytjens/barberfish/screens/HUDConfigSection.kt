@@ -377,10 +377,10 @@ private fun HUDPreview(
     ) {
         Row(Modifier.fillMaxSize()) {
             buildList {
-                add(Triple(0, current.leftSlot, current.leftColorMode))
-                add(Triple(1, current.middleSlot, current.middleColorMode))
-                add(Triple(2, current.rightSlot, current.rightColorMode))
-                if (hudConfig.columns == 4) add(Triple(3, current.fourthSlot, current.fourthColorMode))
+                add(Triple(0, current.left.field, current.left.colorMode))
+                add(Triple(1, current.middle.field, current.middle.colorMode))
+                add(Triple(2, current.right.field, current.right.colorMode))
+                if (hudConfig.columns == 4) add(Triple(3, current.fourth.field, current.fourth.colorMode))
             }.forEach { (idx, field, colorMode) ->
                 HUDPreviewCell(
                     field = field,

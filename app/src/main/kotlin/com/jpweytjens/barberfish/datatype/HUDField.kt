@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.HUD_UPDATE_INTERVAL_MS
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
@@ -167,12 +168,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     slotFlow(cfg.fourthSlot, zones, profile, context),
                 ) { left, middle, right, fourth ->
                     HUDState(
-                        cfg.columns,
-                        left, cfg.leftSlot.colorMode,
-                        middle, cfg.middleSlot.colorMode,
-                        right, cfg.rightSlot.colorMode,
-                        fourth, cfg.fourthSlot.colorMode,
-                        profile,
+                        columns = cfg.columns,
+                        left = SlotState(left, cfg.leftSlot.colorMode),
+                        middle = SlotState(middle, cfg.middleSlot.colorMode),
+                        right = SlotState(right, cfg.rightSlot.colorMode),
+                        fourth = SlotState(fourth, cfg.fourthSlot.colorMode),
+                        profile = profile,
                     )
                 }
             }
@@ -365,10 +366,10 @@ class HUDField(private val karooSystem: KarooSystemService) :
             return (0 until n).map { i ->
                 HUDState(
                     columns = hudConfig.columns,
-                    leftSlot = l[i],   leftColorMode = hudConfig.leftSlot.colorMode,
-                    middleSlot = m[i], middleColorMode = hudConfig.middleSlot.colorMode,
-                    rightSlot = r[i],  rightColorMode = hudConfig.rightSlot.colorMode,
-                    fourthSlot = f[i], fourthColorMode = hudConfig.fourthSlot.colorMode,
+                    left = SlotState(l[i], hudConfig.leftSlot.colorMode),
+                    middle = SlotState(m[i], hudConfig.middleSlot.colorMode),
+                    right = SlotState(r[i], hudConfig.rightSlot.colorMode),
+                    fourth = SlotState(f[i], hudConfig.fourthSlot.colorMode),
                     profile = profile,
                 )
             }
