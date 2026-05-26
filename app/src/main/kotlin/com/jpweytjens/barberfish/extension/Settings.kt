@@ -42,7 +42,9 @@ private suspend inline fun <reified T> Context.saveConfig(
 }
 
 private val sparklineConfigKey = stringPreferencesKey("sparkline_config")
-private val threeColumnConfigKey = stringPreferencesKey("three_column_config")
+// Persisted as "three_column_config" for backwards compatibility with installs from the
+// pre-4-column era; the HUDConfig blob covers both layouts now.
+private val hudConfigKey = stringPreferencesKey("three_column_config")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
 private val zoneConfigKey = stringPreferencesKey("zone_config")
@@ -162,10 +164,10 @@ data class HUDConfig(
 )
 
 fun Context.streamHUDConfig(): Flow<HUDConfig> =
-    streamConfig(threeColumnConfigKey, HUDConfig())
+    streamConfig(hudConfigKey, HUDConfig())
 
 suspend fun Context.saveHUDConfig(config: HUDConfig) =
-    saveConfig(threeColumnConfigKey, config)
+    saveConfig(hudConfigKey, config)
 
 // --- SparklineConfig (shared by HUD and standalone sparkline field) ---
 
@@ -175,7 +177,7 @@ fun Context.streamSparklineConfig(): Flow<SparklineConfig> =
             prefs[sparklineConfigKey]?.let {
                 runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
             }
-                ?: prefs[threeColumnConfigKey]?.let {
+                ?: prefs[hudConfigKey]?.let {
                     runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
                 }?.sparkline
                 ?: SparklineConfig()
