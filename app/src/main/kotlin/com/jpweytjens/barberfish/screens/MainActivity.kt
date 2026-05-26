@@ -144,6 +144,7 @@ import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
+import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
@@ -472,7 +473,7 @@ class MainActivity : ComponentActivity() {
                         title = "SPEED",
                         description = "Current speed",
                         previewFields = speedPreviewStates,
-                        colorMode = ZoneColorMode.NONE,
+                        colorMode = speedFieldConfig.colorMode,
                         selected = selectedDataField == "SPEED",
                         onSelect = { selectedDataField = if (selectedDataField == "SPEED") null else "SPEED" },
                     ) {
@@ -490,6 +491,21 @@ class MainActivity : ComponentActivity() {
                             onSelected = { stream ->
                                 speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
                                 lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                            },
+                        )
+                        ZoneColorSlider(
+                            selected = speedFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                speedFieldConfig = speedFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                            },
+                        )
+                        SpeedThresholdControls(
+                            config = speedFieldConfig,
+                            profile = userProfile,
+                            onConfigChange = { cfg ->
+                                speedFieldConfig = cfg
+                                lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
                             },
                         )
                     }
@@ -1487,6 +1503,112 @@ private fun NullableThresholdInput(
         keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+@Composable
+internal fun SpeedThresholdControls(
+    config: SpeedFieldConfig,
+    profile: UserProfile,
+    onConfigChange: (SpeedFieldConfig) -> Unit,
+) {
+    val sourceOptions =
+        listOf(
+            SpeedThresholdSource.FIXED to "Fixed",
+            SpeedThresholdSource.AVG_TOTAL to "Avg total",
+            SpeedThresholdSource.AVG_MOVING to "Avg moving",
+        )
+    Text(
+        "THRESHOLD SOURCE",
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        color = TextDark,
+    )
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(onConfigChange) {
+                    val slotWidthPx = size.width.toFloat() / sourceOptions.size
+                    fun idxAt(x: Float) =
+                        (x / slotWidthPx).toInt().coerceIn(0, sourceOptions.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onConfigChange(
+                            config.copy(source = sourceOptions[idxAt(down.position.x)].first)
+                        )
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onConfigChange(
+                                config.copy(source = sourceOptions[idxAt(change.position.x)].first)
+                            )
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        sourceOptions.forEach { (source, label) ->
+            val isSelected = config.source == source
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+    val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
+    if (config.source == SpeedThresholdSource.FIXED) {
+        Text(
+            "TARGET ($speedUnit)",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDark,
+        )
+        ThresholdInput(
+            value = config.thresholdKph,
+            profile = profile,
+            onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "UNDER (%)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+            )
+            RangeInput(
+                value = config.rangePercentBelow,
+                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+            )
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "OVER (%)",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+            )
+            RangeInput(
+                value = config.rangePercentAbove,
+                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+            )
+        }
+    }
 }
 
 @Composable
