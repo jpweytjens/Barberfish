@@ -389,7 +389,7 @@ private fun HUDPreview(
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
                     columns = hudConfig.columns,
-                    sparklineEnabled = sparklineConfig.enabled,
+                    reserveSparklineSpace = sparklineConfig.enabled,
                 )
             }
         }
@@ -419,7 +419,7 @@ private fun HUDPreviewCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     columns: Int = 3,
-    sparklineEnabled: Boolean = true,
+    reserveSparklineSpace: Boolean = true,
 ) {
     val context = LocalContext.current
     val baseConfig = if (columns == 4) ViewSizeConfig.PREVIEW_HUD_FOUR
@@ -442,7 +442,7 @@ private fun HUDPreviewCell(
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sparklineMarginPx = if (sparklineEnabled) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
+        val sparklineMarginPx = if (reserveSparklineSpace) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
             baseConfig.copy(
