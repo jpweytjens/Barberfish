@@ -108,22 +108,27 @@ Complete list of data fields provided by Barberfish, grouped by category.
 
 ### Power
 
-| Field              | Smoothing                                | Zone color |
-|--------------------|------------------------------------------|------------|
-| Power              | Instant / 3s / 5s / 10s / 30s / 20m / 1h | ✓          |
-| Avg Power          | —                                        | ✓          |
-| Lap Avg Power      | —                                        | ✓          |
-| Last Lap Avg Power | —                                        | ✓          |
-| NP                 | —                                        | ✓          |
+| Field              | Smoothing                                | Zone color           |
+|--------------------|------------------------------------------|----------------------|
+| Power              | Instant / 3s / 5s / 10s / 30s / 20m / 1h | ✓                    |
+| Avg Power          | —                                        | ✓                    |
+| Lap Avg Power      | —                                        | ✓                    |
+| Last Lap Avg Power | —                                        | ✓                    |
+| NP                 | —                                        | ✓                    |
+| Power Zone         | —                                        | ✓ (int/float toggle) |
+| Max Power          | —                                        | ✓                    |
 
 ### Heart Rate
 
-| Field           | Zone color |
-|-----------------|------------|
-| HR              | ✓          |
-| Avg HR          | ✓          |
-| Lap Avg HR      | ✓          |
-| Last Lap Avg HR | ✓          |
+| Field           | Zone color           |
+|-----------------|----------------------|
+| HR              | ✓                    |
+| Avg HR          | ✓                    |
+| Lap Avg HR      | ✓                    |
+| Last Lap Avg HR | ✓                    |
+| %Max HR         | ✓                    |
+| Max HR          | ✓                    |
+| HR Zone         | ✓ (int/float toggle) |
 
 ### Speed
 
