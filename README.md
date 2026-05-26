@@ -106,7 +106,7 @@ Complete list of data fields provided by Barberfish, grouped by category.
 
 | Field              | Smoothing               | Threshold |
 |--------------------|-------------------------|-----------|
-| Speed              | Instant / 3s / 5s / 10s | —         |
+| Speed              | Instant / 3s / 5s / 10s | ✓ (Fixed / Avg total / Avg moving) |
 | Avg Speed (Total)  | —                       | ✓         |
 | Avg Speed (Moving) | —                       | ✓         |
 
