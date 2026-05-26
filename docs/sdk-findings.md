@@ -118,12 +118,13 @@ elevation and grade are enough to characterise it:
 Output. Stored as percent in `[0.0, 100.0]` (matches the units table above), formatted to
 2 decimal places for display.
 
-Implication for Barberfish's `GradeField` EWMA. The SDK grade is filtered for sub-0.75 m
-altimeter noise but is not time-smoothed. Our EWMA is therefore smoothing the
-step-function character that the deadband produces when it accepts a step of 0.75 m or
-more, not raw altimeter noise. Useful when tuning the half-life: the input is piecewise
-constant with infrequent jumps, so a smoother that handles step responses gracefully is
-the right shape of tool.
+Implication for Barberfish's `GradeField`. The SDK grade is filtered for sub-0.75 m
+altimeter noise but is not time-smoothed. Barberfish fits an ordinary-least-squares line
+through the elevation samples over the most recent 30 m of travel and uses its slope as
+the gradient — so the smoothing operates on the step-function character that the
+deadband produces when it accepts a step of 0.75 m or more, not raw altimeter noise.
+The distance-based window keeps the output consistent regardless of speed and avoids
+smearing the gradient when stopped.
 
 ---
 
