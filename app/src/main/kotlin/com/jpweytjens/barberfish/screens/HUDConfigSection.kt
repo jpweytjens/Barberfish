@@ -683,7 +683,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
 
 @Composable
 private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
         selected = slot.speedSmoothing,
@@ -695,7 +695,7 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 
 @Composable
 private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = PowerSmoothingStream.entries,
         selected = slot.powerSmoothing,
@@ -708,7 +708,7 @@ private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 
 @Composable
 private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = CadenceSmoothingStream.entries,
         selected = slot.cadenceSmoothing,
@@ -744,7 +744,7 @@ internal fun SparklineCard(
                 .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            ControlLabel("SPARKLINE")
             if (everSelected) {
                 AnimatedVisibility(
                     visible = selected,
@@ -781,7 +781,7 @@ internal fun SparklineCard(
                     modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("LOOKAHEAD")
                     Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
                     SegmentedRow(
                         options = listOf(5, 10, 20).map { km ->
@@ -809,7 +809,7 @@ internal fun SparklineCard(
                             "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
                         else -> null
                     }
-                    Text("EMPHASIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("EMPHASIS")
                     Text(
                         "Filter out gentle grades so meaningful climbs and descents stand out.",
                         fontSize = 12.sp, color = TextDark,
@@ -834,35 +834,35 @@ internal fun SparklineCard(
                             onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
                         )
                     }
-                    Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("SIMPLIFICATION")
                     Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
                     SegmentedRow(
                         options = ElevationSimplification.entries.map { it to it.label },
                         selected = config.simplification,
                         onSelect = { onUpdate(config.copy(simplification = it)) },
                     )
-                    Text("X-WARP", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("X-WARP")
                     Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)
                     SegmentedRow(
                         options = SparklineWarp.entries.map { it to it.label },
                         selected = config.warp,
                         onSelect = { onUpdate(config.copy(warp = it)) },
                     )
-                    Text("Y-ZOOM", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("Y-ZOOM")
                     Text("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.", fontSize = 12.sp, color = TextDark)
                     SegmentedRow(
                         options = ElevationZoom.entries.map { it to it.label },
                         selected = config.yZoom,
                         onSelect = { onUpdate(config.copy(yZoom = it)) },
                     )
-                    Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("CLIMBS")
                     Text("Tint the outline blue on climbs as detected by Karoo Climber.", fontSize = 12.sp, color = TextDark)
                     SegmentedRow(
                         options = listOf(false to "Off", true to "On"),
                         selected = config.showClimbs,
                         onSelect = { onUpdate(config.copy(showClimbs = it)) },
                     )
-                    Text("POIs", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("POIs")
                     Text("Mark points of interest (POIs) along the sparkline.", fontSize = 12.sp, color = TextDark)
                     SegmentedRow(
                         options = listOf(false to "Off", true to "On"),

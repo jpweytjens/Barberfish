@@ -400,7 +400,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var selectedDataField by remember { mutableStateOf<String?>(null) }
 
-                    Text("POWER", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                    ControlLabel("POWER")
                     FieldCard(
                         title = "POWER",
                         description = "Current power output",
@@ -409,12 +409,7 @@ class MainActivity : ComponentActivity() {
                         selected = selectedDataField == "POWER",
                         onSelect = { selectedDataField = if (selectedDataField == "POWER") null else "POWER" },
                     ) {
-                        Text(
-                            "SMOOTHING",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark,
-                        )
+                        ControlLabel("SMOOTHING")
                         SmoothingSlider(
                             options = PowerSmoothingStream.entries,
                             selected = powerFieldConfig.smoothing,
@@ -543,7 +538,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    Text("SPEED", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
+                    ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "SPEED",
                         description = "Current speed",
@@ -552,12 +547,7 @@ class MainActivity : ComponentActivity() {
                         selected = selectedDataField == "SPEED",
                         onSelect = { selectedDataField = if (selectedDataField == "SPEED") null else "SPEED" },
                     ) {
-                        Text(
-                            "SMOOTHING",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark,
-                        )
+                        ControlLabel("SMOOTHING")
                         SmoothingSlider(
                             options = SpeedSmoothingStream.entries,
                             selected = speedFieldConfig.smoothing,
@@ -649,7 +639,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    Text("CADENCE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
+                    ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "CADENCE",
                         description = "Current cadence with threshold coloring.",
@@ -660,12 +650,7 @@ class MainActivity : ComponentActivity() {
                             selectedDataField = if (selectedDataField == "CADENCE") null else "CADENCE"
                         },
                     ) {
-                        Text(
-                            "SMOOTHING",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark,
-                        )
+                        ControlLabel("SMOOTHING")
                         SmoothingSlider(
                             options = CadenceSmoothingStream.entries,
                             selected = cadenceFieldConfig.smoothing,
@@ -692,7 +677,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    Text("HEART RATE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
+                    ControlLabel("HEART RATE", modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "HEART RATE",
                         description = "Current heart rate",
@@ -819,7 +804,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    Text("CLIMBING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark, modifier = Modifier.padding(top = 8.dp))
+                    ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "GRADE",
                         description = "Road gradient with color coding.",
@@ -958,6 +943,11 @@ class MainActivity : ComponentActivity() {
             }
         } // end Box
     }
+}
+
+@Composable
+internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
+    Text(text, modifier = modifier, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
 }
 
 @Composable
@@ -1201,7 +1191,7 @@ private fun FieldCard(
                 .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            ControlLabel(title)
             if (everSelected) {
                 AnimatedVisibility(
                     visible = selected,
@@ -1279,7 +1269,7 @@ private fun ThresholdLegend() {
 @Composable
 internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
     val options = ZoneColorMode.entries
-    Text("ZONE COLOR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("ZONE COLOR")
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -1331,7 +1321,7 @@ internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode
 @Composable
 internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) {
     val options = ZoneDisplayMode.entries
-    Text("ZONE DISPLAY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("ZONE DISPLAY")
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -1718,12 +1708,7 @@ internal fun SpeedThresholdControls(
             SpeedThresholdSource.AVG_TOTAL to "Avg total",
             SpeedThresholdSource.AVG_MOVING to "Avg moving",
         )
-    Text(
-        "THRESHOLD SOURCE",
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        color = TextDark,
-    )
+    ControlLabel("THRESHOLD SOURCE")
     Row(
         modifier =
             Modifier.fillMaxWidth()
@@ -1772,12 +1757,7 @@ internal fun SpeedThresholdControls(
     }
     val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
     if (config.source == SpeedThresholdSource.FIXED) {
-        Text(
-            "TARGET ($speedUnit)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        ControlLabel("TARGET ($speedUnit)")
         ThresholdInput(
             value = config.thresholdKph,
             profile = profile,
@@ -1786,24 +1766,14 @@ internal fun SpeedThresholdControls(
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                "UNDER (%)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextDark,
-            )
+            ControlLabel("UNDER (%)")
             RangeInput(
                 value = config.rangePercentBelow,
                 onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
             )
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                "OVER (%)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextDark,
-            )
+            ControlLabel("OVER (%)")
             RangeInput(
                 value = config.rangePercentAbove,
                 onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
@@ -1818,7 +1788,7 @@ internal fun AvgSpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
-    Text("THRESHOLD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("THRESHOLD")
     ThresholdLegend()
     val modeOptions =
         listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
@@ -1870,36 +1840,21 @@ internal fun AvgSpeedThresholdControls(
     }
     val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
     if (config.mode == ThresholdMode.TARGET) {
-        Text(
-            "TARGET ($speedUnit)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        ControlLabel("TARGET ($speedUnit)")
         ThresholdInput(
             value = config.thresholdKph,
             profile = profile,
             onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
         )
     } else {
-        Text(
-            "MIN SPEED ($speedUnit)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        ControlLabel("MIN SPEED ($speedUnit)")
         NullableThresholdInput(
             value = config.minKph,
             placeholder = "Min (${ConvertType.SPEED.unit(profile)})",
             profile = profile,
             onValueChange = { onConfigChange(config.copy(minKph = it)) },
         )
-        Text(
-            "MAX SPEED ($speedUnit)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        ControlLabel("MAX SPEED ($speedUnit)")
         NullableThresholdInput(
             value = config.maxKph,
             placeholder = "Max (${ConvertType.SPEED.unit(profile)})",
@@ -1909,24 +1864,14 @@ internal fun AvgSpeedThresholdControls(
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                "UNDER (%)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextDark,
-            )
+            ControlLabel("UNDER (%)")
             RangeInput(
                 value = config.rangePercentBelow,
                 onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
             )
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                "OVER (%)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextDark,
-            )
+            ControlLabel("OVER (%)")
             RangeInput(
                 value = config.rangePercentAbove,
                 onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
@@ -1940,7 +1885,7 @@ internal fun CadenceThresholdControls(
     config: CadenceThresholdConfig,
     onConfigChange: (CadenceThresholdConfig) -> Unit,
 ) {
-    Text("THRESHOLD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("THRESHOLD")
     ThresholdLegend()
     val modeOptions =
         listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
@@ -1991,34 +1936,19 @@ internal fun CadenceThresholdControls(
         }
     }
     if (config.mode == ThresholdMode.TARGET) {
-        Text(
-            "TARGET (RPM)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        ControlLabel("TARGET (RPM)")
         CadenceThresholdInput(
             value = config.thresholdRpm,
             onValueChange = { onConfigChange(config.copy(thresholdRpm = it)) },
         )
     } else {
-        Text(
-            "MIN CADENCE (RPM)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        ControlLabel("MIN CADENCE (RPM)")
         NullableCadenceThresholdInput(
             value = config.minRpm,
             placeholder = "Min (rpm)",
             onValueChange = { onConfigChange(config.copy(minRpm = it)) },
         )
-        Text(
-            "MAX CADENCE (RPM)",
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-        )
+        ControlLabel("MAX CADENCE (RPM)")
         NullableCadenceThresholdInput(
             value = config.maxRpm,
             placeholder = "Max (rpm)",
@@ -2027,24 +1957,14 @@ internal fun CadenceThresholdControls(
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                "UNDER (%)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextDark,
-            )
+            ControlLabel("UNDER (%)")
             RangeInput(
                 value = config.rangePercentBelow,
                 onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
             )
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                "OVER (%)",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextDark,
-            )
+            ControlLabel("OVER (%)")
             RangeInput(
                 value = config.rangePercentAbove,
                 onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
