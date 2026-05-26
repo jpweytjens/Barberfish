@@ -382,7 +382,6 @@ internal fun renderElevationSparkline(
     // Past markers use the past-outline grey to match the muting applied to the past
     // outline; ahead markers keep their bright fill so upcoming POIs stay legible.
     if (showPois && poiDistances.isNotEmpty()) {
-        val poiRadius = POI_RADIUS_PX
         val aheadFill = (if (isNightMode) SPARKLINE_POI_FILL_NIGHT else SPARKLINE_POI_FILL_DAY).toArgb()
         val aheadStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
         val pastFill = SPARKLINE_PAST_OUTLINE.toArgb()
@@ -395,11 +394,11 @@ internal fun renderElevationSparkline(
             val isPast = d < positionM
             paint.style = Paint.Style.FILL
             paint.color = if (isPast) pastFill else aheadFill
-            canvas.drawCircle(cx, cy, poiRadius, paint)
+            canvas.drawCircle(cx, cy, POI_RADIUS_PX, paint)
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = MARKER_STROKE_PX
             paint.color = if (isPast) pastStroke else aheadStroke
-            canvas.drawCircle(cx, cy, poiRadius, paint)
+            canvas.drawCircle(cx, cy, POI_RADIUS_PX, paint)
         }
     }
 
