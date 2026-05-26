@@ -1143,7 +1143,7 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     val densityValue = LocalDensity.current.density
     val widthPx = (120.dp.value * densityValue).toInt()
     val heightPx = (80.dp.value * densityValue).toInt()
-    val sizeConfig = remember {
+    val sizeConfig = remember(widthPx) {
         ViewSizeConfig.STANDARD.copy(
             cellWidthPxOverride = widthPx.toFloat(),
         )
@@ -1157,7 +1157,7 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
         }
     }
     val field = previewFields[index.coerceAtMost(previewFields.size - 1)]
-    val bitmap = remember(field, colorMode) {
+    val bitmap = remember(field, colorMode, widthPx, heightPx) {
         val rv = barberfishFieldRemoteViews(
             field = field,
             alignment = ViewConfig.Alignment.RIGHT,
