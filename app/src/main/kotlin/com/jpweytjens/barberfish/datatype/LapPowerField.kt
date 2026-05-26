@@ -31,10 +31,7 @@ class LapPowerField(
     private val isLastLap: Boolean,
 ) : BarberfishDataType("barberfish", if (isLastLap) "last-lap-power" else "lap-power") {
 
-    private val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
     private val sdkType = if (isLastLap) DataType.Type.AVERAGE_POWER_LAST_LAP else DataType.Type.POWER_LAP
-    private val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
-    private val secondaryIconRes = R.drawable.ic_avg_power
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         combine(
