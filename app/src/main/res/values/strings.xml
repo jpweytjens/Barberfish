@@ -55,6 +55,8 @@
     <string name="last_lap_avg_hr_description">Average heart rate from the previous lap with zone coloring</string>
     <string name="hr_percent_max_name">%Max HR</string>
     <string name="hr_percent_max_description">Current heart rate as a percentage of maximum HR, with zone coloring</string>
+    <string name="max_hr_name">Max HR</string>
+    <string name="max_hr_description">Maximum heart rate reached this ride, with zone coloring</string>
     <string name="time_lap_name">Lap Time</string>
     <string name="time_lap_description">Recording duration this lap</string>
     <string name="time_last_lap_name">Last Lap Time</string>

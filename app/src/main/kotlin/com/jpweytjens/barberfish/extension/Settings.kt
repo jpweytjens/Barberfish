@@ -236,6 +236,19 @@ fun Context.streamHRMaxPercentFieldConfig(): Flow<HRMaxPercentFieldConfig> =
 suspend fun Context.saveHRMaxPercentFieldConfig(config: HRMaxPercentFieldConfig) =
     saveConfig(hrMaxPercentFieldConfigKey, config)
 
+// --- MaxHRFieldConfig ---
+
+@Serializable
+data class MaxHRFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val maxHrFieldConfigKey = stringPreferencesKey("max_hr_field_config")
+
+fun Context.streamMaxHRFieldConfig(): Flow<MaxHRFieldConfig> =
+    streamConfig(maxHrFieldConfigKey, MaxHRFieldConfig())
+
+suspend fun Context.saveMaxHRFieldConfig(config: MaxHRFieldConfig) =
+    saveConfig(maxHrFieldConfigKey, config)
+
 // --- SpeedFieldConfig ---
 
 @Serializable
