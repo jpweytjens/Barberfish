@@ -34,28 +34,51 @@ All field settings are configured in the Barberfish app on your Karoo. Changes u
 
 ### Color palettes
 
-Zone colors from other platforms (Wahoo, Garmin, Zwift, Intervals.icu) are often too dark to read on the Karoo's dark background. Barberfish offers both the original colors and a "readable" variant adjusted using [APCA](https://apcacontrast.com/) contrast checking and [HSLuv](https://www.hsluv.org/) lightness correction to ensure readability. A custom HSLuv palette is included that needs no correction by design. See [color palettes](color-palettes.md) for more details..
+Every Barberfish field uses one of three color modes — Text, Fill, or None —
+configurable per field. Each mode handles contrast on the dark Karoo screen
+automatically:
+
+- Text mode draws the palette color as text on the dark datafield background.
+  Some brand palette colors (Wahoo navy Z2, Karoo Z6 red, Garmin HC red) are
+  hard to read raw. Barberfish ships a contrast-tuned variant of each palette,
+  with the [HSLuv](https://www.hsluv.org/) lightness raised until each color
+  meets the [APCA](https://apcacontrast.com/) Lc ≥ 45 threshold for large bold
+  text.
+- Fill mode paints the palette color across the cell and keeps the brand
+  colors intact. Text on top is auto-picked per cell (black or white,
+  whichever gives higher APCA contrast against that fill), so even dark
+  Turbo crimsons and bright Turbo yellows stay legible.
+
+HSLuv is a perceptually uniform palette designed to be readable in both
+modes without correction. Turbo is a symmetric scientific colormap that
+colors both climbs and descents. See [color palettes](docs/color-palettes.md)
+for the full reference.
 
 ### Zone color palettes
 
-| Palette       | Power zones (Z1 – Z7) Original  | Power zones (Z1 – Z7) Readable           | HR zones (Z1 – Z5) Original        | HR zones (Z1 – Z5) Readable                 |
+The Fill mode column shows the brand colors used when a field paints the cell;
+the Text mode column shows the contrast-tuned variant used automatically when
+the field renders the palette color as text on the dark Karoo background.
+HSLuv has a single variant — readable in both modes by construction.
+
+| Palette       | Power Fill mode                 | Power Text mode                          | HR Fill mode                       | HR Text mode                                |
 | ------------- | ------------------------------- | ---------------------------------------- | ---------------------------------- | ------------------------------------------- |
 | Karoo         | ![](docs/palette-karoo.svg)     | ![](docs/palette-karoo-readable.svg)     | ![](docs/palette-karoo-hr.svg)     | ![](docs/palette-karoo-hr-readable.svg)     |
 | Wahoo         | ![](docs/palette-wahoo.svg)     | ![](docs/palette-wahoo-readable.svg)     | ![](docs/palette-wahoo-hr.svg)     | ![](docs/palette-wahoo-hr-readable.svg)     |
 | Zwift         | ![](docs/palette-zwift.svg)     | ![](docs/palette-zwift-readable.svg)     | ![](docs/palette-zwift-hr.svg)     | ![](docs/palette-zwift-hr-readable.svg)     |
 | Intervals.icu | ![](docs/palette-intervals.svg) | ![](docs/palette-intervals-readable.svg) | ![](docs/palette-intervals-hr.svg) | ![](docs/palette-intervals-hr-readable.svg) |
-| HSLuv         |                                 | ![](docs/palette-hsluv.svg)              |                                    | ![](docs/palette-hsluv-hr.svg)              |
+| HSLuv         | ![](docs/palette-hsluv.svg)     | ![](docs/palette-hsluv.svg)              | ![](docs/palette-hsluv-hr.svg)     | ![](docs/palette-hsluv-hr.svg)              |
 
 ### Grade color palettes 
 
-| Palette | Bands (%, flat → steep)                                                                  | Original                           | Readable                                    |
+| Palette | Bands (%, flat → steep)                                                                  | Fill mode                          | Text mode                                   |
 | ------- | ---------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------------------- |
 | Karoo   | [0, 5) · [5, 8) · [8, 13) · [13, 16) · [16, 20) · [20, 24) · [24, ∞)                     | ![](docs/palette-grade-karoo.svg)  | ![](docs/palette-grade-karoo-readable.svg)  |
 | Wahoo   | [0, 4) · [4, 8) · [8, 12) · [12, 20) · [20, ∞)                                           | ![](docs/palette-grade-wahoo.svg)  | ![](docs/palette-grade-wahoo-readable.svg)  |
 | Garmin  | [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, ∞)                                             | ![](docs/palette-grade-garmin.svg) | ![](docs/palette-grade-garmin-readable.svg) |
 | Zwift   | [0, 3) · [3, 6) · [6, 9) · [9, ∞)                                                        | ![](docs/palette-grade-zwift.svg)  | ![](docs/palette-grade-zwift-readable.svg)  |
-| HSLuv   | [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, 18) · [18, ∞)                       |                                    | ![](docs/palette-grade-hsluv.svg)           |
-| Turbo   | (-∞, -9) · [-9, -6) · [-6, -3) · [-3, 0) · [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, ∞) |                                    | ![](docs/palette-grade-turbo.svg)           |
+| HSLuv   | [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, 18) · [18, ∞)                       | ![](docs/palette-grade-hsluv.svg)  | ![](docs/palette-grade-hsluv.svg)           |
+| Turbo   | (-∞, -9) · [-9, -6) · [-6, -3) · [-3, 0) · [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, ∞) | ![](docs/palette-grade-turbo.svg)  | ![](docs/palette-grade-turbo.svg)           |
 
 ### Elevation sparkline
 
