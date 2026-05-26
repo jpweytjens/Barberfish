@@ -45,6 +45,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -97,6 +98,7 @@ import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
+import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -213,7 +215,11 @@ class MainActivity : ComponentActivity() {
                     android.text.Spannable.SPAN_INCLUSIVE_INCLUSIVE,
                 )
             }
-        setContent { MaterialTheme { ConfigScreen() } }
+        setContent {
+            MaterialTheme(
+                colorScheme = lightColorScheme(primary = OceanBlue, onPrimary = Color.White),
+            ) { ConfigScreen() }
+        }
     }
 
     override fun onDestroy() {
