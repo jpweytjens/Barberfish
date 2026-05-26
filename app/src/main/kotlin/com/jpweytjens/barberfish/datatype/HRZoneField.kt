@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.MAX_HR_ZONES
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
@@ -43,7 +44,7 @@ class HRZoneField(private val karooSystem: KarooSystemService) :
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.HR_ZONE]
                     ?: return FieldState.notAvailable(LABEL, iconRes)
-            val zoneInt = raw.toInt().coerceIn(1, 5)
+            val zoneInt = raw.toInt().coerceIn(1, MAX_HR_ZONES)
             val value = when (displayMode) {
                 ZoneDisplayMode.INTEGER -> zoneInt.toString()
                 ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
@@ -64,7 +65,7 @@ class HRZoneField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
         ): List<FieldState> =
             listOf(1.2, 2.5, 3.4, 3.8, 4.2, 4.7, 5.0).map { raw ->
-                val zoneInt = raw.toInt().coerceIn(1, 5)
+                val zoneInt = raw.toInt().coerceIn(1, MAX_HR_ZONES)
                 val value = when (cfg.zoneDisplayMode) {
                     ZoneDisplayMode.INTEGER -> zoneInt.toString()
                     ZoneDisplayMode.FLOAT -> "%.1f".format(raw)

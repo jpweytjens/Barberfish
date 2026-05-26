@@ -51,6 +51,9 @@ internal fun bestTextOnBackground(
     return if (abs(apcaContrast(a, bg)) >= abs(apcaContrast(b, bg))) a else b
 }
 
+internal const val MAX_POWER_ZONES = 7
+internal const val MAX_HR_ZONES = 5
+
 // Karoo power zones (7 zones, low to high)
 internal val karooPowerColors =
     listOf(
