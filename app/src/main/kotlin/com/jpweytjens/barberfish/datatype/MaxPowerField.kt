@@ -41,8 +41,8 @@ class MaxPowerField(private val karooSystem: KarooSystemService) :
             state.toErrorFieldState(LABEL, iconRes)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.MAX_POWER]
-                    ?: return FieldState.unavailable(LABEL, iconRes)
-            if (raw <= 0.0) return FieldState.unavailable(LABEL, iconRes)
+                    ?: return FieldState.notAvailable(LABEL, iconRes)
+            if (raw <= 0.0) return FieldState.notAvailable(LABEL, iconRes)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(

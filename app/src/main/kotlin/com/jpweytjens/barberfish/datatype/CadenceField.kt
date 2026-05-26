@@ -106,7 +106,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             state.toErrorFieldState(label, R.drawable.ic_cadence)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
-                    ?: return FieldState.unavailable(label, R.drawable.ic_cadence)
+                    ?: return FieldState.notAvailable(label, R.drawable.ic_cadence)
             return FieldState(
                 raw.toInt().toString(),
                 label = label,

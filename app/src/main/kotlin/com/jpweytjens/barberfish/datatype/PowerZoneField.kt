@@ -42,7 +42,7 @@ class PowerZoneField(private val karooSystem: KarooSystemService) :
             state.toErrorFieldState(LABEL, iconRes)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.POWER_ZONE]
-                    ?: return FieldState.unavailable(LABEL, iconRes)
+                    ?: return FieldState.notAvailable(LABEL, iconRes)
             val zoneInt = raw.toInt().coerceIn(1, 7)
             val value = when (displayMode) {
                 ZoneDisplayMode.INTEGER -> zoneInt.toString()

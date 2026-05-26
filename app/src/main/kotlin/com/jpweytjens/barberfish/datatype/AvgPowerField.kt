@@ -64,7 +64,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             state.toErrorFieldState("Avg Power", R.drawable.ic_avg_power)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
-                    ?: return FieldState.unavailable("Avg Power", R.drawable.ic_avg_power)
+                    ?: return FieldState.notAvailable("Avg Power", R.drawable.ic_avg_power)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(

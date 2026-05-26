@@ -14,9 +14,6 @@ data class FieldState(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
-        fun unavailable(label: String, iconRes: Int? = null) =
-            FieldState("Not available", label, FieldColor.StreamState, iconRes = iconRes)
-
         fun searching(label: String = "", iconRes: Int? = null) =
             FieldState("Searching...", label, FieldColor.StreamState, iconRes = iconRes)
 

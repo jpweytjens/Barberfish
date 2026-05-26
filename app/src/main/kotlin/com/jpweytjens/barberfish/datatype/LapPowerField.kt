@@ -78,7 +78,7 @@ class LapPowerField(
             state.toErrorFieldState(label, iconRes)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
-                    ?: return FieldState.unavailable(label, iconRes)
+                    ?: return FieldState.notAvailable(label, iconRes)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(
