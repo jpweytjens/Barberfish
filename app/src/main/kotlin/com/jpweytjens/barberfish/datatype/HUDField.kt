@@ -61,6 +61,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
+// Fixed-height overlay strip inside a HUD slot. Independent of cell size — the HUD
+// design budgets 34dp of vertical space for the sparkline regardless of slot height.
+private const val HUD_SPARKLINE_HEIGHT_DP = 34f
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class HUDField(private val karooSystem: KarooSystemService) :
     HUDDataType("barberfish", "three-column") {
@@ -80,7 +84,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
         scope.launch {
             val hudStateFlow = if (config.preview) previewFlow(context) else liveFlow(context)
             val dm = context.resources.displayMetrics
-            val sparklineHeightPx = (34f * dm.density).toInt()
+            val sparklineHeightPx = (HUD_SPARKLINE_HEIGHT_DP * dm.density).toInt()
             val sparklineFlow = sparklineBitmapFlow(
                 karooSystem, context,
                 widthPx = dm.widthPixels,

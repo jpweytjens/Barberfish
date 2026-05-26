@@ -14,13 +14,18 @@ import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+// Standalone sparkline cell height as a fraction of screen height. Approximates a
+// typical 3-row data cell; the SDK doesn't surface the actual cell height through
+// this code path, so this is a best-guess default rather than a precise fit.
+private const val STANDALONE_HEIGHT_FRACTION = 0.25f
+
 class ElevationSparklineField(private val karooSystem: KarooSystemService) :
     BarberfishBase<Bitmap?>("barberfish", "elevation-sparkline") {
 
     private fun bitmapFlow(context: Context, isPreview: Boolean): Flow<Bitmap?> {
         val dm = context.resources.displayMetrics
         val widthPx = dm.widthPixels
-        val heightPx = (dm.heightPixels * 0.25f).toInt() // reasonable default for full-width cell
+        val heightPx = (dm.heightPixels * STANDALONE_HEIGHT_FRACTION).toInt()
         return sparklineBitmapFlow(karooSystem, context, widthPx, heightPx, isPreview)
             .map { it.bitmap }
     }
