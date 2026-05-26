@@ -53,7 +53,7 @@ fun ViewConfig.toViewSizeConfig(
     }
     val headerMinHeightDp = maxOf(26, labelBandDp.toInt())
     val valueFontBase = textSizeEff.coerceAtLeast(20)
-    val valueBitmapHeightDp = (0.74f * valueFontBase).toInt().coerceAtLeast(16)
+    val valueBitmapHeightDp = (VALUE_BITMAP_HEIGHT_RATIO * valueFontBase).toInt().coerceAtLeast(16)
     // Mirrors native's DataElementConstraints.dataTranslationY. Applied
     // via XML-baked android:translationY (see BarberfishView.layoutRes).
     val valueTranslationDp = when {
