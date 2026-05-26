@@ -95,6 +95,12 @@ import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
 
+// Vertical space reserved inside each HUD preview cell for the sparkline strip below.
+// Matches HUD_SPARKLINE_HEIGHT_DP in HUDField (the live overlay strip). The strip itself
+// here is rendered at 30.dp — the 4dp difference is an unresolved cosmetic mismatch
+// (see audit #24); the reservation matches the live experience so cells size correctly.
+private const val HUD_SPARKLINE_CELL_RESERVATION_DP = 34f
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HUDConfigSection(
@@ -433,7 +439,7 @@ private fun HUDPreviewCell(
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sparklineMarginPx = if (sparklineEnabled) 34f * density else 0f
+        val sparklineMarginPx = if (sparklineEnabled) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
             baseConfig.copy(
