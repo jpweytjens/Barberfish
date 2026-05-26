@@ -87,7 +87,9 @@ class ETAField(
             }
 
             return rawFlow
-                .runningFold(initETAState(prior) to null as RawETA?) { (state, _), raw ->
+                .runningFold(
+                    Triple(initETAState(prior), null as ETAInput?, null as RawETA?)
+                ) { (state, _, _), raw ->
                     val input = ETAInput(
                         distanceRiddenM = raw.distRiddenM,
                         elapsedTimeMs = raw.elapsedMs,
@@ -95,20 +97,12 @@ class ETAField(
                         pausedTimeMs = raw.pausedMs,
                         prior = prior,
                     )
-                    updateETAState(input, state) to raw
+                    Triple(updateETAState(input, state), input, raw)
                 }
-                .map { (state, raw) ->
-                    if (raw == null || raw.distToDestM == null) {
+                .map { (state, input, raw) ->
+                    if (raw == null || raw.distToDestM == null || input == null) {
                         return@map FieldState.notAvailable(kind.label, kind.iconRes)
                     }
-
-                    val input = ETAInput(
-                        distanceRiddenM = raw.distRiddenM,
-                        elapsedTimeMs = raw.elapsedMs,
-                        distanceToDestM = raw.distToDestM,
-                        pausedTimeMs = raw.pausedMs,
-                        prior = prior,
-                    )
 
                     val ridingEtaSec = computeRidingETA(input, state)
                     if (ridingEtaSec < 0) {
