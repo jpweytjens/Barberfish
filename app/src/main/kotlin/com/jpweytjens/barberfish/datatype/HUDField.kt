@@ -9,8 +9,9 @@ import android.view.View
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.HUD_UPDATE_INTERVAL_MS
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
@@ -98,7 +99,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 }
             transitionFlow.flatMapLatest { transitionKm ->
                 combine(
-                    hudStateFlow.sample(1000L),
+                    hudStateFlow.sample(HUD_UPDATE_INTERVAL_MS),
                     sparklineFlow,
                 ) { hudState, frame ->
                     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES

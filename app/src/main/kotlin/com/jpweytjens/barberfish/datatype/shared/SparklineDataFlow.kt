@@ -63,12 +63,12 @@ internal fun sparklineBitmapFlow(
     return rideStateFlow.flatMapLatest { rideState ->
         val debugSweep = (BuildConfig.DEBUG && rideState !is RideState.Recording) || isPreview
         val distFlow: Flow<StreamState> = if (debugSweep)
-            flow { while (true) { emit(StreamState.NotAvailable); delay(1000L) } }
+            flow { while (true) { emit(StreamState.NotAvailable); delay(HUD_UPDATE_INTERVAL_MS) } }
         else
-            karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).sample(1000L)
+            karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).sample(HUD_UPDATE_INTERVAL_MS)
 
         combine(
-            karooSystem.streamNavigationState().sample(1000L),
+            karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
             distFlow,
             context.streamZoneConfig(),
             context.streamSparklineConfig(),
