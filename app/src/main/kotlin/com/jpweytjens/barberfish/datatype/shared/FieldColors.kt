@@ -251,6 +251,7 @@ data class ColorConfig(
 
 // Error and Muted never fill the cell background — colored text is enough.
 // FieldColor.Threshold is handled separately in toColorConfig (mode-aware neutral).
+// Fills use the brand palette; the APCA picker in toColorConfig handles text contrast.
 internal fun FieldColor.toBackgroundColor(): Color? =
     when (this) {
         is FieldColor.Default,
@@ -261,10 +262,13 @@ internal fun FieldColor.toBackgroundColor(): Color? =
         is FieldColor.DangerZone ->
             dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
-            if (isHr) hrZoneColor(zone, palette, readable) else powerZoneColor(zone, palette, readable)
-        is FieldColor.Grade -> gradeColor(percent, palette, readable)
+            if (isHr) hrZoneColor(zone, palette, readable = false)
+            else powerZoneColor(zone, palette, readable = false)
+        is FieldColor.Grade -> gradeColor(percent, palette, readable = false)
     }
 
+// Text mode draws the palette color on the dark datafield bg, so use the
+// contrast-tuned (HSLuv-corrected) variant of each palette.
 internal fun FieldColor.toColor(): Color? =
     when (this) {
         is FieldColor.Default -> null
@@ -274,8 +278,9 @@ internal fun FieldColor.toColor(): Color? =
         is FieldColor.Threshold -> null
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
-            if (isHr) hrZoneColor(zone, palette, readable) else powerZoneColor(zone, palette, readable)
-        is FieldColor.Grade -> gradeColor(percent, palette, readable)
+            if (isHr) hrZoneColor(zone, palette, readable = true)
+            else powerZoneColor(zone, palette, readable = true)
+        is FieldColor.Grade -> gradeColor(percent, palette, readable = true)
     }
 
 internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boolean): ColorConfig {

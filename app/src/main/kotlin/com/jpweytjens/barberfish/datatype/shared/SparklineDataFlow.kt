@@ -146,7 +146,8 @@ internal fun sparklineBitmapFlow(
                     heightPx = heightPx,
                     density = context.resources.displayMetrics.density,
                     palette = zoneConfig.gradePalette,
-                    readable = zoneConfig.readableColors,
+                    // Sparkline always renders as a fill; use brand colors.
+                    readable = false,
                     lookaheadM = sparkCfg.lookaheadKm * 1000f,
                     skipBands = sparkCfg.skipBands,
                     skipBandsDescent = sparkCfg.skipBandsDescent,

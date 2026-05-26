@@ -40,7 +40,6 @@ class GradeField(private val karooSystem: KarooSystemService) :
                             reading,
                             cfg,
                             zones.gradePalette,
-                            zones.readableColors,
                         )
                     }
             }
@@ -95,7 +94,6 @@ class GradeField(private val karooSystem: KarooSystemService) :
                     GradeReading.Fresh(percent.toFloat()),
                     cfg,
                     zones.gradePalette,
-                    zones.readableColors,
                 )
             }
 
@@ -103,7 +101,6 @@ class GradeField(private val karooSystem: KarooSystemService) :
             reading: GradeReading,
             cfg: GradeFieldConfig,
             palette: GradePalette,
-            readable: Boolean = true,
         ): FieldState =
             when (reading) {
                 is GradeReading.Unavailable ->
@@ -118,7 +115,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 is GradeReading.Fresh -> {
                     val color =
                         if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
-                        else FieldColor.Grade(reading.percent.toDouble(), palette, readable)
+                        else FieldColor.Grade(reading.percent.toDouble(), palette)
                     FieldState(
                         "%.1f%%".format(reading.percent.toDouble()),
                         label = "Grade",
