@@ -12,6 +12,7 @@ import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -102,8 +103,9 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode = ZoneColorMode.TEXT,
         ): FieldState {
             val label = cadenceLabel(smoothing)
+            state.toErrorFieldState(label, R.drawable.ic_cadence)?.let { return it }
             val raw =
-                (state as? StreamState.Streaming)?.dataPoint?.values?.get(smoothing.fieldId)
+                (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
                     ?: return FieldState.unavailable(label, R.drawable.ic_cadence)
             return FieldState(
                 raw.toInt().toString(),
