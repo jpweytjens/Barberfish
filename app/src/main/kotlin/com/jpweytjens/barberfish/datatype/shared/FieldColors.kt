@@ -22,7 +22,7 @@ internal val TextDark      = Color(0xFF1B2D2D)
 internal val LemonYellow   = Color(0xFFFFE900)
 internal val BackButtonTint = Color(0xFFA0B4BE)
 
-// RdYlGn color map (single threshold) — neutral center is white
+// RdYlGn color map (single threshold) — neutral center is mode-aware (see thresholdColorConfig)
 internal val RDYLGN_RED = Color(0xFFD73027)
 internal val RDYLGN_GREEN = Color(0xFF1A9850)
 
@@ -30,10 +30,47 @@ internal val RDYLGN_GREEN = Color(0xFF1A9850)
 internal val DANGER_ORANGE = Color(0xFFFFA726)
 
 // sqrt curve pushes color out quickly: at 10% of range, ~31% saturation; at 1%, ~10%
-// factor: -1.0 = fully red, 0.0 = white (at threshold), +1.0 = fully green
-private fun thresholdColor(factor: Float): Color =
-    if (factor >= 0f) lerp(Color.White, RDYLGN_GREEN, sqrt(factor))
-    else lerp(Color.White, RDYLGN_RED, sqrt(-factor))
+// Text neutral matches the default text color so "at threshold" looks like a default cell.
+private fun thresholdTextColor(factor: Float, isNightMode: Boolean): Color {
+    val neutral = if (isNightMode) Color.White else Color.Black
+    return if (factor >= 0f) lerp(neutral, RDYLGN_GREEN, sqrt(factor))
+    else lerp(neutral, RDYLGN_RED, sqrt(-factor))
+}
+
+// Background neutral matches the Karoo cell color so "at threshold" blends into neighbors.
+private fun thresholdBackgroundColor(factor: Float, isNightMode: Boolean): Color {
+    val neutral = if (isNightMode) Color.Black else Color.White
+    return if (factor >= 0f) lerp(neutral, RDYLGN_GREEN, sqrt(factor))
+    else lerp(neutral, RDYLGN_RED, sqrt(-factor))
+}
+
+private fun thresholdColorConfig(
+    factor: Float,
+    colorMode: ZoneColorMode,
+    isNightMode: Boolean,
+): ColorConfig {
+    val defaultText = if (isNightMode) Color.White else Color.Black
+    return when (colorMode) {
+        ZoneColorMode.BACKGROUND -> ColorConfig(
+            valueText = defaultText,
+            headerText = defaultText,
+            iconTint = defaultText,
+            background = thresholdBackgroundColor(factor, isNightMode),
+        )
+        ZoneColorMode.TEXT -> ColorConfig(
+            valueText = thresholdTextColor(factor, isNightMode),
+            headerText = defaultText,
+            iconTint = ICON_TINT_TEAL,
+            background = null,
+        )
+        ZoneColorMode.NONE -> ColorConfig(
+            valueText = defaultText,
+            headerText = defaultText,
+            iconTint = ICON_TINT_TEAL,
+            background = null,
+        )
+    }
+}
 
 // outsideFactor > 0: ORANGE → RED (outside boundary)
 // outsideFactor == 0, hasSafeZone: GREEN → ORANGE (inside, approaching boundary)
@@ -209,13 +246,14 @@ data class ColorConfig(
 )
 
 // Error and Muted never fill the cell background — colored text is enough.
+// FieldColor.Threshold is handled separately in toColorConfig (mode-aware neutral).
 internal fun FieldColor.toBackgroundColor(): Color? =
     when (this) {
         is FieldColor.Default,
         is FieldColor.Error,
         is FieldColor.Muted,
-        is FieldColor.StreamState -> null
-        is FieldColor.Threshold -> thresholdColor(factor)
+        is FieldColor.StreamState,
+        is FieldColor.Threshold -> null
         is FieldColor.DangerZone ->
             dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
@@ -229,7 +267,7 @@ internal fun FieldColor.toColor(): Color? =
         is FieldColor.Error -> ERROR_RED
         is FieldColor.Muted -> Grey500
         is FieldColor.StreamState -> null
-        is FieldColor.Threshold -> thresholdColor(factor)
+        is FieldColor.Threshold -> null
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
             if (isHr) hrZoneColor(zone, palette, readable) else powerZoneColor(zone, palette, readable)
@@ -237,6 +275,7 @@ internal fun FieldColor.toColor(): Color? =
     }
 
 internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boolean): ColorConfig {
+    if (this is FieldColor.Threshold) return thresholdColorConfig(factor, colorMode, isNightMode)
     val defaultText = if (isNightMode) Color.White else Color.Black
     val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColor() else null
     val onBg = bg != null

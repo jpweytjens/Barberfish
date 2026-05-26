@@ -44,7 +44,9 @@ sealed interface FieldColor {
         val readable: Boolean = true,
     ) : FieldColor
 
-    // factor: -1.0 (fully red) to 0.0 (yellow, at threshold) to +1.0 (fully green) — RdYlGn map
+    // factor: -1.0 (fully red) to 0.0 (neutral, at threshold) to +1.0 (fully green) — RdYlGn map.
+    // The neutral at factor=0 is mode-aware (see thresholdColorConfig in FieldColors.kt):
+    // text mode blends into the default text color; background mode blends into the cell.
     data class Threshold(val factor: Float) : FieldColor
 
     // outsideFactor: 0→1, how far outside a boundary (0 = at/inside boundary, 1 = far outside)
