@@ -78,11 +78,21 @@ sealed interface HUDSlotField {
 
     @Serializable data object LastLapPower : HUDSlotField
 
+    @Serializable data object PowerZone : HUDSlotField
+
+    @Serializable data object MaxPower : HUDSlotField
+
     @Serializable data object AvgHR : HUDSlotField
 
     @Serializable data object LapAvgHR : HUDSlotField
 
     @Serializable data object LastLapAvgHR : HUDSlotField
+
+    @Serializable data object HRMaxPercent : HUDSlotField
+
+    @Serializable data object MaxHR : HUDSlotField
+
+    @Serializable data object HRZone : HUDSlotField
 
     @Serializable data object Grade : HUDSlotField
 
@@ -102,6 +112,7 @@ data class HUDSlotConfig(
     val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
     val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
 )
 
 @Serializable

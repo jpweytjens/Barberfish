@@ -17,12 +17,17 @@ import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldConfig
+import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
+import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
+import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
+import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
+import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -225,6 +230,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 ) { state, lapState ->
                     LapPowerField.toFieldState(state, profile, zones, slot.colorMode, isLastLap = true, lapNumber = lapNumberFrom(lapState))
                 }
+            HUDSlotField.PowerZone ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.POWER_ZONE)
+                    .map { PowerZoneField.toFieldState(it, profile, zones, slot.colorMode, slot.zoneDisplayMode) }
+            HUDSlotField.MaxPower ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.MAX_POWER)
+                    .map { MaxPowerField.toFieldState(it, profile, zones, slot.colorMode) }
             HUDSlotField.AvgHR ->
                 karooSystem
                     .streamDataFlow(DataType.Type.AVERAGE_HR)
@@ -244,6 +257,21 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         isLastLap = true, lapNumber = lapNumberFrom(lapState),
                     )
                 }
+            HUDSlotField.HRMaxPercent ->
+                combine(
+                    karooSystem.streamDataFlow(DataType.Type.PERCENT_MAX_HR),
+                    karooSystem.streamDataFlow(DataType.Type.HEART_RATE),
+                ) { percentState, hrState ->
+                    HRMaxPercentField.toFieldState(percentState, hrState, profile, zones, slot.colorMode)
+                }
+            HUDSlotField.MaxHR ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.MAX_HR)
+                    .map { MaxHRField.toFieldState(it, profile, zones, slot.colorMode) }
+            HUDSlotField.HRZone ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.HR_ZONE)
+                    .map { HRZoneField.toFieldState(it, profile, zones, slot.colorMode, slot.zoneDisplayMode) }
             HUDSlotField.Grade ->
                 GradeField.gradeOlsFlow(karooSystem)
                     .map { GradeField.toGradeFieldState(it, GradeFieldConfig(slot.colorMode), zones.gradePalette) }
@@ -300,12 +328,22 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     LapPowerField.previewStates(LapPowerFieldConfig(slotCfg.colorMode), profile, zones, isLastLap = false)
                 HUDSlotField.LastLapPower ->
                     LapPowerField.previewStates(LapPowerFieldConfig(slotCfg.colorMode), profile, zones, isLastLap = true)
+                HUDSlotField.PowerZone ->
+                    PowerZoneField.previewStates(PowerZoneFieldConfig(slotCfg.colorMode, slotCfg.zoneDisplayMode), profile, zones)
+                HUDSlotField.MaxPower ->
+                    MaxPowerField.previewStates(MaxPowerFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.AvgHR ->
                     AvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.LapAvgHR ->
                     LapAvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.LastLapAvgHR ->
                     LastLapAvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.HRMaxPercent ->
+                    HRMaxPercentField.previewStates(HRMaxPercentFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.MaxHR ->
+                    MaxHRField.previewStates(MaxHRFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.HRZone ->
+                    HRZoneField.previewStates(HRZoneFieldConfig(slotCfg.colorMode, slotCfg.zoneDisplayMode), profile, zones)
                 HUDSlotField.Grade ->
                     GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
                 is HUDSlotField.Time ->

@@ -83,6 +83,7 @@ import com.jpweytjens.barberfish.extension.ElevationZoom
 import com.jpweytjens.barberfish.extension.SparklineWarp
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
@@ -530,10 +531,15 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.NP -> {}
                 HUDSlotField.LapPower -> {}
                 HUDSlotField.LastLapPower -> {}
+                HUDSlotField.PowerZone -> {}
+                HUDSlotField.MaxPower -> {}
                 HUDSlotField.HR -> {}
                 HUDSlotField.AvgHR -> {}
                 HUDSlotField.LapAvgHR -> {}
                 HUDSlotField.LastLapAvgHR -> {}
+                HUDSlotField.HRMaxPercent -> {}
+                HUDSlotField.MaxHR -> {}
+                HUDSlotField.HRZone -> {}
                 HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
                 is HUDSlotField.AvgSpeed -> AvgSpeedThresholdControls(
                     config = slot.avgSpeedConfig,
@@ -547,13 +553,21 @@ private fun HUDSlotFieldCard(
             }
             if (slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower ||
                 slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
-                slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.HR ||
+                slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.PowerZone ||
+                slot.field == HUDSlotField.MaxPower || slot.field == HUDSlotField.HR ||
                 slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR ||
-                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.Grade ||
-                slot.field == HUDSlotField.Cadence) {
+                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.HRMaxPercent ||
+                slot.field == HUDSlotField.MaxHR || slot.field == HUDSlotField.HRZone ||
+                slot.field == HUDSlotField.Grade || slot.field == HUDSlotField.Cadence) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
                     onSelected = { onUpdate(slot.copy(colorMode = it)) },
+                )
+            }
+            if (slot.field == HUDSlotField.HRZone || slot.field == HUDSlotField.PowerZone) {
+                ZoneDisplaySlider(
+                    selected = slot.zoneDisplayMode,
+                    onSelected = { onUpdate(slot.copy(zoneDisplayMode = it)) },
                 )
             }
         }
@@ -570,10 +584,15 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             HUDSlotField.NP -> "NP"
             HUDSlotField.LapPower -> "Lap Power"
             HUDSlotField.LastLapPower -> "Last Lap Power"
+            HUDSlotField.PowerZone -> "Power Zone"
+            HUDSlotField.MaxPower -> "Max Power"
             HUDSlotField.HR -> "Heart rate"
             HUDSlotField.AvgHR -> "Avg heart rate"
             HUDSlotField.LapAvgHR -> "Lap avg heart rate"
             HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
+            HUDSlotField.HRMaxPercent -> "%Max HR"
+            HUDSlotField.MaxHR -> "Max HR"
+            HUDSlotField.HRZone -> "HR Zone"
             HUDSlotField.Speed -> "Speed"
             is HUDSlotField.AvgSpeed -> if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
             HUDSlotField.Cadence -> "Cadence"
@@ -599,12 +618,17 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                     "NP" to HUDSlotField.NP,
                     "Lap Power" to HUDSlotField.LapPower,
                     "Last Lap Power" to HUDSlotField.LastLapPower,
+                    "Power Zone" to HUDSlotField.PowerZone,
+                    "Max Power" to HUDSlotField.MaxPower,
                 ),
                 "Heart rate" to listOf(
                     "Heart rate" to HUDSlotField.HR,
                     "Avg heart rate" to HUDSlotField.AvgHR,
                     "Lap avg heart rate" to HUDSlotField.LapAvgHR,
                     "Last lap avg heart rate" to HUDSlotField.LastLapAvgHR,
+                    "%Max HR" to HUDSlotField.HRMaxPercent,
+                    "Max HR" to HUDSlotField.MaxHR,
+                    "HR Zone" to HUDSlotField.HRZone,
                 ),
                 "Speed" to listOf(
                     "Speed" to HUDSlotField.Speed,
