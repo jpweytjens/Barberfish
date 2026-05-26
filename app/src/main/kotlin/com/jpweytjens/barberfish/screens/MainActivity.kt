@@ -58,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -1618,6 +1619,7 @@ private fun ETAPriorSpeedInput(
         val entered = text.toDoubleOrNull() ?: 0.0
         onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
     }
+    var wasFocused by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = text,
         onValueChange = { input -> text = input },
@@ -1630,7 +1632,10 @@ private fun ETAPriorSpeedInput(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { state ->
+            if (wasFocused && !state.isFocused) commit()
+            wasFocused = state.isFocused
+        },
     )
 }
 
@@ -1648,6 +1653,7 @@ private fun ThresholdInput(
         val entered = text.toDoubleOrNull() ?: 0.0
         onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
     }
+    var wasFocused by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = text,
         onValueChange = { input -> text = input },
@@ -1660,7 +1666,10 @@ private fun ThresholdInput(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { state ->
+            if (wasFocused && !state.isFocused) commit()
+            wasFocused = state.isFocused
+        },
     )
 }
 
@@ -1668,6 +1677,8 @@ private fun ThresholdInput(
 private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
     var text by remember(value) { mutableStateOf(value.toString()) }
     val focusManager = LocalFocusManager.current
+    val commit = { text.toDoubleOrNull()?.let { onValueChange(it) } }
+    var wasFocused by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = text,
         onValueChange = { input -> text = input },
@@ -1675,11 +1686,11 @@ private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
             Text("Range (%)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = {
-            text.toDoubleOrNull()?.let { onValueChange(it) }
-            focusManager.clearFocus()
-        }),
-        modifier = Modifier.fillMaxWidth(),
+        keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { state ->
+            if (wasFocused && !state.isFocused) commit()
+            wasFocused = state.isFocused
+        },
     )
 }
 
@@ -1696,6 +1707,7 @@ private fun NullableThresholdInput(
     val commit = {
         onValueChange(text.toDoubleOrNull()?.let { ConvertType.SPEED.fromDisplay(it, profile) })
     }
+    var wasFocused by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = text,
         onValueChange = { input -> text = input },
@@ -1704,7 +1716,10 @@ private fun NullableThresholdInput(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { state ->
+            if (wasFocused && !state.isFocused) commit()
+            wasFocused = state.isFocused
+        },
     )
 }
 
@@ -2066,6 +2081,7 @@ private fun CadenceThresholdInput(
         val entered = text.toDoubleOrNull() ?: 0.0
         onValueChange(entered)
     }
+    var wasFocused by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = text,
         onValueChange = { input -> text = input },
@@ -2078,7 +2094,10 @@ private fun CadenceThresholdInput(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { state ->
+            if (wasFocused && !state.isFocused) commit()
+            wasFocused = state.isFocused
+        },
     )
 }
 
@@ -2093,6 +2112,7 @@ private fun NullableCadenceThresholdInput(
     val commit = {
         onValueChange(text.toDoubleOrNull())
     }
+    var wasFocused by remember { mutableStateOf(false) }
     OutlinedTextField(
         value = text,
         onValueChange = { input -> text = input },
@@ -2101,7 +2121,10 @@ private fun NullableCadenceThresholdInput(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit(); focusManager.clearFocus() }),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onFocusChanged { state ->
+            if (wasFocused && !state.isFocused) commit()
+            wasFocused = state.isFocused
+        },
     )
 }
 
