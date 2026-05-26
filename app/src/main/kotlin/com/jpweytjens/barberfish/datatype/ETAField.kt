@@ -144,8 +144,8 @@ class ETAField(
             val durations = listOf(1665L, 5025L, 37425L)
             return durations.map { sec ->
                 val displayValue = when (kind) {
-                    ETAKind.REMAINING_RIDE_TIME -> formatTime(sec, format)
-                    ETAKind.TIME_TO_DESTINATION -> formatTime(sec, format)
+                    ETAKind.REMAINING_RIDE_TIME, ETAKind.TIME_TO_DESTINATION ->
+                        formatTime(sec, format)
                     ETAKind.TIME_OF_ARRIVAL -> formatClockTime(sec)
                 }
                 FieldState(
