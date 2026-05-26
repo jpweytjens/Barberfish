@@ -99,7 +99,6 @@ import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
