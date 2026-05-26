@@ -230,8 +230,7 @@ internal fun renderElevationSparkline(
     // 1. Ahead silhouette fill — subtle (~6% alpha)
     if (aheadSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
-        paint.color = if (isNightMode) android.graphics.Color.argb(15, 255, 255, 255)
-            else android.graphics.Color.argb(15, 0, 0, 0)
+        paint.color = (if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY).toArgb()
         val path = Path().apply {
             moveTo(dotX, dotY)
             aheadSilPts.forEach { (d, e) -> lineTo(toX(d), toY(e)) }
@@ -287,8 +286,7 @@ internal fun renderElevationSparkline(
     // 2b. Dark overlay on past region to grey out grade fills
     if (pastSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
-        paint.color = if (isNightMode) android.graphics.Color.argb(140, 0, 0, 0)
-            else android.graphics.Color.argb(200, 180, 180, 180)
+        paint.color = (if (isNightMode) SPARKLINE_PAST_OVERLAY_NIGHT else SPARKLINE_PAST_OVERLAY_DAY).toArgb()
         val path = Path().apply {
             moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
             pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
@@ -312,10 +310,10 @@ internal fun renderElevationSparkline(
         paint.strokeWidth = 3f
         paint.strokeJoin = Paint.Join.ROUND
 
-        val pastGrey = android.graphics.Color.argb(255, 100, 100, 100)
+        val pastGrey = SPARKLINE_PAST_OUTLINE.toArgb()
         val aheadColor = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         val aheadClimb = CLIMBER_BLUE.toArgb()
-        val pastClimb = android.graphics.Color.argb(255, 66, 117, 158)  // CLIMBER_BLUE blended with pastGrey
+        val pastClimb = SPARKLINE_PAST_CLIMB.toArgb()
 
         val visibleStart = visible.first().first
         val visibleEnd = visible.last().first
@@ -385,10 +383,9 @@ internal fun renderElevationSparkline(
     // outline; ahead markers keep their bright fill so upcoming POIs stay legible.
     if (showPois && poiDistances.isNotEmpty()) {
         val poiRadius = POI_RADIUS_PX
-        val aheadFill = if (isNightMode) android.graphics.Color.argb(230, 255, 255, 255)
-            else android.graphics.Color.argb(230, 0, 0, 0)
+        val aheadFill = (if (isNightMode) SPARKLINE_POI_FILL_NIGHT else SPARKLINE_POI_FILL_DAY).toArgb()
         val aheadStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
-        val pastFill = android.graphics.Color.argb(255, 100, 100, 100)
+        val pastFill = SPARKLINE_PAST_OUTLINE.toArgb()
         val pastStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
         for (d in poiDistances) {
             if (d < windowStart || d > windowEnd) continue

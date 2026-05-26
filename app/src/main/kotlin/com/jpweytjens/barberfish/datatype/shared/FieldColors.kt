@@ -29,6 +29,17 @@ internal val RDYLGN_GREEN = Color(0xFF1A9850)
 // Danger zone color map (min/max mode) — light amber so the whitish gradient reads clearly
 internal val DANGER_ORANGE = Color(0xFFFFA726)
 
+// Sparkline palette — used by ElevationSparkline rendering. Call sites pass to Paint.color
+// via .toArgb() since android.graphics.Paint expects an Int, not a Compose Color.
+internal val SPARKLINE_PAST_OUTLINE       = Color(0xFF646464) // grey for past stroke + past POI fill
+internal val SPARKLINE_PAST_CLIMB         = Color(0xFF42759E) // CLIMBER_BLUE pre-blended with PAST_OUTLINE
+internal val SPARKLINE_SILHOUETTE_NIGHT   = Color(0x0FFFFFFF) // ~6% white — subtle ahead-fill in night mode
+internal val SPARKLINE_SILHOUETTE_DAY     = Color(0x0F000000) // ~6% black — subtle ahead-fill in day mode
+internal val SPARKLINE_PAST_OVERLAY_NIGHT = Color(0x8C000000) // dims grade fills under past region (night)
+internal val SPARKLINE_PAST_OVERLAY_DAY   = Color(0xC8B4B4B4) // dims grade fills under past region (day)
+internal val SPARKLINE_POI_FILL_NIGHT     = Color(0xE6FFFFFF) // ahead-of-position POI fill (night)
+internal val SPARKLINE_POI_FILL_DAY       = Color(0xE6000000) // ahead-of-position POI fill (day)
+
 // sqrt curve pushes color out quickly: at 10% of range, ~31% saturation; at 1%, ~10%
 // Text neutral matches the default text color so "at threshold" looks like a default cell.
 private fun thresholdTextColor(factor: Float, isNightMode: Boolean): Color {
