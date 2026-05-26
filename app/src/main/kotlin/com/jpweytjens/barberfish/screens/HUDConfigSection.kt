@@ -101,6 +101,9 @@ import kotlinx.coroutines.delay
 // (see audit #24); the reservation matches the live experience so cells size correctly.
 private const val HUD_SPARKLINE_CELL_RESERVATION_DP = 34f
 
+// Total height of the HUD preview container (3 or 4 cells side-by-side + sparkline strip).
+private val HUD_PREVIEW_HEIGHT = 90.dp
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HUDConfigSection(
@@ -368,7 +371,7 @@ private fun HUDPreview(
                 }
             }
             .fillMaxWidth()
-            .height(90.dp)
+            .height(HUD_PREVIEW_HEIGHT)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
     ) {
