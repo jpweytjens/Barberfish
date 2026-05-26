@@ -40,6 +40,12 @@
         displayName="@string/last_lap_power_name"
         description="@string/last_lap_power_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="power-zone"
+        displayName="@string/power_zone_name"
+        description="@string/power_zone_description"
+        graphical="true" />
     <!-- HR -->
     <DataType
         icon="@drawable/ic_col_hr"

@@ -417,6 +417,22 @@ suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) =
 
 @Serializable data class LapPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
+// --- PowerZoneFieldConfig ---
+
+@Serializable
+data class PowerZoneFieldConfig(
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+)
+
+private val powerZoneFieldConfigKey = stringPreferencesKey("power_zone_field_config")
+
+fun Context.streamPowerZoneFieldConfig(): Flow<PowerZoneFieldConfig> =
+    streamConfig(powerZoneFieldConfigKey, PowerZoneFieldConfig())
+
+suspend fun Context.savePowerZoneFieldConfig(config: PowerZoneFieldConfig) =
+    saveConfig(powerZoneFieldConfigKey, config)
+
 private val lapPowerFieldConfigKey = stringPreferencesKey("lap_power_field_config")
 private val lastLapPowerFieldConfigKey = stringPreferencesKey("last_lap_power_field_config")
 
