@@ -46,6 +46,12 @@
         displayName="@string/power_zone_name"
         description="@string/power_zone_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="max-power"
+        displayName="@string/max_power_name"
+        description="@string/max_power_description"
+        graphical="true" />
     <!-- HR -->
     <DataType
         icon="@drawable/ic_col_hr"

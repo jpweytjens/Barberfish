@@ -433,6 +433,19 @@ fun Context.streamPowerZoneFieldConfig(): Flow<PowerZoneFieldConfig> =
 suspend fun Context.savePowerZoneFieldConfig(config: PowerZoneFieldConfig) =
     saveConfig(powerZoneFieldConfigKey, config)
 
+// --- MaxPowerFieldConfig ---
+
+@Serializable
+data class MaxPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val maxPowerFieldConfigKey = stringPreferencesKey("max_power_field_config")
+
+fun Context.streamMaxPowerFieldConfig(): Flow<MaxPowerFieldConfig> =
+    streamConfig(maxPowerFieldConfigKey, MaxPowerFieldConfig())
+
+suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
+    saveConfig(maxPowerFieldConfigKey, config)
+
 private val lapPowerFieldConfigKey = stringPreferencesKey("lap_power_field_config")
 private val lastLapPowerFieldConfigKey = stringPreferencesKey("last_lap_power_field_config")
 

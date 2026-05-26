@@ -88,6 +88,7 @@ import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
 import com.jpweytjens.barberfish.datatype.LastLapAvgHRField
 import com.jpweytjens.barberfish.datatype.MaxHRField
+import com.jpweytjens.barberfish.datatype.MaxPowerField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.PowerZoneField
@@ -132,6 +133,7 @@ import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
+import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
@@ -155,6 +157,7 @@ import com.jpweytjens.barberfish.extension.saveHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.saveMaxHRFieldConfig
+import com.jpweytjens.barberfish.extension.saveMaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveHUDConfig
 import com.jpweytjens.barberfish.extension.saveLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveNPFieldConfig
@@ -172,6 +175,7 @@ import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
+import com.jpweytjens.barberfish.extension.streamMaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.saveSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
@@ -236,6 +240,7 @@ class MainActivity : ComponentActivity() {
         var lapPowerFieldConfig by remember { mutableStateOf(LapPowerFieldConfig()) }
         var lastLapPowerFieldConfig by remember { mutableStateOf(LapPowerFieldConfig()) }
         var powerZoneFieldConfig by remember { mutableStateOf(PowerZoneFieldConfig()) }
+        var maxPowerFieldConfig by remember { mutableStateOf(MaxPowerFieldConfig()) }
         var gradeFieldConfig by remember { mutableStateOf(GradeFieldConfig()) }
         var avgTotalConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
@@ -287,6 +292,7 @@ class MainActivity : ComponentActivity() {
             launch { streamLapPowerFieldConfig(isLastLap = false).collect { lapPowerFieldConfig = it } }
             launch { streamLapPowerFieldConfig(isLastLap = true).collect { lastLapPowerFieldConfig = it } }
             launch { streamPowerZoneFieldConfig().collect { powerZoneFieldConfig = it } }
+            launch { streamMaxPowerFieldConfig().collect { maxPowerFieldConfig = it } }
             launch { streamGradeFieldConfig().collect { gradeFieldConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = true).collect { avgTotalConfig = it } }
             launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
@@ -376,6 +382,9 @@ class MainActivity : ComponentActivity() {
                 }
                 val powerZonePreviewStates = remember(powerZoneFieldConfig, userProfile, zoneConfig) {
                     PowerZoneField.previewStates(powerZoneFieldConfig, userProfile, zoneConfig)
+                }
+                val maxPowerPreviewStates = remember(maxPowerFieldConfig, userProfile, zoneConfig) {
+                    MaxPowerField.previewStates(maxPowerFieldConfig, userProfile, zoneConfig)
                 }
                 val gradePreviewStates = remember(gradeFieldConfig, zoneConfig) {
                     GradeField.previewStates(gradeFieldConfig, zoneConfig)
@@ -512,6 +521,23 @@ class MainActivity : ComponentActivity() {
                             onSelected = { mode ->
                                 powerZoneFieldConfig = powerZoneFieldConfig.copy(zoneDisplayMode = mode)
                                 lifecycleScope.launch { savePowerZoneFieldConfig(powerZoneFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "MAX POWER",
+                        description = "Maximum power reached this ride, with zone coloring.",
+                        previewFields = maxPowerPreviewStates,
+                        colorMode = maxPowerFieldConfig.colorMode,
+                        selected = selectedDataField == "MAX POWER",
+                        onSelect = { selectedDataField = if (selectedDataField == "MAX POWER") null else "MAX POWER" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = maxPowerFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                maxPowerFieldConfig = maxPowerFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveMaxPowerFieldConfig(maxPowerFieldConfig) }
                             },
                         )
                     }

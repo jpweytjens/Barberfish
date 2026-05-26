@@ -45,6 +45,8 @@
     <string name="last_lap_power_description">Last lap power with zone coloring</string>
     <string name="power_zone_name">Power Zone</string>
     <string name="power_zone_description">Current power zone, with zone coloring and integer or decimal display</string>
+    <string name="max_power_name">Max Power</string>
+    <string name="max_power_description">Maximum power reached this ride, with zone coloring</string>
     <string name="grade_name">Grade</string>
     <string name="grade_description">Current road gradient with gradient palette coloring</string>
     <string name="elevation_sparkline_name">Elevation Sparkline</string>
