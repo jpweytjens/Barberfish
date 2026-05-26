@@ -83,6 +83,7 @@ import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HRMaxPercentField
+import com.jpweytjens.barberfish.datatype.HRZoneField
 import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
 import com.jpweytjens.barberfish.datatype.LastLapAvgHRField
@@ -128,7 +129,9 @@ import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
+import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
+import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
@@ -148,6 +151,7 @@ import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.saveGradeFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRMaxPercentFieldConfig
+import com.jpweytjens.barberfish.extension.saveHRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.saveMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHUDConfig
 import com.jpweytjens.barberfish.extension.saveLapPowerFieldConfig
@@ -163,6 +167,7 @@ import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRMaxPercentFieldConfig
+import com.jpweytjens.barberfish.extension.streamHRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.saveSparklineConfig
@@ -219,6 +224,7 @@ class MainActivity : ComponentActivity() {
         var lastLapAvgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var hrMaxPercentFieldConfig by remember { mutableStateOf(HRMaxPercentFieldConfig()) }
         var maxHrFieldConfig by remember { mutableStateOf(MaxHRFieldConfig()) }
+        var hrZoneFieldConfig by remember { mutableStateOf(HRZoneFieldConfig()) }
         var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
         var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
         var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
@@ -268,6 +274,7 @@ class MainActivity : ComponentActivity() {
             launch { streamHRFieldConfig(HRFieldKind.LAST_LAP_AVG).collect { lastLapAvgHrFieldConfig = it } }
             launch { streamHRMaxPercentFieldConfig().collect { hrMaxPercentFieldConfig = it } }
             launch { streamMaxHRFieldConfig().collect { maxHrFieldConfig = it } }
+            launch { streamHRZoneFieldConfig().collect { hrZoneFieldConfig = it } }
             launch { streamSpeedFieldConfig().collect { speedFieldConfig = it } }
             launch { streamCadenceFieldConfig().collect { cadenceFieldConfig = it } }
             launch { streamAvgPowerFieldConfig().collect { avgPowerFieldConfig = it } }
@@ -339,6 +346,9 @@ class MainActivity : ComponentActivity() {
                 }
                 val maxHrPreviewStates = remember(maxHrFieldConfig, userProfile, zoneConfig) {
                     MaxHRField.previewStates(maxHrFieldConfig, userProfile, zoneConfig)
+                }
+                val hrZonePreviewStates = remember(hrZoneFieldConfig, userProfile, zoneConfig) {
+                    HRZoneField.previewStates(hrZoneFieldConfig, userProfile, zoneConfig)
                 }
                 val speedPreviewStates = remember(speedFieldConfig, userProfile) {
                     SpeedField.previewStates(speedFieldConfig, userProfile)
@@ -721,6 +731,30 @@ class MainActivity : ComponentActivity() {
                             onSelected = { mode ->
                                 maxHrFieldConfig = maxHrFieldConfig.copy(colorMode = mode)
                                 lifecycleScope.launch { saveMaxHRFieldConfig(maxHrFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "HR ZONE",
+                        description = "Current heart rate zone, with zone coloring.",
+                        previewFields = hrZonePreviewStates,
+                        colorMode = hrZoneFieldConfig.colorMode,
+                        selected = selectedDataField == "HR ZONE",
+                        onSelect = { selectedDataField = if (selectedDataField == "HR ZONE") null else "HR ZONE" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = hrZoneFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                hrZoneFieldConfig = hrZoneFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRZoneFieldConfig(hrZoneFieldConfig) }
+                            },
+                        )
+                        ZoneDisplaySlider(
+                            selected = hrZoneFieldConfig.zoneDisplayMode,
+                            onSelected = { mode ->
+                                hrZoneFieldConfig = hrZoneFieldConfig.copy(zoneDisplayMode = mode)
+                                lifecycleScope.launch { saveHRZoneFieldConfig(hrZoneFieldConfig) }
                             },
                         )
                     }
@@ -1223,6 +1257,53 @@ internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode
                             ZoneColorMode.TEXT -> "Text"
                             ZoneColorMode.BACKGROUND -> "Fill"
                         },
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) {
+    val options = ZoneDisplayMode.entries
+    Text("ZONE DISPLAY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Color.White)
+                .padding(3.dp)
+                .pointerInput(onSelected) {
+                    val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        onSelected(options[idxAt(down.position.x)])
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelected(options[idxAt(change.position.x)])
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+    ) {
+        options.forEach { mode ->
+            val isSelected = mode == selected
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = mode.label,
                     fontSize = 10.sp,
                     color = TextDark,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,

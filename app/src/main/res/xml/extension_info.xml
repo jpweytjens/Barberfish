@@ -77,6 +77,12 @@
         displayName="@string/max_hr_name"
         description="@string/max_hr_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_hr"
+        typeId="hr-zone"
+        displayName="@string/hr_zone_name"
+        description="@string/hr_zone_description"
+        graphical="true" />
     <!-- Speed -->
     <DataType
         icon="@drawable/ic_speed_average"

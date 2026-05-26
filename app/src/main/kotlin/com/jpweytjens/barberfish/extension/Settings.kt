@@ -249,6 +249,28 @@ fun Context.streamMaxHRFieldConfig(): Flow<MaxHRFieldConfig> =
 suspend fun Context.saveMaxHRFieldConfig(config: MaxHRFieldConfig) =
     saveConfig(maxHrFieldConfigKey, config)
 
+// --- HRZoneFieldConfig ---
+
+@Serializable
+enum class ZoneDisplayMode(val label: String) {
+    INTEGER("Integer"),
+    FLOAT("Decimal"),
+}
+
+@Serializable
+data class HRZoneFieldConfig(
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+)
+
+private val hrZoneFieldConfigKey = stringPreferencesKey("hr_zone_field_config")
+
+fun Context.streamHRZoneFieldConfig(): Flow<HRZoneFieldConfig> =
+    streamConfig(hrZoneFieldConfigKey, HRZoneFieldConfig())
+
+suspend fun Context.saveHRZoneFieldConfig(config: HRZoneFieldConfig) =
+    saveConfig(hrZoneFieldConfigKey, config)
+
 // --- SpeedFieldConfig ---
 
 @Serializable
