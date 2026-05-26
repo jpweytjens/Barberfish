@@ -82,6 +82,7 @@ import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
+import com.jpweytjens.barberfish.datatype.HRMaxPercentField
 import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
 import com.jpweytjens.barberfish.datatype.LastLapAvgHRField
@@ -125,6 +126,7 @@ import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
+import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
@@ -143,6 +145,7 @@ import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.saveGradeFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
+import com.jpweytjens.barberfish.extension.saveHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.saveHUDConfig
 import com.jpweytjens.barberfish.extension.saveLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveNPFieldConfig
@@ -156,6 +159,7 @@ import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
+import com.jpweytjens.barberfish.extension.streamHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.saveSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
@@ -209,6 +213,7 @@ class MainActivity : ComponentActivity() {
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var lapAvgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var lastLapAvgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
+        var hrMaxPercentFieldConfig by remember { mutableStateOf(HRMaxPercentFieldConfig()) }
         var speedFieldConfig by remember { mutableStateOf(SpeedFieldConfig()) }
         var cadenceFieldConfig by remember { mutableStateOf(CadenceFieldConfig()) }
         var avgPowerFieldConfig by remember { mutableStateOf(AvgPowerFieldConfig()) }
@@ -256,6 +261,7 @@ class MainActivity : ComponentActivity() {
             launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
             launch { streamHRFieldConfig(HRFieldKind.LAP_AVG).collect { lapAvgHrFieldConfig = it } }
             launch { streamHRFieldConfig(HRFieldKind.LAST_LAP_AVG).collect { lastLapAvgHrFieldConfig = it } }
+            launch { streamHRMaxPercentFieldConfig().collect { hrMaxPercentFieldConfig = it } }
             launch { streamSpeedFieldConfig().collect { speedFieldConfig = it } }
             launch { streamCadenceFieldConfig().collect { cadenceFieldConfig = it } }
             launch { streamAvgPowerFieldConfig().collect { avgPowerFieldConfig = it } }
@@ -321,6 +327,9 @@ class MainActivity : ComponentActivity() {
                 }
                 val lastLapAvgHrPreviewStates = remember(lastLapAvgHrFieldConfig, userProfile, zoneConfig) {
                     LastLapAvgHRField.previewStates(lastLapAvgHrFieldConfig, userProfile, zoneConfig)
+                }
+                val hrMaxPercentPreviewStates = remember(hrMaxPercentFieldConfig, userProfile, zoneConfig) {
+                    HRMaxPercentField.previewStates(hrMaxPercentFieldConfig, userProfile, zoneConfig)
                 }
                 val speedPreviewStates = remember(speedFieldConfig, userProfile) {
                     SpeedField.previewStates(speedFieldConfig, userProfile)
@@ -669,6 +678,23 @@ class MainActivity : ComponentActivity() {
                             onSelected = { mode ->
                                 lastLapAvgHrFieldConfig = lastLapAvgHrFieldConfig.copy(colorMode = mode)
                                 lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.LAST_LAP_AVG, lastLapAvgHrFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
+                        title = "%MAX HR",
+                        description = "Current heart rate as a percentage of max HR, with zone coloring.",
+                        previewFields = hrMaxPercentPreviewStates,
+                        colorMode = hrMaxPercentFieldConfig.colorMode,
+                        selected = selectedDataField == "%MAX HR",
+                        onSelect = { selectedDataField = if (selectedDataField == "%MAX HR") null else "%MAX HR" },
+                    ) {
+                        ZoneColorSlider(
+                            selected = hrMaxPercentFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                hrMaxPercentFieldConfig = hrMaxPercentFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveHRMaxPercentFieldConfig(hrMaxPercentFieldConfig) }
                             },
                         )
                     }

@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
+import com.jpweytjens.barberfish.datatype.HRMaxPercentField
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
@@ -42,6 +43,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             AvgHRField(karooSystem),
             LapAvgHRField(karooSystem),
             LastLapAvgHRField(karooSystem),
+            HRMaxPercentField(karooSystem),
             // Speed
             SpeedField(karooSystem),
             AvgSpeedField(karooSystem, includePaused = true),
