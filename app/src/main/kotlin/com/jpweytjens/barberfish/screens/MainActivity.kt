@@ -945,6 +945,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// Duration (ms) of expand/shrink/chevron animations for collapsible sections and cards.
+internal const val SECTION_ANIM_MS = 200
+
 @Composable
 internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
     Text(text, modifier = modifier, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
@@ -1101,7 +1104,7 @@ private fun CollapsibleSection(
                 animateFloatAsState(
                     if (expanded) 0f else 90f,
                     label = "chevron",
-                    animationSpec = tween(200),
+                    animationSpec = tween(SECTION_ANIM_MS),
                 )
             Icon(
                 painter = painterResource(R.drawable.ic_chevron_down),
@@ -1114,8 +1117,8 @@ private fun CollapsibleSection(
         if (everExpanded) {
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(animationSpec = tween(200)),
-                exit = shrinkVertically(animationSpec = tween(200)),
+                enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
+                exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
             ) {
                 Column(
                     modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
@@ -1195,8 +1198,8 @@ private fun FieldCard(
             if (everSelected) {
                 AnimatedVisibility(
                     visible = selected,
-                    enter = expandVertically(animationSpec = tween(200)),
-                    exit = shrinkVertically(animationSpec = tween(200)),
+                    enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
+                    exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1216,8 +1219,8 @@ private fun FieldCard(
         if (everSelected) {
             AnimatedVisibility(
                 visible = selected,
-                enter = expandVertically(animationSpec = tween(200)),
-                exit = shrinkVertically(animationSpec = tween(200)),
+                enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
+                exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),

@@ -754,8 +754,8 @@ internal fun SparklineCard(
             if (everSelected) {
                 AnimatedVisibility(
                     visible = selected,
-                    enter = expandVertically(animationSpec = tween(200)),
-                    exit = shrinkVertically(animationSpec = tween(200)),
+                    enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
+                    exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
@@ -780,8 +780,8 @@ internal fun SparklineCard(
         if (everSelected) {
             AnimatedVisibility(
                 visible = selected,
-                enter = expandVertically(animationSpec = tween(200)),
-                exit = shrinkVertically(animationSpec = tween(200)),
+                enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
+                exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
