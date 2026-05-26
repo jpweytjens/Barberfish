@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -102,25 +104,10 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_RED
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
-import com.jpweytjens.barberfish.datatype.shared.hsluvHrColors
-import com.jpweytjens.barberfish.datatype.shared.hsluvPowerColors
-import com.jpweytjens.barberfish.datatype.shared.intervalsHrColors
-import com.jpweytjens.barberfish.datatype.shared.intervalsHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColors
-import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.karooHrColors
-import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.karooPowerColors
-import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.wahooHrColors
-import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.wahooPowerColors
-import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.zwiftHrColors
-import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColors
-import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
+import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
+import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
@@ -772,97 +759,35 @@ class MainActivity : ComponentActivity() {
                     TimeFormatPreview(format = timeConfig.format)
 
                     Text("Zone colors", style = MaterialTheme.typography.titleMedium)
-                    ReadabilityToggle(
-                        readable = zoneConfig.readableColors,
-                        onSelected = { readable ->
-                            val newPower =
-                                if (!readable && zoneConfig.powerPalette == ZonePalette.HSLUV)
-                                    ZonePalette.KAROO
-                                else zoneConfig.powerPalette
-                            val newHr =
-                                if (!readable && zoneConfig.hrPalette == ZonePalette.HSLUV)
-                                    ZonePalette.KAROO
-                                else zoneConfig.hrPalette
-                            val newGrade =
-                                if (!readable && zoneConfig.gradePalette == GradePalette.TURBO)
-                                    GradePalette.KAROO
-                                else zoneConfig.gradePalette
-                            zoneConfig =
-                                zoneConfig.copy(
-                                    readableColors = readable,
-                                    powerPalette = newPower,
-                                    hrPalette = newHr,
-                                    gradePalette = newGrade,
-                                )
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
                     ZonePaletteDropdown(
                         title = "Power zones",
                         selected = zoneConfig.powerPalette,
-                        readable = zoneConfig.readableColors,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(powerPalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
-                    ZoneColorBar(
-                        colors =
-                            when (zoneConfig.powerPalette) {
-                                ZonePalette.KAROO ->
-                                    if (zoneConfig.readableColors) karooPowerColorsReadable
-                                    else karooPowerColors
-                                ZonePalette.WAHOO ->
-                                    if (zoneConfig.readableColors) wahooPowerColorsReadable
-                                    else wahooPowerColors
-                                ZonePalette.INTERVALS ->
-                                    if (zoneConfig.readableColors) intervalsPowerColorsReadable
-                                    else intervalsPowerColors
-                                ZonePalette.ZWIFT ->
-                                    if (zoneConfig.readableColors) zwiftPowerColorsReadable
-                                    else zwiftPowerColors
-                                ZonePalette.HSLUV -> hsluvPowerColors
-                            }
-                    )
+                    ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
 
                     ZonePaletteDropdown(
                         title = "HR zones",
                         selected = zoneConfig.hrPalette,
-                        readable = zoneConfig.readableColors,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(hrPalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
-                    ZoneColorBar(
-                        colors =
-                            when (zoneConfig.hrPalette) {
-                                ZonePalette.KAROO ->
-                                    if (zoneConfig.readableColors) karooHrColorsReadable
-                                    else karooHrColors
-                                ZonePalette.WAHOO ->
-                                    if (zoneConfig.readableColors) wahooHrColorsReadable
-                                    else wahooHrColors
-                                ZonePalette.INTERVALS ->
-                                    if (zoneConfig.readableColors) intervalsHrColorsReadable
-                                    else intervalsHrColors
-                                ZonePalette.ZWIFT ->
-                                    if (zoneConfig.readableColors) zwiftHrColorsReadable
-                                    else zwiftHrColors
-                                ZonePalette.HSLUV -> hsluvHrColors
-                            }
-                    )
+                    ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
 
                     GradePaletteDropdown(
                         title = "Grade",
                         selected = zoneConfig.gradePalette,
-                        readable = zoneConfig.readableColors,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(gradePalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
                         },
                     )
-                    GradeBandBar(palette = zoneConfig.gradePalette, readable = zoneConfig.readableColors)
+                    GradePalettePreview(palette = zoneConfig.gradePalette)
 
                 } // end Global
                 Spacer(modifier = Modifier.height(72.dp))
@@ -1302,63 +1227,12 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
 }
 
 @Composable
-private fun ReadabilityToggle(readable: Boolean, onSelected: (Boolean) -> Unit) {
-    val options = listOf(false, true)
-    Text("Color adjustment", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Grey100)
-                .padding(3.dp)
-                .pointerInput(readable, onSelected) {
-                    val slotWidthPx = size.width.toFloat() / options.size
-                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onSelected(options[idxAt(down.position.x)])
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onSelected(options[idxAt(change.position.x)])
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        options.forEach { opt ->
-            val isSelected = opt == readable
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = if (opt) "Readable" else "Original",
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 @OptIn(ExperimentalMaterial3Api::class)
 private fun ZonePaletteDropdown(
     title: String,
     selected: ZonePalette,
-    readable: Boolean,
     onSelected: (ZonePalette) -> Unit,
 ) {
-    val options =
-        if (readable) ZonePalette.entries
-        else ZonePalette.entries.filter { it != ZonePalette.HSLUV }
     fun ZonePalette.displayName() = when (this) {
         ZonePalette.KAROO -> "Karoo"
         ZonePalette.WAHOO -> "Wahoo"
@@ -1377,7 +1251,7 @@ private fun ZonePaletteDropdown(
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { palette ->
+            ZonePalette.entries.forEach { palette ->
                 DropdownMenuItem(
                     text = { Text(palette.displayName()) },
                     onClick = { onSelected(palette); expanded = false },
@@ -1394,12 +1268,128 @@ private fun ZonePaletteDropdown(
     }
 }
 
+// Two-row preview demonstrating how the selected palette renders in each
+// color mode. Top row (Text): palette color drawn as text on the datafield
+// dark bg, using the contrast-tuned variant. Bottom row (Fill): palette
+// color as cell fill with auto-picked text on top via bestTextOnBackground.
 @Composable
-private fun ZoneColorBar(colors: List<Color>) {
-    Row(modifier = Modifier.fillMaxWidth().height(24.dp)) {
-        colors.forEach { color ->
-            Box(modifier = Modifier.weight(1f).height(24.dp).background(color))
+private fun ZonePalettePreview(palette: ZonePalette, isHr: Boolean) {
+    val zoneCount = if (isHr) 5 else 7
+    val labels = (1..zoneCount).map { "Z$it" }
+    val textColors = (1..zoneCount).map { z ->
+        if (isHr) hrZoneColor(z, palette, readable = true)
+        else powerZoneColor(z, palette, readable = true)
+    }
+    val fillColors = (1..zoneCount).map { z ->
+        if (isHr) hrZoneColor(z, palette, readable = false)
+        else powerZoneColor(z, palette, readable = false)
+    }
+    DualRowPalettePreview(labels = labels, textRowColors = textColors, fillRowColors = fillColors)
+}
+
+@Composable
+private fun GradePalettePreview(palette: GradePalette) {
+    // Lower bounds of each band. Each band runs from thresholds[i] to thresholds[i+1] (or +∞ for the last).
+    val thresholds: List<Double> = when (palette) {
+        GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
+        GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
+        GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
+        GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
+        GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
+        GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
+    }
+    val labels = thresholds.map {
+        if (it == Double.NEGATIVE_INFINITY) "<-9" else formatGradePct(it)
+    }
+    val textColors = thresholds.map { gradeColor(it, palette, readable = true) ?: Color.Transparent }
+    val fillColors = thresholds.map { gradeColor(it, palette, readable = false) ?: Color.Transparent }
+    DualRowPalettePreview(labels = labels, textRowColors = textColors, fillRowColors = fillColors)
+    GradeRangeBar(thresholds = thresholds)
+    Text(
+        gradeBandSummary(thresholds),
+        fontSize = 9.sp,
+        lineHeight = 10.sp,
+        color = TextDark,
+    )
+}
+
+// Thin scale under the dual preview showing min / 0 / max anchor labels.
+// Mid "0%" is only shown when the palette spans negative grades (Turbo).
+@Composable
+private fun GradeRangeBar(thresholds: List<Double>) {
+    val numericLowers = thresholds.filterNot { it == Double.NEGATIVE_INFINITY }
+    val hasNegativeInf = thresholds.first() == Double.NEGATIVE_INFINITY
+    val minVal = numericLowers.first()
+    val maxVal = numericLowers.last()
+    val minLabel = if (hasNegativeInf) "<${formatGradePct(minVal)}%" else "${formatGradePct(minVal)}%"
+    val maxLabel = "${formatGradePct(maxVal)}%+"
+    val zeroIdx = thresholds.indexOf(0.0)
+    val showZero = hasNegativeInf && zeroIdx > 0 && zeroIdx < thresholds.size - 1
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 3.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(TextDark.copy(alpha = 0.3f)),
+        )
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 1.dp)) {
+            Text(minLabel, fontSize = 9.sp, lineHeight = 10.sp, color = TextDark)
+            if (showZero) {
+                Spacer(modifier = Modifier.weight(zeroIdx.toFloat()))
+                Text("0%", fontSize = 9.sp, lineHeight = 10.sp, color = TextDark)
+                Spacer(modifier = Modifier.weight((thresholds.size - zeroIdx).toFloat()))
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+            Text(maxLabel, fontSize = 9.sp, lineHeight = 10.sp, color = TextDark)
         }
+    }
+}
+
+private fun gradeBandSummary(thresholds: List<Double>): String {
+    val nBands = thresholds.size
+    val numericLowers = thresholds.filterNot { it == Double.NEGATIVE_INFINITY }
+    val diffs = (1 until numericLowers.size).map { numericLowers[it] - numericLowers[it - 1] }
+    val uniformStep = diffs.firstOrNull()?.takeIf { first -> diffs.all { kotlin.math.abs(it - first) < 0.01 } }
+    val stepDesc = if (uniformStep != null) "${formatGradePct(uniformStep)}% steps" else "uneven steps"
+    return "$nBands bands · $stepDesc"
+}
+
+@Composable
+private fun DualRowPalettePreview(
+    labels: List<String>,
+    textRowColors: List<Color>,
+    fillRowColors: List<Color>,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            "Text mode (top) · Fill mode (bottom)",
+            fontSize = 9.sp,
+            color = TextDark,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(modifier = Modifier.fillMaxWidth().height(28.dp).background(Color.Black)) {
+            labels.forEachIndexed { i, label ->
+                PreviewSwatch(label = label, bg = Color.Black, text = textRowColors[i])
+            }
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(modifier = Modifier.fillMaxWidth().height(28.dp)) {
+            labels.forEachIndexed { i, label ->
+                val fill = fillRowColors[i]
+                PreviewSwatch(label = label, bg = fill, text = bestTextOnBackground(fill))
+            }
+        }
+    }
+}
+
+@Composable
+private fun RowScope.PreviewSwatch(label: String, bg: Color, text: Color) {
+    Box(
+        modifier = Modifier.weight(1f).fillMaxHeight().background(bg),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text = label, fontSize = 10.sp, color = text, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -1928,12 +1918,8 @@ private fun NullableCadenceThresholdInput(
 private fun GradePaletteDropdown(
     title: String,
     selected: GradePalette,
-    readable: Boolean,
     onSelected: (GradePalette) -> Unit,
 ) {
-    val options =
-        if (readable) GradePalette.entries
-        else GradePalette.entries.filter { it != GradePalette.TURBO }
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
@@ -1945,50 +1931,11 @@ private fun GradePaletteDropdown(
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { palette ->
+            GradePalette.entries.forEach { palette ->
                 DropdownMenuItem(
                     text = { Text(palette.label) },
                     onClick = { onSelected(palette); expanded = false },
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun GradeBandBar(palette: GradePalette, readable: Boolean = true) {
-    val thresholds = when (palette) {
-        GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
-        GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
-        GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
-        GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
-        GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
-        GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
-    }
-    val boundaries: List<String> = thresholds.map {
-        if (it == Double.NEGATIVE_INFINITY) "-∞" else formatGradePct(it)
-    } + "∞"
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            thresholds.forEach { lower ->
-                val color = gradeColor(lower, palette, readable)
-                Box(modifier = Modifier.weight(1f).height(16.dp).background(color ?: Color.Transparent))
-            }
-        }
-        Layout(
-            modifier = Modifier.fillMaxWidth(),
-            content = { boundaries.forEach { Text(it, fontSize = 10.sp, color = TextDark) } },
-        ) { measurables, constraints ->
-            val totalWidth = constraints.maxWidth
-            val placeables = measurables.map { it.measure(constraints.copy(minWidth = 0)) }
-            val height = placeables.maxOf { it.height }
-            val lastBoundary = (placeables.size - 1).coerceAtLeast(1)
-            layout(totalWidth, height) {
-                placeables.forEachIndexed { i, p ->
-                    val xCenter = totalWidth.toLong() * i / lastBoundary
-                    val x = (xCenter.toInt() - p.width / 2).coerceIn(0, (totalWidth - p.width).coerceAtLeast(0))
-                    p.placeRelative(x, 0)
-                }
             }
         }
     }

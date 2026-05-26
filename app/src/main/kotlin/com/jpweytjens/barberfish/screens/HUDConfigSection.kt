@@ -283,7 +283,8 @@ internal fun SparklinePreview(
                 heightPx        = boxHeightPx,
                 density         = density,
                 palette         = zoneConfig.gradePalette,
-                readable        = zoneConfig.readableColors,
+                // Sparkline always renders as a fill; use brand colors.
+                readable        = false,
                 lookaheadM      = sparklineConfig.lookaheadKm * 1_000f,
                 skipBands       = sparklineConfig.skipBands,
                 skipBandsDescent = sparklineConfig.skipBandsDescent,
