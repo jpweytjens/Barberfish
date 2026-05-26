@@ -518,13 +518,20 @@ class MainActivity : ComponentActivity() {
                         title = "AVG SPEED (TOTAL)",
                         description = "Average speed including paused time.",
                         previewFields = avgTotalPreviewStates,
-                        colorMode = ZoneColorMode.TEXT,
+                        colorMode = avgTotalConfig.colorMode,
                         selected = selectedDataField == "AVG SPEED (TOTAL)",
                         onSelect = {
                             selectedDataField =
                                 if (selectedDataField == "AVG SPEED (TOTAL)") null else "AVG SPEED (TOTAL)"
                         },
                     ) {
+                        ZoneColorSlider(
+                            selected = avgTotalConfig.colorMode,
+                            onSelected = { mode ->
+                                avgTotalConfig = avgTotalConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveAvgSpeedConfig(includePaused = true, avgTotalConfig) }
+                            },
+                        )
                         AvgSpeedThresholdControls(
                             config = avgTotalConfig,
                             profile = userProfile,
@@ -543,13 +550,20 @@ class MainActivity : ComponentActivity() {
                         title = "AVG SPEED (MOVING)",
                         description = "Average speed excluding paused time.",
                         previewFields = avgMovingPreviewStates,
-                        colorMode = ZoneColorMode.TEXT,
+                        colorMode = avgMovingConfig.colorMode,
                         selected = selectedDataField == "AVG SPEED (MOVING)",
                         onSelect = {
                             selectedDataField =
                                 if (selectedDataField == "AVG SPEED (MOVING)") null else "AVG SPEED (MOVING)"
                         },
                     ) {
+                        ZoneColorSlider(
+                            selected = avgMovingConfig.colorMode,
+                            onSelected = { mode ->
+                                avgMovingConfig = avgMovingConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveAvgSpeedConfig(includePaused = false, avgMovingConfig) }
+                            },
+                        )
                         AvgSpeedThresholdControls(
                             config = avgMovingConfig,
                             profile = userProfile,
@@ -565,7 +579,7 @@ class MainActivity : ComponentActivity() {
                         title = "CADENCE",
                         description = "Current cadence with threshold coloring.",
                         previewFields = cadencePreviewStates,
-                        colorMode = ZoneColorMode.TEXT,
+                        colorMode = cadenceFieldConfig.colorMode,
                         selected = selectedDataField == "CADENCE",
                         onSelect = {
                             selectedDataField = if (selectedDataField == "CADENCE") null else "CADENCE"
@@ -584,6 +598,13 @@ class MainActivity : ComponentActivity() {
                             thumbIcon = R.drawable.ic_cadence,
                             onSelected = { stream ->
                                 cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                        ZoneColorSlider(
+                            selected = cadenceFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(colorMode = mode)
                                 lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
                             },
                         )
