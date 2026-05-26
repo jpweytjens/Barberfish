@@ -1193,27 +1193,37 @@ private fun FieldCard(
             .clip(RoundedCornerShape(6.dp))
             .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
     ) {
-        if (selected) {
-            Column(
-                modifier = Modifier.fillMaxWidth().background(Grey100)
-                    .padding(12.dp)
-                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+        var everSelected by remember { mutableStateOf(selected) }
+        if (selected) everSelected = true
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Grey100)
+                .padding(12.dp)
+                .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            if (everSelected) {
+                AnimatedVisibility(
+                    visible = selected,
+                    enter = expandVertically(animationSpec = tween(200)),
+                    exit = shrinkVertically(animationSpec = tween(200)),
                 ) {
-                    Text(
-                        description,
-                        modifier = Modifier.weight(1f),
-                        fontSize = 12.sp,
-                        color = TextDark,
-                    )
-                    FieldPreviewBox(previewFields, colorMode)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            description,
+                            modifier = Modifier.weight(1f),
+                            fontSize = 12.sp,
+                            color = TextDark,
+                        )
+                        FieldPreviewBox(previewFields, colorMode)
+                    }
                 }
             }
+        }
+        if (everSelected) {
             AnimatedVisibility(
                 visible = selected,
                 enter = expandVertically(animationSpec = tween(200)),
@@ -1224,14 +1234,6 @@ private fun FieldCard(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     content = controls,
                 )
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth().background(Grey100).padding(12.dp)
-                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             }
         }
     }

@@ -736,30 +736,42 @@ internal fun SparklineCard(
             .clip(RoundedCornerShape(6.dp))
             .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
     ) {
-        if (selected) {
-            Column(
-                modifier = Modifier.fillMaxWidth().background(Grey100)
-                    .padding(12.dp)
-                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text("SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                Text(
-                    "Elevation profile shown ahead when a route is loaded.",
-                    fontSize = 12.sp,
-                    color = TextDark,
-                )
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(60.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+        var everSelected by remember { mutableStateOf(selected) }
+        if (selected) everSelected = true
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Grey100)
+                .padding(12.dp)
+                .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            if (everSelected) {
+                AnimatedVisibility(
+                    visible = selected,
+                    enter = expandVertically(animationSpec = tween(200)),
+                    exit = shrinkVertically(animationSpec = tween(200)),
                 ) {
-                    SparklinePreview(
-                        sparklineConfig = config,
-                        zoneConfig = zoneConfig,
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Elevation profile shown ahead when a route is loaded.",
+                            fontSize = 12.sp,
+                            color = TextDark,
+                        )
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(60.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+                        ) {
+                            SparklinePreview(
+                                sparklineConfig = config,
+                                zoneConfig = zoneConfig,
+                            )
+                        }
+                    }
                 }
             }
+        }
+        if (everSelected) {
             AnimatedVisibility(
                 visible = selected,
                 enter = expandVertically(animationSpec = tween(200)),
@@ -858,14 +870,6 @@ internal fun SparklineCard(
                         onSelect = { onUpdate(config.copy(showPois = it)) },
                     )
                 }
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth().background(Grey100).padding(12.dp)
-                    .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
             }
         }
     }
