@@ -428,6 +428,21 @@ suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) =
 
 @Serializable data class LapPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
+private val lapPowerFieldConfigKey = stringPreferencesKey("lap_power_field_config")
+private val lastLapPowerFieldConfigKey = stringPreferencesKey("last_lap_power_field_config")
+
+fun Context.streamLapPowerFieldConfig(isLastLap: Boolean): Flow<LapPowerFieldConfig> =
+    streamConfig(
+        if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey,
+        LapPowerFieldConfig(),
+    )
+
+suspend fun Context.saveLapPowerFieldConfig(isLastLap: Boolean, config: LapPowerFieldConfig) =
+    saveConfig(
+        if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey,
+        config,
+    )
+
 // --- PowerZoneFieldConfig ---
 
 @Serializable
@@ -456,21 +471,6 @@ fun Context.streamMaxPowerFieldConfig(): Flow<MaxPowerFieldConfig> =
 
 suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
     saveConfig(maxPowerFieldConfigKey, config)
-
-private val lapPowerFieldConfigKey = stringPreferencesKey("lap_power_field_config")
-private val lastLapPowerFieldConfigKey = stringPreferencesKey("last_lap_power_field_config")
-
-fun Context.streamLapPowerFieldConfig(isLastLap: Boolean): Flow<LapPowerFieldConfig> =
-    streamConfig(
-        if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey,
-        LapPowerFieldConfig(),
-    )
-
-suspend fun Context.saveLapPowerFieldConfig(isLastLap: Boolean, config: LapPowerFieldConfig) =
-    saveConfig(
-        if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey,
-        config,
-    )
 
 // --- GradeFieldConfig ---
 
