@@ -22,7 +22,7 @@ Zone coloring supports both background-fill and text-color styles across multipl
 | Zone color palettes | Karoo only                                                                                                                                                         | Karoo, Wahoo, Zwift, and Intervals.icu                                                                                                                       |
 | Zone coloring style | Background fill only                                                                                                                                               | Background fill or text color                                                                                                                                |
 | Grade coloring      | Not available                                                                                                                                                      | Color-coded by road gradient steepness; Karoo, Wahoo, and Garmin palettes                                                                                    |
-| Grade smoothing     | Unknown                                                                                                                                                            | [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) with α=0.15 (~6 s time constant) to reduce noise from GPS elevation changes                      |
+| Grade smoothing     | Unknown                                                                                                                                                            | [Ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) slope over a 30 m distance window to reduce noise from GPS elevation jitter   |
 | Average speed       | Exclusive paused time only                                                                                                                                         | Both inclusive and exclusive paused time variants                                                                                                            |
 | Avg speed threshold | Not available                                                                                                                                                      | Configurable single threshold or min/max range with warning bands                                                                                            |
 | Time formatting     | Ambigious `hh:mm` or `mm:ss` depending on duration                                                                                                                 | Unambiguous: `1h23m45s`, `1h23'45"`, or `01:23:45`                                                                                                           |
@@ -63,7 +63,7 @@ A [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edw
 
 ### Smoothing
 
-Grade smoothing uses [EWMA](https://en.wikipedia.org/wiki/Exponential_smoothing) (Exponentially Weighted Moving Average) to reduce noise from elevation sensor jitter. EWMA smooths using your recent observations while giving more weight to the most recent ones. ETA estimation uses [DEWMA](https://github.com/jpweytjens/godot) (Double EWMA), which combines a fast and slow component to account for both short-term changes like the current gradient and longer-term trends like general fatigue. 
+Grade smoothing fits an [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) line through the elevation samples over the most recent 30 m of travel and uses its slope as the gradient. The distance-based window keeps the result consistent regardless of speed and avoids smearing the gradient when stopped. ETA estimation uses [DEWMA](https://github.com/jpweytjens/godot) (Double EWMA), which combines a fast and slow component to account for both short-term changes like the current gradient and longer-term trends like general fatigue. 
 
 DEWMA is a proof of concept rather than a production-ready alternative to the native Karoo ETA. See [Godot](https://github.com/jpweytjens/godot) for the ongoing work toward a gradient-aware, forward-looking ETA that addresses these limitations.
 
@@ -120,7 +120,7 @@ Complete list of data fields provided by Barberfish, grouped by category.
 
 | Field     | Smoothing      | Zone color (palette) |
 |-----------|----------------|----------------------|
-| Grade     | EWMA (fixed α) | ✓ (grade)            |
+| Grade     | OLS (30 m window) | ✓ (grade)            |
 | Sparkline | —              | ✓ (grade)            |
 
 ### Time
