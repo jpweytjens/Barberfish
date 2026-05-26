@@ -40,6 +40,17 @@ internal val karooDark = Color(0xFF1B2D2D)
 internal fun Color.isReadableOnKaroo(minLc: Double = 45.0) =
     abs(apcaContrast(this, karooDark)) >= minLc
 
+// Pick whichever of [textOptions] yields the higher APCA |Lc| against [bg].
+// Used in BACKGROUND colorMode so dark fills (Turbo crimson, etc.) get black
+// text while light fills keep white, regardless of system night mode.
+internal fun bestTextOnBackground(
+    bg: Color,
+    textOptions: Pair<Color, Color> = Color.White to Color.Black,
+): Color {
+    val (a, b) = textOptions
+    return if (abs(apcaContrast(a, bg)) >= abs(apcaContrast(b, bg))) a else b
+}
+
 // Karoo power zones (7 zones, low to high)
 internal val karooPowerColors =
     listOf(

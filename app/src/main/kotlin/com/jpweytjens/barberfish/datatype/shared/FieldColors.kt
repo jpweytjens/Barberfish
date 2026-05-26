@@ -51,12 +51,16 @@ private fun thresholdColorConfig(
 ): ColorConfig {
     val defaultText = if (isNightMode) Color.White else Color.Black
     return when (colorMode) {
-        ZoneColorMode.BACKGROUND -> ColorConfig(
-            valueText = defaultText,
-            headerText = defaultText,
-            iconTint = defaultText,
-            background = thresholdBackgroundColor(factor, isNightMode),
-        )
+        ZoneColorMode.BACKGROUND -> {
+            val bg = thresholdBackgroundColor(factor, isNightMode)
+            val onBgText = bestTextOnBackground(bg)
+            ColorConfig(
+                valueText = onBgText,
+                headerText = onBgText,
+                iconTint = onBgText,
+                background = bg,
+            )
+        }
         ZoneColorMode.TEXT -> ColorConfig(
             valueText = thresholdTextColor(factor, isNightMode),
             headerText = defaultText,
@@ -278,7 +282,8 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boo
     if (this is FieldColor.Threshold) return thresholdColorConfig(factor, colorMode, isNightMode)
     val defaultText = if (isNightMode) Color.White else Color.Black
     val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColor() else null
-    val onBg = bg != null
+    // On a colored fill, pick whichever of white/black gives higher APCA contrast.
+    val onBgText: Color? = bg?.let { bestTextOnBackground(it) }
     val valueColor: Color =
         when {
             // Error/Muted always use their own text color regardless of colorMode.
@@ -286,13 +291,17 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boo
             this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: defaultText
             this is FieldColor.StreamState -> defaultText
             colorMode == ZoneColorMode.TEXT -> toColor() ?: defaultText
-            onBg -> defaultText
+            onBgText != null -> onBgText
             else -> defaultText
         }
     return ColorConfig(
         valueText = valueColor,
-        headerText = defaultText,
-        iconTint = if (onBg || this is FieldColor.StreamState) defaultText else ICON_TINT_TEAL,
+        headerText = onBgText ?: defaultText,
+        iconTint = when {
+            this is FieldColor.StreamState -> defaultText
+            onBgText != null -> onBgText
+            else -> ICON_TINT_TEAL
+        },
         background = bg,
     )
 }

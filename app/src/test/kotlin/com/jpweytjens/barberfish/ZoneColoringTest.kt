@@ -1,20 +1,28 @@
 package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import com.jpweytjens.barberfish.datatype.shared.apcaContrast
+import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
+import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.hrZone
+import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.hsluvPowerColors
 import com.jpweytjens.barberfish.datatype.shared.intervalsHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadable
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.extension.GradePalette
 import io.hammerhead.karooext.models.UserProfile
 import kotlin.math.abs
+import kotlin.math.sqrt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -97,6 +105,99 @@ class ZoneColoringTest {
     @Test fun `Zwift HR Z3 readable on karoo dark`() = assertReadable("Zwift HR Z3", zwiftHrColorsReadable[2])
     @Test fun `Zwift HR Z4 readable on karoo dark`() = assertReadable("Zwift HR Z4", zwiftHrColorsReadable[3])
     @Test fun `Zwift HR Z5 readable on karoo dark`() = assertReadable("Zwift HR Z5", zwiftHrColorsReadable[4])
+
+    // --- bestTextOnBackground picker ---
+    // The runtime rule in FieldColors.toColorConfig: in BACKGROUND mode, pick the
+    // text color (white vs black) with max APCA |Lc| against the fill color.
+
+    private fun assertPickReadable(name: String, bg: Color, threshold: Double = 45.0) {
+        val pick = bestTextOnBackground(bg)
+        val lc = abs(apcaContrast(pick, bg))
+        val bgHex = bg.value.toString(16).uppercase().takeLast(8)
+        assertTrue("$name (bg=#$bgHex) Lc=${"%.1f".format(lc)} < $threshold", lc >= threshold)
+    }
+
+    @Test fun `picker chooses white on pure black`() =
+        assertEquals(Color.White, bestTextOnBackground(Color.Black))
+
+    @Test fun `picker chooses black on pure white`() =
+        assertEquals(Color.Black, bestTextOnBackground(Color.White))
+
+    @Test
+    fun `picker yields readable contrast on every power palette zone`() {
+        for (palette in ZonePalette.entries) {
+            for (readable in listOf(true, false)) {
+                for (zone in 1..7) {
+                    assertPickReadable(
+                        "$palette power Z$zone readable=$readable",
+                        powerZoneColor(zone, palette, readable),
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `picker yields readable contrast on every hr palette zone`() {
+        for (palette in ZonePalette.entries) {
+            for (readable in listOf(true, false)) {
+                for (zone in 1..5) {
+                    assertPickReadable(
+                        "$palette HR Z$zone readable=$readable",
+                        hrZoneColor(zone, palette, readable),
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `picker yields readable contrast on every grade palette band`() {
+        // Sweep grades wide enough to hit every band on every palette (incl. Turbo's negatives).
+        val grades = generateSequence(-15.0) { if (it >= 30.0) null else it + 0.5 }.toList()
+        for (palette in GradePalette.entries) {
+            for (readable in listOf(true, false)) {
+                val seen = mutableSetOf<ULong>()
+                for (g in grades) {
+                    val bg = gradeColor(g, palette, readable) ?: continue
+                    if (!seen.add(bg.value)) continue
+                    assertPickReadable("$palette grade=$g readable=$readable", bg)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `picker yields readable contrast across the threshold gradient`() {
+        // Reconstructs thresholdBackgroundColor's lerp (Black/White → RDYLGN_RED/GREEN with sqrt).
+        val red = Color(0xFFD73027)
+        val green = Color(0xFF1A9850)
+        for (isNight in listOf(true, false)) {
+            val neutral = if (isNight) Color.Black else Color.White
+            for (i in -10..10) {
+                val f = i / 10f
+                val end = if (f >= 0f) green else red
+                val bg = lerp(neutral, end, sqrt(abs(f)))
+                assertPickReadable("threshold isNight=$isNight factor=$f", bg)
+            }
+        }
+    }
+
+    // Turbo extremes — sanity check that the picker actually flips on bright shades.
+    @Test fun `Turbo crimson keeps white text`() =
+        assertEquals(Color.White, bestTextOnBackground(Color(0xFF8E1201)))
+
+    @Test fun `Turbo dark purple keeps white text`() =
+        assertEquals(Color.White, bestTextOnBackground(Color(0xFF401C4C)))
+
+    @Test fun `Turbo yellow flips to black text`() =
+        assertEquals(Color.Black, bestTextOnBackground(Color(0xFFF1D749)))
+
+    @Test fun `Turbo lime flips to black text`() =
+        assertEquals(Color.Black, bestTextOnBackground(Color(0xFFB0F94D)))
+
+    @Test fun `Turbo mint flips to black text`() =
+        assertEquals(Color.Black, bestTextOnBackground(Color(0xFF30F0A9)))
 
     // --- Zone boundary math ---
 
