@@ -55,7 +55,7 @@ import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
-import com.jpweytjens.barberfish.datatype.shared.Delay
+import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
@@ -350,7 +350,7 @@ private fun HUDPreview(
     LaunchedEffect(states) {
         index = 0
         while (true) {
-            delay(Delay.PREVIEW.time)
+            delay(PREVIEW_DELAY_MS)
             index = (index + 1) % states.size
         }
     }

@@ -104,7 +104,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
-import com.jpweytjens.barberfish.datatype.shared.Delay
+import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
@@ -1148,7 +1148,7 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     LaunchedEffect(previewFields) {
         index = 0
         while (true) {
-            delay(Delay.PREVIEW.time)
+            delay(PREVIEW_DELAY_MS)
             index = (index + 1) % previewFields.size
         }
     }
