@@ -158,8 +158,43 @@ def render_palette_svg(
     return f"{header}\n{row1}\n{row2}\n</svg>\n"
 
 
+def _resolve_text_palette(
+    palettes: dict[str, list[str]],
+    regular_key: str,
+    readable_key: str | None,
+) -> list[str]:
+    """Pick the palette hexes to use as text-mode colors.
+
+    If a readable variant exists, use it (it's what the app renders in text
+    mode). Otherwise fall back to the regular palette.
+    """
+    if readable_key and readable_key in palettes:
+        return palettes[readable_key]
+    return palettes[regular_key]
+
+
+def _write_zone_palettes(out_dir: Path) -> list[Path]:
+    written: list[Path] = []
+    for slug, regular_key, readable_key in ZONE_PALETTES:
+        fill_hexes = POWER_PALETTES[regular_key]
+        text_hexes = _resolve_text_palette(POWER_PALETTES, regular_key, readable_key)
+        labels = POWER_ZONE_LABELS
+        svg = render_palette_svg(fill_hexes, text_hexes, labels)
+        path = out_dir / f"palette-zone-{slug}.svg"
+        path.write_text(svg, encoding="utf-8")
+        written.append(path)
+    return written
+
+
 def main() -> None:
-    raise NotImplementedError("filled in by later tasks")
+    out_dir = Path(__file__).parent.parent / "docs" / "img"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    written = []
+    written.extend(_write_zone_palettes(out_dir))
+
+    for path in written:
+        print(f"wrote {path}")
 
 
 if __name__ == "__main__":

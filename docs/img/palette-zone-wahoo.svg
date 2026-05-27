@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="392" height="56" viewBox="0 0 392 56">
+<rect x="0" y="0" width="56" height="26" fill="#000000" />
+<text x="28.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#C0C0C0" text-anchor="middle">Z1</text>
+<rect x="56" y="0" width="56" height="26" fill="#000000" />
+<text x="84.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#868FDC" text-anchor="middle">Z2</text>
+<rect x="112" y="0" width="56" height="26" fill="#000000" />
+<text x="140.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#549AD9" text-anchor="middle">Z3</text>
+<rect x="168" y="0" width="56" height="26" fill="#000000" />
+<text x="196.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#48B830" text-anchor="middle">Z4</text>
+<rect x="224" y="0" width="56" height="26" fill="#000000" />
+<text x="252.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F0D818" text-anchor="middle">Z5</text>
+<rect x="280" y="0" width="56" height="26" fill="#000000" />
+<text x="308.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#ED6F1A" text-anchor="middle">Z6</text>
+<rect x="336" y="0" width="56" height="26" fill="#000000" />
+<text x="364.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F86159" text-anchor="middle">Z7</text>
+<rect x="0" y="30" width="56" height="26" fill="#C0C0C0" />
+<text x="28.0" y="47.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">Z1</text>
+<rect x="56" y="30" width="56" height="26" fill="#253070" />
+<text x="84.0" y="47.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Z2</text>
+<rect x="112" y="30" width="56" height="26" fill="#4E90CC" />
+<text x="140.0" y="47.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Z3</text>
+<rect x="168" y="30" width="56" height="26" fill="#48B830" />
+<text x="196.0" y="47.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Z4</text>
+<rect x="224" y="30" width="56" height="26" fill="#F0D818" />
+<text x="252.0" y="47.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">Z5</text>
+<rect x="280" y="30" width="56" height="26" fill="#E06818" />
+<text x="308.0" y="47.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Z6</text>
+<rect x="336" y="30" width="56" height="26" fill="#E03020" />
+<text x="364.0" y="47.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Z7</text>
+</svg>
