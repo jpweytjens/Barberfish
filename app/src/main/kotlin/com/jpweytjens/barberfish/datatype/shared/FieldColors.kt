@@ -19,7 +19,7 @@ internal val CLIMBER_BLUE             = Color(0xFF2086d8)
 internal val KAROO_REJOIN_RED         = Color(0xFFfc292b)
 internal val KAROO_DESTINATION_PURPLE = Color(0xFFddacfa)
 internal val TextDark      = Color(0xFF1B2D2D)
-internal val LemonYellow   = Color(0xFFFFE900)
+internal val BarberfishYellow = Color(0xFFFBE401)
 internal val OceanBlue     = Color(0xFF2A679A)
 internal val BackButtonTint = Color(0xFFA0B4BE)
 
