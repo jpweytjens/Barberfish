@@ -186,12 +186,31 @@ def _write_zone_palettes(out_dir: Path) -> list[Path]:
     return written
 
 
+def _write_grade_palettes(out_dir: Path) -> list[Path]:
+    written: list[Path] = []
+    for slug, regular_key, readable_key in GRADE_PALETTE_ORDER:
+        # GRADE_PALETTES entries are list[(label, hex)] — split into parallel lists.
+        regular_entries = GRADE_PALETTES[regular_key]
+        labels = [label for label, _ in regular_entries]
+        fill_hexes = [hex_ for _, hex_ in regular_entries]
+        if readable_key and readable_key in GRADE_PALETTES:
+            text_hexes = [hex_ for _, hex_ in GRADE_PALETTES[readable_key]]
+        else:
+            text_hexes = fill_hexes
+        svg = render_palette_svg(fill_hexes, text_hexes, labels)
+        path = out_dir / f"palette-grade-{slug}.svg"
+        path.write_text(svg, encoding="utf-8")
+        written.append(path)
+    return written
+
+
 def main() -> None:
     out_dir = Path(__file__).parent.parent / "docs" / "img"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     written = []
     written.extend(_write_zone_palettes(out_dir))
+    written.extend(_write_grade_palettes(out_dir))
 
     for path in written:
         print(f"wrote {path}")

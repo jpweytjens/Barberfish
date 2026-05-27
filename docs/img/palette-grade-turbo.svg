@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="610" height="52" viewBox="0 0 610 52">
+<rect x="0" y="0" width="61" height="26" fill="#000000" />
+<text x="30.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#8E1201" text-anchor="middle">15%+</text>
+<rect x="61" y="0" width="61" height="26" fill="#000000" />
+<text x="91.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#BC2900" text-anchor="middle">12–15%</text>
+<rect x="122" y="0" width="61" height="26" fill="#000000" />
+<text x="152.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#DD4700" text-anchor="middle">9–12%</text>
+<rect x="183" y="0" width="61" height="26" fill="#000000" />
+<text x="213.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FE932C" text-anchor="middle">6–9%</text>
+<rect x="244" y="0" width="61" height="26" fill="#000000" />
+<text x="274.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F1D749" text-anchor="middle">3–6%</text>
+<rect x="305" y="0" width="61" height="26" fill="#000000" />
+<text x="335.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#B0F94D" text-anchor="middle">0–3%</text>
+<rect x="366" y="0" width="61" height="26" fill="#000000" />
+<text x="396.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#30F0A9" text-anchor="middle">-3–0%</text>
+<rect x="427" y="0" width="61" height="26" fill="#000000" />
+<text x="457.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#2BC7F0" text-anchor="middle">-6–-3%</text>
+<rect x="488" y="0" width="61" height="26" fill="#000000" />
+<text x="518.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#5783E9" text-anchor="middle">-9–-6%</text>
+<rect x="549" y="0" width="61" height="26" fill="#000000" />
+<text x="579.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#401C4C" text-anchor="middle">&lt;-9%</text>
+<rect x="0" y="26" width="61" height="26" fill="#8E1201" />
+<text x="30.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">15%+</text>
+<rect x="61" y="26" width="61" height="26" fill="#BC2900" />
+<text x="91.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">12–15%</text>
+<rect x="122" y="26" width="61" height="26" fill="#DD4700" />
+<text x="152.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">9–12%</text>
+<rect x="183" y="26" width="61" height="26" fill="#FE932C" />
+<text x="213.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">6–9%</text>
+<rect x="244" y="26" width="61" height="26" fill="#F1D749" />
+<text x="274.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">3–6%</text>
+<rect x="305" y="26" width="61" height="26" fill="#B0F94D" />
+<text x="335.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">0–3%</text>
+<rect x="366" y="26" width="61" height="26" fill="#30F0A9" />
+<text x="396.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">-3–0%</text>
+<rect x="427" y="26" width="61" height="26" fill="#2BC7F0" />
+<text x="457.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">-6–-3%</text>
+<rect x="488" y="26" width="61" height="26" fill="#5783E9" />
+<text x="518.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">-9–-6%</text>
+<rect x="549" y="26" width="61" height="26" fill="#401C4C" />
+<text x="579.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">&lt;-9%</text>
+</svg>

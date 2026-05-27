@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="637" height="52" viewBox="0 0 637 52">
+<rect x="0" y="0" width="91" height="26" fill="#000000" />
+<text x="45.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#DE5AF3" text-anchor="middle">&gt;23.5%</text>
+<rect x="91" y="0" width="91" height="26" fill="#000000" />
+<text x="136.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FC5C61" text-anchor="middle">19.6–23.5%</text>
+<rect x="182" y="0" width="91" height="26" fill="#000000" />
+<text x="227.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F86421" text-anchor="middle">15.6–19.5%</text>
+<rect x="273" y="0" width="91" height="26" fill="#000000" />
+<text x="318.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F08868" text-anchor="middle">12.6–15.5%</text>
+<rect x="364" y="0" width="91" height="26" fill="#000000" />
+<text x="409.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F0D800" text-anchor="middle">7.6–12.5%</text>
+<rect x="455" y="0" width="91" height="26" fill="#000000" />
+<text x="500.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#40D078" text-anchor="middle">4.6–7.5%</text>
+<rect x="546" y="0" width="91" height="26" fill="#000000" />
+<text x="591.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#22AA48" text-anchor="middle">&lt;4.6%</text>
+<rect x="0" y="26" width="91" height="26" fill="#9020A0" />
+<text x="45.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">&gt;23.5%</text>
+<rect x="91" y="26" width="91" height="26" fill="#D01020" />
+<text x="136.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">19.6–23.5%</text>
+<rect x="182" y="26" width="91" height="26" fill="#F06020" />
+<text x="227.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">15.6–19.5%</text>
+<rect x="273" y="26" width="91" height="26" fill="#F08868" />
+<text x="318.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">12.6–15.5%</text>
+<rect x="364" y="26" width="91" height="26" fill="#F0D800" />
+<text x="409.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">7.6–12.5%</text>
+<rect x="455" y="26" width="91" height="26" fill="#40D078" />
+<text x="500.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">4.6–7.5%</text>
+<rect x="546" y="26" width="91" height="26" fill="#1A8C3A" />
+<text x="591.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">&lt;4.6%</text>
+</svg>
