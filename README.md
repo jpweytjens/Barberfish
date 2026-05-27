@@ -7,21 +7,19 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 <br clear="left">
 
-## What it is
-
 Barberfish replaces a core set of Karoo data fields with reimplementations that match the native look and feel and add features the built-in fields don't offer. A configurable 3- or 4-column HUD groups any combination of speed, heart rate, power, cadence, grade, and other fields side by side with per-slot zone coloring. When a route is loaded, an optional color-coded elevation sparkline below the HUD shows the upcoming terrain. All field settings are configured in the Barberfish app on your Karoo with live-updating previews — changes take effect immediately without restarting your ride.
 
 <p align="center"><img src="docs/hud_sparkline.jpg" width="600" alt="HUD with elevation sparkline"></p>
 
-## What's different
+## Enhancements
 
 ### Algorithms
 
-Grade is smoothed with [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) over a 30 m distance window. The distance-based window keeps the result consistent regardless of speed and avoids smearing the gradient when stopped. ETA is estimated with a [DEWMA](https://github.com/jpweytjens/godot) blend of a 5-minute fast and 1-hour slow component with a configurable speed prior — experimental, see [Godot](https://github.com/jpweytjens/godot) for the ongoing work toward a gradient-aware, forward-looking replacement.
+Where Karoo's built-in smoothing and ETA methods are unknown, Barberfish uses explicit, documented algorithms. Grade is smoothed with [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) over a 30 m distance window — consistent regardless of speed, no smearing when stopped. ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens/godot) component with a configurable speed prior — experimental, see [Godot](https://github.com/jpweytjens/godot) for the ongoing forward-looking replacement.
 
 ### Zone & grade coloring
 
-Every Barberfish field uses one of three color modes — Text, Fill, or None — configurable per field. Zone palettes: Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv. Grade palettes: Karoo, Wahoo, Garmin, Zwift, HSLuv, and Turbo. Brand-color palettes ship in a contrast-tuned variant that meets [APCA](https://apcacontrast.com/) Lc ≥ 45 for large bold text on the dark Karoo background — used automatically in Text mode. In Fill mode the brand colors are preserved and the overlay text color is auto-picked per cell (black or white, whichever gives higher APCA contrast). HSLuv and Turbo are designed to be readable in both modes without correction.
+Every Barberfish field uses one of three color modes — Text, Fill, or None — configurable per field. Zone palettes: Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv. Grade palettes: Karoo, Wahoo, Garmin, Zwift, HSLuv, and Turbo. Brand-color palettes ship contrast-tuned for Text mode; Fill mode auto-picks the overlay text color per cell. HSLuv and Turbo work in both modes without correction. See [docs/color-palettes.md](docs/color-palettes.md) for the contrast methodology.
 
 ### Formatting
 
@@ -37,7 +35,7 @@ Average speed comes in two flavors: including paused time (e.g. for [ACP randonn
 
 ### Layout
 
-A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline below the HUD shows recent terrain and the upcoming profile with non-linear zoom around your current position — tap to cycle 5/10/20 km lookahead. For a full 1:1 elevation chart with POIs, see [RouteGraph](https://github.com/timklge/karoo-routegraph). All settings update live with field previews on the config screen; when a route is loaded, the sparkline preview shows your actual route rather than a placeholder.
+A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline below the HUD shows recent terrain and the upcoming profile with non-linear zoom around your current position — tap to cycle 5/10/20 km lookahead.
 
 ## Color palettes
 
@@ -45,15 +43,15 @@ Each palette below is shown in both rendering modes. The top row is **Text mode*
 
 ### Zone palettes
 
-| Palette       | Preview                                            |
-| ------------- | -------------------------------------------------- |
-| Karoo         | ![](docs/img/palette-zone-karoo.svg)               |
-| Wahoo         | ![](docs/img/palette-zone-wahoo.svg)               |
-| Zwift         | ![](docs/img/palette-zone-zwift.svg)               |
-| Intervals.icu | ![](docs/img/palette-zone-intervals.svg)           |
-| HSLuv         | ![](docs/img/palette-zone-hsluv.svg)               |
+| Palette       | Power preview                             | HR preview                             |
+| ------------- | ----------------------------------------- | -------------------------------------- |
+| Karoo         | ![](docs/img/palette-power-karoo.svg)     | ![](docs/img/palette-hr-karoo.svg)     |
+| Wahoo         | ![](docs/img/palette-power-wahoo.svg)     | ![](docs/img/palette-hr-wahoo.svg)     |
+| Zwift         | ![](docs/img/palette-power-zwift.svg)     | ![](docs/img/palette-hr-zwift.svg)     |
+| Intervals.icu | ![](docs/img/palette-power-intervals.svg) | ![](docs/img/palette-hr-intervals.svg) |
+| HSLuv         | ![](docs/img/palette-power-hsluv.svg)     | ![](docs/img/palette-hr-hsluv.svg)     |
 
-Power-zone variants are shown above. Heart-rate variants and full RGB references live in [docs/color-palettes.md](docs/color-palettes.md).
+Full RGB references live in [docs/color-palettes.md](docs/color-palettes.md).
 
 ### Grade palettes
 
@@ -70,50 +68,50 @@ Power-zone variants are shown above. Heart-rate variants and full RGB references
 
 Complete list of data fields provided by Barberfish, grouped by category. Order matches `extension_info.xml`.
 
-| Field                  | Smoothing                                | Zone color / palette  | Threshold                            | Format options |
-| ---------------------- | ---------------------------------------- | --------------------- | ------------------------------------ | -------------- |
-| **HUD**                |                                          |                       |                                      |                |
-| HUD                    | —                                        | per-slot              | per-slot                             | —              |
-| **Power**              |                                          |                       |                                      |                |
-| Power                  | Instant / 3s / 5s / 10s / 30s / 20m / 1h | ✓                     | —                                    | —              |
-| Avg Power              | —                                        | ✓                     | —                                    | —              |
-| Lap Avg Power          | —                                        | ✓                     | —                                    | —              |
-| Last Lap Avg Power     | —                                        | ✓                     | —                                    | —              |
-| NP                     | —                                        | ✓                     | —                                    | —              |
-| Power Zone             | —                                        | ✓ (int/float toggle)  | —                                    | —              |
-| Max Power              | —                                        | ✓                     | —                                    | —              |
-| **Heart Rate**         |                                          |                       |                                      |                |
-| HR                     | —                                        | ✓                     | —                                    | —              |
-| Avg HR                 | —                                        | ✓                     | —                                    | —              |
-| Lap Avg HR             | —                                        | ✓                     | —                                    | —              |
-| Last Lap Avg HR        | —                                        | ✓                     | —                                    | —              |
-| %Max HR                | —                                        | ✓                     | —                                    | —              |
-| Max HR                 | —                                        | ✓                     | —                                    | —              |
-| HR Zone                | —                                        | ✓ (int/float toggle)  | —                                    | —              |
-| **Speed**              |                                          |                       |                                      |                |
-| Speed                  | Instant / 3s / 5s / 10s                  | —                     | ✓ (Fixed / Avg total / Avg moving)   | —              |
-| Avg Speed (Total)      | —                                        | —                     | ✓ (Fixed / Min-max range)            | —              |
-| Avg Speed (Moving)     | —                                        | —                     | ✓ (Fixed / Min-max range)            | —              |
-| **Cadence**            |                                          |                       |                                      |                |
-| Cadence                | Instant / 3s / 5s / 10s                  | —                     | ✓ (Fixed / Min-max range)            | —              |
-| **Climbing**           |                                          |                       |                                      |                |
-| Grade                  | OLS (30 m window)                        | ✓ (grade palette)     | —                                    | —              |
-| Elevation sparkline    | —                                        | ✓ (grade palette)     | —                                    | —              |
-| **Time**               |                                          |                       |                                      |                |
-| Elapsed                | —                                        | —                     | —                                    | ✓              |
-| Moving                 | —                                        | —                     | —                                    | ✓              |
-| Paused                 | —                                        | —                     | —                                    | ✓              |
-| Lap                    | —                                        | —                     | —                                    | ✓              |
-| Last Lap               | —                                        | —                     | —                                    | ✓              |
-| **Navigation & ETA**   |                                          |                       |                                      |                |
-| Time to destination    | —                                        | —                     | —                                    | ✓              |
-| Remaining ride time    | —                                        | —                     | —                                    | ✓              |
-| Time of arrival        | —                                        | —                     | —                                    | —              |
-| **Daylight**           |                                          |                       |                                      |                |
-| Time to sunrise        | —                                        | —                     | —                                    | ✓              |
-| Time to sunset         | —                                        | —                     | —                                    | ✓              |
-| Time to civil dawn     | —                                        | —                     | —                                    | ✓              |
-| Time to civil dusk     | —                                        | —                     | —                                    | ✓              |
+| Field                | Smoothing                                | Zone color / palette | Threshold                          | Format options |
+| -------------------- | ---------------------------------------- | -------------------- | ---------------------------------- | -------------- |
+| **HUD**              |                                          |                      |                                    |                |
+| HUD                  | —                                        | per-slot             | per-slot                           | —              |
+| **Power**            |                                          |                      |                                    |                |
+| Power                | Instant / 3s / 5s / 10s / 30s / 20m / 1h | ✓                    | —                                  | —              |
+| Avg Power            | —                                        | ✓                    | —                                  | —              |
+| Lap Avg Power        | —                                        | ✓                    | —                                  | —              |
+| Last Lap Avg Power   | —                                        | ✓                    | —                                  | —              |
+| NP                   | —                                        | ✓                    | —                                  | —              |
+| Power Zone           | —                                        | ✓ (int/float toggle) | —                                  | —              |
+| Max Power            | —                                        | ✓                    | —                                  | —              |
+| **Heart Rate**       |                                          |                      |                                    |                |
+| HR                   | —                                        | ✓                    | —                                  | —              |
+| Avg HR               | —                                        | ✓                    | —                                  | —              |
+| Lap Avg HR           | —                                        | ✓                    | —                                  | —              |
+| Last Lap Avg HR      | —                                        | ✓                    | —                                  | —              |
+| %Max HR              | —                                        | ✓                    | —                                  | —              |
+| Max HR               | —                                        | ✓                    | —                                  | —              |
+| HR Zone              | —                                        | ✓ (int/float toggle) | —                                  | —              |
+| **Speed**            |                                          |                      |                                    |                |
+| Speed                | Instant / 3s / 5s / 10s                  | —                    | ✓ (Fixed / Avg total / Avg moving) | —              |
+| Avg Speed (Total)    | —                                        | —                    | ✓ (Fixed / Min-max range)          | —              |
+| Avg Speed (Moving)   | —                                        | —                    | ✓ (Fixed / Min-max range)          | —              |
+| **Cadence**          |                                          |                      |                                    |                |
+| Cadence              | Instant / 3s / 5s / 10s                  | —                    | ✓ (Fixed / Min-max range)          | —              |
+| **Climbing**         |                                          |                      |                                    |                |
+| Grade                | OLS (30 m window)                        | ✓ (grade palette)    | —                                  | —              |
+| Elevation sparkline  | —                                        | ✓ (grade palette)    | —                                  | —              |
+| **Time**             |                                          |                      |                                    |                |
+| Elapsed              | —                                        | —                    | —                                  | ✓              |
+| Moving               | —                                        | —                    | —                                  | ✓              |
+| Paused               | —                                        | —                    | —                                  | ✓              |
+| Lap                  | —                                        | —                    | —                                  | ✓              |
+| Last Lap             | —                                        | —                    | —                                  | ✓              |
+| **Navigation & ETA** |                                          |                      |                                    |                |
+| Time to destination  | —                                        | —                    | —                                  | ✓              |
+| Remaining ride time  | —                                        | —                    | —                                  | ✓              |
+| Time of arrival      | —                                        | —                    | —                                  | —              |
+| **Daylight**         |                                          |                      |                                    |                |
+| Time to sunrise      | —                                        | —                    | —                                  | ✓              |
+| Time to sunset       | —                                        | —                    | —                                  | ✓              |
+| Time to civil dawn   | —                                        | —                    | —                                  | ✓              |
+| Time to civil dusk   | —                                        | —                    | —                                  | ✓              |
 
 ## Compatibility
 
