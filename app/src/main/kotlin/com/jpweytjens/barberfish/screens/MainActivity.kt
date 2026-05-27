@@ -1464,13 +1464,6 @@ private fun ZonePaletteDropdown(
             }
         }
     }
-    if (selected == ZonePalette.HSLUV) {
-        Text(
-            "HSLuv is designed for Karoo's dark screen",
-            fontSize = 10.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
 }
 
 // Two-row preview demonstrating how the selected palette renders in each
