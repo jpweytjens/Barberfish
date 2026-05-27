@@ -1556,12 +1556,13 @@ private fun DualRowPalettePreview(
     textRowColors: List<Color>,
     fillRowColors: List<Color>,
 ) {
+    val textRowBg = if (isSystemInDarkTheme()) Color.Black else Color.White
     Column(modifier = Modifier.fillMaxWidth()) {
         Caption("Text mode (top) · Fill mode (bottom)")
         Spacer(modifier = Modifier.height(2.dp))
-        Row(modifier = Modifier.fillMaxWidth().height(28.dp).background(Color.Black)) {
+        Row(modifier = Modifier.fillMaxWidth().height(28.dp).background(textRowBg)) {
             labels.forEachIndexed { i, label ->
-                PreviewSwatch(label = label, bg = Color.Black, text = textRowColors[i])
+                PreviewSwatch(label = label, bg = textRowBg, text = textRowColors[i])
             }
         }
         Row(modifier = Modifier.fillMaxWidth().height(28.dp)) {
