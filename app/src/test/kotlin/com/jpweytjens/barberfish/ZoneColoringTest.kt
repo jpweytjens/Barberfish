@@ -9,15 +9,23 @@ import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.hsluvPowerColors
 import com.jpweytjens.barberfish.datatype.shared.intervalsHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.intervalsHrColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.extension.GradePalette
 import io.hammerhead.karooext.models.UserProfile
@@ -105,6 +113,40 @@ class ZoneColoringTest {
     @Test fun `Zwift HR Z3 readable on karoo dark`() = assertReadable("Zwift HR Z3", zwiftHrColorsReadableDark[2])
     @Test fun `Zwift HR Z4 readable on karoo dark`() = assertReadable("Zwift HR Z4", zwiftHrColorsReadableDark[3])
     @Test fun `Zwift HR Z5 readable on karoo dark`() = assertReadable("Zwift HR Z5", zwiftHrColorsReadableDark[4])
+
+    // --- Readability audit: light-mode palettes vs white (#FFFFFF) datafield background ---
+
+    private val white = Color(0xFFFFFFFF)
+    private fun assertReadableOnWhite(name: String, color: Color, threshold: Double = 45.0) {
+        val lc = abs(apcaContrast(color, white))
+        assertTrue("$name hex=${color.value.toString(16).uppercase()} Lc=${"%.1f".format(lc)} < $threshold", lc >= threshold)
+    }
+
+    @Test
+    fun `every light-readable power palette zone meets contrast on white`() {
+        val palettes = mapOf(
+            "Karoo"     to karooPowerColorsReadableLight,
+            "Wahoo"     to wahooPowerColorsReadableLight,
+            "Intervals" to intervalsPowerColorsReadableLight,
+            "Zwift"     to zwiftPowerColorsReadableLight,
+        )
+        for ((name, colors) in palettes) {
+            colors.forEachIndexed { i, c -> assertReadableOnWhite("$name Z${i + 1}", c) }
+        }
+    }
+
+    @Test
+    fun `every light-readable hr palette zone meets contrast on white`() {
+        val palettes = mapOf(
+            "Karoo HR"     to karooHrColorsReadableLight,
+            "Wahoo HR"     to wahooHrColorsReadableLight,
+            "Intervals HR" to intervalsHrColorsReadableLight,
+            "Zwift HR"     to zwiftHrColorsReadableLight,
+        )
+        for ((name, colors) in palettes) {
+            colors.forEachIndexed { i, c -> assertReadableOnWhite("$name Z${i + 1}", c) }
+        }
+    }
 
     // --- bestTextOnBackground picker ---
     // The runtime rule in FieldColors.toColorConfig: in BACKGROUND mode, pick the

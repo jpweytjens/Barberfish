@@ -150,7 +150,9 @@ private val ZWIFT_GRADE_BANDS = listOf(
      0.0 to Color(0xFF39A7D6), //  0–3%   — blue
 )
 
-// Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against black. Pre-computed via scripts/apca_hsluv.py.
+// Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against the datafield
+// background. Dark variants target #000000 (night mode); Light variants
+// target #FFFFFF (day mode). Pre-computed via scripts/apca_hsluv.py.
 private val ZWIFT_GRADE_BANDS_READABLE_DARK = listOf(
      9.0 to Color(0xFFEB6D66), //  9%+    — red
      6.0 to Color(0xFFFE8253), //  6–9%   — orange
@@ -181,8 +183,11 @@ private val KAROO_GRADE_BANDS_READABLE_DARK = listOf(
      0.0 to karooPowerColorsReadableDark[0], //  <4.6%     — dark green
 )
 
-// Turbo grade bands — readable by construction; the only palette that colors negative grades.
-// Single variant: no _READABLE_DARK split.
+// Turbo grade bands — the only palette that colors negative grades. Fill
+// values are designed for visual distinction; the readable variants
+// brighten the darkest blue/purple descent bands for legibility in text
+// mode (night) and tone down the lighter bands for legibility on white
+// (day).
 private val TURBO_GRADE_BANDS = listOf(
     15.0 to Color(0xFF8E1201),                   // [15, ∞)  — deep crimson
     12.0 to Color(0xFFBC2900),                   // [12, 15) — dark red
@@ -195,6 +200,60 @@ private val TURBO_GRADE_BANDS = listOf(
     -9.0 to Color(0xFF5783E9),                   // [-9, -6) — blue
     Double.NEGATIVE_INFINITY to Color(0xFF401C4C) // (-∞, -9) — dark purple
 )
+private val TURBO_GRADE_BANDS_READABLE_DARK = listOf(
+    15.0 to Color(0xFFFF5950),
+    12.0 to Color(0xFFFF5A45),
+     9.0 to Color(0xFFFF5C27),
+     6.0 to Color(0xFFFE932C),
+     3.0 to Color(0xFFF1D749),
+     0.0 to Color(0xFFB0F94D),
+    -3.0 to Color(0xFF30F0A9),
+    -6.0 to Color(0xFF2BC7F0),
+    -9.0 to Color(0xFF7092EC),
+    Double.NEGATIVE_INFINITY to Color(0xFFBF79D9),
+)
+
+private val ZWIFT_GRADE_BANDS_READABLE_LIGHT = listOf(
+     9.0 to Color(0xFFEA5147),
+     6.0 to Color(0xFFFE8253),
+     3.0 to Color(0xFFCDA70C),
+     0.0 to Color(0xFF39A7D6),
+)
+private val WAHOO_GRADE_BANDS_READABLE_LIGHT = listOf(
+    20.0 to Color(0xFF540000),
+    12.0 to Color(0xFFAA0200),
+     8.0 to Color(0xFFFF5501),
+     4.0 to Color(0xFFB1B100),
+     0.0 to Color(0xFF02C500),
+)
+private val GARMIN_GRADE_BANDS_READABLE_LIGHT = listOf(
+    12.0 to Color(0xFFED1B24),
+     9.0 to Color(0xFFF36C72),
+     6.0 to Color(0xFFE59C30),
+     3.0 to Color(0xFFB7AE2F),
+     0.0 to Color(0xFF6EBE43),
+)
+private val KAROO_GRADE_BANDS_READABLE_LIGHT = listOf(
+    23.6 to karooPowerColorsReadableLight[6],
+    19.6 to karooPowerColorsReadableLight[5],
+    15.6 to karooPowerColorsReadableLight[4],
+    12.6 to karooPowerColorsReadableLight[3],
+     7.6 to karooPowerColorsReadableLight[2],
+     4.6 to karooPowerColorsReadableLight[1],
+     0.0 to karooPowerColorsReadableLight[0],
+)
+private val TURBO_GRADE_BANDS_READABLE_LIGHT = listOf(
+    15.0 to Color(0xFF8E1201),
+    12.0 to Color(0xFFBC2900),
+     9.0 to Color(0xFFDD4700),
+     6.0 to Color(0xFFFC8F12),
+     3.0 to Color(0xFFC1AB38),
+     0.0 to Color(0xFF84BB38),
+    -3.0 to Color(0xFF25C187),
+    -6.0 to Color(0xFF27B9E0),
+    -9.0 to Color(0xFF5783E9),
+    Double.NEGATIVE_INFINITY to Color(0xFF401C4C),
+)
 
 internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
     val bands = when (palette) {
@@ -203,7 +262,7 @@ internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolea
         GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE_DARK else KAROO_GRADE_BANDS
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
         GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE_DARK else ZWIFT_GRADE_BANDS
-        GradePalette.TURBO -> TURBO_GRADE_BANDS
+        GradePalette.TURBO -> if (readable) TURBO_GRADE_BANDS_READABLE_DARK else TURBO_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second
 }
