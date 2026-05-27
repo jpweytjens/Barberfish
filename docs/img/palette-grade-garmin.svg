@@ -1,22 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="455" height="52" viewBox="0 0 455 52">
-<rect x="0" y="0" width="91" height="26" fill="#000000" />
-<text x="45.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FA5E60" text-anchor="middle">HC &gt;12%</text>
-<rect x="91" y="0" width="91" height="26" fill="#000000" />
-<text x="136.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F36C72" text-anchor="middle">Cat1 9–12%</text>
-<rect x="182" y="0" width="91" height="26" fill="#000000" />
-<text x="227.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FBAD41" text-anchor="middle">Cat2 6–9%</text>
-<rect x="273" y="0" width="91" height="26" fill="#000000" />
-<text x="318.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F9EE44" text-anchor="middle">Cat3 3–6%</text>
-<rect x="364" y="0" width="91" height="26" fill="#000000" />
-<text x="409.5" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#6EBE43" text-anchor="middle">Cat4 0–3%</text>
-<rect x="0" y="26" width="91" height="26" fill="#ED1B24" />
-<text x="45.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">HC &gt;12%</text>
-<rect x="91" y="26" width="91" height="26" fill="#F36C72" />
-<text x="136.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Cat1 9–12%</text>
-<rect x="182" y="26" width="91" height="26" fill="#FBAD41" />
-<text x="227.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">Cat2 6–9%</text>
-<rect x="273" y="26" width="91" height="26" fill="#F9EE44" />
-<text x="318.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">Cat3 3–6%</text>
-<rect x="364" y="26" width="91" height="26" fill="#6EBE43" />
-<text x="409.5" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">Cat4 0–3%</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="52" viewBox="0 0 340 52">
+<rect x="0" y="0" width="68" height="26" fill="#000000" />
+<text x="34.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#6EBE43" text-anchor="middle">[0, 3)</text>
+<rect x="68" y="0" width="68" height="26" fill="#000000" />
+<text x="102.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F9EE44" text-anchor="middle">[3, 6)</text>
+<rect x="136" y="0" width="68" height="26" fill="#000000" />
+<text x="170.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FBAD41" text-anchor="middle">[6, 9)</text>
+<rect x="204" y="0" width="68" height="26" fill="#000000" />
+<text x="238.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F36C72" text-anchor="middle">[9, 12)</text>
+<rect x="272" y="0" width="68" height="26" fill="#000000" />
+<text x="306.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FA5E60" text-anchor="middle">[12, ∞)</text>
+<rect x="0" y="26" width="68" height="26" fill="#6EBE43" />
+<text x="34.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">[0, 3)</text>
+<rect x="68" y="26" width="68" height="26" fill="#F9EE44" />
+<text x="102.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">[3, 6)</text>
+<rect x="136" y="26" width="68" height="26" fill="#FBAD41" />
+<text x="170.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">[6, 9)</text>
+<rect x="204" y="26" width="68" height="26" fill="#F36C72" />
+<text x="238.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">[9, 12)</text>
+<rect x="272" y="26" width="68" height="26" fill="#ED1B24" />
+<text x="306.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">[12, ∞)</text>
 </svg>

@@ -60,6 +60,22 @@ GRADE_PALETTE_ORDER = [
     ("turbo",  "Turbo",  None),
 ]
 
+# README-style band labels, descent → neutral → steep. Counts match the band
+# counts in GRADE_PALETTES. Replaces the dash-form labels in GRADE_PALETTES
+# (which are ambiguous for negative grades — e.g. "-6–-3%") with the half-open
+# interval notation already used in the README's grade palettes table.
+GRADE_LABELS_README = {
+    "karoo":  ["[0, 5)", "[5, 8)", "[8, 13)", "[13, 16)", "[16, 20)", "[20, 24)", "[24, ∞)"],
+    "wahoo":  ["[0, 4)", "[4, 8)", "[8, 12)", "[12, 20)", "[20, ∞)"],
+    "garmin": ["[0, 3)", "[3, 6)", "[6, 9)", "[9, 12)", "[12, ∞)"],
+    "zwift":  ["[0, 3)", "[3, 6)", "[6, 9)", "[9, ∞)"],
+    "hsluv":  ["[0, 3)", "[3, 6)", "[6, 9)", "[9, 12)", "[12, 15)", "[15, 18)", "[18, ∞)"],
+    "turbo":  [
+        "(-∞, -9)", "[-9, -6)", "[-6, -3)", "[-3, 0)",
+        "[0, 3)", "[3, 6)", "[6, 9)", "[9, 12)", "[12, 15)", "[15, ∞)",
+    ],
+}
+
 
 # ---------------------------------------------------------------------------
 # SVG rendering
@@ -189,14 +205,20 @@ def _write_zone_palettes(out_dir: Path) -> list[Path]:
 def _write_grade_palettes(out_dir: Path) -> list[Path]:
     written: list[Path] = []
     for slug, regular_key, readable_key in GRADE_PALETTE_ORDER:
-        # GRADE_PALETTES entries are list[(label, hex)] — split into parallel lists.
-        regular_entries = GRADE_PALETTES[regular_key]
-        labels = [label for label, _ in regular_entries]
+        # GRADE_PALETTES entries are list[(label, hex)] ordered steep → descent;
+        # the README catalog renders descent → steep, so reverse here and use
+        # the README-style interval-notation labels from GRADE_LABELS_README.
+        regular_entries = list(reversed(GRADE_PALETTES[regular_key]))
         fill_hexes = [hex_ for _, hex_ in regular_entries]
         if readable_key and readable_key in GRADE_PALETTES:
-            text_hexes = [hex_ for _, hex_ in GRADE_PALETTES[readable_key]]
+            readable_entries = list(reversed(GRADE_PALETTES[readable_key]))
+            text_hexes = [hex_ for _, hex_ in readable_entries]
         else:
             text_hexes = fill_hexes
+        labels = GRADE_LABELS_README[slug]
+        assert len(labels) == len(fill_hexes), (
+            f"{slug}: README labels ({len(labels)}) must match band count ({len(fill_hexes)})"
+        )
         svg = render_palette_svg(fill_hexes, text_hexes, labels)
         path = out_dir / f"palette-grade-{slug}.svg"
         path.write_text(svg, encoding="utf-8")
