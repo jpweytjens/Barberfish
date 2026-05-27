@@ -31,6 +31,8 @@ Time formatting is unambiguous across all durations — three formats to pick fr
 | Clock    | `0:23:45`     | `1:23:45`    |
 | Segments | `23m45s`      | `1h23m45s`   |
 
+Power Zone and HR Zone fields toggle between integer (`3`) and one-decimal float (`3.4`) display per-field.
+
 Average speed comes in two flavors: including paused time (e.g. for [ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) checkpoint speeds) and excluding paused time. Speed, average speed, and cadence support threshold coloring: speed compares against a fixed target or its running average; average speed and cadence add a min/max range with warning bands.
 
 ### Layout
@@ -66,52 +68,66 @@ Full RGB references live in [docs/color-palettes.md](docs/color-palettes.md).
 
 ## Data fields
 
-Complete list of data fields provided by Barberfish, grouped by category. Order matches `extension_info.xml`.
+Complete list of data fields provided by Barberfish, grouped by category.
 
-| Field                | Smoothing                                | Zone color / palette | Threshold                          | Format options   |
-| -------------------- | ---------------------------------------- | -------------------- | ---------------------------------- | ---------------- |
-| **HUD**              |                                          |                      |                                    |                  |
-| HUD                  |                                          | per-slot             | per-slot                           |                  |
-| **Power**            |                                          |                      |                                    |                  |
-| Power                | Instant / 3s / 5s / 10s / 30s / 20m / 1h | ✓                    |                                    |                  |
-| Avg Power            |                                          | ✓                    |                                    |                  |
-| Lap Avg Power        |                                          | ✓                    |                                    |                  |
-| Last Lap Avg Power   |                                          | ✓                    |                                    |                  |
-| NP                   |                                          | ✓                    |                                    |                  |
-| Power Zone           |                                          | ✓                    |                                    | int/float toggle |
-| Max Power            |                                          | ✓                    |                                    |                  |
-| **Heart Rate**       |                                          |                      |                                    |                  |
-| HR                   |                                          | ✓                    |                                    |                  |
-| Avg HR               |                                          | ✓                    |                                    |                  |
-| Lap Avg HR           |                                          | ✓                    |                                    |                  |
-| Last Lap Avg HR      |                                          | ✓                    |                                    |                  |
-| %Max HR              |                                          | ✓                    |                                    |                  |
-| Max HR               |                                          | ✓                    |                                    |                  |
-| HR Zone              |                                          | ✓                    |                                    | int/float toggle |
-| **Speed**            |                                          |                      |                                    |                  |
-| Speed                | Instant / 3s / 5s / 10s                  |                      | ✓ (Fixed / Avg total / Avg moving) |                  |
-| Avg Speed (Total)    |                                          |                      | ✓ (Fixed / Min-max range)          |                  |
-| Avg Speed (Moving)   |                                          |                      | ✓ (Fixed / Min-max range)          |                  |
-| **Cadence**          |                                          |                      |                                    |                  |
-| Cadence              | Instant / 3s / 5s / 10s                  |                      | ✓ (Fixed / Min-max range)          |                  |
-| **Climbing**         |                                          |                      |                                    |                  |
-| Grade                | OLS (30 m window)                        | ✓ (grade palette)    |                                    |                  |
-| Elevation sparkline  |                                          | ✓ (grade palette)    |                                    |                  |
-| **Time**             |                                          |                      |                                    |                  |
-| Elapsed              |                                          |                      |                                    | ✓                |
-| Moving               |                                          |                      |                                    | ✓                |
-| Paused               |                                          |                      |                                    | ✓                |
-| Lap                  |                                          |                      |                                    | ✓                |
-| Last Lap             |                                          |                      |                                    | ✓                |
-| **Navigation & ETA** |                                          |                      |                                    |                  |
-| Time to destination  |                                          |                      |                                    | ✓                |
-| Remaining ride time  |                                          |                      |                                    | ✓                |
-| Time of arrival      |                                          |                      |                                    |                  |
-| **Daylight**         |                                          |                      |                                    |                  |
-| Time to sunrise      |                                          |                      |                                    | ✓                |
-| Time to sunset       |                                          |                      |                                    | ✓                |
-| Time to civil dawn   |                                          |                      |                                    | ✓                |
-| Time to civil dusk   |                                          |                      |                                    | ✓                |
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2" align="left">Data field</th>
+      <th colspan="4" align="center">Enhancements</th>
+    </tr>
+    <tr>
+      <th align="left">Palette</th>
+      <th align="left">Threshold</th>
+      <th align="left">Format</th>
+      <th align="left">Smoothing</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><th colspan="5" align="center">Category: HUD</th></tr>
+    <tr><td>HUD</td><td colspan="4" align="center">per-slot</td></tr>
+    <tr><th colspan="5" align="center">Category: Power</th></tr>
+    <tr><td>Power</td><td>Zone</td><td></td><td></td><td>Instant / 3s / 5s / 10s / 30s / 20m / 1h</td></tr>
+    <tr><td>Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Lap Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Last Lap Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>NP</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Power Zone</td><td>Zone</td><td></td><td>int / float</td><td></td></tr>
+    <tr><td>Max Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Category: Heart Rate</th></tr>
+    <tr><td>HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Lap Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Last Lap Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>%Max HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Max HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>HR Zone</td><td>Zone</td><td></td><td>int / float</td><td></td></tr>
+    <tr><th colspan="5" align="center">Category: Speed</th></tr>
+    <tr><td>Speed</td><td></td><td>Fixed / Avg total / Avg moving</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
+    <tr><td>Avg Speed (Total)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
+    <tr><td>Avg Speed (Moving)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Category: Cadence</th></tr>
+    <tr><td>Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
+    <tr><th colspan="5" align="center">Category: Climbing</th></tr>
+    <tr><td>Grade</td><td>Grade</td><td></td><td></td><td>OLS (30 m window)</td></tr>
+    <tr><td>Elevation sparkline</td><td>Grade</td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Category: Time</th></tr>
+    <tr><td>Elapsed</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Moving</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Paused</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Last Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><th colspan="5" align="center">Category: Navigation &amp; ETA</th></tr>
+    <tr><td>Time to destination</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Remaining ride time</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time of arrival</td><td></td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Category: Daylight</th></tr>
+    <tr><td>Time to sunrise</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to sunset</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to civil dawn</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to civil dusk</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+  </tbody>
+</table>
 
 ## Compatibility
 
