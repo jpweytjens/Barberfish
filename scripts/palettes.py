@@ -341,13 +341,25 @@ def parse_palettes(path: Path = ZONE_COLORING_KT) -> dict[str, list[str]]:
 _GRADE_OPEN_RE = re.compile(
     r"^\s*(?:private\s+)?val\s+(\w+_GRADE_BANDS\w*)\s*=\s*listOf\("
 )
-_GRADE_BAND_RE = re.compile(
-    r"([\d.]+)\s+to\s+Color\(0xFF([0-9A-Fa-f]{6})\)"
-)
-# References to a power palette index, e.g. `0.0 to karooPowerColors[0]`.
-_GRADE_BAND_REF_RE = re.compile(
-    r"([\d.]+)\s+to\s+(\w+)\[(\d+)\]"
-)
+# Threshold can be a signed float (e.g. ``-9.0``) or the literal
+# ``Double.NEGATIVE_INFINITY`` sentinel used by the Turbo palette.
+_THRESHOLD = r"(-?\d+(?:\.\d+)?|Double\.NEGATIVE_INFINITY)"
+_GRADE_BAND_RE = re.compile(rf"{_THRESHOLD}\s+to\s+Color\(0xFF([0-9A-Fa-f]{{6}})\)")
+_GRADE_BAND_REF_RE = re.compile(rf"{_THRESHOLD}\s+to\s+(\w+)\[(\d+)\]")
+
+
+def _parse_threshold(raw: str) -> float:
+    """Parse a Kotlin threshold token as a Python float."""
+    if raw == "Double.NEGATIVE_INFINITY":
+        return float("-inf")
+    return float(raw)
+
+
+def format_threshold(value: float) -> str:
+    """Format a Python float back as a Kotlin threshold token."""
+    if value == float("-inf"):
+        return "Double.NEGATIVE_INFINITY"
+    return repr(value)
 
 
 def parse_grade_bands(
@@ -385,12 +397,14 @@ def parse_grade_bands(
 
         literal = _GRADE_BAND_RE.search(line)
         if literal:
-            bands[current_name].append((float(literal.group(1)), f"#{literal.group(2).upper()}"))
+            bands[current_name].append(
+                (_parse_threshold(literal.group(1)), f"#{literal.group(2).upper()}")
+            )
             continue
 
         ref = _GRADE_BAND_REF_RE.search(line)
         if ref:
-            threshold = float(ref.group(1))
+            threshold = _parse_threshold(ref.group(1))
             parent, idx = ref.group(2), int(ref.group(3))
             if parent in palettes:
                 bands[current_name].append((threshold, palettes[parent][idx]))
