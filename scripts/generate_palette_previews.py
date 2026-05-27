@@ -61,6 +61,103 @@ GRADE_PALETTE_ORDER = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# SVG rendering
+# ---------------------------------------------------------------------------
+
+CELL_W_DEFAULT = 56   # min cell width; widened to fit the longest label
+CELL_H = 26           # per-row cell height
+ROW_GAP = 4           # vertical gap between the two rows
+H_PADDING = 0         # SVG horizontal padding
+V_PADDING = 0         # SVG vertical padding
+FONT_FAMILY = "-apple-system, system-ui, sans-serif"
+FONT_SIZE = 13
+FONT_WEIGHT = 600
+
+
+def _esc(text: str) -> str:
+    return (
+        text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+    )
+
+
+def _cell_width_for(labels: list[str]) -> int:
+    """Pick a cell width that fits the widest label at the chosen font size.
+
+    Approximation: average glyph advance for the system sans at 13px ≈ 7.2 px.
+    Add 16 px breathing room on either side.
+    """
+    longest = max((len(label) for label in labels), default=1)
+    return max(CELL_W_DEFAULT, int(longest * 7.5) + 16)
+
+
+def _row_svg(
+    y: int,
+    cell_w: int,
+    bg_per_cell: list[str],
+    text_per_cell: list[str],
+    labels: list[str],
+) -> str:
+    parts: list[str] = []
+    for i, (bg, text, label) in enumerate(zip(bg_per_cell, text_per_cell, labels)):
+        x = H_PADDING + i * cell_w
+        parts.append(
+            f'<rect x="{x}" y="{y}" width="{cell_w}" height="{CELL_H}" '
+            f'fill="{bg}" />'
+        )
+        parts.append(
+            f'<text x="{x + cell_w / 2:.1f}" y="{y + CELL_H / 2 + 4:.1f}" '
+            f'font-family="{FONT_FAMILY}" font-size="{FONT_SIZE}" '
+            f'font-weight="{FONT_WEIGHT}" fill="{text}" '
+            f'text-anchor="middle">{_esc(label)}</text>'
+        )
+    return "\n".join(parts)
+
+
+def render_palette_svg(
+    fill_hexes: list[str],
+    text_hexes: list[str],
+    labels: list[str],
+) -> str:
+    """Render the two-row preview SVG.
+
+    Row 1 (text mode):
+        bg per cell = DATAFIELD_BG, text per cell = `text_hexes[i]`.
+    Row 2 (fill mode):
+        bg per cell = `fill_hexes[i]`, text per cell = best_text_on_background(fill).
+
+    `labels` is one string per cell; same length as the palette.
+    `text_hexes` uses the readable variant of the palette when one exists.
+    """
+    assert len(fill_hexes) == len(text_hexes) == len(labels), (
+        "palette lists must have equal length"
+    )
+    n = len(fill_hexes)
+    cell_w = _cell_width_for(labels)
+    width = H_PADDING * 2 + n * cell_w
+    height = V_PADDING * 2 + 2 * CELL_H + ROW_GAP
+
+    # Row 1 — text mode: palette color as text on dark
+    row1_bg = [DATAFIELD_BG] * n
+    row1_text = text_hexes
+    row1 = _row_svg(V_PADDING, cell_w, row1_bg, row1_text, labels)
+
+    # Row 2 — fill mode: palette color as fill, APCA-picked overlay text
+    row2_bg = fill_hexes
+    row2_text = [best_text_on_background(h) for h in fill_hexes]
+    row2_y = V_PADDING + CELL_H + ROW_GAP
+    row2 = _row_svg(row2_y, cell_w, row2_bg, row2_text, labels)
+
+    header = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}">'
+    )
+    return f"{header}\n{row1}\n{row2}\n</svg>\n"
+
+
 def main() -> None:
     raise NotImplementedError("filled in by later tasks")
 
