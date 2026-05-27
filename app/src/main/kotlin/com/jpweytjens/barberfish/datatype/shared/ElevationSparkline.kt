@@ -163,7 +163,7 @@ internal fun renderElevationSparkline(
     skipBandsDescent: Int = 0,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
-    dotColor: Int = ICON_TINT_TEAL.toArgb(),
+    dotColor: Int = BarberfishYellow.toArgb(),
     isNightMode: Boolean = true,
     minElevRangeM: Float = 50f,
     logWarpK: Float = 8f,

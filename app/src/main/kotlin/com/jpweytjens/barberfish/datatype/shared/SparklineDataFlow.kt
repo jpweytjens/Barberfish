@@ -117,7 +117,7 @@ internal fun sparklineBitmapFlow(
             val dotColor = when {
                 isOffRoute -> KAROO_REJOIN_RED.toArgb()
                 dest != null -> KAROO_DESTINATION_PURPLE.toArgb()
-                else -> ICON_TINT_TEAL.toArgb()
+                else -> BarberfishYellow.toArgb()
             }
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
