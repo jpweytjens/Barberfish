@@ -1,23 +1,20 @@
 """
-Generate one two-row palette preview SVG per palette for the README.
+Generate one three-row palette preview SVG per palette for the README.
 
-Each SVG has two rows of swatches:
-  Row 1 — TEXT mode: palette color drawn as text on the dark Karoo bg
-          (#000000). Uses the contrast-tuned ("readable") palette variant
-          when one exists, since that's what the app actually renders in
-          text mode.
-  Row 2 — FILL mode: palette color as cell fill with the APCA-picked
-          black/white overlay text (mirrors `bestTextOnBackground` in
-          ZoneColoring.kt).
+Row 1 — TEXT mode (night): palette color drawn as text on ``#000000``, using
+        the night-readable variant (``*ColorsReadableDark`` or, before the
+        rename, ``*ColorsReadable``).
+Row 2 — TEXT mode (day): palette color drawn as text on ``#FFFFFF``, using
+        the day-readable variant (``*ColorsReadableLight``).
+Row 3 — FILL mode: original palette as cell fill with the APCA-picked
+        black/white overlay text.
 
-Outputs are written to `docs/img/palette-{zone,grade}-<palette>.svg`.
+Each row is 26 px tall; the final SVG is 78 px tall. Cached
+``*ColorsReadable*`` variants in Kotlin are preferred; missing variants
+(typically the light set before it lands in source) are computed on the fly
+via ``adjust_for_readability``.
 
-Inline-friendly: each SVG is sized to fit comfortably in a README markdown
-table cell (~300–550 px wide, ~60 px tall depending on band count).
-
-Palette data is reused from `scripts/preview_bg_text_picks.py`
-(`POWER_PALETTES`, `GRADE_PALETTES`). HR palettes are not enumerated in
-the README — they live in `docs/color-palettes.md`.
+Outputs land in ``docs/img/palette-{power,hr,grade}-<slug>.svg``.
 
 Usage
 -----
@@ -28,54 +25,52 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from preview_bg_text_picks import (
-    GRADE_PALETTES,
-    HR_PALETTES,
+from palettes import (
+    DATAFIELD_BG_DARK,
+    DATAFIELD_BG_LIGHT,
+    GRADE_BANDS_BY_KOTLIN_NAME,
     HR_ZONE_LABELS,
-    POWER_PALETTES,
+    PALETTES_BY_KOTLIN_NAME,
     POWER_ZONE_LABELS,
+    adjust_for_readability,
     best_text_on_background,
 )
 
-DATAFIELD_BG = "#000000"
 
-# README enumerates these power-zone palettes. Each entry is
-# (output_slug, regular_key, readable_key_or_None). The readable variant is
-# used for the TEXT-mode row when one exists.
-POWER_PALETTE_ORDER = [
-    ("karoo",     "Karoo",     "Karoo (readable)"),
-    ("wahoo",     "Wahoo",     "Wahoo (readable)"),
-    ("zwift",     "Zwift",     "Zwift (readable)"),
-    ("intervals", "Intervals", "Intervals (readable)"),
-    ("hsluv",     "HSLuv",     None),  # single variant by construction
+# ---------------------------------------------------------------------------
+# README palette order — (slug, kotlin_power_name)
+# ---------------------------------------------------------------------------
+
+POWER_PALETTE_ORDER: list[tuple[str, str]] = [
+    ("karoo",     "karooPowerColors"),
+    ("wahoo",     "wahooPowerColors"),
+    ("zwift",     "zwiftPowerColors"),
+    ("intervals", "intervalsPowerColors"),
+    ("hsluv",     "hsluvPowerColors"),
 ]
 
-# README enumerates these HR-zone palettes (5 zones each, parallel to the
-# power-zone palette structure).
-HR_PALETTE_ORDER = [
-    ("karoo",     "Karoo",     "Karoo (readable)"),
-    ("wahoo",     "Wahoo",     "Wahoo (readable)"),
-    ("zwift",     "Zwift",     "Zwift (readable)"),
-    ("intervals", "Intervals", "Intervals (readable)"),
-    ("hsluv",     "HSLuv",     None),
+HR_PALETTE_ORDER: list[tuple[str, str]] = [
+    ("karoo",     "karooHrColors"),
+    ("wahoo",     "wahooHrColors"),
+    ("zwift",     "zwiftHrColors"),
+    ("intervals", "intervalsHrColors"),
+    ("hsluv",     "hsluvHrColors"),
 ]
 
-# README enumerates these grade palettes. Each entry is
-# (output_slug, regular_key, readable_key_or_None). Turbo and HSLuv have a
-# single variant.
-GRADE_PALETTE_ORDER = [
-    ("karoo",  "Karoo",  "Karoo (readable)"),
-    ("wahoo",  "Wahoo",  "Wahoo (readable)"),
-    ("garmin", "Garmin", "Garmin (readable)"),
-    ("zwift",  "Zwift",  "Zwift (readable)"),
-    ("hsluv",  "HSLuv",  None),
-    ("turbo",  "Turbo",  None),
+# Grade palette readable variants are keyed by *_GRADE_BANDS. None means
+# "single variant" (HSLUV is perceptually designed; Turbo, Karoo bands
+# resolve via the power palette / their own readable lists post-rename).
+GRADE_PALETTE_ORDER: list[tuple[str, str]] = [
+    ("karoo",  "KAROO_GRADE_BANDS"),
+    ("wahoo",  "WAHOO_GRADE_BANDS"),
+    ("garmin", "GARMIN_GRADE_BANDS"),
+    ("zwift",  "ZWIFT_GRADE_BANDS"),
+    ("hsluv",  "HSLUV_GRADE_BANDS"),
+    ("turbo",  "TURBO_GRADE_BANDS"),
 ]
 
-# README-style band labels, descent → neutral → steep. Counts match the band
-# counts in GRADE_PALETTES. Replaces the dash-form labels in GRADE_PALETTES
-# (which are ambiguous for negative grades — e.g. "-6–-3%") with the half-open
-# interval notation already used in the README's grade palettes table.
+# README-style band labels — descent → neutral → steep — applied after the
+# Kotlin band list is reversed (Kotlin orders steep → descent).
 GRADE_LABELS_README = {
     "karoo":  ["[0, 5)", "[5, 8)", "[8, 13)", "[13, 16)", "[16, 20)", "[20, 24)", "[24, ∞)"],
     "wahoo":  ["[0, 4)", "[4, 8)", "[8, 12)", "[12, 20)", "[20, ∞)"],
@@ -93,11 +88,11 @@ GRADE_LABELS_README = {
 # SVG rendering
 # ---------------------------------------------------------------------------
 
-CELL_W_DEFAULT = 56   # min cell width; widened to fit the longest label
-CELL_H = 26           # per-row cell height
-ROW_GAP = 0           # vertical gap between the two rows (flush)
-H_PADDING = 0         # SVG horizontal padding
-V_PADDING = 0         # SVG vertical padding
+CELL_W_DEFAULT = 56
+CELL_H = 26
+ROW_GAP = 0
+H_PADDING = 0
+V_PADDING = 0
 FONT_FAMILY = "-apple-system, system-ui, sans-serif"
 FONT_SIZE = 13
 FONT_WEIGHT = 600
@@ -112,11 +107,7 @@ def _esc(text: str) -> str:
 
 
 def _cell_width_for(labels: list[str]) -> int:
-    """Pick a cell width that fits the widest label at the chosen font size.
-
-    Approximation: average glyph advance for the system sans at 13px ≈ 7.2 px.
-    Add 16 px breathing room on either side.
-    """
+    """Pick a cell width that fits the widest label at the chosen font size."""
     longest = max((len(label) for label in labels), default=1)
     return max(CELL_W_DEFAULT, int(longest * 7.5) + 16)
 
@@ -131,10 +122,7 @@ def _row_svg(
     parts: list[str] = []
     for i, (bg, text, label) in enumerate(zip(bg_per_cell, text_per_cell, labels)):
         x = H_PADDING + i * cell_w
-        parts.append(
-            f'<rect x="{x}" y="{y}" width="{cell_w}" height="{CELL_H}" '
-            f'fill="{bg}" />'
-        )
+        parts.append(f'<rect x="{x}" y="{y}" width="{cell_w}" height="{CELL_H}" fill="{bg}" />')
         parts.append(
             f'<text x="{x + cell_w / 2:.1f}" y="{y + CELL_H / 2 + 4:.1f}" '
             f'font-family="{FONT_FAMILY}" font-size="{FONT_SIZE}" '
@@ -146,82 +134,113 @@ def _row_svg(
 
 def render_palette_svg(
     fill_hexes: list[str],
-    text_hexes: list[str],
+    text_dark_hexes: list[str],
+    text_light_hexes: list[str],
     labels: list[str],
 ) -> str:
-    """Render the two-row preview SVG.
+    """Render the three-row preview SVG.
 
-    Row 1 (text mode):
-        bg per cell = DATAFIELD_BG, text per cell = `text_hexes[i]`.
-    Row 2 (fill mode):
-        bg per cell = `fill_hexes[i]`, text per cell = best_text_on_background(fill).
-
-    `labels` is one string per cell; same length as the palette.
-    `text_hexes` uses the readable variant of the palette when one exists.
+    Row 1: night-mode text — palette color text on ``#000000``.
+    Row 2: day-mode text   — palette color text on ``#FFFFFF``.
+    Row 3: fill mode       — palette color as fill with APCA-picked text.
     """
-    assert len(fill_hexes) == len(text_hexes) == len(labels), (
-        "palette lists must have equal length"
-    )
     n = len(fill_hexes)
+    assert len(text_dark_hexes) == n and len(text_light_hexes) == n and len(labels) == n, (
+        "all input lists must have equal length"
+    )
     cell_w = _cell_width_for(labels)
     width = H_PADDING * 2 + n * cell_w
-    height = V_PADDING * 2 + 2 * CELL_H + ROW_GAP
+    height = V_PADDING * 2 + 3 * CELL_H + 2 * ROW_GAP
 
-    # Row 1 — text mode: palette color as text on dark
-    row1_bg = [DATAFIELD_BG] * n
-    row1_text = text_hexes
-    row1 = _row_svg(V_PADDING, cell_w, row1_bg, row1_text, labels)
+    row1_y = V_PADDING
+    row1 = _row_svg(
+        row1_y, cell_w, [DATAFIELD_BG_DARK] * n, text_dark_hexes, labels
+    )
 
-    # Row 2 — fill mode: palette color as fill, APCA-picked overlay text
-    row2_bg = fill_hexes
-    row2_text = [best_text_on_background(h) for h in fill_hexes]
-    row2_y = V_PADDING + CELL_H + ROW_GAP
-    row2 = _row_svg(row2_y, cell_w, row2_bg, row2_text, labels)
+    row2_y = row1_y + CELL_H + ROW_GAP
+    row2 = _row_svg(
+        row2_y, cell_w, [DATAFIELD_BG_LIGHT] * n, text_light_hexes, labels
+    )
+
+    row3_y = row2_y + CELL_H + ROW_GAP
+    row3 = _row_svg(
+        row3_y, cell_w, fill_hexes, [best_text_on_background(h) for h in fill_hexes], labels
+    )
 
     header = (
         f'<svg xmlns="http://www.w3.org/2000/svg" '
         f'width="{width}" height="{height}" '
         f'viewBox="0 0 {width} {height}">'
     )
-    return f"{header}\n{row1}\n{row2}\n</svg>\n"
+    return f"{header}\n{row1}\n{row2}\n{row3}\n</svg>\n"
 
 
-def _resolve_text_palette(
-    palettes: dict[str, list[str]],
-    regular_key: str,
-    readable_key: str | None,
-) -> list[str]:
-    """Pick the palette hexes to use as text-mode colors.
+# ---------------------------------------------------------------------------
+# Text-palette resolution (prefers cached Kotlin values; falls back on-the-fly)
+# ---------------------------------------------------------------------------
 
-    If a readable variant exists, use it (it's what the app renders in text
-    mode). Otherwise fall back to the regular palette.
+
+def _readable_variant(power_kotlin_name: str, suffix: str) -> str:
+    """``karooPowerColors`` + ``Dark`` → ``karooPowerColorsReadableDark``."""
+    return power_kotlin_name.replace("Colors", f"ColorsReadable{suffix}")
+
+
+def _text_palette(power_kotlin_name: str, bg: str) -> list[str]:
+    """Return text-mode palette hexes for the given background.
+
+    Resolution order:
+    1. Variant-specific cache (``*ReadableDark`` / ``*ReadableLight``).
+    2. Legacy ``*ColorsReadable`` for the dark variant (pre-rename).
+    3. On-the-fly APCA correction from the base palette.
     """
-    if readable_key and readable_key in palettes:
-        return palettes[readable_key]
-    return palettes[regular_key]
+    suffix = "Dark" if bg == DATAFIELD_BG_DARK else "Light"
+    cached = _readable_variant(power_kotlin_name, suffix)
+    if cached in PALETTES_BY_KOTLIN_NAME:
+        return PALETTES_BY_KOTLIN_NAME[cached]
+    if bg == DATAFIELD_BG_DARK:
+        legacy = power_kotlin_name.replace("Colors", "ColorsReadable")
+        if legacy in PALETTES_BY_KOTLIN_NAME:
+            return PALETTES_BY_KOTLIN_NAME[legacy]
+    base = PALETTES_BY_KOTLIN_NAME[power_kotlin_name]
+    return [adjust_for_readability(c, bg) for c in base]
 
 
-def _write_power_palettes(out_dir: Path) -> list[Path]:
+def _grade_text_bands(power_kotlin_name: str, fills: list[str], bg: str) -> list[str]:
+    """Return text-mode band colors for the given background.
+
+    For grade bands the Kotlin readable variants live under
+    ``*_GRADE_BANDS_READABLE_DARK`` / ``*_GRADE_BANDS_READABLE_LIGHT``; for the
+    Karoo palette the bands reference ``karooPowerColors*[i]`` instead.
+    Falls back to on-the-fly correction otherwise.
+    """
+    suffix = "READABLE_DARK" if bg == DATAFIELD_BG_DARK else "READABLE_LIGHT"
+    cached_name = f"{power_kotlin_name}_{suffix}"
+    if cached_name in GRADE_BANDS_BY_KOTLIN_NAME:
+        return [hex_ for _, hex_ in GRADE_BANDS_BY_KOTLIN_NAME[cached_name]]
+    legacy_name = f"{power_kotlin_name}_READABLE"
+    if bg == DATAFIELD_BG_DARK and legacy_name in GRADE_BANDS_BY_KOTLIN_NAME:
+        return [hex_ for _, hex_ in GRADE_BANDS_BY_KOTLIN_NAME[legacy_name]]
+    return [adjust_for_readability(c, bg) for c in fills]
+
+
+# ---------------------------------------------------------------------------
+# Per-section writers
+# ---------------------------------------------------------------------------
+
+
+def _write_zone_palettes(
+    out_dir: Path,
+    order: list[tuple[str, str]],
+    labels: list[str],
+    file_prefix: str,
+) -> list[Path]:
     written: list[Path] = []
-    for slug, regular_key, readable_key in POWER_PALETTE_ORDER:
-        fill_hexes = POWER_PALETTES[regular_key]
-        text_hexes = _resolve_text_palette(POWER_PALETTES, regular_key, readable_key)
-        labels = POWER_ZONE_LABELS
-        svg = render_palette_svg(fill_hexes, text_hexes, labels)
-        path = out_dir / f"palette-power-{slug}.svg"
-        path.write_text(svg, encoding="utf-8")
-        written.append(path)
-    return written
-
-
-def _write_hr_palettes(out_dir: Path) -> list[Path]:
-    written: list[Path] = []
-    for slug, regular_key, readable_key in HR_PALETTE_ORDER:
-        fill_hexes = HR_PALETTES[regular_key]
-        text_hexes = _resolve_text_palette(HR_PALETTES, regular_key, readable_key)
-        labels = HR_ZONE_LABELS
-        svg = render_palette_svg(fill_hexes, text_hexes, labels)
-        path = out_dir / f"palette-hr-{slug}.svg"
+    for slug, kotlin_name in order:
+        fills = PALETTES_BY_KOTLIN_NAME[kotlin_name]
+        text_dark = _text_palette(kotlin_name, DATAFIELD_BG_DARK)
+        text_light = _text_palette(kotlin_name, DATAFIELD_BG_LIGHT)
+        svg = render_palette_svg(fills, text_dark, text_light, labels)
+        path = out_dir / f"palette-{file_prefix}-{slug}.svg"
         path.write_text(svg, encoding="utf-8")
         written.append(path)
     return written
@@ -229,22 +248,17 @@ def _write_hr_palettes(out_dir: Path) -> list[Path]:
 
 def _write_grade_palettes(out_dir: Path) -> list[Path]:
     written: list[Path] = []
-    for slug, regular_key, readable_key in GRADE_PALETTE_ORDER:
-        # GRADE_PALETTES entries are list[(label, hex)] ordered steep → descent;
-        # the README catalog renders descent → steep, so reverse here and use
-        # the README-style interval-notation labels from GRADE_LABELS_README.
-        regular_entries = list(reversed(GRADE_PALETTES[regular_key]))
-        fill_hexes = [hex_ for _, hex_ in regular_entries]
-        if readable_key and readable_key in GRADE_PALETTES:
-            readable_entries = list(reversed(GRADE_PALETTES[readable_key]))
-            text_hexes = [hex_ for _, hex_ in readable_entries]
-        else:
-            text_hexes = fill_hexes
+    for slug, kotlin_name in GRADE_PALETTE_ORDER:
+        # Kotlin bands are ordered steep → descent; README renders descent → steep.
+        entries = list(reversed(GRADE_BANDS_BY_KOTLIN_NAME[kotlin_name]))
+        fills = [hex_ for _, hex_ in entries]
+        text_dark = list(reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_DARK)))
+        text_light = list(reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_LIGHT)))
         labels = GRADE_LABELS_README[slug]
-        assert len(labels) == len(fill_hexes), (
-            f"{slug}: README labels ({len(labels)}) must match band count ({len(fill_hexes)})"
+        assert len(labels) == len(fills), (
+            f"{slug}: README labels ({len(labels)}) must match band count ({len(fills)})"
         )
-        svg = render_palette_svg(fill_hexes, text_hexes, labels)
+        svg = render_palette_svg(fills, text_dark, text_light, labels)
         path = out_dir / f"palette-grade-{slug}.svg"
         path.write_text(svg, encoding="utf-8")
         written.append(path)
@@ -255,9 +269,9 @@ def main() -> None:
     out_dir = Path(__file__).parent.parent / "docs" / "img"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    written = []
-    written.extend(_write_power_palettes(out_dir))
-    written.extend(_write_hr_palettes(out_dir))
+    written: list[Path] = []
+    written.extend(_write_zone_palettes(out_dir, POWER_PALETTE_ORDER, POWER_ZONE_LABELS, "power"))
+    written.extend(_write_zone_palettes(out_dir, HR_PALETTE_ORDER, HR_ZONE_LABELS, "hr"))
     written.extend(_write_grade_palettes(out_dir))
 
     for path in written:
