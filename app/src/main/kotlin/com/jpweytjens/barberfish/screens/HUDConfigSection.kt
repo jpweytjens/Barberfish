@@ -87,6 +87,7 @@ import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
+import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.TextDark
@@ -435,7 +436,7 @@ private fun HUDPreviewCell(
                 }
                 .then(
                     if (selected)
-                        Modifier.border(2.dp, ICON_TINT_TEAL, RoundedCornerShape(6.dp))
+                        Modifier.border(2.dp, BarberfishYellow, RoundedCornerShape(6.dp))
                     else Modifier
                 )
     ) {
