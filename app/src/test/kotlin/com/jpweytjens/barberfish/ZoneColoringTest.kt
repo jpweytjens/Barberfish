@@ -8,16 +8,16 @@ import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.hsluvPowerColors
-import com.jpweytjens.barberfish.datatype.shared.intervalsHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadable
+import com.jpweytjens.barberfish.datatype.shared.intervalsHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.intervalsPowerColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.karooHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadableDark
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
-import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadable
-import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadable
+import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.zwiftHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.zwiftPowerColorsReadableDark
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.extension.GradePalette
 import io.hammerhead.karooext.models.UserProfile
@@ -54,57 +54,57 @@ class ZoneColoringTest {
         assertTrue("$name hex=${color.value.toString(16).uppercase()} Lc=${"%.1f".format(lc)} < $threshold", lc >= threshold)
     }
 
-    @Test fun `Karoo Z1 readable on karoo dark`() = assertReadable("Karoo Z1", karooPowerColorsReadable[0])
-    @Test fun `Karoo Z2 readable on karoo dark`() = assertReadable("Karoo Z2", karooPowerColorsReadable[1])
-    @Test fun `Karoo Z3 readable on karoo dark`() = assertReadable("Karoo Z3", karooPowerColorsReadable[2])
-    @Test fun `Karoo Z4 readable on karoo dark`() = assertReadable("Karoo Z4", karooPowerColorsReadable[3])
-    @Test fun `Karoo Z5 readable on karoo dark`() = assertReadable("Karoo Z5", karooPowerColorsReadable[4])
-    @Test fun `Karoo Z6 readable on karoo dark`() = assertReadable("Karoo Z6", karooPowerColorsReadable[5])
-    @Test fun `Karoo Z7 readable on karoo dark`() = assertReadable("Karoo Z7", karooPowerColorsReadable[6])
-    @Test fun `Karoo HR Z1 readable on karoo dark`() = assertReadable("Karoo HR Z1", karooHrColorsReadable[0])
-    @Test fun `Karoo HR Z2 readable on karoo dark`() = assertReadable("Karoo HR Z2", karooHrColorsReadable[1])
-    @Test fun `Karoo HR Z3 readable on karoo dark`() = assertReadable("Karoo HR Z3", karooHrColorsReadable[2])
-    @Test fun `Karoo HR Z4 readable on karoo dark`() = assertReadable("Karoo HR Z4", karooHrColorsReadable[3])
-    @Test fun `Karoo HR Z5 readable on karoo dark`() = assertReadable("Karoo HR Z5", karooHrColorsReadable[4])
+    @Test fun `Karoo Z1 readable on karoo dark`() = assertReadable("Karoo Z1", karooPowerColorsReadableDark[0])
+    @Test fun `Karoo Z2 readable on karoo dark`() = assertReadable("Karoo Z2", karooPowerColorsReadableDark[1])
+    @Test fun `Karoo Z3 readable on karoo dark`() = assertReadable("Karoo Z3", karooPowerColorsReadableDark[2])
+    @Test fun `Karoo Z4 readable on karoo dark`() = assertReadable("Karoo Z4", karooPowerColorsReadableDark[3])
+    @Test fun `Karoo Z5 readable on karoo dark`() = assertReadable("Karoo Z5", karooPowerColorsReadableDark[4])
+    @Test fun `Karoo Z6 readable on karoo dark`() = assertReadable("Karoo Z6", karooPowerColorsReadableDark[5])
+    @Test fun `Karoo Z7 readable on karoo dark`() = assertReadable("Karoo Z7", karooPowerColorsReadableDark[6])
+    @Test fun `Karoo HR Z1 readable on karoo dark`() = assertReadable("Karoo HR Z1", karooHrColorsReadableDark[0])
+    @Test fun `Karoo HR Z2 readable on karoo dark`() = assertReadable("Karoo HR Z2", karooHrColorsReadableDark[1])
+    @Test fun `Karoo HR Z3 readable on karoo dark`() = assertReadable("Karoo HR Z3", karooHrColorsReadableDark[2])
+    @Test fun `Karoo HR Z4 readable on karoo dark`() = assertReadable("Karoo HR Z4", karooHrColorsReadableDark[3])
+    @Test fun `Karoo HR Z5 readable on karoo dark`() = assertReadable("Karoo HR Z5", karooHrColorsReadableDark[4])
 
-    @Test fun `Wahoo Z1 readable on karoo dark`() = assertReadable("Wahoo Z1", wahooPowerColorsReadable[0])
-    @Test fun `Wahoo Z2 readable on karoo dark`() = assertReadable("Wahoo Z2", wahooPowerColorsReadable[1])
-    @Test fun `Wahoo Z3 readable on karoo dark`() = assertReadable("Wahoo Z3", wahooPowerColorsReadable[2])
-    @Test fun `Wahoo Z4 readable on karoo dark`() = assertReadable("Wahoo Z4", wahooPowerColorsReadable[3])
-    @Test fun `Wahoo Z5 readable on karoo dark`() = assertReadable("Wahoo Z5", wahooPowerColorsReadable[4])
-    @Test fun `Wahoo Z6 readable on karoo dark`() = assertReadable("Wahoo Z6", wahooPowerColorsReadable[5])
-    @Test fun `Wahoo Z7 readable on karoo dark`() = assertReadable("Wahoo Z7", wahooPowerColorsReadable[6])
-    @Test fun `Wahoo HR Z1 readable on karoo dark`() = assertReadable("Wahoo HR Z1", wahooHrColorsReadable[0])
-    @Test fun `Wahoo HR Z2 readable on karoo dark`() = assertReadable("Wahoo HR Z2", wahooHrColorsReadable[1])
-    @Test fun `Wahoo HR Z3 readable on karoo dark`() = assertReadable("Wahoo HR Z3", wahooHrColorsReadable[2])
-    @Test fun `Wahoo HR Z4 readable on karoo dark`() = assertReadable("Wahoo HR Z4", wahooHrColorsReadable[3])
-    @Test fun `Wahoo HR Z5 readable on karoo dark`() = assertReadable("Wahoo HR Z5", wahooHrColorsReadable[4])
+    @Test fun `Wahoo Z1 readable on karoo dark`() = assertReadable("Wahoo Z1", wahooPowerColorsReadableDark[0])
+    @Test fun `Wahoo Z2 readable on karoo dark`() = assertReadable("Wahoo Z2", wahooPowerColorsReadableDark[1])
+    @Test fun `Wahoo Z3 readable on karoo dark`() = assertReadable("Wahoo Z3", wahooPowerColorsReadableDark[2])
+    @Test fun `Wahoo Z4 readable on karoo dark`() = assertReadable("Wahoo Z4", wahooPowerColorsReadableDark[3])
+    @Test fun `Wahoo Z5 readable on karoo dark`() = assertReadable("Wahoo Z5", wahooPowerColorsReadableDark[4])
+    @Test fun `Wahoo Z6 readable on karoo dark`() = assertReadable("Wahoo Z6", wahooPowerColorsReadableDark[5])
+    @Test fun `Wahoo Z7 readable on karoo dark`() = assertReadable("Wahoo Z7", wahooPowerColorsReadableDark[6])
+    @Test fun `Wahoo HR Z1 readable on karoo dark`() = assertReadable("Wahoo HR Z1", wahooHrColorsReadableDark[0])
+    @Test fun `Wahoo HR Z2 readable on karoo dark`() = assertReadable("Wahoo HR Z2", wahooHrColorsReadableDark[1])
+    @Test fun `Wahoo HR Z3 readable on karoo dark`() = assertReadable("Wahoo HR Z3", wahooHrColorsReadableDark[2])
+    @Test fun `Wahoo HR Z4 readable on karoo dark`() = assertReadable("Wahoo HR Z4", wahooHrColorsReadableDark[3])
+    @Test fun `Wahoo HR Z5 readable on karoo dark`() = assertReadable("Wahoo HR Z5", wahooHrColorsReadableDark[4])
 
-    @Test fun `Intervals Z1 readable on karoo dark`() = assertReadable("Intervals Z1", intervalsPowerColorsReadable[0])
-    @Test fun `Intervals Z2 readable on karoo dark`() = assertReadable("Intervals Z2", intervalsPowerColorsReadable[1])
-    @Test fun `Intervals Z3 readable on karoo dark`() = assertReadable("Intervals Z3", intervalsPowerColorsReadable[2])
-    @Test fun `Intervals Z4 readable on karoo dark`() = assertReadable("Intervals Z4", intervalsPowerColorsReadable[3])
-    @Test fun `Intervals Z5 readable on karoo dark`() = assertReadable("Intervals Z5", intervalsPowerColorsReadable[4])
-    @Test fun `Intervals Z6 readable on karoo dark`() = assertReadable("Intervals Z6", intervalsPowerColorsReadable[5])
-    @Test fun `Intervals Z7 readable on karoo dark`() = assertReadable("Intervals Z7", intervalsPowerColorsReadable[6])
-    @Test fun `Intervals HR Z1 readable on karoo dark`() = assertReadable("Intervals HR Z1", intervalsHrColorsReadable[0])
-    @Test fun `Intervals HR Z2 readable on karoo dark`() = assertReadable("Intervals HR Z2", intervalsHrColorsReadable[1])
-    @Test fun `Intervals HR Z3 readable on karoo dark`() = assertReadable("Intervals HR Z3", intervalsHrColorsReadable[2])
-    @Test fun `Intervals HR Z4 readable on karoo dark`() = assertReadable("Intervals HR Z4", intervalsHrColorsReadable[3])
-    @Test fun `Intervals HR Z5 readable on karoo dark`() = assertReadable("Intervals HR Z5", intervalsHrColorsReadable[4])
+    @Test fun `Intervals Z1 readable on karoo dark`() = assertReadable("Intervals Z1", intervalsPowerColorsReadableDark[0])
+    @Test fun `Intervals Z2 readable on karoo dark`() = assertReadable("Intervals Z2", intervalsPowerColorsReadableDark[1])
+    @Test fun `Intervals Z3 readable on karoo dark`() = assertReadable("Intervals Z3", intervalsPowerColorsReadableDark[2])
+    @Test fun `Intervals Z4 readable on karoo dark`() = assertReadable("Intervals Z4", intervalsPowerColorsReadableDark[3])
+    @Test fun `Intervals Z5 readable on karoo dark`() = assertReadable("Intervals Z5", intervalsPowerColorsReadableDark[4])
+    @Test fun `Intervals Z6 readable on karoo dark`() = assertReadable("Intervals Z6", intervalsPowerColorsReadableDark[5])
+    @Test fun `Intervals Z7 readable on karoo dark`() = assertReadable("Intervals Z7", intervalsPowerColorsReadableDark[6])
+    @Test fun `Intervals HR Z1 readable on karoo dark`() = assertReadable("Intervals HR Z1", intervalsHrColorsReadableDark[0])
+    @Test fun `Intervals HR Z2 readable on karoo dark`() = assertReadable("Intervals HR Z2", intervalsHrColorsReadableDark[1])
+    @Test fun `Intervals HR Z3 readable on karoo dark`() = assertReadable("Intervals HR Z3", intervalsHrColorsReadableDark[2])
+    @Test fun `Intervals HR Z4 readable on karoo dark`() = assertReadable("Intervals HR Z4", intervalsHrColorsReadableDark[3])
+    @Test fun `Intervals HR Z5 readable on karoo dark`() = assertReadable("Intervals HR Z5", intervalsHrColorsReadableDark[4])
 
-    @Test fun `Zwift Z1 readable on karoo dark`() = assertReadable("Zwift Z1", zwiftPowerColorsReadable[0])
-    @Test fun `Zwift Z2 readable on karoo dark`() = assertReadable("Zwift Z2", zwiftPowerColorsReadable[1])
-    @Test fun `Zwift Z3 readable on karoo dark`() = assertReadable("Zwift Z3", zwiftPowerColorsReadable[2])
-    @Test fun `Zwift Z4 readable on karoo dark`() = assertReadable("Zwift Z4", zwiftPowerColorsReadable[3])
-    @Test fun `Zwift Z5 readable on karoo dark`() = assertReadable("Zwift Z5", zwiftPowerColorsReadable[4])
-    @Test fun `Zwift Z6 readable on karoo dark`() = assertReadable("Zwift Z6", zwiftPowerColorsReadable[5])
-    @Test fun `Zwift Z7 readable on karoo dark`() = assertReadable("Zwift Z7", zwiftPowerColorsReadable[6])
-    @Test fun `Zwift HR Z1 readable on karoo dark`() = assertReadable("Zwift HR Z1", zwiftHrColorsReadable[0])
-    @Test fun `Zwift HR Z2 readable on karoo dark`() = assertReadable("Zwift HR Z2", zwiftHrColorsReadable[1])
-    @Test fun `Zwift HR Z3 readable on karoo dark`() = assertReadable("Zwift HR Z3", zwiftHrColorsReadable[2])
-    @Test fun `Zwift HR Z4 readable on karoo dark`() = assertReadable("Zwift HR Z4", zwiftHrColorsReadable[3])
-    @Test fun `Zwift HR Z5 readable on karoo dark`() = assertReadable("Zwift HR Z5", zwiftHrColorsReadable[4])
+    @Test fun `Zwift Z1 readable on karoo dark`() = assertReadable("Zwift Z1", zwiftPowerColorsReadableDark[0])
+    @Test fun `Zwift Z2 readable on karoo dark`() = assertReadable("Zwift Z2", zwiftPowerColorsReadableDark[1])
+    @Test fun `Zwift Z3 readable on karoo dark`() = assertReadable("Zwift Z3", zwiftPowerColorsReadableDark[2])
+    @Test fun `Zwift Z4 readable on karoo dark`() = assertReadable("Zwift Z4", zwiftPowerColorsReadableDark[3])
+    @Test fun `Zwift Z5 readable on karoo dark`() = assertReadable("Zwift Z5", zwiftPowerColorsReadableDark[4])
+    @Test fun `Zwift Z6 readable on karoo dark`() = assertReadable("Zwift Z6", zwiftPowerColorsReadableDark[5])
+    @Test fun `Zwift Z7 readable on karoo dark`() = assertReadable("Zwift Z7", zwiftPowerColorsReadableDark[6])
+    @Test fun `Zwift HR Z1 readable on karoo dark`() = assertReadable("Zwift HR Z1", zwiftHrColorsReadableDark[0])
+    @Test fun `Zwift HR Z2 readable on karoo dark`() = assertReadable("Zwift HR Z2", zwiftHrColorsReadableDark[1])
+    @Test fun `Zwift HR Z3 readable on karoo dark`() = assertReadable("Zwift HR Z3", zwiftHrColorsReadableDark[2])
+    @Test fun `Zwift HR Z4 readable on karoo dark`() = assertReadable("Zwift HR Z4", zwiftHrColorsReadableDark[3])
+    @Test fun `Zwift HR Z5 readable on karoo dark`() = assertReadable("Zwift HR Z5", zwiftHrColorsReadableDark[4])
 
     // --- bestTextOnBackground picker ---
     // The runtime rule in FieldColors.toColorConfig: in BACKGROUND mode, pick the

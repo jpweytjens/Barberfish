@@ -151,38 +151,38 @@ private val ZWIFT_GRADE_BANDS = listOf(
 )
 
 // Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against black. Pre-computed via scripts/apca_hsluv.py.
-private val ZWIFT_GRADE_BANDS_READABLE = listOf(
+private val ZWIFT_GRADE_BANDS_READABLE_DARK = listOf(
      9.0 to Color(0xFFEB6D66), //  9%+    — red
      6.0 to Color(0xFFFE8253), //  6–9%   — orange
      3.0 to Color(0xFFF2C510), //  3–6%   — yellow
      0.0 to Color(0xFF39A7D6), //  0–3%   — blue
 )
-private val WAHOO_GRADE_BANDS_READABLE = listOf(
+private val WAHOO_GRADE_BANDS_READABLE_DARK = listOf(
     20.0 to Color(0xFFFF5959), // 20%+
     12.0 to Color(0xFFFF5958), // 12–19.9%
      8.0 to Color(0xFFFF5C23), //  8–11.9%
      4.0 to Color(0xFFFEFF00), //  4–7.9%
      0.0 to Color(0xFF04FE00), //  0–3.9%
 )
-private val GARMIN_GRADE_BANDS_READABLE = listOf(
+private val GARMIN_GRADE_BANDS_READABLE_DARK = listOf(
     12.0 to Color(0xFFFA5E60), // >12%  HC
      9.0 to Color(0xFFF36C72), //  9–12% Cat 1
      6.0 to Color(0xFFFBAD41), //  6–9%  Cat 2
      3.0 to Color(0xFFF9EE44), //  3–6%  Cat 3
      0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
 )
-private val KAROO_GRADE_BANDS_READABLE = listOf(
-    23.6 to karooPowerColorsReadable[6], // >23.5%     — purple
-    19.6 to karooPowerColorsReadable[5], // 19.6–23.5% — red
-    15.6 to karooPowerColorsReadable[4], // 15.6–19.5% — orange
-    12.6 to karooPowerColorsReadable[3], // 12.6–15.5% — salmon
-     7.6 to karooPowerColorsReadable[2], //  7.6–12.5% — yellow
-     4.6 to karooPowerColorsReadable[1], //  4.6–7.5%  — mint green
-     0.0 to karooPowerColorsReadable[0], //  <4.6%     — dark green
+private val KAROO_GRADE_BANDS_READABLE_DARK = listOf(
+    23.6 to karooPowerColorsReadableDark[6], // >23.5%     — purple
+    19.6 to karooPowerColorsReadableDark[5], // 19.6–23.5% — red
+    15.6 to karooPowerColorsReadableDark[4], // 15.6–19.5% — orange
+    12.6 to karooPowerColorsReadableDark[3], // 12.6–15.5% — salmon
+     7.6 to karooPowerColorsReadableDark[2], //  7.6–12.5% — yellow
+     4.6 to karooPowerColorsReadableDark[1], //  4.6–7.5%  — mint green
+     0.0 to karooPowerColorsReadableDark[0], //  <4.6%     — dark green
 )
 
 // Turbo grade bands — readable by construction; the only palette that colors negative grades.
-// Single variant: no _READABLE split.
+// Single variant: no _READABLE_DARK split.
 private val TURBO_GRADE_BANDS = listOf(
     15.0 to Color(0xFF8E1201),                   // [15, ∞)  — deep crimson
     12.0 to Color(0xFFBC2900),                   // [12, 15) — dark red
@@ -198,11 +198,11 @@ private val TURBO_GRADE_BANDS = listOf(
 
 internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
     val bands = when (palette) {
-        GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE else WAHOO_GRADE_BANDS
-        GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE else GARMIN_GRADE_BANDS
-        GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE else KAROO_GRADE_BANDS
+        GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE_DARK else WAHOO_GRADE_BANDS
+        GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE_DARK else GARMIN_GRADE_BANDS
+        GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE_DARK else KAROO_GRADE_BANDS
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
-        GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE else ZWIFT_GRADE_BANDS
+        GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE_DARK else ZWIFT_GRADE_BANDS
         GradePalette.TURBO -> TURBO_GRADE_BANDS
     }
     return bands.firstOrNull { percent >= it.first }?.second
