@@ -39,6 +39,33 @@ Average speed comes in two flavors: including paused time (e.g. for [ACP randonn
 
 A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline below the HUD shows recent terrain and the upcoming profile with non-linear zoom around your current position — tap to cycle 5/10/20 km lookahead. For a full 1:1 elevation chart with POIs, see [RouteGraph](https://github.com/timklge/karoo-routegraph). All settings update live with field previews on the config screen; when a route is loaded, the sparkline preview shows your actual route rather than a placeholder.
 
+## Color palettes
+
+Each palette below is shown in both rendering modes. The top row is **Text mode** — palette color drawn as text on the dark Karoo background, using the contrast-tuned variant where one exists. The bottom row is **Fill mode** — palette color as cell fill with the auto-picked overlay text color.
+
+### Zone palettes
+
+| Palette       | Preview                                            |
+| ------------- | -------------------------------------------------- |
+| Karoo         | ![](docs/img/palette-zone-karoo.svg)               |
+| Wahoo         | ![](docs/img/palette-zone-wahoo.svg)               |
+| Zwift         | ![](docs/img/palette-zone-zwift.svg)               |
+| Intervals.icu | ![](docs/img/palette-zone-intervals.svg)           |
+| HSLuv         | ![](docs/img/palette-zone-hsluv.svg)               |
+
+Power-zone variants are shown above. Heart-rate variants and full RGB references live in [docs/color-palettes.md](docs/color-palettes.md).
+
+### Grade palettes
+
+| Palette | Bands (descent → steep)                                                                       | Preview                                |
+| ------- | --------------------------------------------------------------------------------------------- | -------------------------------------- |
+| Karoo   | [0, 5) · [5, 8) · [8, 13) · [13, 16) · [16, 20) · [20, 24) · [24, ∞)                          | ![](docs/img/palette-grade-karoo.svg)  |
+| Wahoo   | [0, 4) · [4, 8) · [8, 12) · [12, 20) · [20, ∞)                                                | ![](docs/img/palette-grade-wahoo.svg)  |
+| Garmin  | [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, ∞)                                                  | ![](docs/img/palette-grade-garmin.svg) |
+| Zwift   | [0, 3) · [3, 6) · [6, 9) · [9, ∞)                                                             | ![](docs/img/palette-grade-zwift.svg)  |
+| HSLuv   | [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, 18) · [18, ∞)                            | ![](docs/img/palette-grade-hsluv.svg)  |
+| Turbo   | (-∞, -9) · [-9, -6) · [-6, -3) · [-3, 0) · [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, ∞) | ![](docs/img/palette-grade-turbo.svg)  |
+
 ## Data fields
 
 Complete list of data fields provided by Barberfish, grouped by category.
