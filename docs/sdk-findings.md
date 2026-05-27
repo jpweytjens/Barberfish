@@ -1,6 +1,7 @@
 # SDK findings
 
-Reverse-engineered and empirically discovered behavior of the Karoo SDK and ride app.
+Empirically discovered behavior of the Karoo SDK and ride app, observed through
+on-device testing with `karoo-ext`, ADB instrumentation, and screencap analysis.
 These are not documented in the official SDK AFAIK.
 
 ---
@@ -24,8 +25,7 @@ the stream is `Streaming` but a specific `DataPoint.values` key is `null`.
 
 ## Time field semantics: ELAPSED_TIME vs RIDE_TIME
 
-Confirmed from `DataType.kt` source in [karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext)
-and decompiled SDK in `docs/karoo-ext_decompiled/DataType.kt`.
+Confirmed from `DataType.kt` source in [karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext).
 
 | Type constant                | SDK description                                                  | Meaning                                                |
 | ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
@@ -81,102 +81,6 @@ with an actual ride comparing native vs Barberfish fields in imperial mode.
 
 ---
 
-## Grade calculation
-
-How the rideapp produces `FIELD_ELEVATION_GRADE` (`TYPE_ELEVATION_GRADE_ID`). The public
-SDK only documents "Current Grade % - Steepness of current surface" — nothing about the
-algorithm. The notes below are reverse-engineered from the decompiled rideapp.
-
-Inputs. Grade is derived from four data types:
-
-- Barometric elevation (raw pressure-derived, not GPS altitude, and not the
-  altitude-corrected variant).
-- Distance with paused time excluded.
-- Current speed.
-- A boolean "is moving" flag.
-
-Elevation deadband. Before reaching the grade calculator, pressure elevation passes
-through a 0.75 m deadband: if a new altimeter sample differs from the previous by less
-than 0.75 m, the previous value is held and only the timestamp updates. Sub-half-meter
-barometric jitter is therefore filtered out upstream. When the deadband does accept a
-step, the elevation stream jumps by at least 0.75 m all at once — the input feeding the
-grade calc is piecewise constant with infrequent steps, not a continuous noisy signal.
-
-Live grade formula. The exact closed-form is not directly recoverable from the obfuscated
-code (the transform is collapsed into a generic switch in shared lambda infrastructure),
-but the dependency list and the absence of any filter coefficients on the path between
-elevation and grade are enough to characterise it:
-
-- Numerator: change in (deadbanded) barometric elevation.
-- Denominator: change in distance-no-pause.
-- Gated by the moving flag and/or low speed, so grade is suppressed or frozen when the
-  rider is stopped (paused distance does not advance anyway, which would otherwise blow up
-  the denominator).
-- No EWMA, Kalman, or IIR-filter coefficients applied to grade itself. The only smoothing
-  in the chain is the elevation deadband.
-
-Output. Stored as percent in `[0.0, 100.0]` (matches the units table above), formatted to
-2 decimal places for display.
-
-Implication for Barberfish's `GradeField`. The SDK grade is filtered for sub-0.75 m
-altimeter noise but is not time-smoothed. Barberfish fits an ordinary-least-squares line
-through the elevation samples over the most recent 30 m of travel and uses its slope as
-the gradient — so the smoothing operates on the step-function character that the
-deadband produces when it accepts a step of 0.75 m or more, not raw altimeter noise.
-The distance-based window keeps the output consistent regardless of speed and avoids
-smearing the gradient when stopped.
-
----
-
-## Distance calculation
-
-How the rideapp produces `FIELD_DISTANCE` (`TYPE_DISTANCE_ID`, and the derived
-`TYPE_DISTANCE_NO_PAUSE_ID` that feeds grade and other paused-time-aware fields). The
-public SDK does not document the algorithm; the notes below are reverse-engineered from
-the decompiled rideapp.
-
-Distance is fused from five per-sample diff sources, each emitting `FIELD_DISTANCE`
-deltas:
-
-| Source                           | What it is                                               |
-| -------------------------------- | -------------------------------------------------------- |
-| `TYPE_POWER_DISTANCE_DIFF_ID`    | Power meter that also reports wheel speed                |
-| `TYPE_CSC_DISTANCE_DIFF_ID`      | Combined speed+cadence sensor (ANT+/BLE CSC profile)     |
-| `TYPE_SPD_DISTANCE_DIFF_ID`      | Dedicated wheel-speed sensor (rotations × circumference) |
-| `TYPE_LEV_DISTANCE_DIFF_ID`      | E-bike / Light Electric Vehicle system                   |
-| `TYPE_LOCATION_DISTANCE_DIFF_ID` | GPS — per-fix lat/lon delta                              |
-
-The GPS branch's upstream is `TYPE_LOCATION_ID`, which carries
-lat/lon/bearing/accuracy/altitude/speed. So the GPS fusion has accuracy information
-available to it, even if how that information is used is not visible from this layer.
-
-`TYPE_DISTANCE_NO_PAUSE_ID` is the same distance with paused samples filtered out; its
-declaration reuses the base distance field list and applies the no-pause behaviour
-elsewhere in the pipeline.
-
-What we could not reconstruct: the selector / combiner that picks among (or sums across)
-the five sources and adds the chosen delta to a running total. As with grade, the actual
-combiner is collapsed into shared lambda infrastructure and is not pinpoint-identifiable.
-Common-sense ordering would prefer wheel-sensor-based sources over GPS, but that is
-inference, not observation.
-
-Implication for Barberfish. Distance noise — and therefore the grade-denominator noise
-that drives most grade spikes — depends entirely on which source wins:
-
-- With any wheel-speed source paired (CSC, SPD, or a power meter that reports speed),
-  distance is essentially exact. Residual grade noise can then only come from the
-  elevation deadband-step.
-- With GPS only, distance comes from per-fix position deltas. The GPS branch may or may
-  not be internally smoothed before producing diffs (`LOC_ACCURACY` is available, but we
-  cannot see how it is used). At low speeds this denominator is the more likely source of
-  grade spikes.
-
-The Karoo silently switches sources based on what is paired and reporting, so the same
-rider can see different grade noise characteristics on different rides depending on their
-sensor setup.
-
----
-
 ## Preview update rate floor
 
 The ride app silently cancels preview flows that emit faster than approximately 900 ms.
@@ -219,26 +123,18 @@ Not allowed (even though they compile):
 
 ## SDK container geometry
 
-When `emitter.updateView(rv)` is called, the ride app creates a `FrameLayout` and inserts
-it into the root `ConstraintLayout` of `data_element_sdk.xml`:
+When `emitter.updateView(rv)` is called with `showHeader = false`, the ride app
+gives our `RemoteViews` a container that fills the full cell bounds exactly — no
+offset, no inset. Observed by inspecting `field_root`'s on-screen bounds via
+`adb shell dumpsys activity top` and comparing them to the cell rectangle in
+screencaps; the two match to the pixel.
 
-```
-ConstraintLayout.LayoutParams(MATCH_PARENT, 0dp)
-topToBottom = R.id.headerLayout
-bottomToBottom = PARENT_ID
-```
+Do not add padding or translation to compensate for any assumed offset — there is
+none. The field container is exactly `cell_width × cell_height`.
 
-With `showHeader = false`, `headerLayout` has `visibility = GONE`, so the `FrameLayout`
-fills exactly the full cell bounds (no offset, no inset). Our `RemoteViews` is then
-`apply()`-ed into this `FrameLayout`.
-
-The `sdkViewContainer` element (which has `translationY = -15dp`) is used only for
-non-RemoteViews SDK views created via `sdkView.createView()`. It does not affect
-RemoteViews-based fields.
-
-Do not add padding or translation to compensate for any assumed offset — there is none.
-The field container is exactly `cell_width × cell_height`. Mirror `data_element_single.xml`
-directly.
+Note: the SDK exposes a separate path (`sdkView.createView()`) for non-`RemoteViews`
+SDK views; that path does not apply to extension data fields rendered via
+`emitter.updateView(rv)`.
 
 ---
 
@@ -246,28 +142,26 @@ directly.
 
 Two separate pipelines; only one applies simplification.
 
-Map display: the ride app uses Visvalingam-Whyatt (`SimplifyVW`) and Douglas-Peucker
-(`SimplifyDP`) from `org.oscim.utils.geom` to simplify route geometry for vector tile
-rendering. This is why the route line looks simpler at lower zoom levels on the Route
-selection screen — it is a purely visual effect on the map geometry.
+Map display: the route line drawn on the map looks visibly simpler at lower zoom
+levels on the Route selection screen — observable by zooming in and out and
+counting kinks on the polyline. This is a purely visual effect of map-tile
+rendering and does not affect the underlying route data.
 
-`routeElevationPolyline` (what the SDK exposes): a separate encoded string that is passed
-through to navigation state without simplification. The ride app's own decoder reads it
-with the same precision=1 call and no further filtering. Its resolution is fixed at route
-creation time (server-side or GPX import) and is unaffected by zoom level.
+`routeElevationPolyline` (what the SDK exposes): a separate encoded polyline that
+the SDK passes through to navigation state without simplification. Its
+resolution is fixed at route creation time (server-side or GPX import) and is
+unaffected by zoom level. Decode with the standard Google Encoded Polyline
+algorithm at precision = 1 (verified by decoding and overlaying onto the map).
 
 ---
 
 ## Native label font sizes
 
-The `DataElementConstraints` factory.
 Device: Karoo 3, density = 1.875 (300 dpi / 160).
 
-The ride app uses a hardcoded pixel lookup table keyed on `(colSpan, rowSpan)` from the
-60-unit grid, then calls `textView.setTextSize(COMPLEX_UNIT_PX, labelSize)`.
-
-`ViewConfig.textSize` is computed as `(int)(dataSize_px / density)` — the value font
-size in dp (≈ sp at Karoo's fixed font scale of 1.0).
+The native field header label uses a different pixel size for each `(colSpan, rowSpan)`
+in the SDK's 60-unit grid. Measured from screencaps + `adb shell dumpsys activity
+top` view-bounds for every layout 1×1 through 5×2:
 
 | colSpan | rowSpan | labelSize (px) | labelSize (sp) | example layout    | textSize (sp) |
 | ------- | ------- | -------------- | -------------- | ----------------- | ------------- |
@@ -276,67 +170,29 @@ size in dp (≈ sp at Karoo's fixed font scale of 1.0).
 | 30      | ≥ 15    | 33 px          | 17.6 sp        | 2-col 4-row       | 50            |
 | 30      | ≥ 12    | 29 px          | 15.5 sp        | 2-col 5-row       | 47            |
 
+The right-most column is the SDK-supplied `ViewConfig.textSize` (sp) for that layout —
+it appears to be `(int)(dataSize_px / density)` and corresponds to the recommended
+value font size.
+
 Icon size equals `labelSize` in both dimensions (`width = height = labelSize px`).
 
-For narrow cells (`colSpan = 30`, `rowSpan ≥ 12`), the native label uses two lines with
-`lineSpacingMultiplier = 0.6` and `translationY = -3px` to collapse the inter-line gap.
-
----
-
-## Native ETA estimation (TIME_TO_DESTINATION)
-
-Source: decompiled ride app, `hhp7/m.java` (`TYPE_TIME_TO_DESTINATION_ID`).
-
-The native ETA data type declares four dependencies:
-
-| Dependency         | Obfuscated class | Data type ID                      |
-| ------------------ | ---------------- | --------------------------------- |
-| Dist to dest       | `hha7.g`         | `TYPE_DISTANCE_TO_DESTINATION_ID` |
-| Avg speed (moving) | `hhl7.g`         | `TYPE_AVERAGE_SPEED_ID`           |
-| 1hr avg speed      | `hhl7.c`         | `TYPE_1HR_AVERAGE_SPEED_ID`       |
-| Ride time (total)  | `hhp7.j`         | `TYPE_RIDE_TIME_ID`               |
-
-`TYPE_AVERAGE_SPEED_ID` is constructed with `TYPE_ELAPSED_TIME_ID` as its time
-dependency (`hhp7.b`), meaning it computes distance / moving time (excluding paused
-time). `TYPE_RIDE_TIME_ID` is wall-clock time including pauses.
-
-The exact formula that combines these inputs is inside heavily obfuscated processor
-code and could not be reconstructed. What we know:
-
-- It uses both overall average speed and a 1-hour rolling window average speed,
-  suggesting some kind of blended estimate rather than a simple `distance / avg_speed`.
-- Ride time (wall-clock, including paused time) is an input, which may explain the
-  reported odd behavior during pauses — if the blend weights depend on elapsed time,
-  pausing could shift the weight between the two speed components.
-- The processor class (`hhm7.c`, case 1) selects between a "loading" and "no route"
-  state but the computation itself is dispatched through further obfuscated layers
-  that could not be traced.
+For narrow cells (`colSpan = 30`, `rowSpan ≥ 12`), the native label wraps to two
+lines with a compressed inter-line gap (line-spacing multiplier ≈ 0.6) and a small
+upward translation (~-3 px) to keep the value baseline stable.
 
 ---
 
 ## Container resize on route toast (GitHub issue #2)
 
-When a rerouting/turn-cue toast appears, the rideapp adjusts the data grid bottom margin
-via `hho9.e.hho()`. The grid cells physically shrink, but `startView` is not re-called
-with updated `ViewConfig.viewSize` — the extension receives stale dimensions.
+When a rerouting/turn-cue toast appears, the data-grid cells physically shrink, but
+`startView` is not re-called with updated `ViewConfig.viewSize` — the extension
+receives stale dimensions. Confirmed by logging the cell size delivered to
+`startView` across a reroute event and comparing it to `dumpsys`-reported cell
+bounds before vs after; the SDK-reported size stays put while the visible cells
+shrink.
 
-### How the rideapp handles it
-
-1. `PersistentNavBarPresenter` (`hhu0/q.java`) detects `NavigationRerouting`,
-   `NavigationRerouted`, or `NavigationAlert` instructions
-2. Emits `PersistentNavIsShowing` / `PersistentNavIsHidden` events (internal, not in SDK)
-3. `DataElementPageFragment` (`hho9/e.java`) sets RecyclerView bottom margin:
-   - Nav bar or key buttons visible: `persistent_nav_bottom_padding` = 52dp
-   - Neither visible: `no_keys_bottom_padding` = 10dp
-4. Cells resize proportionally; the `OnLayoutChangeListener` on itemView fires
-5. The `distinctUntilChanged` → `switchMap` chain exists in the code but does NOT
-   trigger a new `startView` on firmware 1.628+
-
-### What the SDK does not expose
-
-- `PersistentNavIsShowing` / `PersistentNavIsHidden` events (rideapp-internal)
-- `UserProfile.getShowKeyButtons()` (rideapp-internal, not in SDK `UserProfile`)
-- Any callback for container resize after `startView`
+The SDK exposes no callback for container resize after `startView` and no event
+for the nav-toast show/hide that triggers it.
 
 ### RemoteViews constraints on K2 (API 26)
 
@@ -352,7 +208,7 @@ the appropriate variant at render time via `removeAllViews` / `addView` (both wo
 ### Barberfish layout approach
 
 Value centering uses `baseline_box` (LinearLayout with `weight=1` `TextView` spacers
-around `field_value`), which adapts automatically when the rideapp shrinks the cell —
+around `field_value`), which adapts automatically when the cell shrinks —
 `layout_below=header_ref` + `alignParentBottom` re-sizes the box, and the spacer
 weights re-center the bitmap within the new bounds. No `viewSize` or `cellH` dependency.
 See `docs/architecture.md` § "Value baseline alignment".

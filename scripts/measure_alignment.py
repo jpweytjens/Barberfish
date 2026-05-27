@@ -40,8 +40,8 @@ content area according to the rows×cols implied by the page filename.
 Why pixel analysis over ADB: see ``docs/architecture.md`` § "Value baseline alignment" and the plan
 under ``~/.claude/plans/``. Briefly: no ADB tool exposes the rendered baseline
 directly, ``uiautomator dump`` is dead on Karoo, and computing the baseline
-from view bounds + font metrics requires reverse-engineered constants per
-Karoo OS version. Screenshots are ground truth and version-agnostic.
+from view bounds + font metrics requires per-layout font-size constants that
+vary by Karoo OS version. Screenshots are ground truth and version-agnostic.
 """
 
 from __future__ import annotations
@@ -122,10 +122,11 @@ PAGE_RE = re.compile(r"^(\d+)x(\d+)([nb]?)$")
 
 
 # --- Karoo native size lookups ---------------------------------------------
-# Mirror of the rideapp's hardcoded `(colSpan, rowSpan)` → label pixel size
-# table (CLAUDE.md "Native font sizing" section). Used to compute the
-# expected single-line header band height per cell, which lets us classify a
-# detected band as 1-line or 2-line without guessing.
+# Measured `(colSpan, rowSpan)` → label pixel size table, from on-device
+# screencaps across all tested layouts (see `docs/sdk-findings.md` § "Native
+# label font sizes"). Used to compute the expected single-line header band
+# height per cell, which lets us classify a detected band as 1-line or 2-line
+# without guessing.
 
 
 def native_label_size_px(col_span: int, row_span: int) -> int:

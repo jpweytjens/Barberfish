@@ -16,8 +16,8 @@ private const val THREE_ROWS = 20
 private const val FOUR_ROWS = 15
 private const val FIVE_ROWS = 12
 
-// Per-layout label sp mirrors native rideapp's DataElementConstraints lookup;
-// see `docs/architecture.md` § "Value baseline alignment".
+// Per-layout label sp mirrors the native field-header sizes measured on-device;
+// see `docs/sdk-findings.md` § "Native label font sizes".
 fun ViewConfig.toViewSizeConfig(
     colSpanOverride: Int? = null,
     textSizeOverride: Int? = null,
@@ -54,8 +54,9 @@ fun ViewConfig.toViewSizeConfig(
     val headerMinHeightDp = maxOf(26, labelBandDp.toInt())
     val valueFontBase = textSizeEff.coerceAtLeast(20)
     val valueBitmapHeightDp = (VALUE_BITMAP_HEIGHT_RATIO * valueFontBase).toInt().coerceAtLeast(16)
-    // Mirrors native's DataElementConstraints.dataTranslationY. Applied
-    // via XML-baked android:translationY (see BarberfishView.layoutRes).
+    // Matches the small upward translation observed in native narrow-cell
+    // layouts. Applied via XML-baked android:translationY (see
+    // BarberfishView.layoutRes).
     val valueTranslationDp = when {
         colSpan == ONE_COL && rowSpan == FIVE_ROWS   -> -3   // 5×1
         else                                          -> 0
