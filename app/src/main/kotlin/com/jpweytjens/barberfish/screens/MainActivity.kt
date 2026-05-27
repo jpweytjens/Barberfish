@@ -1478,9 +1478,10 @@ private fun ZonePaletteDropdown(
 private fun ZonePalettePreview(palette: ZonePalette, isHr: Boolean) {
     val zoneCount = if (isHr) 5 else 7
     val labels = (1..zoneCount).map { "Z$it" }
+    val isNightMode = isSystemInDarkTheme()
     val textColors = (1..zoneCount).map { z ->
-        if (isHr) hrZoneColor(z, palette, readable = true)
-        else powerZoneColor(z, palette, readable = true)
+        if (isHr) hrZoneColor(z, palette, readable = true, isNightMode = isNightMode)
+        else powerZoneColor(z, palette, readable = true, isNightMode = isNightMode)
     }
     val fillColors = (1..zoneCount).map { z ->
         if (isHr) hrZoneColor(z, palette, readable = false)
@@ -1503,7 +1504,10 @@ private fun GradePalettePreview(palette: GradePalette) {
     val labels = thresholds.map {
         if (it == Double.NEGATIVE_INFINITY) "<-9" else formatGradePct(it)
     }
-    val textColors = thresholds.map { gradeColor(it, palette, readable = true) ?: Color.Transparent }
+    val isNightMode = isSystemInDarkTheme()
+    val textColors = thresholds.map {
+        gradeColor(it, palette, readable = true, isNightMode = isNightMode) ?: Color.Transparent
+    }
     val fillColors = thresholds.map { gradeColor(it, palette, readable = false) ?: Color.Transparent }
     DualRowPalettePreview(labels = labels, textRowColors = textColors, fillRowColors = fillColors)
     GradeRangeBar(thresholds = thresholds)
