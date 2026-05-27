@@ -88,7 +88,6 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
-import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.ZoneConfig
@@ -127,11 +126,7 @@ internal fun HUDConfigSection(
             }
         },
     )
-    Text(
-        "Tap a column to configure it.",
-        fontSize = 12.sp,
-        color = TextDark,
-    )
+    HelperText("Tap a column to configure it.")
     if (BuildConfig.DEBUG) {
         // "Current route" is prepended when a route (or destination) is loaded on the device,
         // so VW / warp tuning can be judged against real Strava-density data instead of the
@@ -670,11 +665,8 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             )
             groups.forEachIndexed { groupIndex, (groupLabel, fields) ->
                 if (groupIndex > 0) HorizontalDivider()
-                Text(
+                Caption(
                     groupLabel,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Grey400,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                 )
                 fields.forEach { (label, field) ->
@@ -762,11 +754,7 @@ internal fun SparklineCard(
                     exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            "Elevation profile shown ahead when a route is loaded.",
-                            fontSize = 12.sp,
-                            color = TextDark,
-                        )
+                        HelperText("Elevation profile shown ahead when a route is loaded.")
                         Box(
                             modifier = Modifier.fillMaxWidth().height(60.dp)
                                 .clip(RoundedCornerShape(6.dp))
@@ -791,8 +779,9 @@ internal fun SparklineCard(
                     modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    ControlLabel("LOOKAHEAD")
-                    Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
+                    LabeledHelper("LOOKAHEAD") {
+                        HelperText("Distance shown ahead of your position.")
+                    }
                     SegmentedRow(
                         options = listOf(5, 10, 20).map { km ->
                             val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
@@ -819,13 +808,9 @@ internal fun SparklineCard(
                             "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
                         else -> null
                     }
-                    ControlLabel("EMPHASIS")
-                    Text(
-                        "Filter out gentle grades so meaningful climbs and descents stand out.",
-                        fontSize = 12.sp, color = TextDark,
-                    )
-                    if (readout != null) {
-                        Text(readout, fontSize = 12.sp, color = TextDark)
+                    LabeledHelper("EMPHASIS") {
+                        HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
+                        if (readout != null) HelperText(readout)
                     }
                     Text(
                         if (hasDescentBands) "Climbs" else "Bands",
@@ -844,36 +829,41 @@ internal fun SparklineCard(
                             onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
                         )
                     }
-                    ControlLabel("SIMPLIFICATION")
-                    Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
+                    LabeledHelper("SIMPLIFICATION") {
+                        HelperText("Merges small elevation wiggles into larger same-colour blocks.")
+                    }
                     SegmentedRow(
                         options = ElevationSimplification.entries.map { it to it.label },
                         selected = config.simplification,
                         onSelect = { onUpdate(config.copy(simplification = it)) },
                     )
-                    ControlLabel("X-WARP")
-                    Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)
+                    LabeledHelper("X-WARP") {
+                        HelperText("Fisheye magnification around the position dot.")
+                    }
                     SegmentedRow(
                         options = SparklineWarp.entries.map { it to it.label },
                         selected = config.warp,
                         onSelect = { onUpdate(config.copy(warp = it)) },
                     )
-                    ControlLabel("Y-ZOOM")
-                    Text("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.", fontSize = 12.sp, color = TextDark)
+                    LabeledHelper("Y-ZOOM") {
+                        HelperText("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.")
+                    }
                     SegmentedRow(
                         options = ElevationZoom.entries.map { it to it.label },
                         selected = config.yZoom,
                         onSelect = { onUpdate(config.copy(yZoom = it)) },
                     )
-                    ControlLabel("CLIMBS")
-                    Text("Tint the outline blue on climbs as detected by Karoo Climber.", fontSize = 12.sp, color = TextDark)
+                    LabeledHelper("CLIMBS") {
+                        HelperText("Tint the outline blue on climbs as detected by Karoo Climber.")
+                    }
                     SegmentedRow(
                         options = listOf(false to "Off", true to "On"),
                         selected = config.showClimbs,
                         onSelect = { onUpdate(config.copy(showClimbs = it)) },
                     )
-                    ControlLabel("POIs")
-                    Text("Mark points of interest (POIs) along the sparkline.", fontSize = 12.sp, color = TextDark)
+                    LabeledHelper("POIs") {
+                        HelperText("Mark points of interest (POIs) along the sparkline.")
+                    }
                     SegmentedRow(
                         options = listOf(false to "Off", true to "On"),
                         selected = config.showPois,

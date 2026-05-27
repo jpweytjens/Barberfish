@@ -120,6 +120,7 @@ import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
+import com.jpweytjens.barberfish.datatype.shared.Grey500
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
@@ -862,11 +863,9 @@ class MainActivity : ComponentActivity() {
                     onToggle = { etaExpanded = !etaExpanded },
                 ) {
                     Text("Prior speed", style = MaterialTheme.typography.titleMedium)
-                    Text(
+                    HelperText(
                         "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
                             "Set to 0 to disable.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     ETAPriorSpeedInput(
                         priorSpeedKph = etaConfig.priorSpeedKph,
@@ -957,6 +956,28 @@ internal const val SECTION_ANIM_MS = 200
 @Composable
 internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
     Text(text, modifier = modifier, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+}
+
+@Composable
+internal fun HelperText(text: String, modifier: Modifier = Modifier) {
+    Text(text, modifier = modifier, fontSize = 12.sp, lineHeight = 14.sp, color = Grey500)
+}
+
+@Composable
+internal fun Caption(text: String, modifier: Modifier = Modifier) {
+    Text(text, modifier = modifier, fontSize = 10.sp, color = Grey500)
+}
+
+@Composable
+internal fun LabeledHelper(
+    label: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        ControlLabel(label)
+        content()
+    }
 }
 
 @Composable
@@ -1100,11 +1121,7 @@ private fun CollapsibleSection(
                         ),
                     )
                 }
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                HelperText(description)
             }
             val rotation by
                 animateFloatAsState(
@@ -1214,12 +1231,7 @@ private fun FieldCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            description,
-                            modifier = Modifier.weight(1f),
-                            fontSize = 12.sp,
-                            color = TextDark,
-                        )
+                        HelperText(description, modifier = Modifier.weight(1f))
                         FieldPreviewBox(previewFields, colorMode)
                     }
                 }
@@ -1251,8 +1263,8 @@ private fun ThresholdLegend() {
                 append(" · target · ")
                 withStyle(SpanStyle(color = RDYLGN_GREEN)) { append("green") }
             },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            color = Grey500,
         )
         Text(
             buildAnnotatedString {
@@ -1267,14 +1279,10 @@ private fun ThresholdLegend() {
                 append(" · ")
                 withStyle(SpanStyle(color = RDYLGN_RED)) { append("red") }
             },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp,
+            color = Grey500,
         )
-        Text(
-            "Leave fields empty to disable.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        HelperText("Leave fields empty to disable.")
     }
 }
 
@@ -1502,12 +1510,7 @@ private fun GradePalettePreview(palette: GradePalette) {
     val fillColors = thresholds.map { gradeColor(it, palette, readable = false) ?: Color.Transparent }
     DualRowPalettePreview(labels = labels, textRowColors = textColors, fillRowColors = fillColors)
     GradeRangeBar(thresholds = thresholds)
-    Text(
-        gradeBandSummary(thresholds),
-        fontSize = 9.sp,
-        lineHeight = 10.sp,
-        color = TextDark,
-    )
+    Caption(gradeBandSummary(thresholds))
 }
 
 // Thin scale under the dual preview showing min / 0 / max anchor labels.
@@ -1530,15 +1533,15 @@ private fun GradeRangeBar(thresholds: List<Double>) {
                 .background(TextDark.copy(alpha = 0.3f)),
         )
         Row(modifier = Modifier.fillMaxWidth().padding(top = 1.dp)) {
-            Text(minLabel, fontSize = 9.sp, lineHeight = 10.sp, color = TextDark)
+            Caption(minLabel)
             if (showZero) {
                 Spacer(modifier = Modifier.weight(zeroIdx.toFloat()))
-                Text("0%", fontSize = 9.sp, lineHeight = 10.sp, color = TextDark)
+                Caption("0%")
                 Spacer(modifier = Modifier.weight((thresholds.size - zeroIdx).toFloat()))
             } else {
                 Spacer(modifier = Modifier.weight(1f))
             }
-            Text(maxLabel, fontSize = 9.sp, lineHeight = 10.sp, color = TextDark)
+            Caption(maxLabel)
         }
     }
 }
@@ -1559,11 +1562,7 @@ private fun DualRowPalettePreview(
     fillRowColors: List<Color>,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            "Text mode (top) · Fill mode (bottom)",
-            fontSize = 9.sp,
-            color = TextDark,
-        )
+        Caption("Text mode (top) · Fill mode (bottom)")
         Spacer(modifier = Modifier.height(2.dp))
         Row(modifier = Modifier.fillMaxWidth().height(28.dp).background(Color.Black)) {
             labels.forEachIndexed { i, label ->
