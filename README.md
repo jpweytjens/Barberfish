@@ -39,7 +39,7 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
 
 ## Color palettes
 
-Each palette below is shown in both rendering modes. The top row is **Text mode** — palette color drawn as text on the dark Karoo background, using the contrast-tuned variant where one exists. The bottom row is **Fill mode** — palette color as cell fill with the auto-picked overlay text color.
+Each palette is shown in three rows. The first two are **Text mode** — palette color drawn directly on the datafield background — once on the night-mode black background and once on the day-mode white background, each using its own contrast-tuned variant. The third row is **Fill mode** — palette color as cell fill with the auto-picked overlay text color (mode-agnostic).
 
 ### Zone palettes
 
@@ -121,6 +121,8 @@ Complete list of data fields provided by Barberfish, grouped by category. Order 
 | Karoo 2 | 1.613.2351.12          |
 
 Barberfish is expected to keep working on newer Karoo firmware unless Hammerhead introduces breaking changes to the extension SDK.
+
+Day mode and night mode are both supported. Zone, HR, and grade palettes auto-switch to a contrast-tuned variant per system theme so text-mode fields stay readable on either background.
 
 ## Installation
 
