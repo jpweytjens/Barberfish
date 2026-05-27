@@ -1519,7 +1519,7 @@ private fun GradeRangeBar(thresholds: List<Double>) {
     val minVal = numericLowers.first()
     val maxVal = numericLowers.last()
     val minLabel = if (hasNegativeInf) "<${formatGradePct(minVal)}%" else "${formatGradePct(minVal)}%"
-    val maxLabel = "${formatGradePct(maxVal)}%+"
+    val maxLabel = "≥${formatGradePct(maxVal)}%"
     val zeroIdx = thresholds.indexOf(0.0)
     val showZero = hasNegativeInf && zeroIdx > 0 && zeroIdx < thresholds.size - 1
     Column(modifier = Modifier.fillMaxWidth().padding(top = 3.dp)) {
