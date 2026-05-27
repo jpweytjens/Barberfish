@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -352,20 +351,8 @@ private fun HUDPreview(
     }
     val current = states[index.coerceIn(states.indices)]
 
-    // Bleed 8 dp each side to reclaim the CollapsibleSection inner padding so the
-    // preview spans the section card's full width — wider than default but inside the
-    // section bounds (no screen-edge clipping of the rightmost label).
     Box(
         modifier = Modifier
-            .layout { measurable, constraints ->
-                val bleed = 12.dp.roundToPx()
-                val placeable = measurable.measure(
-                    constraints.copy(maxWidth = constraints.maxWidth + bleed)
-                )
-                layout(constraints.maxWidth, placeable.height) {
-                    placeable.place(-bleed / 2, 0)
-                }
-            }
             .fillMaxWidth()
             .height(HUD_PREVIEW_HEIGHT)
             .clip(RoundedCornerShape(8.dp))
