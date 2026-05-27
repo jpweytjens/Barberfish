@@ -115,42 +115,21 @@ Complete list of data fields provided by Barberfish, grouped by category. Order 
 | Time to civil dawn     | —                                        | —                     | —                                    | ✓              |
 | Time to civil dusk     | —                                        | —                     | —                                    | ✓              |
 
-## Examples
-
-|                                                      |                                                                                                           |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| <img width="180" src="docs/hud_sparkline.jpg">       | 3-column HUD with elevation sparkline on the map page.                                                    |
-| <img width="180" src="docs/hud_four_zones.jpg">      | 4-column HUD with Wahoo background-fill zone coloring and a grade field.                                  |
-| <img width="180" src="docs/karoo_vs_barberfish.jpg"> | Side-by-side: native Karoo fields (left) vs Barberfish (right) for avg HR, HR, 3s power, and paused time. |
-| <img width="180" src="docs/config.jpg">              | Karoo-style config screen with collapsible sections.                                                      |
-| <img width="180" src="docs/config_threshold.gif">    | Threshold configuration of average speed data field with live preview.                                    |
-| <img width="180" src="docs/hud_configurable.gif">    | HUD configuration with live-updating fields, elevation sparkline, and slot picker.                        |
-
-## Use cases
-### Map page HUD
-
-The HUD is designed as the single top row of a map data page providing 3 or 4 data fields at a glance. When a route is loaded, a sparkline shows the upcoming elevation profile.
-
-### Race with a goal pace (single threshold)
-
-Racing an event with a target average? Set a single threshold at your goal pace on the average speed field (excluding paused time). The field colors green above it and red below, so you know at a glance whether you're on track.
-
-### ACP randonneuring (min / max threshold)
-
-[ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) events impose checkpoint cutoff speeds on your total average speed, including any paused time. The rules set a 15 km/h minimum and 30 km/h maximum. Set Min: 15 and Max: 30 on the total average speed field to keep track. The field colors green inside the zone, orange when approaching a boundary, and red when outside.
-
-
 ## Roadmap
 
-- Gradient-aware forward-looking ETA replacing the current DEWMA estimator with terrain-aware arrival predictions. See [Godot](https://github.com/jpweytjens/godot).
-- Workout target field — continuous deviation from the workout target (power, HR, pace) rather than the native discrete below/on target/above states; zone coloring reflects how far off target you are, not just which side you're on
+- Gradient-aware forward-looking ETA — see [Godot](https://github.com/jpweytjens/godot)
+- Workout target field — continuous deviation from the target (power, HR, pace) with zone coloring reflecting how far off target you are
 
 ## Compatibility
 
-| Device  | Firmware      |
-| ------- | ------------- |
-| Karoo 3 | 1.618.2377.20 |
-| Karoo 2 | 1.613.2351.12 |
+Oldest tested firmware:
+
+| Device  | Oldest tested firmware |
+| ------- | ---------------------- |
+| Karoo 3 | 1.618.2377.20          |
+| Karoo 2 | 1.613.2351.12          |
+
+Barberfish is expected to keep working on newer Karoo firmware unless Hammerhead introduces breaking changes to the extension SDK.
 
 
 ## Installation
