@@ -235,25 +235,72 @@ internal val zwiftPowerColorsReadableLight = listOf(
 )
 internal val zwiftHrColorsReadableLight = zwiftPowerColorsReadableLight.take(5)
 
-fun powerZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO, readable: Boolean = true): Color {
+// When readable = true, isNightMode picks between the dark-bg-corrected
+// (#000000) and light-bg-corrected (#FFFFFF) variant of the palette.
+// readable = false ignores isNightMode and returns the original fill
+// palette — BACKGROUND mode renders this color as the cell fill and lets
+// bestTextOnBackground handle text contrast on top.
+fun powerZoneColor(
+    zone: Int,
+    palette: ZonePalette = ZonePalette.KAROO,
+    readable: Boolean = true,
+    isNightMode: Boolean = true,
+): Color {
     val colors =
         when (palette) {
-            ZonePalette.KAROO -> if (readable) karooPowerColorsReadableDark else karooPowerColors
-            ZonePalette.WAHOO -> if (readable) wahooPowerColorsReadableDark else wahooPowerColors
-            ZonePalette.INTERVALS -> if (readable) intervalsPowerColorsReadableDark else intervalsPowerColors
-            ZonePalette.ZWIFT -> if (readable) zwiftPowerColorsReadableDark else zwiftPowerColors
+            ZonePalette.KAROO -> when {
+                !readable -> karooPowerColors
+                isNightMode -> karooPowerColorsReadableDark
+                else -> karooPowerColorsReadableLight
+            }
+            ZonePalette.WAHOO -> when {
+                !readable -> wahooPowerColors
+                isNightMode -> wahooPowerColorsReadableDark
+                else -> wahooPowerColorsReadableLight
+            }
+            ZonePalette.INTERVALS -> when {
+                !readable -> intervalsPowerColors
+                isNightMode -> intervalsPowerColorsReadableDark
+                else -> intervalsPowerColorsReadableLight
+            }
+            ZonePalette.ZWIFT -> when {
+                !readable -> zwiftPowerColors
+                isNightMode -> zwiftPowerColorsReadableDark
+                else -> zwiftPowerColorsReadableLight
+            }
             ZonePalette.HSLUV -> hsluvPowerColors
         }
     return colors.getOrElse(zone - 1) { Color.White }
 }
 
-fun hrZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO, readable: Boolean = true): Color {
+fun hrZoneColor(
+    zone: Int,
+    palette: ZonePalette = ZonePalette.KAROO,
+    readable: Boolean = true,
+    isNightMode: Boolean = true,
+): Color {
     val colors =
         when (palette) {
-            ZonePalette.KAROO -> if (readable) karooHrColorsReadableDark else karooHrColors
-            ZonePalette.WAHOO -> if (readable) wahooHrColorsReadableDark else wahooHrColors
-            ZonePalette.INTERVALS -> if (readable) intervalsHrColorsReadableDark else intervalsHrColors
-            ZonePalette.ZWIFT -> if (readable) zwiftHrColorsReadableDark else zwiftHrColors
+            ZonePalette.KAROO -> when {
+                !readable -> karooHrColors
+                isNightMode -> karooHrColorsReadableDark
+                else -> karooHrColorsReadableLight
+            }
+            ZonePalette.WAHOO -> when {
+                !readable -> wahooHrColors
+                isNightMode -> wahooHrColorsReadableDark
+                else -> wahooHrColorsReadableLight
+            }
+            ZonePalette.INTERVALS -> when {
+                !readable -> intervalsHrColors
+                isNightMode -> intervalsHrColorsReadableDark
+                else -> intervalsHrColorsReadableLight
+            }
+            ZonePalette.ZWIFT -> when {
+                !readable -> zwiftHrColors
+                isNightMode -> zwiftHrColorsReadableDark
+                else -> zwiftHrColorsReadableLight
+            }
             ZonePalette.HSLUV -> hsluvHrColors
         }
     return colors.getOrElse(zone - 1) { Color.White }

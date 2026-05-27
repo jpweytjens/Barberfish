@@ -274,7 +274,7 @@ internal fun renderElevationSparkline(
             val withinFill =
                 (fillRange.posMin != null && grade >= fillRange.posMin) ||
                 (fillRange.negMax != null && grade < fillRange.negMax)
-            val segColor = if (withinFill) gradeColor(grade, palette, readable)?.toArgb() else null
+            val segColor = if (withinFill) gradeColor(grade, palette, readable, isNightMode)?.toArgb() else null
             if (segColor == null) { flushRun(); continue }
             if (segColor != runColor) { flushRun(); runColor = segColor }
             if (runPts.isEmpty()) runPts.add(d1 to e1)

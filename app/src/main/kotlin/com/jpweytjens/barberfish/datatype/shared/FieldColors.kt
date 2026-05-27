@@ -255,14 +255,39 @@ private val TURBO_GRADE_BANDS_READABLE_LIGHT = listOf(
     Double.NEGATIVE_INFINITY to Color(0xFF401C4C),
 )
 
-internal fun gradeColor(percent: Double, palette: GradePalette, readable: Boolean = true): Color? {
+internal fun gradeColor(
+    percent: Double,
+    palette: GradePalette,
+    readable: Boolean = true,
+    isNightMode: Boolean = true,
+): Color? {
     val bands = when (palette) {
-        GradePalette.WAHOO -> if (readable) WAHOO_GRADE_BANDS_READABLE_DARK else WAHOO_GRADE_BANDS
-        GradePalette.GARMIN -> if (readable) GARMIN_GRADE_BANDS_READABLE_DARK else GARMIN_GRADE_BANDS
-        GradePalette.KAROO -> if (readable) KAROO_GRADE_BANDS_READABLE_DARK else KAROO_GRADE_BANDS
+        GradePalette.WAHOO -> when {
+            !readable -> WAHOO_GRADE_BANDS
+            isNightMode -> WAHOO_GRADE_BANDS_READABLE_DARK
+            else -> WAHOO_GRADE_BANDS_READABLE_LIGHT
+        }
+        GradePalette.GARMIN -> when {
+            !readable -> GARMIN_GRADE_BANDS
+            isNightMode -> GARMIN_GRADE_BANDS_READABLE_DARK
+            else -> GARMIN_GRADE_BANDS_READABLE_LIGHT
+        }
+        GradePalette.KAROO -> when {
+            !readable -> KAROO_GRADE_BANDS
+            isNightMode -> KAROO_GRADE_BANDS_READABLE_DARK
+            else -> KAROO_GRADE_BANDS_READABLE_LIGHT
+        }
         GradePalette.HSLUV -> HSLUV_GRADE_BANDS
-        GradePalette.ZWIFT -> if (readable) ZWIFT_GRADE_BANDS_READABLE_DARK else ZWIFT_GRADE_BANDS
-        GradePalette.TURBO -> if (readable) TURBO_GRADE_BANDS_READABLE_DARK else TURBO_GRADE_BANDS
+        GradePalette.ZWIFT -> when {
+            !readable -> ZWIFT_GRADE_BANDS
+            isNightMode -> ZWIFT_GRADE_BANDS_READABLE_DARK
+            else -> ZWIFT_GRADE_BANDS_READABLE_LIGHT
+        }
+        GradePalette.TURBO -> when {
+            !readable -> TURBO_GRADE_BANDS
+            isNightMode -> TURBO_GRADE_BANDS_READABLE_DARK
+            else -> TURBO_GRADE_BANDS_READABLE_LIGHT
+        }
     }
     return bands.firstOrNull { percent >= it.first }?.second
 }
@@ -338,9 +363,10 @@ internal fun FieldColor.toBackgroundColor(): Color? =
         is FieldColor.Grade -> gradeColor(percent, palette, readable = false)
     }
 
-// Text mode draws the palette color on the dark datafield bg, so use the
-// contrast-tuned (HSLuv-corrected) variant of each palette.
-internal fun FieldColor.toColor(): Color? =
+// Text mode draws the palette color directly on the datafield bg, so use
+// the HSLuv-corrected variant — dark-readable on #000000 in night mode,
+// light-readable on #FFFFFF in day mode.
+internal fun FieldColor.toColor(isNightMode: Boolean = true): Color? =
     when (this) {
         is FieldColor.Default -> null
         is FieldColor.Error -> ERROR_RED
@@ -349,9 +375,9 @@ internal fun FieldColor.toColor(): Color? =
         is FieldColor.Threshold -> null
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
-            if (isHr) hrZoneColor(zone, palette, readable = true)
-            else powerZoneColor(zone, palette, readable = true)
-        is FieldColor.Grade -> gradeColor(percent, palette, readable = true)
+            if (isHr) hrZoneColor(zone, palette, readable = true, isNightMode = isNightMode)
+            else powerZoneColor(zone, palette, readable = true, isNightMode = isNightMode)
+        is FieldColor.Grade -> gradeColor(percent, palette, readable = true, isNightMode = isNightMode)
     }
 
 internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boolean): ColorConfig {
@@ -364,9 +390,9 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boo
         when {
             // Error/Muted always use their own text color regardless of colorMode.
             // StreamState goes to stream_state_tv; valueText set to theme default.
-            this is FieldColor.Error || this is FieldColor.Muted -> toColor() ?: defaultText
+            this is FieldColor.Error || this is FieldColor.Muted -> toColor(isNightMode) ?: defaultText
             this is FieldColor.StreamState -> defaultText
-            colorMode == ZoneColorMode.TEXT -> toColor() ?: defaultText
+            colorMode == ZoneColorMode.TEXT -> toColor(isNightMode) ?: defaultText
             onBgText != null -> onBgText
             else -> defaultText
         }
