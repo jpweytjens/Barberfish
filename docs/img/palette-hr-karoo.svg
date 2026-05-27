@@ -1,24 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="280" height="78" viewBox="0 0 280 78">
-<rect x="0" y="0" width="56" height="26" fill="#000000" />
-<text x="28.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#22AA48" text-anchor="middle">Z1</text>
-<rect x="56" y="0" width="56" height="26" fill="#000000" />
-<text x="84.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#40D078" text-anchor="middle">Z2</text>
-<rect x="112" y="0" width="56" height="26" fill="#000000" />
-<text x="140.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F0D800" text-anchor="middle">Z3</text>
-<rect x="168" y="0" width="56" height="26" fill="#000000" />
+<rect x="0" y="0" width="56" height="26" fill="#FFFFFF" />
+<text x="28.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1A8C3A" text-anchor="middle">Z1</text>
+<rect x="56" y="0" width="56" height="26" fill="#FFFFFF" />
+<text x="84.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#3BC16F" text-anchor="middle">Z2</text>
+<rect x="112" y="0" width="56" height="26" fill="#FFFFFF" />
+<text x="140.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#C0AC00" text-anchor="middle">Z3</text>
+<rect x="168" y="0" width="56" height="26" fill="#FFFFFF" />
 <text x="196.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F08868" text-anchor="middle">Z4</text>
-<rect x="224" y="0" width="56" height="26" fill="#000000" />
-<text x="252.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FC5C61" text-anchor="middle">Z5</text>
-<rect x="0" y="26" width="56" height="26" fill="#FFFFFF" />
-<text x="28.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1A8C3A" text-anchor="middle">Z1</text>
-<rect x="56" y="26" width="56" height="26" fill="#FFFFFF" />
-<text x="84.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#3BC16F" text-anchor="middle">Z2</text>
-<rect x="112" y="26" width="56" height="26" fill="#FFFFFF" />
-<text x="140.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#C0AC00" text-anchor="middle">Z3</text>
-<rect x="168" y="26" width="56" height="26" fill="#FFFFFF" />
+<rect x="224" y="0" width="56" height="26" fill="#FFFFFF" />
+<text x="252.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#D01020" text-anchor="middle">Z5</text>
+<rect x="0" y="26" width="56" height="26" fill="#000000" />
+<text x="28.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#22AA48" text-anchor="middle">Z1</text>
+<rect x="56" y="26" width="56" height="26" fill="#000000" />
+<text x="84.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#40D078" text-anchor="middle">Z2</text>
+<rect x="112" y="26" width="56" height="26" fill="#000000" />
+<text x="140.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F0D800" text-anchor="middle">Z3</text>
+<rect x="168" y="26" width="56" height="26" fill="#000000" />
 <text x="196.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F08868" text-anchor="middle">Z4</text>
-<rect x="224" y="26" width="56" height="26" fill="#FFFFFF" />
-<text x="252.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#D01020" text-anchor="middle">Z5</text>
+<rect x="224" y="26" width="56" height="26" fill="#000000" />
+<text x="252.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FC5C61" text-anchor="middle">Z5</text>
 <rect x="0" y="52" width="56" height="26" fill="#1A8C3A" />
 <text x="28.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">Z1</text>
 <rect x="56" y="52" width="56" height="26" fill="#40D078" />

@@ -39,7 +39,7 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
 
 ## Color palettes
 
-Each palette is shown in three rows. The first two are **Text mode** — palette color drawn directly on the datafield background — once on the night-mode black background and once on the day-mode white background, each using its own contrast-tuned variant. The third row is **Fill mode** — palette color as cell fill with the auto-picked overlay text color (mode-agnostic).
+Each palette is shown in three rows. The first two are **Text mode** — palette color drawn directly on the datafield background — once on the day-mode white background and once on the night-mode black background, each using its own contrast-tuned variant. The third row is **Fill mode** — palette color as cell fill with the auto-picked overlay text color (mode-agnostic).
 
 ### Zone palettes
 

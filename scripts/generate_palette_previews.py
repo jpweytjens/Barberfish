@@ -1,11 +1,10 @@
 """
 Generate one three-row palette preview SVG per palette for the README.
 
-Row 1 — TEXT mode (night): palette color drawn as text on ``#000000``, using
-        the night-readable variant (``*ColorsReadableDark`` or, before the
-        rename, ``*ColorsReadable``).
-Row 2 — TEXT mode (day): palette color drawn as text on ``#FFFFFF``, using
+Row 1 — TEXT mode (day): palette color drawn as text on ``#FFFFFF``, using
         the day-readable variant (``*ColorsReadableLight``).
+Row 2 — TEXT mode (night): palette color drawn as text on ``#000000``, using
+        the night-readable variant (``*ColorsReadableDark``).
 Row 3 — FILL mode: original palette as cell fill with the APCA-picked
         black/white overlay text.
 
@@ -140,8 +139,8 @@ def render_palette_svg(
 ) -> str:
     """Render the three-row preview SVG.
 
-    Row 1: night-mode text — palette color text on ``#000000``.
-    Row 2: day-mode text   — palette color text on ``#FFFFFF``.
+    Row 1: day-mode text   — palette color text on ``#FFFFFF``.
+    Row 2: night-mode text — palette color text on ``#000000``.
     Row 3: fill mode       — palette color as fill with APCA-picked text.
     """
     n = len(fill_hexes)
@@ -154,12 +153,12 @@ def render_palette_svg(
 
     row1_y = V_PADDING
     row1 = _row_svg(
-        row1_y, cell_w, [DATAFIELD_BG_DARK] * n, text_dark_hexes, labels
+        row1_y, cell_w, [DATAFIELD_BG_LIGHT] * n, text_light_hexes, labels
     )
 
     row2_y = row1_y + CELL_H + ROW_GAP
     row2 = _row_svg(
-        row2_y, cell_w, [DATAFIELD_BG_LIGHT] * n, text_light_hexes, labels
+        row2_y, cell_w, [DATAFIELD_BG_DARK] * n, text_dark_hexes, labels
     )
 
     row3_y = row2_y + CELL_H + ROW_GAP
