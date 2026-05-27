@@ -67,7 +67,7 @@ GRADE_PALETTE_ORDER = [
 
 CELL_W_DEFAULT = 56   # min cell width; widened to fit the longest label
 CELL_H = 26           # per-row cell height
-ROW_GAP = 4           # vertical gap between the two rows
+ROW_GAP = 0           # vertical gap between the two rows (flush)
 H_PADDING = 0         # SVG horizontal padding
 V_PADDING = 0         # SVG vertical padding
 FONT_FAMILY = "-apple-system, system-ui, sans-serif"
