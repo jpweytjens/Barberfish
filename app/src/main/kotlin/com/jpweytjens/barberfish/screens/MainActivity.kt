@@ -1073,9 +1073,8 @@ internal fun <T> SmoothingSlider(
                     modifier = Modifier.weight(1f),
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center,
-                    color =
-                        if (option == selected) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = TextDark,
+                    fontWeight = if (option == selected) FontWeight.Bold else FontWeight.Normal,
                 )
             }
         }
