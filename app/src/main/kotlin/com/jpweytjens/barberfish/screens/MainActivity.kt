@@ -965,7 +965,7 @@ internal fun HelperText(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 internal fun Caption(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier = modifier, fontSize = 10.sp, color = Grey500)
+    Text(text, modifier = modifier, fontSize = 10.sp, lineHeight = 12.sp, color = Grey500)
 }
 
 @Composable
@@ -1569,7 +1569,6 @@ private fun DualRowPalettePreview(
                 PreviewSwatch(label = label, bg = Color.Black, text = textRowColors[i])
             }
         }
-        Spacer(modifier = Modifier.height(2.dp))
         Row(modifier = Modifier.fillMaxWidth().height(28.dp)) {
             labels.forEachIndexed { i, label ->
                 val fill = fillRowColors[i]
