@@ -116,6 +116,7 @@ import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
+import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
@@ -1309,7 +1310,7 @@ internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1361,7 +1362,7 @@ internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDispl
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1407,7 +1408,7 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1753,7 +1754,7 @@ internal fun SpeedThresholdControls(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1836,7 +1837,7 @@ internal fun AvgSpeedThresholdControls(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -1933,7 +1934,7 @@ internal fun CadenceThresholdControls(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {

@@ -493,7 +493,7 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -915,7 +915,7 @@ private fun <T> SegmentedRow(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
                         .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center,
             ) {
