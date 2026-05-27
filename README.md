@@ -57,14 +57,14 @@ Power-zone variants are shown above. Heart-rate variants and full RGB references
 
 ### Grade palettes
 
-| Palette | Bands (descent → steep)                                                                       | Preview                                |
-| ------- | --------------------------------------------------------------------------------------------- | -------------------------------------- |
-| Karoo   | [0, 5) · [5, 8) · [8, 13) · [13, 16) · [16, 20) · [20, 24) · [24, ∞)                          | ![](docs/img/palette-grade-karoo.svg)  |
-| Wahoo   | [0, 4) · [4, 8) · [8, 12) · [12, 20) · [20, ∞)                                                | ![](docs/img/palette-grade-wahoo.svg)  |
-| Garmin  | [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, ∞)                                                  | ![](docs/img/palette-grade-garmin.svg) |
-| Zwift   | [0, 3) · [3, 6) · [6, 9) · [9, ∞)                                                             | ![](docs/img/palette-grade-zwift.svg)  |
-| HSLuv   | [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, 18) · [18, ∞)                            | ![](docs/img/palette-grade-hsluv.svg)  |
-| Turbo   | (-∞, -9) · [-9, -6) · [-6, -3) · [-3, 0) · [0, 3) · [3, 6) · [6, 9) · [9, 12) · [12, 15) · [15, ∞) | ![](docs/img/palette-grade-turbo.svg)  |
+| Palette | Preview                                |
+| ------- | -------------------------------------- |
+| Karoo   | ![](docs/img/palette-grade-karoo.svg)  |
+| Wahoo   | ![](docs/img/palette-grade-wahoo.svg)  |
+| Garmin  | ![](docs/img/palette-grade-garmin.svg) |
+| Zwift   | ![](docs/img/palette-grade-zwift.svg)  |
+| HSLuv   | ![](docs/img/palette-grade-hsluv.svg)  |
+| Turbo   | ![](docs/img/palette-grade-turbo.svg)  |
 
 ## Data fields
 
