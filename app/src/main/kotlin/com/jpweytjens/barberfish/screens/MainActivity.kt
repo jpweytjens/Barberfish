@@ -862,7 +862,7 @@ class MainActivity : ComponentActivity() {
                     expanded = etaExpanded,
                     onToggle = { etaExpanded = !etaExpanded },
                 ) {
-                    Text("Prior speed", style = MaterialTheme.typography.titleMedium)
+                    ControlLabel("PRIOR SPEED")
                     HelperText(
                         "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
                             "Set to 0 to disable.",
@@ -884,7 +884,7 @@ class MainActivity : ComponentActivity() {
                     expanded = globalExpanded,
                     onToggle = { globalExpanded = !globalExpanded },
                 ) {
-                    Text("Time fields", style = MaterialTheme.typography.titleMedium)
+                    ControlLabel("TIME FIELDS")
                     TimeFormatPills(
                         selected = timeConfig.format,
                         onSelected = { format ->
@@ -894,7 +894,7 @@ class MainActivity : ComponentActivity() {
                     )
                     TimeFormatPreview(format = timeConfig.format)
 
-                    Text("Zone colors", style = MaterialTheme.typography.titleMedium)
+                    ControlLabel("ZONE COLORS")
                     ZonePaletteDropdown(
                         title = "Power zones",
                         selected = zoneConfig.powerPalette,
