@@ -30,6 +30,8 @@ from pathlib import Path
 
 from preview_bg_text_picks import (
     GRADE_PALETTES,
+    HR_PALETTES,
+    HR_ZONE_LABELS,
     POWER_PALETTES,
     POWER_ZONE_LABELS,
     best_text_on_background,
@@ -37,15 +39,25 @@ from preview_bg_text_picks import (
 
 DATAFIELD_BG = "#000000"
 
-# README enumerates these zone palettes (power-zone variant only). Each entry
-# is (output_slug, regular_key, readable_key_or_None). The readable variant is
+# README enumerates these power-zone palettes. Each entry is
+# (output_slug, regular_key, readable_key_or_None). The readable variant is
 # used for the TEXT-mode row when one exists.
-ZONE_PALETTES = [
+POWER_PALETTE_ORDER = [
     ("karoo",     "Karoo",     "Karoo (readable)"),
     ("wahoo",     "Wahoo",     "Wahoo (readable)"),
     ("zwift",     "Zwift",     "Zwift (readable)"),
     ("intervals", "Intervals", "Intervals (readable)"),
     ("hsluv",     "HSLuv",     None),  # single variant by construction
+]
+
+# README enumerates these HR-zone palettes (5 zones each, parallel to the
+# power-zone palette structure).
+HR_PALETTE_ORDER = [
+    ("karoo",     "Karoo",     "Karoo (readable)"),
+    ("wahoo",     "Wahoo",     "Wahoo (readable)"),
+    ("zwift",     "Zwift",     "Zwift (readable)"),
+    ("intervals", "Intervals", "Intervals (readable)"),
+    ("hsluv",     "HSLuv",     None),
 ]
 
 # README enumerates these grade palettes. Each entry is
@@ -189,14 +201,27 @@ def _resolve_text_palette(
     return palettes[regular_key]
 
 
-def _write_zone_palettes(out_dir: Path) -> list[Path]:
+def _write_power_palettes(out_dir: Path) -> list[Path]:
     written: list[Path] = []
-    for slug, regular_key, readable_key in ZONE_PALETTES:
+    for slug, regular_key, readable_key in POWER_PALETTE_ORDER:
         fill_hexes = POWER_PALETTES[regular_key]
         text_hexes = _resolve_text_palette(POWER_PALETTES, regular_key, readable_key)
         labels = POWER_ZONE_LABELS
         svg = render_palette_svg(fill_hexes, text_hexes, labels)
-        path = out_dir / f"palette-zone-{slug}.svg"
+        path = out_dir / f"palette-power-{slug}.svg"
+        path.write_text(svg, encoding="utf-8")
+        written.append(path)
+    return written
+
+
+def _write_hr_palettes(out_dir: Path) -> list[Path]:
+    written: list[Path] = []
+    for slug, regular_key, readable_key in HR_PALETTE_ORDER:
+        fill_hexes = HR_PALETTES[regular_key]
+        text_hexes = _resolve_text_palette(HR_PALETTES, regular_key, readable_key)
+        labels = HR_ZONE_LABELS
+        svg = render_palette_svg(fill_hexes, text_hexes, labels)
+        path = out_dir / f"palette-hr-{slug}.svg"
         path.write_text(svg, encoding="utf-8")
         written.append(path)
     return written
@@ -231,7 +256,8 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     written = []
-    written.extend(_write_zone_palettes(out_dir))
+    written.extend(_write_power_palettes(out_dir))
+    written.extend(_write_hr_palettes(out_dir))
     written.extend(_write_grade_palettes(out_dir))
 
     for path in written:
