@@ -812,17 +812,14 @@ internal fun SparklineCard(
                         HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
                         if (readout != null) HelperText(readout)
                     }
-                    Text(
-                        if (hasDescentBands) "Climbs" else "Bands",
-                        fontSize = 11.sp, color = TextDark,
-                    )
+                    SubControlLabel(if (hasDescentBands) "CLIMBS" else "BANDS")
                     SegmentedRow(
                         options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
                         selected = config.skipBands,
                         onSelect = { onUpdate(config.copy(skipBands = it)) },
                     )
                     if (hasDescentBands) {
-                        Text("Descents", fontSize = 11.sp, color = TextDark)
+                        SubControlLabel("DESCENTS")
                         SegmentedRow(
                             options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
                             selected = config.skipBandsDescent,
