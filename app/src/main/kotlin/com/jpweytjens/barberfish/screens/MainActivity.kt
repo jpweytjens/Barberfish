@@ -1526,13 +1526,7 @@ private fun GradeRangeBar(thresholds: List<Double>) {
     val zeroIdx = thresholds.indexOf(0.0)
     val showZero = hasNegativeInf && zeroIdx > 0 && zeroIdx < thresholds.size - 1
     Column(modifier = Modifier.fillMaxWidth().padding(top = 3.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(TextDark.copy(alpha = 0.3f)),
-        )
-        Row(modifier = Modifier.fillMaxWidth().padding(top = 1.dp)) {
+        Row(modifier = Modifier.fillMaxWidth()) {
             Caption(minLabel)
             if (showZero) {
                 Spacer(modifier = Modifier.weight(zeroIdx.toFloat()))
