@@ -115,11 +115,6 @@ Complete list of data fields provided by Barberfish, grouped by category. Order 
 | Time to civil dawn     | —                                        | —                     | —                                    | ✓              |
 | Time to civil dusk     | —                                        | —                     | —                                    | ✓              |
 
-## Roadmap
-
-- Gradient-aware forward-looking ETA — see [Godot](https://github.com/jpweytjens/godot)
-- Workout target field — continuous deviation from the target (power, HR, pace) with zone coloring reflecting how far off target you are
-
 ## Compatibility
 
 Oldest tested firmware:
@@ -131,13 +126,17 @@ Oldest tested firmware:
 
 Barberfish is expected to keep working on newer Karoo firmware unless Hammerhead introduces breaking changes to the extension SDK.
 
-
 ## Installation
 
 1. Find the APK link on the [latest release page](https://github.com/jpweytjens/barberfish/releases/latest).
 2. Sideload the APK
    * Karoo 3: via the Karoo app following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
    * Karoo 2: via your computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html)
+
+## Roadmap
+
+- Gradient-aware forward-looking ETA — see [Godot](https://github.com/jpweytjens/godot)
+- Workout target field — continuous deviation from the target (power, HR, pace) with zone coloring reflecting how far off target you are
 
 ## Credits
 
