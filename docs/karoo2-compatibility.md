@@ -6,7 +6,7 @@ The project minSdk is 23, so the APK installs on both devices.
 ## RemoteViews methods blacklisted on K2
 
 Confirmed via on-device testing. These crash at `RemoteViews.apply` time on K2 but
-work on K3 — bake the equivalent into XML.
+work on K3. Bake the equivalent into XML.
 
 - `rv.setInt("setGravity", ...)` → bake `android:gravity` into XML layout variants
 - `rv.setInt("setTextAlignment", ...)` → bake `android:textAlignment` into XML layout variants
