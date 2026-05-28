@@ -46,6 +46,27 @@ Average speed comes in two flavors: including paused time (e.g. for [ACP randonn
 
 A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline below the HUD shows recent terrain and the upcoming profile with non-linear zoom around your current position. Tap to cycle 5/10/20 km lookahead.
 
+## Examples
+
+<table>
+  <tr>
+    <td align="center">4-column HUD config with fill-mode zone coloring</td>
+    <td align="center">Day mode with zone-colored HUD and field comparison</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/hud_config.jpg" alt="HUD config screen with 4-column layout and fill-mode zones"></td>
+    <td align="center"><img src="docs/day_mode.jpg" alt="Day mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
+  </tr>
+  <tr>
+    <td align="center">Average speed with target-mode threshold, text coloring above target</td>
+    <td align="center">Data field configuration grouped by category</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/threshold.jpg" alt="Avg Speed threshold config with text-mode green above-target coloring"></td>
+    <td align="center"><img src="docs/config.jpg" alt="Main Barberfish config screen with HUD and Data Fields sections"></td>
+  </tr>
+</table>
+
 ## Color palettes
 
 Each palette is shown in three rows. The first two are Text mode: palette color drawn directly on the datafield background, once on the day-mode white background and once on the night-mode black background, each using its own contrast-tuned variant. The third row is Fill mode: palette color as cell fill with the auto-picked overlay text color (mode-agnostic).
