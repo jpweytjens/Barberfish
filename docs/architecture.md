@@ -14,7 +14,7 @@ Every native Hammerhead data field follows the same visual structure:
 
 The Header sits at the top of the cell and contains:
 - an optional Icon (tinted teal, or black when the cell has a colored background)
-- a Label — short, all-caps, typically one word (POWER, HR, SPEED) but two lines for compound names (AVG SPEED  MOVING)
+- a Label: short, all-caps, typically one word (POWER, HR, SPEED) but two lines for compound names (AVG SPEED  MOVING)
 
 The Value is the large number below the header. Its font shrinks automatically to fit longer strings (e.g. `00:18` is smaller than `239`).
 
@@ -41,7 +41,7 @@ barberfishFieldRemoteViews(field, alignment, colorMode, sizeConfig, preview, con
           └── TextView (weight=1)         (bottom spacer)
 ```
 
-Alignment determines the layout file: `barberfish_field.xml` (right), `barberfish_field_left.xml` (left), `barberfish_field_center.xml` (center). Per-layout vertical translation is baked into `*_neg3.xml` variants via `android:translationY` on `field_value` (selected when `valueTranslationDp == -3`). No programmatic `setGravity()` or `setTranslationY()` calls are made — both are blacklisted on K2 (see `docs/karoo2-compatibility.md`).
+Alignment determines the layout file: `barberfish_field.xml` (right), `barberfish_field_left.xml` (left), `barberfish_field_center.xml` (center). Per-layout vertical translation is baked into `*_neg3.xml` variants via `android:translationY` on `field_value` (selected when `valueTranslationDp == -3`). No programmatic `setGravity()` or `setTranslationY()` calls are made; both are blacklisted on K2 (see `docs/karoo2-compatibility.md`).
 
 `barberfishFieldRemoteViews()` receives a `FieldState` and a `ViewSizeConfig`; it has no access to streams, DataStore, or configuration. All sizing decisions are made by the caller before this function is invoked.
 
@@ -51,7 +51,7 @@ Config-screen previews use the same rendering engine: `remoteViewsToBitmap()` in
 
 ## HUD three-column layout
 
-The HUD field uses `barberfish_hud.xml` (3-col) or `barberfish_hud_four.xml` (4-col) — a horizontal `LinearLayout` with equal-weight `FrameLayout` slots. `HUDDataType` populates each slot by calling `barberfishFieldRemoteViews()` with a `colSpanOverride` and `textSizeOverride` that depend on the column count (see *Value font sizing* below), bypassing the SDK's full-cell `textSize`.
+The HUD field uses `barberfish_hud.xml` (3-col) or `barberfish_hud_four.xml` (4-col), a horizontal `LinearLayout` with equal-weight `FrameLayout` slots. `HUDDataType` populates each slot by calling `barberfishFieldRemoteViews()` with a `colSpanOverride` and `textSizeOverride` that depend on the column count (see *Value font sizing* below), bypassing the SDK's full-cell `textSize`.
 
 ```
 barberfish_hud.xml (LinearLayout horizontal)
@@ -90,7 +90,7 @@ For the HUD, `HUDDataType.startView()` computes one `ViewSizeConfig` (with `colS
 
 | Term           | Meaning                                                                    |
 | -------------- | -------------------------------------------------------------------------- |
-| Field          | The full cell — header + value together                                    |
+| Field          | The full cell (header + value together)                                    |
 | Header         | The top strip inside a field: icon and label                               |
 | Icon           | The small glyph at the start of the header                                 |
 | Label          | The short all-caps text in the header (1–2 lines)                          |
@@ -122,7 +122,7 @@ Presets:
 
 ## Value font sizing
 
-The Karoo SDK provides `ViewConfig.textSize` — the recommended value font size in sp, already adjusted for the cell's column/row span. Barberfish passes it directly to `ViewSizeConfig.valueFontSizeBase` (clamped to a minimum of 20 sp):
+The Karoo SDK provides `ViewConfig.textSize`, the recommended value font size in sp, already adjusted for the cell's column/row span. Barberfish passes it directly to `ViewSizeConfig.valueFontSizeBase` (clamped to a minimum of 20 sp):
 
 ```kotlin
 valueFontSizeBase = textSizeEff.coerceAtLeast(20)
@@ -130,8 +130,8 @@ valueFontSizeBase = textSizeEff.coerceAtLeast(20)
 
 This value is calibrated by the native rideapp for the number of characters that typically fill the cell at full size. In practice:
 
-- 2-column cells (`colSpan = 30`): `textSize` fits roughly 4 wide characters — e.g. `"239"` or `"1234"` sit comfortably; a fifth character would start to clip.
-- 1-column cells (`colSpan = 60`): `textSize` is proportionally larger and fits roughly 6–7 characters — e.g. time values like `"1:23:45"` or `"23m 45s"` fit at or near full size.
+- 2-column cells (`colSpan = 30`): `textSize` fits roughly 4 wide characters; e.g. `"239"` or `"1234"` sit comfortably, a fifth character would start to clip.
+- 1-column cells (`colSpan = 60`): `textSize` is proportionally larger and fits roughly 6–7 characters; e.g. time values like `"1:23:45"` or `"23m 45s"` fit at or near full size.
 
 For HUD slots the SDK `textSize` is meaningless, so `textSizeOverride` is used instead:
 
@@ -142,7 +142,7 @@ For HUD slots the SDK `textSize` is meaningless, so `textSizeOverride` is used i
 
 ### Dynamic shrinking: `fontSizeForCell`
 
-`valueFontSizeBase` is the *ceiling* — the size used when the value is short. For longer strings, `fontSizeForCell()` shrinks the font using exact glyph measurements:
+`valueFontSizeBase` is the *ceiling*, the size used when the value is short. For longer strings, `fontSizeForCell()` shrinks the font using exact glyph measurements:
 
 ```
 fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
@@ -195,20 +195,20 @@ Native renders inside a `ConstraintLayout`, which lets a `wrap_content` value vi
 `field_value` is an `ImageView` displaying a `Bitmap` rendered at ride time by `renderValueBitmap()` in `shared/BitmapValue.kt`.
 
 - Constant bitmap height per layout: `bitmap_h_px = 0.74 × valueFontBaseSp × density`. Just enough to hold the visible glyph cap (~0.7 × textSize for the `relative` monospace) plus a small buffer.
-- Baseline pinned to the bitmap's bottom edge. Digits have no descenders, so bitmap bottom = visible cap bottom = baseline. When `fontSizeForCell` shrinks the text, the smaller glyphs draw inside the same-size bitmap with the baseline at the same position — content shrinks don't move the baseline.
+- Baseline pinned to the bitmap's bottom edge. Digits have no descenders, so bitmap bottom = visible cap bottom = baseline. When `fontSizeForCell` shrinks the text, the smaller glyphs draw inside the same-size bitmap with the baseline at the same position, so content shrinks don't move the baseline.
 - `Bitmap.density = DENSITY_NONE` so the rideapp renders at native pixel size with no scaling.
 
 ### `header_ref` + `baseline_box` centering
 
 The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. To keep the centering region top stable regardless, an invisible `header_ref` `TextView` (`lines=1`, mirrors `dataHeaderTextStyle`, `minHeight` set programmatically to match the visible header) anchors `baseline_box`'s top via `layout_below="@id/header_ref"`.
 
-Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value` `ImageView` (`Space` would have been the natural choice but is blocked by the allowlist). The 1:1 weights geometrically reproduce native's `bias=0.5` centering between header bottom and cell bottom, and adapt automatically when the rideapp shrinks the cell — no `cellHeightPx` plumbing.
+Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value` `ImageView` (`Space` would have been the natural choice but is blocked by the allowlist). The 1:1 weights geometrically reproduce native's `bias=0.5` centering between header bottom and cell bottom, and adapt automatically when the rideapp shrinks the cell (no `cellHeightPx` plumbing).
 
 ### Per-layout vertical translation
 
 Mirrors the small upward translation observed in native narrow-cell layouts (see `docs/sdk-findings.md` § "Native label font sizes"). Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so only one extra XML variant per alignment is needed.
 
-The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is not used — `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
+The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is not used. `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
 
 ### Verification
 
@@ -226,14 +226,14 @@ adb shell "dumpsys activity top" | grep -E "field_root|baseline_box|field_value|
 
 Zone coloring and threshold coloring produce a `FieldColor` sealed variant. `FieldColor.toColorConfig(colorMode)` resolves it into a `ColorConfig` that the view layer can consume directly:
 
-- `colorMode = TEXT` — colored text, transparent background
-- `colorMode = BACKGROUND` — colored background fill, black text and icon tint
-- `colorMode = NONE` — white text, no color
+- `colorMode = TEXT`: colored text, transparent background
+- `colorMode = BACKGROUND`: colored background fill, black text and icon tint
+- `colorMode = NONE`: white text, no color
 
 `ColorConfig` carries:
-- `valueText: Color` — color for the value `TextView` (`.toArgb()` for `RemoteViews`)
-- `headerText: ColorProvider` — color for the label `TextView`
-- `iconTint: Color` — tint applied to the icon `ImageView`
-- `background: ColorProvider?` — `null` means transparent; non-null fills the cell
+- `valueText: Color`: color for the value `TextView` (`.toArgb()` for `RemoteViews`)
+- `headerText: ColorProvider`: color for the label `TextView`
+- `iconTint: Color`: tint applied to the icon `ImageView`
+- `background: ColorProvider?`: `null` means transparent; non-null fills the cell
 
 The value text is a `Color` (Compose) rather than a `ColorProvider` because `RemoteViews.setTextColor()` requires an `Int` ARGB value, which is only accessible via `Color.toArgb()`.
