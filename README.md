@@ -84,9 +84,9 @@ Complete list of data fields provided by Barberfish, grouped by category.
     </tr>
   </thead>
   <tbody>
-    <tr><th colspan="5" align="center">Category: HUD</th></tr>
-    <tr><td>HUD</td><td colspan="4" align="center">per-slot</td></tr>
-    <tr><th colspan="5" align="center">Category: Power</th></tr>
+    <tr><th colspan="5" align="center">HUD</th></tr>
+    <tr><td>HUD</td><td>per-slot</td><td>per-slot</td><td>per-slot</td><td>per-slot</td></tr>
+    <tr><th colspan="5" align="center">Power</th></tr>
     <tr><td>Power</td><td>Zone</td><td></td><td></td><td>Instant / 3s / 5s / 10s / 30s / 20m / 1h</td></tr>
     <tr><td>Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Lap Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
@@ -94,7 +94,7 @@ Complete list of data fields provided by Barberfish, grouped by category.
     <tr><td>NP</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Power Zone</td><td>Zone</td><td></td><td>int / float</td><td></td></tr>
     <tr><td>Max Power</td><td>Zone</td><td></td><td></td><td></td></tr>
-    <tr><th colspan="5" align="center">Category: Heart Rate</th></tr>
+    <tr><th colspan="5" align="center">Heart Rate</th></tr>
     <tr><td>HR</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Lap Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
@@ -102,26 +102,26 @@ Complete list of data fields provided by Barberfish, grouped by category.
     <tr><td>%Max HR</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Max HR</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>HR Zone</td><td>Zone</td><td></td><td>int / float</td><td></td></tr>
-    <tr><th colspan="5" align="center">Category: Speed</th></tr>
+    <tr><th colspan="5" align="center">Speed</th></tr>
     <tr><td>Speed</td><td></td><td>Fixed / Avg total / Avg moving</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
     <tr><td>Avg Speed (Total)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
     <tr><td>Avg Speed (Moving)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
-    <tr><th colspan="5" align="center">Category: Cadence</th></tr>
+    <tr><th colspan="5" align="center">Cadence</th></tr>
     <tr><td>Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
-    <tr><th colspan="5" align="center">Category: Climbing</th></tr>
+    <tr><th colspan="5" align="center">Climbing</th></tr>
     <tr><td>Grade</td><td>Grade</td><td></td><td></td><td>OLS (30 m window)</td></tr>
     <tr><td>Elevation sparkline</td><td>Grade</td><td></td><td></td><td></td></tr>
-    <tr><th colspan="5" align="center">Category: Time</th></tr>
+    <tr><th colspan="5" align="center">Time</th></tr>
     <tr><td>Elapsed</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Moving</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Paused</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Last Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
-    <tr><th colspan="5" align="center">Category: Navigation &amp; ETA</th></tr>
+    <tr><th colspan="5" align="center">Navigation &amp; ETA</th></tr>
     <tr><td>Time to destination</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Remaining ride time</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Time of arrival</td><td></td><td></td><td></td><td></td></tr>
-    <tr><th colspan="5" align="center">Category: Daylight</th></tr>
+    <tr><th colspan="5" align="center">Daylight</th></tr>
     <tr><td>Time to sunrise</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Time to sunset</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Time to civil dawn</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
