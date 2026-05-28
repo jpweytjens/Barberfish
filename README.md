@@ -138,7 +138,7 @@ Complete list of data fields provided by Barberfish, grouped by category.
 
 Barberfish is expected to keep working on newer Karoo firmware unless Hammerhead introduces breaking changes to the extension SDK.
 
-Day mode and night mode are both supported. Zone, HR, and grade palettes auto-switch to a contrast-tuned variant per system theme so text-mode fields stay readable on either background.
+Day mode and night mode are both supported, as are metric and imperial units.
 
 ## Installation
 
