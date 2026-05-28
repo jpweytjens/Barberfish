@@ -19,7 +19,7 @@ Where Karoo's built-in smoothing and ETA methods are unknown, Barberfish uses ex
 
 ### Zone & grade coloring
 
-Every Barberfish field uses one of three color modes — Text, Fill, or None — configurable per field. Zone palettes: Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv. Grade palettes: Karoo, Wahoo, Garmin, Zwift, HSLuv, and Turbo. Brand-color palettes ship contrast-tuned for Text mode; Fill mode auto-picks the overlay text color per cell. HSLuv and Turbo work in both modes without correction. See [docs/color-palettes.md](docs/color-palettes.md) for the contrast methodology.
+Every Barberfish field uses one of three color modes — Text, Fill, or None — configurable per field. Zone palettes: Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv. Grade palettes: Karoo, Wahoo, Garmin, Zwift, HSLuv, and Turbo. Brand-color palettes ship contrast-tuned for Text mode; Fill mode auto-picks the overlay text color per cell. HSLuv works in both modes without correction.
 
 ### Formatting
 
@@ -53,8 +53,6 @@ Each palette is shown in three rows. The first two are **Text mode** — palette
 | Intervals.icu | ![](docs/img/palette-power-intervals.svg) | ![](docs/img/palette-hr-intervals.svg) |
 | HSLuv         | ![](docs/img/palette-power-hsluv.svg)     | ![](docs/img/palette-hr-hsluv.svg)     |
 
-Full RGB references live in [docs/color-palettes.md](docs/color-palettes.md).
-
 ### Grade palettes
 
 | Palette | Preview                                |
@@ -65,6 +63,8 @@ Full RGB references live in [docs/color-palettes.md](docs/color-palettes.md).
 | Zwift   | ![](docs/img/palette-grade-zwift.svg)  |
 | HSLuv   | ![](docs/img/palette-grade-hsluv.svg)  |
 | Turbo   | ![](docs/img/palette-grade-turbo.svg)  |
+
+For the APCA contrast and HSLuv tuning behind every palette, see [docs/color-palettes.md](docs/color-palettes.md).
 
 ## Data fields
 
