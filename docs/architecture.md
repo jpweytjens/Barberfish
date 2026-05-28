@@ -63,6 +63,8 @@ barberfish_hud.xml (LinearLayout horizontal)
     └── barberfishFieldRemoteViews(...)
 ```
 
+The 4-col variant `barberfish_hud_four.xml` follows the same shape and adds a fourth `hud_slot_fourth` `FrameLayout`.
+
 ---
 
 ## Data flow
