@@ -194,9 +194,9 @@ Native renders inside a `ConstraintLayout`, which lets a `wrap_content` value vi
 
 `field_value` is an `ImageView` displaying a `Bitmap` rendered at ride time by `renderValueBitmap()` in `shared/BitmapValue.kt`.
 
-- **Constant bitmap height per layout**: `bitmap_h_px = 0.74 × valueFontBaseSp × density`. Just enough to hold the visible glyph cap (~0.7 × textSize for the `relative` monospace) plus a small buffer.
-- **Baseline pinned to the bitmap's bottom edge**. Digits have no descenders, so bitmap bottom = visible cap bottom = baseline. When `fontSizeForCell` shrinks the text, the smaller glyphs draw inside the same-size bitmap with the baseline at the same position — content shrinks don't move the baseline.
-- **`Bitmap.density = DENSITY_NONE`** so the rideapp renders at native pixel size with no scaling.
+- Constant bitmap height per layout: `bitmap_h_px = 0.74 × valueFontBaseSp × density`. Just enough to hold the visible glyph cap (~0.7 × textSize for the `relative` monospace) plus a small buffer.
+- Baseline pinned to the bitmap's bottom edge. Digits have no descenders, so bitmap bottom = visible cap bottom = baseline. When `fontSizeForCell` shrinks the text, the smaller glyphs draw inside the same-size bitmap with the baseline at the same position — content shrinks don't move the baseline.
+- `Bitmap.density = DENSITY_NONE` so the rideapp renders at native pixel size with no scaling.
 
 ### `header_ref` + `baseline_box` centering
 
@@ -208,7 +208,7 @@ Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value`
 
 Mirrors the small upward translation observed in native narrow-cell layouts (see `docs/sdk-findings.md` § "Native label font sizes"). Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so we need a single extra XML variant per alignment.
 
-The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is **not** used — `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
+The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is not used — `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
 
 ### Verification
 
