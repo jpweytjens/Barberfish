@@ -186,9 +186,9 @@ parameters flow in through `ViewSizeConfig`; the view layer makes no sizing deci
 
 Goal: keep the visible value baseline stable regardless of (a) `fontSizeForCell` shrinking the text for long strings, (b) the rideapp resizing cells mid-ride without re-calling `startView` (rerouting toast, key-icon toggle), and (c) the visible header wrapping to one or two lines.
 
-### Why we can't copy native directly
+### Why Barberfish can't copy native directly
 
-Native renders inside a `ConstraintLayout`, which lets a `wrap_content` value view overflow its constraint region symmetrically. The Karoo ride app's RemoteViews allowlist excludes `ConstraintLayout` and `Space`, so we work inside `RelativeLayout` → `LinearLayout` → `TextView`/`ImageView`, where `wrap_content` cannot overflow the parent.
+Native renders inside a `ConstraintLayout`, which lets a `wrap_content` value view overflow its constraint region symmetrically. The Karoo ride app's RemoteViews allowlist excludes `ConstraintLayout` and `Space`, so Barberfish works inside `RelativeLayout` → `LinearLayout` → `TextView`/`ImageView`, where `wrap_content` cannot overflow the parent.
 
 ### Bitmap-rendered value
 
@@ -206,7 +206,7 @@ Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value`
 
 ### Per-layout vertical translation
 
-Mirrors the small upward translation observed in native narrow-cell layouts (see `docs/sdk-findings.md` § "Native label font sizes"). Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so we need a single extra XML variant per alignment.
+Mirrors the small upward translation observed in native narrow-cell layouts (see `docs/sdk-findings.md` § "Native label font sizes"). Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so only one extra XML variant per alignment is needed.
 
 The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is not used — `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
 

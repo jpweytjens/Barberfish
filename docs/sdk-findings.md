@@ -124,7 +124,7 @@ Not allowed (even though they compile):
 ## SDK container geometry
 
 When `emitter.updateView(rv)` is called with `showHeader = false`, the ride app
-gives our `RemoteViews` a container that fills the full cell bounds exactly — no
+gives the `RemoteViews` a container that fills the full cell bounds exactly — no
 offset, no inset. Observed by inspecting `field_root`'s on-screen bounds via
 `adb shell dumpsys activity top` and comparing them to the cell rectangle in
 screencaps; the two match to the pixel.
