@@ -18,7 +18,7 @@ These are not documented in the official SDK AFAIK.
 | `Idle`         | `FieldState.idle()`         | "No data"       | Sensor connected but silent (ride paused, movement stopped) |
 
 All three use `FieldColor.StreamState` → rendered white in `stream_state_tv` (ibm-plex-sans-condensed).
-`FieldState.unavailable()` ("—") is different — `FieldColor.Error` (red) in `field_value`, meaning
+`FieldState.unavailable()` ("—") is different. It uses `FieldColor.Error` (red) in `field_value`, meaning
 the stream is `Streaming` but a specific `DataPoint.values` key is `null`.
 
 ---
@@ -38,7 +38,7 @@ The relationship is: `RIDE_TIME = ELAPSED_TIME + PAUSED_TIME`.
 "Recording" in the ELAPSED_TIME description means the timer only advances while the ride is
 actively recording (not paused). This is confirmed by the observed bug: computing
 `movingSeconds = ELAPSED_TIME - PAUSED_TIME` produces a value that shrinks while paused
-(ELAPSED stays constant, PAUSED grows), causing avg-speed-moving to grow — the wrong behavior.
+(ELAPSED stays constant, PAUSED grows), causing avg-speed-moving to grow, which is the wrong behavior.
 
 Correct formulas:
 
@@ -54,7 +54,7 @@ Correct formulas:
 ## DataPoint field units
 
 `DataPoint.values` delivers raw `Double` values in these base units.
-Always convert before display — never treat raw values as display-ready.
+Always convert before display. Never treat raw values as display-ready.
 
 | Category  | Unit                | Conversion                                       |
 | --------- | ------------------- | ------------------------------------------------ |
@@ -74,7 +74,7 @@ Units are always base SI regardless of the user's preferred unit setting. The ex
 is responsible for converting to km/h or mph, km or mi, etc. based on
 `UserProfile.preferredUnit`.
 
-Tentative: native Karoo field previews appear to ignore the unit preference — they show
+Tentative: native Karoo field previews appear to ignore the unit preference; they show
 the same (metric-looking) demo values in both metric and imperial mode. Barberfish
 previews do convert because `previewFlow()` reads `streamUserProfile()`. To be confirmed
 with an actual ride comparing native vs Barberfish fields in imperial mode.
@@ -114,7 +114,7 @@ Allowed leaves:
 
 Not allowed (even though they compile):
 
-- `android.view.View` — the base class, even used as a spacer
+- `android.view.View`: the base class, even used as a spacer
 - `android.widget.Space`
 - `androidx.constraintlayout.widget.ConstraintLayout`
 - Any custom or third-party view class
@@ -124,12 +124,12 @@ Not allowed (even though they compile):
 ## SDK container geometry
 
 When `emitter.updateView(rv)` is called with `showHeader = false`, the ride app
-gives the `RemoteViews` a container that fills the full cell bounds exactly — no
+gives the `RemoteViews` a container that fills the full cell bounds exactly. No
 offset, no inset. Observed by inspecting `field_root`'s on-screen bounds via
 `adb shell dumpsys activity top` and comparing them to the cell rectangle in
 screencaps; the two match to the pixel.
 
-Do not add padding or translation to compensate for any assumed offset — there is
+Do not add padding or translation to compensate for any assumed offset; there is
 none. The field container is exactly `cell_width × cell_height`.
 
 Note: the SDK exposes a separate path (`sdkView.createView()`) for non-`RemoteViews`
@@ -143,7 +143,7 @@ SDK views; that path does not apply to extension data fields rendered via
 Two separate pipelines; only one applies simplification.
 
 Map display: the route line drawn on the map looks visibly simpler at lower zoom
-levels on the Route selection screen — observable by zooming in and out and
+levels on the Route selection screen, observable by zooming in and out and
 counting kinks on the polyline. This is a purely visual effect of map-tile
 rendering and does not affect the underlying route data.
 
@@ -170,8 +170,8 @@ top` view-bounds for every layout 1×1 through 5×2:
 | 30      | ≥ 15    | 33 px          | 17.6 sp        | 2-col 4-row       | 50            |
 | 30      | ≥ 12    | 29 px          | 15.5 sp        | 2-col 5-row       | 47            |
 
-The right-most column is the SDK-supplied `ViewConfig.textSize` (sp) for that layout —
-it appears to be `(int)(dataSize_px / density)` and corresponds to the recommended
+The right-most column is the SDK-supplied `ViewConfig.textSize` (sp) for that layout.
+It appears to be `(int)(dataSize_px / density)` and corresponds to the recommended
 value font size.
 
 Icon size equals `labelSize` in both dimensions (`width = height = labelSize px`).
@@ -185,7 +185,7 @@ upward translation (~-3 px) to keep the value baseline stable.
 ## Container resize on route toast (GitHub issue #2)
 
 When a rerouting/turn-cue toast appears, the data-grid cells physically shrink, but
-`startView` is not re-called with updated `ViewConfig.viewSize` — the extension
+`startView` is not re-called with updated `ViewConfig.viewSize`; the extension
 receives stale dimensions. Confirmed by logging the cell size delivered to
 `startView` across a reroute event and comparing it to `dumpsys`-reported cell
 bounds before vs after; the SDK-reported size stays put while the visible cells
@@ -198,9 +198,9 @@ for the nav-toast show/hide that triggers it.
 
 Hammerhead's K2 ROM blocks several `@RemotableViewMethod` calls that work on stock AOSP:
 
-- `setGravity(int)` — CRASH
-- `setTextAlignment(int)` — CRASH
-- `setTranslationY(float)` — CRASH
+- `setGravity(int)`: CRASH
+- `setTextAlignment(int)`: CRASH
+- `setTranslationY(float)`: CRASH
 
 Workaround: bake gravity, alignment, and translationY into XML layout files and select
 the appropriate variant at render time via `removeAllViews` / `addView` (both work on K2).
@@ -208,7 +208,7 @@ the appropriate variant at render time via `removeAllViews` / `addView` (both wo
 ### Barberfish layout approach
 
 Value centering uses `baseline_box` (LinearLayout with `weight=1` `TextView` spacers
-around `field_value`), which adapts automatically when the cell shrinks —
+around `field_value`), which adapts automatically when the cell shrinks.
 `layout_below=header_ref` + `alignParentBottom` re-sizes the box, and the spacer
 weights re-center the bitmap within the new bounds. No `viewSize` or `cellH` dependency.
 See `docs/architecture.md` § "Value baseline alignment".
