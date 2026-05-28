@@ -133,12 +133,12 @@ This value is calibrated by the native rideapp for the number of characters that
 - 2-column cells (`colSpan = 30`): `textSize` fits roughly 4 wide characters; e.g. `"239"` or `"1234"` sit comfortably, a fifth character would start to clip.
 - 1-column cells (`colSpan = 60`): `textSize` is proportionally larger and fits roughly 6–7 characters; e.g. time values like `"1:23:45"` or `"23m 45s"` fit at or near full size.
 
-For HUD slots the SDK `textSize` is meaningless, so `textSizeOverride` is used instead:
+For HUD slots the SDK `textSize` is meaningless, since each slot fills only a third or quarter of the cell. `HUDDataType` selects the preset directly:
 
-| HUD columns | `colSpanOverride` | `textSizeOverride` |
-| ----------- | ----------------- | ------------------ |
-| 3-col       | 20                | 42 sp              |
-| 4-col       | 15                | 37 sp              |
+| HUD columns | Preset                     | `valueFontSizeBase` |
+| ----------- | -------------------------- | ------------------- |
+| 3-col       | `ViewSizeConfig.HUD_THREE` | 42 sp               |
+| 4-col       | `ViewSizeConfig.HUD_FOUR`  | 32 sp               |
 
 ### Dynamic shrinking: `fontSizeForCell`
 
