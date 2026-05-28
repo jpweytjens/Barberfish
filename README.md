@@ -15,7 +15,7 @@ Barberfish is a small collection of data fields for the Hammerhead Karoo. They s
 
 ### Algorithms
 
-Karoo doesn't document its built-in smoothing and ETA methods. Barberfish replaces them with explicit ones so the field's behaviour is something you can predict.
+Most GPS bike computers, the Karoo included, don't publish the algorithms behind their built-in smoothing and ETA fields. Barberfish uses explicit, documented ones instead, so the field's behaviour is something you can predict.
 
 Grade is smoothed over distance rather than time, fitting an [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) line through the last 30 m of elevation. A fixed-window time average has to pick between jittering with every cadence stroke (short window) and smearing the start and end of a climb (long window). The OLS-over-distance variant sidesteps the trade by following the road instead of the clock: it holds steady at any speed and stops moving when you do.
 
