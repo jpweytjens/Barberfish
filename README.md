@@ -45,7 +45,7 @@ Each palette is shown in three rows. The first two are **Text mode** — palette
 
 ### Zone palettes
 
-| Palette       | Power preview                             | HR preview                             |
+| Palette       | Power zones                               | HR zones                               |
 | ------------- | ----------------------------------------- | -------------------------------------- |
 | Karoo         | ![](docs/img/palette-power-karoo.svg)     | ![](docs/img/palette-hr-karoo.svg)     |
 | Wahoo         | ![](docs/img/palette-power-wahoo.svg)     | ![](docs/img/palette-hr-wahoo.svg)     |
@@ -55,7 +55,7 @@ Each palette is shown in three rows. The first two are **Text mode** — palette
 
 ### Grade palettes
 
-| Palette | Preview                                |
+| Palette | Grade bands                            |
 | ------- | -------------------------------------- |
 | Karoo   | ![](docs/img/palette-grade-karoo.svg)  |
 | Wahoo   | ![](docs/img/palette-grade-wahoo.svg)  |
