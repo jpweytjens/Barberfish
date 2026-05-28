@@ -15,7 +15,11 @@ Barberfish is a small collection of data fields for the Hammerhead Karoo. They s
 
 ### Algorithms
 
-Where Karoo's built-in smoothing and ETA methods are unknown, Barberfish uses explicit, documented algorithms. Grade is smoothed with [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) over a 30 m distance window, so the result is consistent regardless of speed and doesn't smear when stopped. ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens/godot) component with a configurable speed prior. It's experimental; see [Godot](https://github.com/jpweytjens/godot) for the ongoing forward-looking replacement.
+Karoo doesn't document its built-in smoothing and ETA methods. Barberfish replaces them with explicit ones so the field's behaviour is something you can predict.
+
+Grade is smoothed over distance rather than time, fitting an [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) line through the last 30 m of elevation. A fixed-window time average has to pick between jittering with every cadence stroke (short window) and smearing the start and end of a climb (long window). The OLS-over-distance variant sidesteps the trade by following the road instead of the clock: it holds steady at any speed and stops moving when you do.
+
+ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens/godot) of recent speed with a configurable prior, so the estimate sharpens as the ride goes on rather than starting from a generic guess. It is not yet gradient-aware, so the climb you can see coming will still pull the arrival time inward. The forward-looking replacement lives in [Godot](https://github.com/jpweytjens/godot).
 
 ### Zone & grade coloring
 
