@@ -1,8 +1,8 @@
 # Color palettes
 
-Every Barberfish field has a color mode — Text, Fill, or None — set per field.
+Every Barberfish field has a color mode (Text, Fill, or None), set per field.
 The mode determines how the chosen palette is rendered, and each mode handles
-contrast on both Karoo themes automatically. No global readable/original
+contrast on both Karoo themes automatically. There is no global readable/original
 choice; pick any palette and both modes stay legible.
 
 The Karoo datafield background is `#000000` in night mode and `#FFFFFF` in day
@@ -16,7 +16,7 @@ Visual previews of every palette in both themes live in the
 ## Text mode: auto contrast-tuning
 
 Several brand zone colors are too dark to read as text on the night-mode
-screen — Wahoo's navy Z2 (`#253070`) e.g. is
+screen. Wahoo's navy Z2 (`#253070`) for example is
 [very hard to read](https://apcacontrast.com/?BG=000000&TXT=253070&DEV=G4g&BUF=A22)
 against `#000000`. The mirror problem appears in day mode: brand colors that
 were tuned for dark backgrounds (yellows, light greens, pale grays) wash out
@@ -25,8 +25,8 @@ on `#FFFFFF`.
 Barberfish adjusts each affected palette using [APCA](https://apcacontrast.com/),
 the Accessible Perceptual Contrast Algorithm. Colors below `|Lc| 45` (the
 minimum for large bold text) have their [HSLuv](https://www.hsluv.org/)
-lightness shifted until they pass — raised for the dark variant, lowered for
-the light variant — keeping the original hue and saturation intact. HSLuv is
+lightness shifted until they pass: raised for the dark variant, lowered for
+the light variant, keeping the original hue and saturation intact. HSLuv is
 perceptually uniform, so the shift does not visibly drift the hue. Colors
 that already pass are left unchanged. Both contrast-tuned sets
 (`*ColorsReadableDark` and `*ColorsReadableLight`) are pre-computed via
@@ -43,15 +43,15 @@ preserves the original distinction.
 
 When the field paints the palette color across the cell, the brand colors
 are kept exactly as designed and the text drawn on top is auto-picked per
-cell — whichever of black or white yields the higher APCA `|Lc|` against
+cell, taking whichever of black or white yields the higher APCA `|Lc|` against
 that specific fill. So Turbo's deep crimson `#8E1201` keeps white text
 (`Lc≈-94`), Turbo's lime `#B0F94D` flips to black text (`Lc≈+90`), and
 mid-luminance grays settle on whichever side wins.
 
 The rule lives in `bestTextOnBackground` in
 `app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ZoneColoring.kt`.
-For a visual sweep across every palette under both rules — picker on,
-old white-only default, and Text mode — run
+For a visual sweep across every palette under all three rules (picker on,
+old white-only default, and Text mode), run
 `uv run scripts/preview_bg_text_picks.py` and open the SVGs it writes to
 `scripts/output/`.
 
@@ -65,7 +65,7 @@ The [HSLuv](https://www.hsluv.org/) palette is inspired by the perceptually
 uniform colormaps available in [seaborn](https://seaborn.pydata.org/tutorial/color_palettes.html).
 It was designed from the start with equidistant lightness steps across all
 zones such that every color is already readable on both Karoo themes without
-modification — the same values render in Text and Fill modes, day and night.
+modification. The same values render in Text and Fill modes, day and night.
 The hue and saturation were tuned to produce a color progression that
 follows the Wahoo palette's character from cool grey to green to redish
 pink.
@@ -80,13 +80,13 @@ The [Turbo](https://research.google/blog/turbo-an-improved-rainbow-colormap-for-
 palette is Google's perceptually-tuned successor to Jet. It sweeps blue → cyan
 → green → yellow → red with near-uniform perceptual spacing, so every step is
 visibly distinct. Unlike the other grade palettes, Turbo covers negative
-grades as well as positive ones — a natural fit for grade, which is one of
+grades as well as positive ones, a natural fit for grade, which is one of
 the few cycling metrics that's genuinely signed. Barberfish uses it for the
 grade field only, with ten bands spanning roughly `-9%` (deep blue) through
 `0%` (green) to `≥15%` (red).
 
-Turbo's luminance is non-monotonic — the green midband is brighter than
-either end — so the APCA + HSLuv pipeline above still applies. The night
+Turbo's luminance is non-monotonic (the green midband is brighter than
+either end), so the APCA + HSLuv pipeline above still applies. The night
 variant (`TURBO_GRADE_BANDS_READABLE_DARK`) raises the dark blues; the day
 variant lowers the bright yellows and greens. Fill mode keeps the original
 hues and picks black or white text per band.
