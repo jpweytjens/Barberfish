@@ -9,7 +9,10 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 Barberfish is a small collection of data fields for the Hammerhead Karoo. They sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline, and configurable smoothing, color modes, palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
 
-<p align="center"><img src="docs/hud_sparkline.jpg" width="600" alt="HUD with elevation sparkline"></p>
+<p align="center">
+  <img src="docs/hud_sparkline.jpg" width="48%" alt="3-column HUD with elevation sparkline over the map view">
+  <img src="docs/karoo_vs_barberfish.jpg" width="48%" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page">
+</p>
 
 ## Enhancements
 
