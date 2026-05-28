@@ -7,7 +7,7 @@ Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.ha
 
 <br clear="left">
 
-Barberfish is a small collection of data fields for the Hammerhead Karoo. They sit alongside the native ones, match their look, and quietly add a bit more — a 3- or 4-column HUD, a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline, and configurable smoothing, color modes, palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
+Barberfish is a small collection of data fields for the Hammerhead Karoo. They sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline, and configurable smoothing, color modes, palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
 
 <p align="center"><img src="docs/hud_sparkline.jpg" width="600" alt="HUD with elevation sparkline"></p>
 
@@ -15,15 +15,15 @@ Barberfish is a small collection of data fields for the Hammerhead Karoo. They s
 
 ### Algorithms
 
-Where Karoo's built-in smoothing and ETA methods are unknown, Barberfish uses explicit, documented algorithms. Grade is smoothed with [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) over a 30 m distance window — consistent regardless of speed, no smearing when stopped. ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens/godot) component with a configurable speed prior — experimental, see [Godot](https://github.com/jpweytjens/godot) for the ongoing forward-looking replacement.
+Where Karoo's built-in smoothing and ETA methods are unknown, Barberfish uses explicit, documented algorithms. Grade is smoothed with [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) over a 30 m distance window, so the result is consistent regardless of speed and doesn't smear when stopped. ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens/godot) component with a configurable speed prior. It's experimental; see [Godot](https://github.com/jpweytjens/godot) for the ongoing forward-looking replacement.
 
 ### Zone & grade coloring
 
-Every Barberfish field uses one of three color modes — Text, Fill, or None — configurable per field. Zone palettes: Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv. Grade palettes: Karoo, Wahoo, Garmin, Zwift, HSLuv, and Turbo. Brand-color palettes ship contrast-tuned for Text mode; Fill mode auto-picks the overlay text color per cell. HSLuv works in both modes without correction.
+Every Barberfish field uses one of three color modes (Text, Fill, or None), configurable per field. Zone palettes: Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv. Grade palettes: Karoo, Wahoo, Garmin, Zwift, HSLuv, and Turbo. Brand-color palettes ship contrast-tuned for Text mode; Fill mode auto-picks the overlay text color per cell. HSLuv works in both modes without correction.
 
 ### Formatting
 
-Time formatting is unambiguous across all durations — three formats to pick from:
+Time formatting is unambiguous across all durations, with three formats to pick from:
 
 | Format   | Under an hour | Over an hour |
 | -------- | ------------- | ------------ |
@@ -37,11 +37,11 @@ Average speed comes in two flavors: including paused time (e.g. for [ACP randonn
 
 ### Layout
 
-A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline below the HUD shows recent terrain and the upcoming profile with non-linear zoom around your current position — tap to cycle 5/10/20 km lookahead.
+A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline below the HUD shows recent terrain and the upcoming profile with non-linear zoom around your current position. Tap to cycle 5/10/20 km lookahead.
 
 ## Color palettes
 
-Each palette is shown in three rows. The first two are Text mode — palette color drawn directly on the datafield background — once on the day-mode white background and once on the night-mode black background, each using its own contrast-tuned variant. The third row is Fill mode — palette color as cell fill with the auto-picked overlay text color (mode-agnostic).
+Each palette is shown in three rows. The first two are Text mode: palette color drawn directly on the datafield background, once on the day-mode white background and once on the night-mode black background, each using its own contrast-tuned variant. The third row is Fill mode: palette color as cell fill with the auto-picked overlay text color (mode-agnostic).
 
 ### Zone palettes
 
@@ -149,14 +149,14 @@ Day mode and night mode are both supported, as are metric and imperial units.
 
 ## Roadmap
 
-- Gradient-aware forward-looking ETA — see [Godot](https://github.com/jpweytjens/godot)
-- Workout target field — continuous deviation from the target (power, HR, pace) with zone coloring reflecting how far off target you are
+- Gradient-aware forward-looking ETA: see [Godot](https://github.com/jpweytjens/godot)
+- Workout target field: continuous deviation from the target (power, HR, pace) with zone coloring reflecting how far off target you are
 
 ## Credits
 
-- [karoo-ext](https://github.com/hammerheadnav/karoo-ext) — the official Hammerhead SDK for building Karoo extensions
-- [awesome-karoo](https://github.com/timklge/awesome-karoo) — a curated list of Karoo extensions and resources
-- [Hammerhead Visual Data Field System](https://www.figma.com/design/Adr23SlulPNE2RBu1VI28C/%3CH%3E-Visual-Data-Field-System?node-id=1-64&p=f) — the Figma design guide used to match the native Karoo look and feel
+- [karoo-ext](https://github.com/hammerheadnav/karoo-ext): the official Hammerhead SDK for building Karoo extensions
+- [awesome-karoo](https://github.com/timklge/awesome-karoo): a curated list of Karoo extensions and resources
+- [Hammerhead Visual Data Field System](https://www.figma.com/design/Adr23SlulPNE2RBu1VI28C/%3CH%3E-Visual-Data-Field-System?node-id=1-64&p=f): the Figma design guide used to match the native Karoo look and feel
 
 ## Contributing
 
