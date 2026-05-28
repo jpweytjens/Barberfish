@@ -224,16 +224,20 @@ adb shell "dumpsys activity top" | grep -E "field_root|baseline_box|field_value|
 
 ## Color system
 
-Zone coloring and threshold coloring produce a `FieldColor` sealed variant. `FieldColor.toColorConfig(colorMode)` resolves it into a `ColorConfig` that the view layer can consume directly:
+Zone coloring and threshold coloring produce a `FieldColor` sealed variant. `FieldColor.toColorConfig(colorMode, isNightMode)` resolves it into a `ColorConfig` that the view layer can consume directly:
 
 - `colorMode = TEXT`: colored text, transparent background
 - `colorMode = BACKGROUND`: colored background fill, black text and icon tint
 - `colorMode = NONE`: white text, no color
 
 `ColorConfig` carries:
-- `valueText: Color`: color for the value `TextView` (`.toArgb()` for `RemoteViews`)
-- `headerText: ColorProvider`: color for the label `TextView`
+- `valueText: Color`: color for the value (passed to `RemoteViews.setTextColor()` via `.toArgb()`)
+- `headerText: Color`: color for the label `TextView`
 - `iconTint: Color`: tint applied to the icon `ImageView`
-- `background: ColorProvider?`: `null` means transparent; non-null fills the cell
+- `background: Color?`: `null` means transparent; non-null fills the cell
 
-The value text is a `Color` (Compose) rather than a `ColorProvider` because `RemoteViews.setTextColor()` requires an `Int` ARGB value, which is only accessible via `Color.toArgb()`.
+### Day/night palette dispatch
+
+`BarberfishView` reads the current system theme from `Configuration.UI_MODE_NIGHT_MASK` and threads an `isNightMode: Boolean` through `toColorConfig`. The flag forwards into `powerZoneColor`, `hrZoneColor`, and `gradeColor`, which pick between the `*ColorsReadableDark` and `*ColorsReadableLight` palette variants so Text-mode fields stay readable on either background.
+
+`colorMode = BACKGROUND` is theme-agnostic: the cell fills with the original brand palette and the overlay text is chosen per cell by `bestTextOnBackground`, whichever of black or white gives the higher APCA `|Lc|` against that specific fill. See `docs/color-palettes.md` for the full contrast methodology.
