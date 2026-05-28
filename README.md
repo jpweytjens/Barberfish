@@ -5,14 +5,18 @@
 [Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keeps Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.
 Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
 
-<br clear="left">
+Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline, and configurable smoothing, color modes, palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
 
-Barberfish is a small collection of data fields for the Hammerhead Karoo. They sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline, and configurable smoothing, color modes, palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
-
-<p align="center">
-  <img src="docs/hud_sparkline.jpg" width="48%" alt="3-column HUD with elevation sparkline over the map view">
-  <img src="docs/karoo_vs_barberfish.jpg" width="48%" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page">
-</p>
+<table>
+  <tr>
+    <td align="center">Elevation sparkline below a 3-column HUD on the map view</td>
+    <td align="center">Karoo native fields beside their Barberfish counterparts</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/hud_sparkline.jpg" alt="3-column HUD with elevation sparkline over the map view"></td>
+    <td align="center"><img src="docs/karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
+  </tr>
+</table>
 
 ## Enhancements
 
