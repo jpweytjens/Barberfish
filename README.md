@@ -38,7 +38,9 @@ The tuning uses [APCA](https://apcacontrast.com/): any color below the threshold
 
 ### Formatting
 
-Time formatting is unambiguous across all durations, with three formats to pick from:
+Format options vary by category.
+
+Duration fields (time, ETA, daylight) use one of three formats, all unambiguous at any length:
 
 | Format   | Under an hour | Over an hour |
 | -------- | ------------- | ------------ |
@@ -46,9 +48,15 @@ Time formatting is unambiguous across all durations, with three formats to pick 
 | Clock    | `0:23:45`     | `1:23:45`    |
 | Segments | `23m45s`      | `1h23m45s`   |
 
-Power Zone and HR Zone fields toggle between integer (`3`) and one-decimal float (`3.4`) display per-field.
+Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`) display per field.
 
-Average speed comes in two flavors: including paused time (e.g. for [ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) checkpoint speeds) and excluding paused time. Speed, average speed, and cadence support threshold coloring: speed compares against a fixed target or its running average; average speed and cadence add a min/max range with warning bands.
+### Thresholds
+
+Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands.
+
+### Average speed
+
+Average speed comes in two variants: Total and Moving. Total includes paused time, useful for ultra-distance events and [ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) checkpoint speeds. Moving excludes paused time.
 
 ### Layout
 
