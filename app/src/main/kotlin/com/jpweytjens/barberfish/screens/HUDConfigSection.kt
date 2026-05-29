@@ -128,7 +128,17 @@ internal fun HUDConfigSection(
             }
         },
     )
-    HelperText("Tap a column to configure it.")
+    SparklineEnableToggle(
+        hudEnabled = sparklineConfig.hudEnabled,
+        onToggle = { enabled ->
+            if (!enabled && stripSelected) selection = null
+            onSparklineUpdate(sparklineConfig.copy(hudEnabled = enabled))
+        },
+    )
+    HelperText(
+        if (sparklineConfig.hudEnabled) "Tap a column or the sparkline to configure it."
+        else "Tap a column to configure it.",
+    )
     if (BuildConfig.DEBUG) {
         // "Current route" is prepended when a route (or destination) is loaded on the device,
         // so VW / warp tuning can be judged against real Strava-density data instead of the
@@ -210,17 +220,6 @@ internal fun HUDConfigSection(
             stripSelected = stripSelected,
             onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
         )
-    }
-
-    SparklineEnableToggle(
-        hudEnabled = sparklineConfig.hudEnabled,
-        onToggle = { enabled ->
-            if (!enabled && stripSelected) selection = null
-            onSparklineUpdate(sparklineConfig.copy(hudEnabled = enabled))
-        },
-    )
-    if (sparklineConfig.hudEnabled) {
-        HelperText("Tap the elevation strip in the preview to configure it.")
     }
 
     val slot = when (selectedSlot) {
@@ -547,11 +546,40 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
 @Composable
 private fun SparklineEnableToggle(hudEnabled: Boolean, onToggle: (Boolean) -> Unit) {
     ControlLabel("SPARKLINE")
-    SegmentedRow(
-        options = listOf(false to "Off", true to "On"),
-        selected = hudEnabled,
-        onSelect = onToggle,
-    )
+    Row(
+        modifier =
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(50))
+                .background(Grey200)
+                .padding(3.dp)
+                .pointerInput(hudEnabled, onToggle) {
+                    val slotWidthPx = size.width.toFloat() / 2
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val idx = (down.position.x / slotWidthPx).toInt().coerceIn(0, 1)
+                        onToggle(idx == 1)
+                    }
+                }
+    ) {
+        listOf(false to "Off", true to "On").forEach { (value, label) ->
+            val isSelected = hudEnabled == value
+            Box(
+                modifier =
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
+                        .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    color = TextDark,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                )
+            }
+        }
+    }
 }
 
 
