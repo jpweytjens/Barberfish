@@ -7,7 +7,7 @@ New data fields:
 - Power Zone, integer or with one decimal
 - Max HR
 - % Max HR
-- HR Zone, integer or with one decimal
+- HR Zone, integer or with one decimal. Thanks to Holdthedoor440 for the request.
 - All five also selectable as HUD slots
 
 Grade:
@@ -19,8 +19,8 @@ Grade:
 Coloring:
 - New light-mode color palettes for zone and grade fields, tuned for daylight readability
 - Palettes switch automatically with the system theme on both ride pages and config previews
-- Value text in fill mode picks black or white per zone, whichever reads better
-- Speed can be colored against a fixed target or its own running average, like Avg Speed
+- Value text in fill mode picks black or white per zone, whichever reads better. Thanks to Sasker for the suggestion.
+- Speed can be colored against a fixed target or its own running average, like Avg Speed. Thanks to max-t-d for the request.
 - Threshold coloring on Speed, Avg Speed, and Cadence respects text vs fill mode like zoned fields do
 
 Config screen:
