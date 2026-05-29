@@ -56,14 +56,11 @@ import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
-import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
-import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
-import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
@@ -111,7 +108,6 @@ internal fun HUDConfigSection(
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
-    currentRouteElevationPolyline: String?,
     onUpdate: (HUDConfig) -> Unit,
     onSparklineUpdate: (SparklineConfig) -> Unit,
 ) {
@@ -140,88 +136,19 @@ internal fun HUDConfigSection(
         if (sparklineConfig.hudEnabled) "Tap a column or the sparkline to configure it."
         else "Tap a column to configure it.",
     )
-    if (BuildConfig.DEBUG) {
-        // "Current route" is prepended when a route (or destination) is loaded on the device,
-        // so VW / warp tuning can be judged against real Strava-density data instead of the
-        // synthetic fixtures, which have perfectly collinear climbs and therefore don't
-        // exhibit the rainbow-banding problem.
-        val fixtures: Map<String, () -> List<Pair<Float, Float>>> =
-            remember(currentRouteElevationPolyline) {
-                buildMap {
-                    val poly = currentRouteElevationPolyline
-                    if (!poly.isNullOrBlank()) {
-                        put("Current route") { decodeElevationPolyline(poly) }
-                    }
-                    putAll(ELEVATION_FIXTURES)
-                }
-            }
-        var selectedFixtureName by remember(fixtures) { mutableStateOf(fixtures.keys.first()) }
-        var expanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            OutlinedTextField(
-                value = selectedFixtureName,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Fixture") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                fixtures.keys.forEach { name ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = { selectedFixtureName = name; expanded = false },
-                    )
-                }
-            }
-        }
-        var previewSweepSeconds by remember { mutableIntStateOf(10) }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Grey200)
-                .padding(12.dp),
-        ) {
-            SegmentedRow(
-                options = listOf(10 to "10s", 30 to "30s", 60 to "60s"),
-                selected = previewSweepSeconds,
-                onSelect = { previewSweepSeconds = it },
-            )
-        }
-        val isRvvFixture = selectedFixtureName == "RvV (last 20km)"
-        HUDPreview(
-            hudConfig = hudConfig,
-            sparklineConfig = sparklineConfig,
-            zoneConfig = zoneConfig,
-            timeCfg = timeCfg,
-            profile = profile,
-            selectedSlot = selectedSlot,
-            onSlotSelected = { idx ->
-                selection = if (selectedSlot == idx) null else HudSelection.Slot(idx)
-            },
-            stripSelected = stripSelected,
-            onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
-            fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
-            fixtureClimbRanges = if (isRvvFixture) rvvClimbsFixture() else emptyList(),
-            fixturePoiDistances = if (isRvvFixture) rvvPoisFixture() else emptyList(),
-            previewSweepSeconds = previewSweepSeconds,
-        )
-    } else {
-        HUDPreview(
-            hudConfig = hudConfig,
-            sparklineConfig = sparklineConfig,
-            zoneConfig = zoneConfig,
-            timeCfg = timeCfg,
-            profile = profile,
-            selectedSlot = selectedSlot,
-            onSlotSelected = { idx ->
-                selection = if (selectedSlot == idx) null else HudSelection.Slot(idx)
-            },
-            stripSelected = stripSelected,
-            onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
-        )
-    }
+    HUDPreview(
+        hudConfig = hudConfig,
+        sparklineConfig = sparklineConfig,
+        zoneConfig = zoneConfig,
+        timeCfg = timeCfg,
+        profile = profile,
+        selectedSlot = selectedSlot,
+        onSlotSelected = { idx ->
+            selection = if (selectedSlot == idx) null else HudSelection.Slot(idx)
+        },
+        stripSelected = stripSelected,
+        onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
+    )
 
     val slot = when (selectedSlot) {
         0 -> hudConfig.leftSlot
@@ -509,7 +436,7 @@ private fun HUDPreviewCell(
 @Composable
 private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
     SegmentedRow(
-        options = listOf(3 to "3 columns", 4 to "4 columns"),
+        options = listOf(3 to "3", 4 to "4"),
         selected = columns,
         onSelect = onSelect,
         trackColor = Grey200,
@@ -883,7 +810,7 @@ internal fun SparklineCard(
 }
 
 @Composable
-private fun <T> SegmentedRow(
+internal fun <T> SegmentedRow(
     options: List<Pair<T, String>>,
     selected: T,
     onSelect: (T) -> Unit,
@@ -899,11 +826,18 @@ private fun <T> SegmentedRow(
                 .padding(3.dp)
                 .pointerInput(options, onSelect) {
                     val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) =
+                        (x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
-                        val idx =
-                            (down.position.x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
-                        onSelect(options[idx].first)
+                        onSelect(options[idxAt(down.position.x)].first)
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelect(options[idxAt(change.position.x)].first)
+                            event = awaitPointerEvent()
+                        }
                     }
                 }
     ) {

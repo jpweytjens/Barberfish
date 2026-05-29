@@ -196,7 +196,6 @@ import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
-import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
@@ -258,7 +257,6 @@ class MainActivity : ComponentActivity() {
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
-        var currentRouteElevationPolyline by remember { mutableStateOf<String?>(null) }
         var userProfile by remember {
             mutableStateOf(
                 UserProfile(
@@ -312,15 +310,6 @@ class MainActivity : ComponentActivity() {
             launch { streamETAConfig().collect { etaConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
-            launch {
-                karooSystem.streamNavigationState().collect { nav ->
-                    currentRouteElevationPolyline = when (val s = nav.state) {
-                        is OnNavigationState.NavigationState.NavigatingRoute -> s.routeElevationPolyline
-                        is OnNavigationState.NavigationState.NavigatingToDestination -> s.elevationPolyline
-                        else -> null
-                    }
-                }
-            }
         }
 
         Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
@@ -342,7 +331,6 @@ class MainActivity : ComponentActivity() {
                         zoneConfig = zoneConfig,
                         timeCfg = timeConfig,
                         profile = userProfile,
-                        currentRouteElevationPolyline = currentRouteElevationPolyline,
                         onUpdate = { updated ->
                             hudConfig = updated
                             lifecycleScope.launch { saveHUDConfig(updated) }
@@ -1326,147 +1314,32 @@ private fun ThresholdLegend() {
 
 @Composable
 internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
-    val options = ZoneColorMode.entries
     ControlLabel("ZONE COLOR")
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(onSelected) {
-                    val slotWidthPx = size.width.toFloat() / options.size
-                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onSelected(options[idxAt(down.position.x)])
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onSelected(options[idxAt(change.position.x)])
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        options.forEach { mode ->
-            val isSelected = mode == selected
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text =
-                        when (mode) {
-                            ZoneColorMode.NONE -> "None"
-                            ZoneColorMode.TEXT -> "Text"
-                            ZoneColorMode.BACKGROUND -> "Fill"
-                        },
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = ZoneColorMode.entries.map { it to it.label },
+        selected = selected,
+        onSelect = onSelected,
+    )
 }
 
 @Composable
 internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) {
-    val options = ZoneDisplayMode.entries
     ControlLabel("ZONE DISPLAY")
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(onSelected) {
-                    val slotWidthPx = size.width.toFloat() / options.size
-                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onSelected(options[idxAt(down.position.x)])
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onSelected(options[idxAt(change.position.x)])
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        options.forEach { mode ->
-            val isSelected = mode == selected
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = mode.label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = ZoneDisplayMode.entries.map { it to it.label },
+        selected = selected,
+        onSelect = onSelected,
+    )
 }
 
 @Composable
 private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {
-    val options = TimeFormat.entries
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Grey100)
-                .padding(3.dp)
-                .pointerInput(options, onSelected) {
-                    val slotWidthPx = size.width.toFloat() / options.size
-                    fun idxAt(x: Float) = (x / slotWidthPx).toInt().coerceIn(0, options.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onSelected(options[idxAt(down.position.x)])
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onSelected(options[idxAt(change.position.x)])
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        options.forEach { format ->
-            val isSelected = format == selected
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = format.label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = TimeFormat.entries.map { it to it.label },
+        selected = selected,
+        onSelect = onSelected,
+        trackColor = Grey100,
+    )
 }
 
 @Composable
@@ -1752,52 +1625,11 @@ internal fun SpeedThresholdControls(
             SpeedThresholdSource.AVG_MOVING to "Avg moving",
         )
     ControlLabel("THRESHOLD SOURCE")
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(onConfigChange) {
-                    val slotWidthPx = size.width.toFloat() / sourceOptions.size
-                    fun idxAt(x: Float) =
-                        (x / slotWidthPx).toInt().coerceIn(0, sourceOptions.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onConfigChange(
-                            config.copy(source = sourceOptions[idxAt(down.position.x)].first)
-                        )
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onConfigChange(
-                                config.copy(source = sourceOptions[idxAt(change.position.x)].first)
-                            )
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        sourceOptions.forEach { (source, label) ->
-            val isSelected = config.source == source
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = sourceOptions,
+        selected = config.source,
+        onSelect = { onConfigChange(config.copy(source = it)) },
+    )
     val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
     if (config.source == SpeedThresholdSource.FIXED) {
         ControlLabel("TARGET ($speedUnit)")
@@ -1835,52 +1667,11 @@ internal fun AvgSpeedThresholdControls(
     ThresholdLegend()
     val modeOptions =
         listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(onConfigChange) {
-                    val slotWidthPx = size.width.toFloat() / modeOptions.size
-                    fun idxAt(x: Float) =
-                        (x / slotWidthPx).toInt().coerceIn(0, modeOptions.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onConfigChange(
-                            config.copy(mode = modeOptions[idxAt(down.position.x)].first)
-                        )
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onConfigChange(
-                                config.copy(mode = modeOptions[idxAt(change.position.x)].first)
-                            )
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        modeOptions.forEach { (mode, label) ->
-            val isSelected = config.mode == mode
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = modeOptions,
+        selected = config.mode,
+        onSelect = { onConfigChange(config.copy(mode = it)) },
+    )
     val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
     if (config.mode == ThresholdMode.TARGET) {
         ControlLabel("TARGET ($speedUnit)")
@@ -1932,52 +1723,11 @@ internal fun CadenceThresholdControls(
     ThresholdLegend()
     val modeOptions =
         listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Color.White)
-                .padding(3.dp)
-                .pointerInput(onConfigChange) {
-                    val slotWidthPx = size.width.toFloat() / modeOptions.size
-                    fun idxAt(x: Float) =
-                        (x / slotWidthPx).toInt().coerceIn(0, modeOptions.size - 1)
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        onConfigChange(
-                            config.copy(mode = modeOptions[idxAt(down.position.x)].first)
-                        )
-                        var event = awaitPointerEvent()
-                        while (event.changes.any { it.pressed }) {
-                            val change = event.changes.firstOrNull() ?: break
-                            change.consume()
-                            onConfigChange(
-                                config.copy(mode = modeOptions[idxAt(change.position.x)].first)
-                            )
-                            event = awaitPointerEvent()
-                        }
-                    }
-                }
-    ) {
-        modeOptions.forEach { (mode, label) ->
-            val isSelected = config.mode == mode
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = modeOptions,
+        selected = config.mode,
+        onSelect = { onConfigChange(config.copy(mode = it)) },
+    )
     if (config.mode == ThresholdMode.TARGET) {
         ControlLabel("TARGET (RPM)")
         CadenceThresholdInput(
