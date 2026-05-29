@@ -895,9 +895,11 @@ class MainActivity : ComponentActivity() {
                     TimeFormatPreview(format = timeConfig.format)
 
                     ControlLabel("ZONE COLORS")
-                    ZonePaletteDropdown(
+                    EnumDropdown(
                         title = "Power zones",
+                        entries = ZonePalette.entries,
                         selected = zoneConfig.powerPalette,
+                        label = ::zonePaletteLabel,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(powerPalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
@@ -905,9 +907,11 @@ class MainActivity : ComponentActivity() {
                     )
                     ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
 
-                    ZonePaletteDropdown(
+                    EnumDropdown(
                         title = "HR zones",
+                        entries = ZonePalette.entries,
                         selected = zoneConfig.hrPalette,
+                        label = ::zonePaletteLabel,
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(hrPalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
@@ -915,9 +919,11 @@ class MainActivity : ComponentActivity() {
                     )
                     ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
 
-                    GradePaletteDropdown(
+                    EnumDropdown(
                         title = "Grade",
+                        entries = GradePalette.entries,
                         selected = zoneConfig.gradePalette,
+                        label = { it.label },
                         onSelected = { palette ->
                             zoneConfig = zoneConfig.copy(gradePalette = palette)
                             lifecycleScope.launch { saveZoneConfig(zoneConfig) }
@@ -1437,22 +1443,17 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun ZonePaletteDropdown(
+private fun <T> EnumDropdown(
     title: String,
-    selected: ZonePalette,
-    onSelected: (ZonePalette) -> Unit,
+    entries: List<T>,
+    selected: T,
+    label: (T) -> String,
+    onSelected: (T) -> Unit,
 ) {
-    fun ZonePalette.displayName() = when (this) {
-        ZonePalette.KAROO -> "Karoo"
-        ZonePalette.WAHOO -> "Wahoo"
-        ZonePalette.INTERVALS -> "Intervals.icu"
-        ZonePalette.ZWIFT -> "Zwift"
-        ZonePalette.HSLUV -> "HSLuv"
-    }
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
         OutlinedTextField(
-            value = selected.displayName(),
+            value = label(selected),
             onValueChange = {},
             readOnly = true,
             label = { Text(title) },
@@ -1460,14 +1461,22 @@ private fun ZonePaletteDropdown(
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            ZonePalette.entries.forEach { palette ->
+            entries.forEach { entry ->
                 DropdownMenuItem(
-                    text = { Text(palette.displayName()) },
-                    onClick = { onSelected(palette); expanded = false },
+                    text = { Text(label(entry)) },
+                    onClick = { onSelected(entry); expanded = false },
                 )
             }
         }
     }
+}
+
+private fun zonePaletteLabel(palette: ZonePalette) = when (palette) {
+    ZonePalette.KAROO -> "Karoo"
+    ZonePalette.WAHOO -> "Wahoo"
+    ZonePalette.INTERVALS -> "Intervals.icu"
+    ZonePalette.ZWIFT -> "Zwift"
+    ZonePalette.HSLUV -> "HSLuv"
 }
 
 // Two-row preview demonstrating how the selected palette renders in each
@@ -2011,34 +2020,6 @@ private fun NullableCadenceThresholdInput(
         placeholder = placeholder,
         keyboardType = KeyboardType.Number,
     )
-}
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun GradePaletteDropdown(
-    title: String,
-    selected: GradePalette,
-    onSelected: (GradePalette) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-        OutlinedTextField(
-            value = selected.label,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(title) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-        )
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            GradePalette.entries.forEach { palette ->
-                DropdownMenuItem(
-                    text = { Text(palette.label) },
-                    onClick = { onSelected(palette); expanded = false },
-                )
-            }
-        }
-    }
 }
 
 private fun formatGradePct(d: Double) = "%.0f".format(d)
