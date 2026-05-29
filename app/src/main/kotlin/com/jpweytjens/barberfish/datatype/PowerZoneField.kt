@@ -4,13 +4,13 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.MAX_POWER_ZONES
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldPreviewFlow
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
-import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamPowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
@@ -19,13 +19,8 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class PowerZoneField(private val karooSystem: KarooSystemService) :
     BarberfishDataType("barberfish", "power-zone") {
 
@@ -82,28 +77,21 @@ class PowerZoneField(private val karooSystem: KarooSystemService) :
     }
 
     override fun liveFlow(context: Context): Flow<FieldState> =
-        combine(
-                context.streamPowerZoneFieldConfig(),
-                karooSystem.streamUserProfile(),
-                context.streamZoneConfig(),
-            ) { cfg, profile, zones ->
-                Triple(cfg, profile, zones)
-            }
-            .flatMapLatest { (cfg, profile, zones) ->
-                karooSystem.streamDataFlow(DataType.Type.POWER_ZONE).map { state ->
-                    toFieldState(state, profile, zones, cfg.colorMode, cfg.zoneDisplayMode)
-                }
-            }
+        zoneFieldLiveFlow(
+            configFlow = context.streamPowerZoneFieldConfig(),
+            profile = karooSystem.streamUserProfile(),
+            zones = context.streamZoneConfig(),
+            sdkType = DataType.Type.POWER_ZONE,
+            karooSystem = karooSystem,
+        ) { state, profile, zones, cfg ->
+            toFieldState(state, profile, zones, cfg.colorMode, cfg.zoneDisplayMode)
+        }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
-        combine(
-                context.streamPowerZoneFieldConfig(),
-                karooSystem.streamUserProfile(),
-                context.streamZoneConfig(),
-            ) { cfg, profile, zones ->
-                Triple(cfg, profile, zones)
-            }
-            .flatMapLatest { (cfg, profile, zones) ->
-                cyclePreview(previewStates(cfg, profile, zones))
-            }
+        zoneFieldPreviewFlow(
+            configFlow = context.streamPowerZoneFieldConfig(),
+            profile = karooSystem.streamUserProfile(),
+            zones = context.streamZoneConfig(),
+            toPreviews = ::previewStates,
+        )
 }
