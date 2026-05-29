@@ -126,13 +126,11 @@ internal fun HUDConfigSection(
             }
         },
     )
-    SparklineEnableToggle(
-        hudEnabled = sparklineConfig.hudMode != SparklineMode.OFF,
-        onToggle = { enabled ->
-            if (!enabled && stripSelected) selection = null
-            onSparklineUpdate(
-                sparklineConfig.copy(mode = if (enabled) SparklineMode.ON else SparklineMode.OFF),
-            )
+    SparklineModeToggle(
+        mode = sparklineConfig.hudMode,
+        onSelect = { mode ->
+            if (mode == SparklineMode.OFF && stripSelected) selection = null
+            onSparklineUpdate(sparklineConfig.copy(mode = mode))
         },
     )
     HelperText(
@@ -447,12 +445,16 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
-private fun SparklineEnableToggle(hudEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -> Unit) {
     ControlLabel("SPARKLINE")
     SegmentedRow(
-        options = listOf(false to "Off", true to "On"),
-        selected = hudEnabled,
-        onSelect = onToggle,
+        options = listOf(
+            SparklineMode.OFF to "Off",
+            SparklineMode.CLIMBS to "Climbs",
+            SparklineMode.ON to "On",
+        ),
+        selected = mode,
+        onSelect = onSelect,
         trackColor = Grey200,
     )
 }
