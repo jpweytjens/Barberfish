@@ -119,6 +119,7 @@ internal fun HUDConfigSection(
     val selectedSlot = (selection as? HudSelection.Slot)?.index
     val stripSelected = selection is HudSelection.Strip
 
+    ControlLabel("NUMBER OF COLUMNS")
     ColumnCountToggle(
         columns = hudConfig.columns,
         onSelect = { cols ->
@@ -507,79 +508,23 @@ private fun HUDPreviewCell(
 
 @Composable
 private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Grey200)
-                .padding(3.dp)
-                .pointerInput(columns, onSelect) {
-                    val slotWidthPx = size.width.toFloat() / 2
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        val idx = (down.position.x / slotWidthPx).toInt().coerceIn(0, 1)
-                        onSelect(if (idx == 0) 3 else 4)
-                    }
-                }
-    ) {
-        listOf(3 to "3 columns", 4 to "4 columns").forEach { (cols, label) ->
-            val isSelected = columns == cols
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = listOf(3 to "3 columns", 4 to "4 columns"),
+        selected = columns,
+        onSelect = onSelect,
+        trackColor = Grey200,
+    )
 }
 
 @Composable
 private fun SparklineEnableToggle(hudEnabled: Boolean, onToggle: (Boolean) -> Unit) {
     ControlLabel("SPARKLINE")
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Grey200)
-                .padding(3.dp)
-                .pointerInput(hudEnabled, onToggle) {
-                    val slotWidthPx = size.width.toFloat() / 2
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        val idx = (down.position.x / slotWidthPx).toInt().coerceIn(0, 1)
-                        onToggle(idx == 1)
-                    }
-                }
-    ) {
-        listOf(false to "Off", true to "On").forEach { (value, label) ->
-            val isSelected = hudEnabled == value
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = listOf(false to "Off", true to "On"),
+        selected = hudEnabled,
+        onSelect = onToggle,
+        trackColor = Grey200,
+    )
 }
 
 
@@ -943,13 +888,14 @@ private fun <T> SegmentedRow(
     selected: T,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
+    trackColor: Color = Color.White,
 ) {
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color.White)
+                .background(trackColor)
                 .padding(3.dp)
                 .pointerInput(options, onSelect) {
                     val slotWidthPx = size.width.toFloat() / options.size
@@ -968,7 +914,7 @@ private fun <T> SegmentedRow(
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
                         .background(if (isSelected) BarberfishYellow else Color.Transparent)
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
