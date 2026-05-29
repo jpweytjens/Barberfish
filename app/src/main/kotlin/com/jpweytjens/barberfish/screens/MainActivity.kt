@@ -1496,7 +1496,7 @@ private fun GradePalettePreview(palette: GradePalette) {
     val thresholds: List<Double> = when (palette) {
         GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
         GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
-        GradePalette.KAROO -> listOf(0.0, 4.6, 7.6, 12.6, 15.6, 19.6, 23.6)
+        GradePalette.KAROO -> listOf(0.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0)
         GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
         GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
         GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)

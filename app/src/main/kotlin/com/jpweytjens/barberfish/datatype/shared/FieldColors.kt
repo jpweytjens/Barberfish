@@ -133,13 +133,13 @@ private val HSLUV_GRADE_BANDS = listOf(
 
 // Reuses Karoo power zone palette (green→yellow→orange→red→purple)
 private val KAROO_GRADE_BANDS = listOf(
-    23.6 to karooPowerColors[6], // >23.5%     — purple
-    19.6 to karooPowerColors[5], // 19.6–23.5% — red
-    15.6 to karooPowerColors[4], // 15.6–19.5% — orange
-    12.6 to karooPowerColors[3], // 12.6–15.5% — salmon
-     7.6 to karooPowerColors[2], //  7.6–12.5% — yellow
-     4.6 to karooPowerColors[1], //  4.6–7.5%  — mint green
-     0.0 to karooPowerColors[0], //  <4.6%     — dark green
+    20.0 to karooPowerColors[6], // >20%      — purple
+    14.0 to karooPowerColors[5], // 14–19.9%  — red
+    11.0 to karooPowerColors[4], // 11–13.9%  — orange
+     8.0 to karooPowerColors[3], //  8–10.9%  — salmon
+     5.0 to karooPowerColors[2], //  5–7.9%   — yellow
+     2.0 to karooPowerColors[1], //  2–4.9%   — mint green
+     0.0 to karooPowerColors[0], //  <2%      — dark green
 )
 
 // Zwift grade bands — official Zwift climb colors, designed for dark backgrounds
@@ -174,13 +174,13 @@ private val GARMIN_GRADE_BANDS_READABLE_DARK = listOf(
      0.0 to Color(0xFF6EBE43), //  0–3%  Cat 4
 )
 private val KAROO_GRADE_BANDS_READABLE_DARK = listOf(
-    23.6 to karooPowerColorsReadableDark[6], // >23.5%     — purple
-    19.6 to karooPowerColorsReadableDark[5], // 19.6–23.5% — red
-    15.6 to karooPowerColorsReadableDark[4], // 15.6–19.5% — orange
-    12.6 to karooPowerColorsReadableDark[3], // 12.6–15.5% — salmon
-     7.6 to karooPowerColorsReadableDark[2], //  7.6–12.5% — yellow
-     4.6 to karooPowerColorsReadableDark[1], //  4.6–7.5%  — mint green
-     0.0 to karooPowerColorsReadableDark[0], //  <4.6%     — dark green
+    20.0 to karooPowerColorsReadableDark[6], // >20%      — purple
+    14.0 to karooPowerColorsReadableDark[5], // 14–19.9%  — red
+    11.0 to karooPowerColorsReadableDark[4], // 11–13.9%  — orange
+     8.0 to karooPowerColorsReadableDark[3], //  8–10.9%  — salmon
+     5.0 to karooPowerColorsReadableDark[2], //  5–7.9%   — yellow
+     2.0 to karooPowerColorsReadableDark[1], //  2–4.9%   — mint green
+     0.0 to karooPowerColorsReadableDark[0], //  <2%      — dark green
 )
 
 // Turbo grade bands — the only palette that colors negative grades. Fill
@@ -234,12 +234,12 @@ private val GARMIN_GRADE_BANDS_READABLE_LIGHT = listOf(
      0.0 to Color(0xFF6EBE43),
 )
 private val KAROO_GRADE_BANDS_READABLE_LIGHT = listOf(
-    23.6 to karooPowerColorsReadableLight[6],
-    19.6 to karooPowerColorsReadableLight[5],
-    15.6 to karooPowerColorsReadableLight[4],
-    12.6 to karooPowerColorsReadableLight[3],
-     7.6 to karooPowerColorsReadableLight[2],
-     4.6 to karooPowerColorsReadableLight[1],
+    20.0 to karooPowerColorsReadableLight[6],
+    14.0 to karooPowerColorsReadableLight[5],
+    11.0 to karooPowerColorsReadableLight[4],
+     8.0 to karooPowerColorsReadableLight[3],
+     5.0 to karooPowerColorsReadableLight[2],
+     2.0 to karooPowerColorsReadableLight[1],
      0.0 to karooPowerColorsReadableLight[0],
 )
 private val TURBO_GRADE_BANDS_READABLE_LIGHT = listOf(

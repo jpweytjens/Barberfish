@@ -26,9 +26,9 @@ class GradeThresholdTest {
         assertNull(range.negMax)
     }
 
-    @Test fun karoo_climb_threshold_is_4_6() {
+    @Test fun karoo_climb_threshold_is_2() {
         val range = gradeFillRange(GradePalette.KAROO)
-        assertEquals(4.6, range.posMin!!, 0.001)
+        assertEquals(2.0, range.posMin!!, 0.001)
         assertNull(range.negMax)
     }
 }
