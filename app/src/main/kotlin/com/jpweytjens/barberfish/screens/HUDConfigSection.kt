@@ -1,15 +1,10 @@
 package com.jpweytjens.barberfish.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -720,142 +715,113 @@ internal fun SparklineCard(
     onSelect: () -> Unit,
     onUpdate: (SparklineConfig) -> Unit,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
+    ExpandableCard(
+        title = "SPARKLINE",
+        selected = selected,
+        onSelect = onSelect,
+        headerExtra = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HelperText("Elevation profile shown ahead when a route is loaded.")
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(60.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+                ) {
+                    SparklinePreview(
+                        sparklineConfig = config,
+                        zoneConfig = zoneConfig,
+                    )
+                }
+            }
+        },
     ) {
-        var everSelected by remember { mutableStateOf(selected) }
-        if (selected) everSelected = true
-        Column(
-            modifier = Modifier.fillMaxWidth().background(Grey100)
-                .padding(12.dp)
-                .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            ControlLabel("SPARKLINE")
-            if (everSelected) {
-                AnimatedVisibility(
-                    visible = selected,
-                    enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
-                    exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        HelperText("Elevation profile shown ahead when a route is loaded.")
-                        Box(
-                            modifier = Modifier.fillMaxWidth().height(60.dp)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
-                        ) {
-                            SparklinePreview(
-                                sparklineConfig = config,
-                                zoneConfig = zoneConfig,
-                            )
-                        }
-                    }
-                }
-            }
+        LabeledHelper("LOOKAHEAD") {
+            HelperText("Distance shown ahead of your position.")
         }
-        if (everSelected) {
-            AnimatedVisibility(
-                visible = selected,
-                enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
-                exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    LabeledHelper("LOOKAHEAD") {
-                        HelperText("Distance shown ahead of your position.")
-                    }
-                    SegmentedRow(
-                        options = listOf(5, 10, 20).map { km ->
-                            val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-                            km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-                        },
-                        selected = config.lookaheadKm,
-                        onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
-                    )
-                    val fillRange = gradeFillRange(
-                        zoneConfig.gradePalette,
-                        skipBandsClimb = config.skipBands,
-                        skipBandsDescent = config.skipBandsDescent,
-                    )
-                    val hasDescentBands = gradeFillRange(zoneConfig.gradePalette).negMax != null
-                    val posMin = fillRange.posMin
-                    val negMax = fillRange.negMax
-                    val readout = when {
-                        hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
-                            val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
-                            val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
-                            "Grades between $lower% and $upper% stay uncoloured."
-                        }
-                        !hasDescentBands && config.skipBands > 0 && posMin != null ->
-                            "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
-                        else -> null
-                    }
-                    LabeledHelper("EMPHASIS") {
-                        HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
-                        if (readout != null) HelperText(readout)
-                    }
-                    SubControlLabel(if (hasDescentBands) "CLIMBS" else "BANDS")
-                    SegmentedRow(
-                        options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                        selected = config.skipBands,
-                        onSelect = { onUpdate(config.copy(skipBands = it)) },
-                    )
-                    if (hasDescentBands) {
-                        SubControlLabel("DESCENTS")
-                        SegmentedRow(
-                            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                            selected = config.skipBandsDescent,
-                            onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
-                        )
-                    }
-                    LabeledHelper("SIMPLIFICATION") {
-                        HelperText("Merges small elevation wiggles into larger same-colour blocks.")
-                    }
-                    SegmentedRow(
-                        options = ElevationSimplification.entries.map { it to it.label },
-                        selected = config.simplification,
-                        onSelect = { onUpdate(config.copy(simplification = it)) },
-                    )
-                    LabeledHelper("X-WARP") {
-                        HelperText("Fisheye magnification around the position dot.")
-                    }
-                    SegmentedRow(
-                        options = SparklineWarp.entries.map { it to it.label },
-                        selected = config.warp,
-                        onSelect = { onUpdate(config.copy(warp = it)) },
-                    )
-                    LabeledHelper("Y-ZOOM") {
-                        HelperText("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.")
-                    }
-                    SegmentedRow(
-                        options = ElevationZoom.entries.map { it to it.label },
-                        selected = config.yZoom,
-                        onSelect = { onUpdate(config.copy(yZoom = it)) },
-                    )
-                    LabeledHelper("CLIMBS") {
-                        HelperText("Tint the outline blue on climbs as detected by Karoo Climber.")
-                    }
-                    SegmentedRow(
-                        options = listOf(false to "Off", true to "On"),
-                        selected = config.showClimbs,
-                        onSelect = { onUpdate(config.copy(showClimbs = it)) },
-                    )
-                    LabeledHelper("POIs") {
-                        HelperText("Mark points of interest (POIs) along the sparkline.")
-                    }
-                    SegmentedRow(
-                        options = listOf(false to "Off", true to "On"),
-                        selected = config.showPois,
-                        onSelect = { onUpdate(config.copy(showPois = it)) },
-                    )
-                }
+        SegmentedRow(
+            options = listOf(5, 10, 20).map { km ->
+                val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+            },
+            selected = config.lookaheadKm,
+            onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+        )
+        val fillRange = gradeFillRange(
+            zoneConfig.gradePalette,
+            skipBandsClimb = config.skipBands,
+            skipBandsDescent = config.skipBandsDescent,
+        )
+        val hasDescentBands = gradeFillRange(zoneConfig.gradePalette).negMax != null
+        val posMin = fillRange.posMin
+        val negMax = fillRange.negMax
+        val readout = when {
+            hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
+                val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
+                val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
+                "Grades between $lower% and $upper% stay uncoloured."
             }
+            !hasDescentBands && config.skipBands > 0 && posMin != null ->
+                "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+            else -> null
         }
+        LabeledHelper("EMPHASIS") {
+            HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
+            if (readout != null) HelperText(readout)
+        }
+        SubControlLabel(if (hasDescentBands) "CLIMBS" else "BANDS")
+        SegmentedRow(
+            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+            selected = config.skipBands,
+            onSelect = { onUpdate(config.copy(skipBands = it)) },
+        )
+        if (hasDescentBands) {
+            SubControlLabel("DESCENTS")
+            SegmentedRow(
+                options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                selected = config.skipBandsDescent,
+                onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
+            )
+        }
+        LabeledHelper("SIMPLIFICATION") {
+            HelperText("Merges small elevation wiggles into larger same-colour blocks.")
+        }
+        SegmentedRow(
+            options = ElevationSimplification.entries.map { it to it.label },
+            selected = config.simplification,
+            onSelect = { onUpdate(config.copy(simplification = it)) },
+        )
+        LabeledHelper("X-WARP") {
+            HelperText("Fisheye magnification around the position dot.")
+        }
+        SegmentedRow(
+            options = SparklineWarp.entries.map { it to it.label },
+            selected = config.warp,
+            onSelect = { onUpdate(config.copy(warp = it)) },
+        )
+        LabeledHelper("Y-ZOOM") {
+            HelperText("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.")
+        }
+        SegmentedRow(
+            options = ElevationZoom.entries.map { it to it.label },
+            selected = config.yZoom,
+            onSelect = { onUpdate(config.copy(yZoom = it)) },
+        )
+        LabeledHelper("CLIMBS") {
+            HelperText("Tint the outline blue on climbs as detected by Karoo Climber.")
+        }
+        SegmentedRow(
+            options = listOf(false to "Off", true to "On"),
+            selected = config.showClimbs,
+            onSelect = { onUpdate(config.copy(showClimbs = it)) },
+        )
+        LabeledHelper("POIs") {
+            HelperText("Mark points of interest (POIs) along the sparkline.")
+        }
+        SegmentedRow(
+            options = listOf(false to "Off", true to "On"),
+            selected = config.showPois,
+            onSelect = { onUpdate(config.copy(showPois = it)) },
+        )
     }
 }
 

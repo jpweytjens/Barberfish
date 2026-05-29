@@ -1207,14 +1207,16 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     )
 }
 
+// Shared expand/collapse shell for FieldCard and SparklineCard. The header shows
+// `title` always; `headerExtra` (description + preview) animates in while selected,
+// and `controls` is the Grey200 body revealed below. The everSelected gate lazy-mounts
+// the animated regions so the collapse animation can play on first deselect.
 @Composable
-private fun FieldCard(
+internal fun ExpandableCard(
     title: String,
-    description: String,
-    previewFields: List<FieldState>,
-    colorMode: ZoneColorMode,
     selected: Boolean,
     onSelect: () -> Unit,
+    headerExtra: (@Composable () -> Unit)? = null,
     controls: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -1231,19 +1233,13 @@ private fun FieldCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ControlLabel(title)
-            if (everSelected) {
+            if (everSelected && headerExtra != null) {
                 AnimatedVisibility(
                     visible = selected,
                     enter = expandVertically(animationSpec = tween(SECTION_ANIM_MS)),
                     exit = shrinkVertically(animationSpec = tween(SECTION_ANIM_MS)),
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        HelperText(description, modifier = Modifier.weight(1f))
-                        FieldPreviewBox(previewFields, colorMode)
-                    }
+                    headerExtra()
                 }
             }
         }
@@ -1261,6 +1257,33 @@ private fun FieldCard(
             }
         }
     }
+}
+
+@Composable
+private fun FieldCard(
+    title: String,
+    description: String,
+    previewFields: List<FieldState>,
+    colorMode: ZoneColorMode,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    controls: @Composable ColumnScope.() -> Unit,
+) {
+    ExpandableCard(
+        title = title,
+        selected = selected,
+        onSelect = onSelect,
+        headerExtra = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HelperText(description, modifier = Modifier.weight(1f))
+                FieldPreviewBox(previewFields, colorMode)
+            }
+        },
+        controls = controls,
+    )
 }
 
 @Composable
