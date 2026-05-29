@@ -1,5 +1,39 @@
 # Changelog
 
+## 3.3
+
+New data fields:
+- Max Power
+- Power Zone, integer or with one decimal
+- Max HR
+- % Max HR
+- HR Zone, integer or with one decimal
+- All five also selectable as HUD slots
+
+Grade:
+- Steadier reading, follows the road instead of lagging or jittering
+- Holds the last value in grey during warm-up and across stops, instead of jumping or going blank
+- No more drift after pauses
+- Grade bands aligned with Karoo build 1.634.2440
+
+Coloring:
+- New light-mode color palettes for zone and grade fields, tuned for daylight readability
+- Palettes switch automatically with the system theme on both ride pages and config previews
+- Value text in fill mode picks black or white per zone, whichever reads better
+- Speed can be colored against a fixed target or its own running average, like Avg Speed
+- Threshold coloring on Speed, Avg Speed, and Cadence respects text vs fill mode like zoned fields do
+
+Config screen:
+- All configurable fields gathered into one Data fields section; threshold controls live with the fields they belong to
+- Climbing and Sparkline use the same expand-and-collapse layout as the other fields
+- Numeric inputs commit when you tap away, not only when you press Done
+- Brand colors on active controls, selection borders, and the sparkline current-position dot
+- Smaller touch-ups: card animation plays again, HUD preview width matches the sparkline, grade upper-bound shows ≥ instead of +
+
+Fixes:
+- Cadence shows "Searching…" while waiting for a sensor, instead of "Not available"
+- Sparkline no longer stalls when settings load slowly
+
 ## 3.2
 
 ### Sparkline
