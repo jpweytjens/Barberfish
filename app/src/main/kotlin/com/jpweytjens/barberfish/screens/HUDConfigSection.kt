@@ -89,6 +89,11 @@ import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
 
+private sealed interface HudSelection {
+    data class Slot(val index: Int) : HudSelection
+    data object Strip : HudSelection
+}
+
 // Vertical space reserved inside each HUD preview cell for the sparkline strip below.
 // Matches HUD_SPARKLINE_HEIGHT_DP in HUDField (the live overlay strip). The strip itself
 // here is rendered at 30.dp — the 4dp difference is an unresolved cosmetic mismatch
@@ -108,14 +113,17 @@ internal fun HUDConfigSection(
     profile: UserProfile,
     currentRouteElevationPolyline: String?,
     onUpdate: (HUDConfig) -> Unit,
+    onSparklineUpdate: (SparklineConfig) -> Unit,
 ) {
-    var selectedSlot by remember { mutableStateOf<Int?>(null) }
+    var selection by remember { mutableStateOf<HudSelection?>(null) }
+    val selectedSlot = (selection as? HudSelection.Slot)?.index
+    val stripSelected = selection is HudSelection.Strip
 
     ColumnCountToggle(
         columns = hudConfig.columns,
         onSelect = { cols ->
             if (cols != hudConfig.columns) {
-                selectedSlot = null
+                selection = null
                 onUpdate(hudConfig.copy(columns = cols))
             }
         },
@@ -178,7 +186,11 @@ internal fun HUDConfigSection(
             timeCfg = timeCfg,
             profile = profile,
             selectedSlot = selectedSlot,
-            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
+            onSlotSelected = { idx ->
+                selection = if (selectedSlot == idx) null else HudSelection.Slot(idx)
+            },
+            stripSelected = stripSelected,
+            onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
             fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
             fixtureClimbRanges = if (isRvvFixture) rvvClimbsFixture() else emptyList(),
             fixturePoiDistances = if (isRvvFixture) rvvPoisFixture() else emptyList(),
@@ -192,8 +204,23 @@ internal fun HUDConfigSection(
             timeCfg = timeCfg,
             profile = profile,
             selectedSlot = selectedSlot,
-            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
+            onSlotSelected = { idx ->
+                selection = if (selectedSlot == idx) null else HudSelection.Slot(idx)
+            },
+            stripSelected = stripSelected,
+            onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
         )
+    }
+
+    SparklineEnableToggle(
+        hudEnabled = sparklineConfig.hudEnabled,
+        onToggle = { enabled ->
+            if (!enabled && stripSelected) selection = null
+            onSparklineUpdate(sparklineConfig.copy(hudEnabled = enabled))
+        },
+    )
+    if (sparklineConfig.hudEnabled) {
+        HelperText("Tap the elevation strip in the preview to configure it.")
     }
 
     val slot = when (selectedSlot) {
@@ -218,6 +245,23 @@ internal fun HUDConfigSection(
                 )
             },
         )
+    }
+    if (stripSelected && sparklineConfig.hudEnabled) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .border(1.dp, Grey200, RoundedCornerShape(6.dp))
+                .background(Grey200)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SparklineOptionsControls(
+                config = sparklineConfig,
+                zoneConfig = zoneConfig,
+                profile = profile,
+                onUpdate = onSparklineUpdate,
+            )
+        }
     }
 }
 
@@ -272,7 +316,7 @@ internal fun SparklinePreview(
         sparklineConfig, zoneConfig, boxWidthPx, boxHeightPx, isNightMode,
         simplifiedElevationPoints, positionM, climbRanges, poiDistances,
     ) {
-        if (!sparklineConfig.enabled || boxWidthPx <= 0 || boxHeightPx <= 0) null
+        if (boxWidthPx <= 0 || boxHeightPx <= 0) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
@@ -328,6 +372,8 @@ private fun HUDPreview(
     profile: UserProfile,
     selectedSlot: Int?,
     onSlotSelected: (Int) -> Unit,
+    stripSelected: Boolean,
+    onStripSelected: () -> Unit,
     fixturePoints: List<Pair<Float, Float>>? = null,
     fixtureClimbRanges: List<Pair<Float, Float>>? = null,
     fixturePoiDistances: List<Float>? = null,
@@ -367,24 +413,37 @@ private fun HUDPreview(
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
                     columns = hudConfig.columns,
-                    reserveSparklineSpace = sparklineConfig.enabled,
+                    reserveSparklineSpace = sparklineConfig.hudEnabled,
                 )
             }
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(30.dp)
-                .align(Alignment.BottomCenter)
-        ) {
-            SparklinePreview(
-                sparklineConfig = sparklineConfig,
-                zoneConfig = zoneConfig,
-                fixturePoints = fixturePoints,
-                fixtureClimbRanges = fixtureClimbRanges,
-                fixturePoiDistances = fixturePoiDistances,
-                previewSweepSeconds = previewSweepSeconds,
-            )
+        if (sparklineConfig.hudEnabled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(30.dp)
+                    .align(Alignment.BottomCenter)
+                    .pointerInput(onStripSelected) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            onStripSelected()
+                        }
+                    }
+                    .then(
+                        if (stripSelected)
+                            Modifier.border(2.dp, BarberfishYellow, RoundedCornerShape(6.dp))
+                        else Modifier
+                    )
+            ) {
+                SparklinePreview(
+                    sparklineConfig = sparklineConfig,
+                    zoneConfig = zoneConfig,
+                    fixturePoints = fixturePoints,
+                    fixtureClimbRanges = fixtureClimbRanges,
+                    fixturePoiDistances = fixturePoiDistances,
+                    previewSweepSeconds = previewSweepSeconds,
+                )
+            }
         }
     }
 }
@@ -483,6 +542,16 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
             }
         }
     }
+}
+
+@Composable
+private fun SparklineEnableToggle(hudEnabled: Boolean, onToggle: (Boolean) -> Unit) {
+    ControlLabel("SPARKLINE")
+    SegmentedRow(
+        options = listOf(false to "Off", true to "On"),
+        selected = hudEnabled,
+        onSelect = onToggle,
+    )
 }
 
 
@@ -707,6 +776,102 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 }
 
 @Composable
+internal fun SparklineOptionsControls(
+    config: SparklineConfig,
+    zoneConfig: ZoneConfig,
+    profile: UserProfile,
+    onUpdate: (SparklineConfig) -> Unit,
+) {
+    LabeledHelper("LOOKAHEAD") {
+        HelperText("Distance shown ahead of your position.")
+    }
+    SegmentedRow(
+        options = listOf(5, 10, 20).map { km ->
+            val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+            km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+        },
+        selected = config.lookaheadKm,
+        onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+    )
+    val fillRange = gradeFillRange(
+        zoneConfig.gradePalette,
+        skipBandsClimb = config.skipBands,
+        skipBandsDescent = config.skipBandsDescent,
+    )
+    val hasDescentBands = gradeFillRange(zoneConfig.gradePalette).negMax != null
+    val posMin = fillRange.posMin
+    val negMax = fillRange.negMax
+    val readout = when {
+        hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
+            val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
+            val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
+            "Grades between $lower% and $upper% stay uncoloured."
+        }
+        !hasDescentBands && config.skipBands > 0 && posMin != null ->
+            "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+        else -> null
+    }
+    LabeledHelper("EMPHASIS") {
+        HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
+        if (readout != null) HelperText(readout)
+    }
+    SubControlLabel(if (hasDescentBands) "CLIMBS" else "BANDS")
+    SegmentedRow(
+        options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+        selected = config.skipBands,
+        onSelect = { onUpdate(config.copy(skipBands = it)) },
+    )
+    if (hasDescentBands) {
+        SubControlLabel("DESCENTS")
+        SegmentedRow(
+            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+            selected = config.skipBandsDescent,
+            onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
+        )
+    }
+    LabeledHelper("SIMPLIFICATION") {
+        HelperText("Merges small elevation wiggles into larger same-colour blocks.")
+    }
+    SegmentedRow(
+        options = ElevationSimplification.entries.map { it to it.label },
+        selected = config.simplification,
+        onSelect = { onUpdate(config.copy(simplification = it)) },
+    )
+    LabeledHelper("X-WARP") {
+        HelperText("Fisheye magnification around the position dot.")
+    }
+    SegmentedRow(
+        options = SparklineWarp.entries.map { it to it.label },
+        selected = config.warp,
+        onSelect = { onUpdate(config.copy(warp = it)) },
+    )
+    LabeledHelper("Y-ZOOM") {
+        HelperText("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.")
+    }
+    SegmentedRow(
+        options = ElevationZoom.entries.map { it to it.label },
+        selected = config.yZoom,
+        onSelect = { onUpdate(config.copy(yZoom = it)) },
+    )
+    LabeledHelper("CLIMBS") {
+        HelperText("Tint the outline blue on climbs as detected by Karoo Climber.")
+    }
+    SegmentedRow(
+        options = listOf(false to "Off", true to "On"),
+        selected = config.showClimbs,
+        onSelect = { onUpdate(config.copy(showClimbs = it)) },
+    )
+    LabeledHelper("POIs") {
+        HelperText("Mark points of interest (POIs) along the sparkline.")
+    }
+    SegmentedRow(
+        options = listOf(false to "Off", true to "On"),
+        selected = config.showPois,
+        onSelect = { onUpdate(config.copy(showPois = it)) },
+    )
+}
+
+@Composable
 internal fun SparklineCard(
     config: SparklineConfig,
     zoneConfig: ZoneConfig,
@@ -735,92 +900,11 @@ internal fun SparklineCard(
             }
         },
     ) {
-        LabeledHelper("LOOKAHEAD") {
-            HelperText("Distance shown ahead of your position.")
-        }
-        SegmentedRow(
-            options = listOf(5, 10, 20).map { km ->
-                val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-                km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-            },
-            selected = config.lookaheadKm,
-            onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
-        )
-        val fillRange = gradeFillRange(
-            zoneConfig.gradePalette,
-            skipBandsClimb = config.skipBands,
-            skipBandsDescent = config.skipBandsDescent,
-        )
-        val hasDescentBands = gradeFillRange(zoneConfig.gradePalette).negMax != null
-        val posMin = fillRange.posMin
-        val negMax = fillRange.negMax
-        val readout = when {
-            hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
-                val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
-                val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
-                "Grades between $lower% and $upper% stay uncoloured."
-            }
-            !hasDescentBands && config.skipBands > 0 && posMin != null ->
-                "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
-            else -> null
-        }
-        LabeledHelper("EMPHASIS") {
-            HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
-            if (readout != null) HelperText(readout)
-        }
-        SubControlLabel(if (hasDescentBands) "CLIMBS" else "BANDS")
-        SegmentedRow(
-            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-            selected = config.skipBands,
-            onSelect = { onUpdate(config.copy(skipBands = it)) },
-        )
-        if (hasDescentBands) {
-            SubControlLabel("DESCENTS")
-            SegmentedRow(
-                options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                selected = config.skipBandsDescent,
-                onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
-            )
-        }
-        LabeledHelper("SIMPLIFICATION") {
-            HelperText("Merges small elevation wiggles into larger same-colour blocks.")
-        }
-        SegmentedRow(
-            options = ElevationSimplification.entries.map { it to it.label },
-            selected = config.simplification,
-            onSelect = { onUpdate(config.copy(simplification = it)) },
-        )
-        LabeledHelper("X-WARP") {
-            HelperText("Fisheye magnification around the position dot.")
-        }
-        SegmentedRow(
-            options = SparklineWarp.entries.map { it to it.label },
-            selected = config.warp,
-            onSelect = { onUpdate(config.copy(warp = it)) },
-        )
-        LabeledHelper("Y-ZOOM") {
-            HelperText("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.")
-        }
-        SegmentedRow(
-            options = ElevationZoom.entries.map { it to it.label },
-            selected = config.yZoom,
-            onSelect = { onUpdate(config.copy(yZoom = it)) },
-        )
-        LabeledHelper("CLIMBS") {
-            HelperText("Tint the outline blue on climbs as detected by Karoo Climber.")
-        }
-        SegmentedRow(
-            options = listOf(false to "Off", true to "On"),
-            selected = config.showClimbs,
-            onSelect = { onUpdate(config.copy(showClimbs = it)) },
-        )
-        LabeledHelper("POIs") {
-            HelperText("Mark points of interest (POIs) along the sparkline.")
-        }
-        SegmentedRow(
-            options = listOf(false to "Off", true to "On"),
-            selected = config.showPois,
-            onSelect = { onUpdate(config.copy(showPois = it)) },
+        SparklineOptionsControls(
+            config = config,
+            zoneConfig = zoneConfig,
+            profile = profile,
+            onUpdate = onUpdate,
         )
     }
 }

@@ -10,7 +10,6 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamRideState
-import com.jpweytjens.barberfish.extension.streamSparklineConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
@@ -31,7 +30,7 @@ internal data class SparklineFrame(
     val bitmap: Bitmap?,
     val displayedRange: Float,
     val lookaheadKm: Int,
-    val enabled: Boolean,
+    val hudEnabled: Boolean,
 )
 
 /**
@@ -45,6 +44,7 @@ internal data class SparklineFrame(
 internal fun sparklineBitmapFlow(
     karooSystem: KarooSystemService,
     context: Context,
+    configFlow: Flow<SparklineConfig>,
     widthPx: Int,
     heightPx: Int,
     isPreview: Boolean,
@@ -71,7 +71,7 @@ internal fun sparklineBitmapFlow(
             karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
             distFlow,
             context.streamZoneConfig(),
-            context.streamSparklineConfig(),
+            configFlow,
         ) { navState, distState, zoneConfig, sparkCfg ->
             val isNightMode = (context.resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -138,39 +138,37 @@ internal fun sparklineBitmapFlow(
                 debugSweep -> rvvPoisFixture()
                 else -> emptyList()
             }
-            val (bitmap, updatedRange) = if (sparkCfg.enabled)
-                renderElevationSparkline(
-                    elevationPoints = elevPoints,
-                    positionM = sparklinePositionM,
-                    widthPx = widthPx,
-                    heightPx = heightPx,
-                    density = context.resources.displayMetrics.density,
-                    palette = zoneConfig.gradePalette,
-                    // Sparkline always renders as a fill; use brand colors.
-                    readable = false,
-                    lookaheadM = sparkCfg.lookaheadKm * 1000f,
-                    skipBands = sparkCfg.skipBands,
-                    skipBandsDescent = sparkCfg.skipBandsDescent,
-                    displayedRange = ratchetRange,
-                    distanceDeltaM = distanceDeltaM,
-                    dotColor = dotColor,
-                    isNightMode = isNightMode,
-                    minElevRangeM = sparkCfg.yZoom.minRangeM,
-                    logWarpK = sparkCfg.warp.k,
-                    positionFraction = sparkCfg.warp.positionFraction,
-                    climbRanges = climbRanges,
-                    showClimbs = sparkCfg.showClimbs,
-                    poiDistances = poiDistances,
-                    showPois = sparkCfg.showPois,
-                )
-            else ElevationSparklineResult(null, ratchetRange)
+            val (bitmap, updatedRange) = renderElevationSparkline(
+                elevationPoints = elevPoints,
+                positionM = sparklinePositionM,
+                widthPx = widthPx,
+                heightPx = heightPx,
+                density = context.resources.displayMetrics.density,
+                palette = zoneConfig.gradePalette,
+                // Sparkline always renders as a fill; use brand colors.
+                readable = false,
+                lookaheadM = sparkCfg.lookaheadKm * 1000f,
+                skipBands = sparkCfg.skipBands,
+                skipBandsDescent = sparkCfg.skipBandsDescent,
+                displayedRange = ratchetRange,
+                distanceDeltaM = distanceDeltaM,
+                dotColor = dotColor,
+                isNightMode = isNightMode,
+                minElevRangeM = sparkCfg.yZoom.minRangeM,
+                logWarpK = sparkCfg.warp.k,
+                positionFraction = sparkCfg.warp.positionFraction,
+                climbRanges = climbRanges,
+                showClimbs = sparkCfg.showClimbs,
+                poiDistances = poiDistances,
+                showPois = sparkCfg.showPois,
+            )
             ratchetRange = updatedRange
 
             SparklineFrame(
                 bitmap = bitmap,
                 displayedRange = ratchetRange,
                 lookaheadKm = sparkCfg.lookaheadKm,
-                enabled = sparkCfg.enabled,
+                hudEnabled = sparkCfg.hudEnabled,
             )
         }
     }

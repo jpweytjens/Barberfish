@@ -38,6 +38,7 @@ import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
@@ -89,6 +90,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
             val sparklineHeightPx = (HUD_SPARKLINE_HEIGHT_DP * dm.density).toInt()
             val sparklineFlow = sparklineBitmapFlow(
                 karooSystem, context,
+                configFlow = context.streamHudSparklineConfig(),
                 widthPx = dm.widthPixels,
                 heightPx = sparklineHeightPx,
                 isPreview = config.preview,
@@ -104,7 +106,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     sparklineFlow,
                 ) { hudState, frame ->
                     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                    val showSparklineArea = frame.enabled && (frame.bitmap != null || transitionKm != null)
+                    val showSparklineArea = frame.hudEnabled && (frame.bitmap != null || transitionKm != null)
                     val rv = buildHudRemoteViews(
                         hudState,
                         config,
@@ -112,7 +114,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         sparklineHeightPx = if (showSparklineArea) sparklineHeightPx else 0,
                     )
                     when {
-                        transitionKm != null && frame.enabled -> {
+                        transitionKm != null && frame.hudEnabled -> {
                             rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
                             rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
                             rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
@@ -131,12 +133,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         }
                         else -> rv.setViewVisibility(R.id.hud_sparkline_container, View.GONE)
                     }
-                    if (!config.preview && frame.enabled) {
+                    if (!config.preview && frame.hudEnabled) {
                         val layoutRes = if (hudState.columns == 4)
                             R.layout.barberfish_hud_four else R.layout.barberfish_hud
                         val intent = Intent(context, SparklineTapReceiver::class.java).apply {
                             action = SparklineTapReceiver.ACTION
-                            putExtra(SparklineTapReceiver.EXTRA_LOOKAHEAD, frame.lookaheadKm)
+                            putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_HUD)
                         }
                         val pi = PendingIntent.getBroadcast(
                             context,

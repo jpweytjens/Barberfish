@@ -9,6 +9,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
+import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.flow.Flow
@@ -26,8 +27,14 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
         val dm = context.resources.displayMetrics
         val widthPx = dm.widthPixels
         val heightPx = (dm.heightPixels * STANDALONE_HEIGHT_FRACTION).toInt()
-        return sparklineBitmapFlow(karooSystem, context, widthPx, heightPx, isPreview)
-            .map { it.bitmap }
+        return sparklineBitmapFlow(
+            karooSystem,
+            context,
+            configFlow = context.streamFieldSparklineConfig(),
+            widthPx = widthPx,
+            heightPx = heightPx,
+            isPreview = isPreview,
+        ).map { it.bitmap }
     }
 
     override fun liveFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = false)
@@ -41,6 +48,7 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
         if (!config.preview) {
             val intent = Intent(context, SparklineTapReceiver::class.java).apply {
                 action = SparklineTapReceiver.ACTION
+                putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_FIELD)
             }
             val pi = PendingIntent.getBroadcast(
                 context,

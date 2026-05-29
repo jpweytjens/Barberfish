@@ -181,9 +181,11 @@ import com.jpweytjens.barberfish.extension.streamHRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
-import com.jpweytjens.barberfish.extension.saveSparklineConfig
+import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
+import com.jpweytjens.barberfish.extension.saveHudSparklineConfig
+import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
+import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
-import com.jpweytjens.barberfish.extension.streamSparklineConfig
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamNPFieldConfig
@@ -232,7 +234,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun ConfigScreen() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
-        var sparklineConfig by remember { mutableStateOf(SparklineConfig()) }
+        var hudSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
+        var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -284,7 +287,8 @@ class MainActivity : ComponentActivity() {
 
         LaunchedEffect(Unit) {
             launch { streamHUDConfig().collect { hudConfig = it } }
-            launch { streamSparklineConfig().collect { sparklineConfig = it } }
+            launch { streamHudSparklineConfig().collect { hudSparklineConfig = it } }
+            launch { streamFieldSparklineConfig().collect { fieldSparklineConfig = it } }
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
             launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
             launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
@@ -334,7 +338,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     HUDConfigSection(
                         hudConfig = hudConfig,
-                        sparklineConfig = sparklineConfig,
+                        sparklineConfig = hudSparklineConfig,
                         zoneConfig = zoneConfig,
                         timeCfg = timeConfig,
                         profile = userProfile,
@@ -342,6 +346,10 @@ class MainActivity : ComponentActivity() {
                         onUpdate = { updated ->
                             hudConfig = updated
                             lifecycleScope.launch { saveHUDConfig(updated) }
+                        },
+                        onSparklineUpdate = { updated ->
+                            hudSparklineConfig = updated
+                            lifecycleScope.launch { saveHudSparklineConfig(updated) }
                         },
                     )
                 } // end HUD
@@ -838,19 +846,16 @@ class MainActivity : ComponentActivity() {
                     expanded = climberExpanded,
                     onToggle = { climberExpanded = !climberExpanded },
                 ) {
+                    var sparklineExpanded by remember { mutableStateOf(false) }
                     SparklineCard(
-                        config = sparklineConfig,
+                        config = fieldSparklineConfig,
                         zoneConfig = zoneConfig,
                         profile = userProfile,
-                        selected = sparklineConfig.enabled,
-                        onSelect = {
-                            val updated = sparklineConfig.copy(enabled = !sparklineConfig.enabled)
-                            sparklineConfig = updated
-                            lifecycleScope.launch { saveSparklineConfig(updated) }
-                        },
+                        selected = sparklineExpanded,
+                        onSelect = { sparklineExpanded = !sparklineExpanded },
                         onUpdate = { updated ->
-                            sparklineConfig = updated
-                            lifecycleScope.launch { saveSparklineConfig(updated) }
+                            fieldSparklineConfig = updated
+                            lifecycleScope.launch { saveFieldSparklineConfig(updated) }
                         },
                     )
                 } // end Climbing

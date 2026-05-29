@@ -13,6 +13,7 @@ import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -42,6 +43,7 @@ private suspend inline fun <reified T> Context.saveConfig(
 }
 
 private val sparklineConfigKey = stringPreferencesKey("sparkline_config")
+private val fieldSparklineConfigKey = stringPreferencesKey("field_sparkline_config")
 // Persisted as "three_column_config" for backwards compatibility with installs from the
 // pre-4-column era; the HUDConfig blob covers both layouts now.
 private val hudConfigKey = stringPreferencesKey("three_column_config")
@@ -142,7 +144,7 @@ enum class ElevationZoom(val label: String, val minRangeM: Float) {
 
 @Serializable
 data class SparklineConfig(
-    val enabled: Boolean = true,
+    @SerialName("enabled") val hudEnabled: Boolean = true,
     val lookaheadKm: Int = 5,
     val skipBands: Int = 1,
     val skipBandsDescent: Int = 0,
@@ -169,23 +171,43 @@ fun Context.streamHUDConfig(): Flow<HUDConfig> =
 suspend fun Context.saveHUDConfig(config: HUDConfig) =
     saveConfig(hudConfigKey, config)
 
-// --- SparklineConfig (shared by HUD and standalone sparkline field) ---
+// --- SparklineConfig ---
+// Two independent instances: the HUD strip and the standalone elevation-sparkline field.
+// The HUD instance keeps the original "sparkline_config" key; the field instance has its
+// own key and, when unset, seeds its options from the HUD value at read time so a user's
+// tuned options carry over after upgrade instead of resetting to defaults.
 
-fun Context.streamSparklineConfig(): Flow<SparklineConfig> =
+// Resolves the HUD sparkline config: own key first, then the legacy embedded HUDConfig
+// blob (pre-split installs), then defaults.
+private fun Preferences.hudSparklineConfig(): SparklineConfig =
+    this[sparklineConfigKey]?.let {
+        runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
+    }
+        ?: this[hudConfigKey]?.let {
+            runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
+        }?.sparkline
+        ?: SparklineConfig()
+
+fun Context.streamHudSparklineConfig(): Flow<SparklineConfig> =
+    dataStore.data
+        .map { it.hudSparklineConfig() }
+        .distinctUntilChanged()
+
+suspend fun Context.saveHudSparklineConfig(config: SparklineConfig) =
+    saveConfig(sparklineConfigKey, config)
+
+fun Context.streamFieldSparklineConfig(): Flow<SparklineConfig> =
     dataStore.data
         .map { prefs ->
-            prefs[sparklineConfigKey]?.let {
+            prefs[fieldSparklineConfigKey]?.let {
                 runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
             }
-                ?: prefs[hudConfigKey]?.let {
-                    runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
-                }?.sparkline
-                ?: SparklineConfig()
+                ?: prefs.hudSparklineConfig() // seed options from the HUD value until first saved
         }
         .distinctUntilChanged()
 
-suspend fun Context.saveSparklineConfig(config: SparklineConfig) =
-    saveConfig(sparklineConfigKey, config)
+suspend fun Context.saveFieldSparklineConfig(config: SparklineConfig) =
+    saveConfig(fieldSparklineConfigKey, config)
 
 // --- PowerFieldConfig ---
 
