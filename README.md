@@ -63,7 +63,7 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
   </tr>
   <tr>
     <td align="center"><img src="docs/hud_config.jpg" alt="HUD config screen with 4-column layout and fill-mode zones"></td>
-    <td align="center"><img src="docs/day_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
+    <td align="center"><img src="docs/light_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
   </tr>
   <tr>
     <td align="center">Average speed with target-mode threshold, text coloring above target</td>
