@@ -87,7 +87,7 @@ internal fun visvalingamWhyatt(
     }
 
     data class HeapEntry(val index: Int, val area: Float, val ver: Int)
-    val heap = java.util.PriorityQueue<HeapEntry>(compareBy { it.area })
+    val heap = java.util.PriorityQueue<HeapEntry>(n, compareBy { it.area })
     for (i in 1 until n - 1) heap.add(HeapEntry(i, triArea(i), version[i]))
 
     while (true) {
