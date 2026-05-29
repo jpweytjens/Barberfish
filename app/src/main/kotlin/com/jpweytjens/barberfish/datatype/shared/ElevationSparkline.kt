@@ -172,16 +172,29 @@ internal fun renderElevationSparkline(
     showClimbs: Boolean = false,
     poiDistances: List<Float> = emptyList(),
     showPois: Boolean = false,
+    windowOverride: Pair<Float, Float>? = null,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
-    // Clamp window to route bounds so the sparkline fills full width even at the start.
-    // The dot migrates from the left edge to the 25% position as you accumulate past distance.
     val firstDist = elevationPoints.first().first
     val lastDist  = elevationPoints.last().first
-    val rawEnd    = positionM - lookaheadM * positionFraction + lookaheadM
-    val windowEnd = rawEnd.coerceAtMost(lastDist)
-    val windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
+    val windowStart: Float
+    val windowEnd: Float
+    val effWarpK: Float
+    if (windowOverride != null) {
+        // Climb-only mode: pin the frame to the climb (foot → top) and map linearly —
+        // warp centred on the rider is meaningless while approaching from outside the window.
+        windowStart = windowOverride.first.coerceAtLeast(firstDist)
+        windowEnd   = windowOverride.second.coerceAtMost(lastDist)
+        effWarpK    = 0f
+    } else {
+        // Clamp window to route bounds so the sparkline fills full width even at the start.
+        // The dot migrates from the left edge to the 25% position as you accumulate past distance.
+        val rawEnd  = positionM - lookaheadM * positionFraction + lookaheadM
+        windowEnd   = rawEnd.coerceAtMost(lastDist)
+        windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
+        effWarpK    = logWarpK
+    }
 
     // Include one point beyond each edge so segments spanning the window boundary
     // are partially drawn instead of popping in only when fully visible.
@@ -205,7 +218,7 @@ internal fun renderElevationSparkline(
     val newDisplayedRange = if (elevRange > displayedRange) elevRange
         else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
 
-    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, logWarpK)
+    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, effWarpK)
     fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * MARKER_PAD_PX) - MARKER_PAD_PX).coerceIn(0f, heightPx.toFloat())
 
     // Partition `visible` around positionM once. Points exactly at positionM appear in
@@ -219,7 +232,10 @@ internal fun renderElevationSparkline(
     val dotX = toX(positionM)
     // Linear-interpolated elevation at positionM keeps the dot on the outline since
     // the outline pass below uses the same interpolation at the positionM breakpoint.
-    val dotY = elevationAt(visible, positionM)?.let { toY(it) } ?: (heightPx * 0.9f)
+    // When the rider is outside the window (climb-only approach phase), anchor the dot to
+    // the nearest edge (the climb foot) instead of dropping to the bottom fallback.
+    val dotAnchorM = positionM.coerceIn(windowStart, windowEnd)
+    val dotY = elevationAt(visible, dotAnchorM)?.let { toY(it) } ?: (heightPx * 0.9f)
 
     val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888).also {
         it.density = Bitmap.DENSITY_NONE  // prevent RemoteViews auto-scaling; fitXY handles fill
