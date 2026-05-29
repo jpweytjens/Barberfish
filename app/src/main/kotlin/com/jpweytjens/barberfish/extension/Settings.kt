@@ -143,8 +143,14 @@ enum class ElevationZoom(val label: String, val minRangeM: Float) {
 }
 
 @Serializable
+enum class SparklineMode { OFF, CLIMBS, ON }
+
+@Serializable
 data class SparklineConfig(
-    @SerialName("enabled") val hudEnabled: Boolean = true,
+    // `mode` is nullable so an absent key falls through to the legacy `enabled` boolean
+    // (pre-3.x installs) instead of masking it with a default. Resolve via `hudMode`.
+    val mode: SparklineMode? = null,
+    @SerialName("enabled") private val legacyEnabled: Boolean? = null,
     val lookaheadKm: Int = 5,
     val skipBands: Int = 1,
     val skipBandsDescent: Int = 0,
@@ -153,7 +159,10 @@ data class SparklineConfig(
     val yZoom: ElevationZoom = ElevationZoom.NORMAL,
     val showClimbs: Boolean = true,
     val showPois: Boolean = true,
-)
+) {
+    val hudMode: SparklineMode
+        get() = mode ?: if (legacyEnabled == false) SparklineMode.OFF else SparklineMode.ON
+}
 
 @Serializable
 data class HUDConfig(

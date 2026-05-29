@@ -70,6 +70,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.ElevationZoom
 import com.jpweytjens.barberfish.extension.SparklineWarp
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
@@ -126,14 +127,16 @@ internal fun HUDConfigSection(
         },
     )
     SparklineEnableToggle(
-        hudEnabled = sparklineConfig.hudEnabled,
+        hudEnabled = sparklineConfig.hudMode != SparklineMode.OFF,
         onToggle = { enabled ->
             if (!enabled && stripSelected) selection = null
-            onSparklineUpdate(sparklineConfig.copy(hudEnabled = enabled))
+            onSparklineUpdate(
+                sparklineConfig.copy(mode = if (enabled) SparklineMode.ON else SparklineMode.OFF),
+            )
         },
     )
     HelperText(
-        if (sparklineConfig.hudEnabled) "Tap a column or the sparkline to configure it."
+        if (sparklineConfig.hudMode != SparklineMode.OFF) "Tap a column or the sparkline to configure it."
         else "Tap a column to configure it.",
     )
     HUDPreview(
@@ -173,7 +176,7 @@ internal fun HUDConfigSection(
             },
         )
     }
-    if (stripSelected && sparklineConfig.hudEnabled) {
+    if (stripSelected && sparklineConfig.hudMode != SparklineMode.OFF) {
         Column(
             modifier = Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
@@ -340,11 +343,11 @@ private fun HUDPreview(
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
                     columns = hudConfig.columns,
-                    reserveSparklineSpace = sparklineConfig.hudEnabled,
+                    reserveSparklineSpace = sparklineConfig.hudMode != SparklineMode.OFF,
                 )
             }
         }
-        if (sparklineConfig.hudEnabled) {
+        if (sparklineConfig.hudMode != SparklineMode.OFF) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

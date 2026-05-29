@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamRideState
@@ -168,7 +169,7 @@ internal fun sparklineBitmapFlow(
                 bitmap = bitmap,
                 displayedRange = ratchetRange,
                 lookaheadKm = sparkCfg.lookaheadKm,
-                hudEnabled = sparkCfg.hudEnabled,
+                hudEnabled = sparkCfg.hudMode != SparklineMode.OFF,
             )
         }
     }
