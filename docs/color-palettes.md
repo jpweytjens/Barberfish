@@ -5,7 +5,7 @@ The mode determines how the chosen palette is rendered, and each mode handles
 contrast on both Karoo themes automatically. There is no global readable/original
 choice; pick any palette and both modes stay legible.
 
-The Karoo datafield background is `#000000` in night mode and `#FFFFFF` in day
+The Karoo datafield background is `#000000` in dark mode and `#FFFFFF` in light
 mode. All contrast calculations below are run against both, producing a pair of
 tuned palettes per brand; Barberfish picks the matching variant from the
 current system theme.
@@ -15,10 +15,10 @@ Visual previews of every palette in both themes live in the
 
 ## Text mode: auto contrast-tuning
 
-Several brand zone colors are too dark to read as text on the night-mode
+Several brand zone colors are too dark to read as text on the dark-mode
 screen. Wahoo's navy Z2 (`#253070`) for example is
 [very hard to read](https://apcacontrast.com/?BG=000000&TXT=253070&DEV=G4g&BUF=A22)
-against `#000000`. The mirror problem appears in day mode: brand colors that
+against `#000000`. The mirror problem appears in light mode: brand colors that
 were tuned for dark backgrounds (yellows, light greens, pale grays) wash out
 on `#FFFFFF`.
 
@@ -65,7 +65,7 @@ The [HSLuv](https://www.hsluv.org/) palette is inspired by the perceptually
 uniform colormaps available in [seaborn](https://seaborn.pydata.org/tutorial/color_palettes.html).
 It was designed from the start with equidistant lightness steps across all
 zones such that every color is already readable on both Karoo themes without
-modification. The same values render in Text and Fill modes, day and night.
+modification. The same values render in Text and Fill modes, light and dark.
 The hue and saturation were tuned to produce a color progression that
 follows the Wahoo palette's character from cool grey to green to redish
 pink.
@@ -86,7 +86,7 @@ grade field only, with ten bands spanning roughly `-9%` (deep blue) through
 `0%` (green) to `≥15%` (red).
 
 Turbo's luminance is non-monotonic (the green midband is brighter than
-either end), so the APCA + HSLuv pipeline above still applies. The night
-variant (`TURBO_GRADE_BANDS_READABLE_DARK`) raises the dark blues; the day
+either end), so the APCA + HSLuv pipeline above still applies. The dark
+variant (`TURBO_GRADE_BANDS_READABLE_DARK`) raises the dark blues; the light
 variant lowers the bright yellows and greens. Fill mode keeps the original
 hues and picks black or white text per band.

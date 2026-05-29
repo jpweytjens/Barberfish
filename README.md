@@ -59,11 +59,11 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
 <table>
   <tr>
     <td align="center">4-column HUD config with fill-mode zone coloring</td>
-    <td align="center">Day mode with zone-colored HUD and field comparison</td>
+    <td align="center">Light mode with zone-colored HUD and field comparison</td>
   </tr>
   <tr>
     <td align="center"><img src="docs/hud_config.jpg" alt="HUD config screen with 4-column layout and fill-mode zones"></td>
-    <td align="center"><img src="docs/day_mode.jpg" alt="Day mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
+    <td align="center"><img src="docs/day_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
   </tr>
   <tr>
     <td align="center">Average speed with target-mode threshold, text coloring above target</td>
@@ -174,7 +174,7 @@ Complete list of data fields provided by Barberfish, grouped by category.
 
 Barberfish is expected to keep working on newer Karoo firmware unless Hammerhead introduces breaking changes to the extension SDK.
 
-Day mode and night mode are both supported, as are metric and imperial units.
+Light mode and dark mode are both supported, as are metric and imperial units.
 
 ## Installation
 
