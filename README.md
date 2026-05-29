@@ -30,7 +30,11 @@ ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens
 
 ### Zone & grade coloring
 
-Every Barberfish field uses one of three color modes (Text, Fill, or None), configurable per field. Zone palettes: Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv. Grade palettes: Karoo, Wahoo, Garmin, Zwift, HSLuv, and Turbo. Brand-color palettes ship contrast-tuned for Text mode; Fill mode auto-picks the overlay text color per cell. HSLuv works in both modes without correction.
+Most fields have a color mode that controls how the value sits on the background. None is the default and applies no zone coloring. Text colors the value with the zone color. Fill paints the background with the zone color and picks black or white for the value so it stays readable on top.
+
+The Karoo background is white in light mode and black in dark mode. Text mode puts the colored value straight on that background, and palettes designed for one theme can read poorly on the other. Barberfish contrast-tunes each brand palette into a light and a dark variant so the colors stay legible against either background.
+
+The tuning uses [APCA](https://apcacontrast.com/): any color below the threshold for legible large text has its [HSLuv](https://www.hsluv.org/) lightness shifted until it passes, hue and saturation kept intact. Fill mode needs no tuning: the value drawn on top adapts to whichever zone color fills the background. The HSLuv palette is built around perceptually uniform lightness from the start and reads the same on both themes without correction. See [docs/color-palettes.md](docs/color-palettes.md) for the full derivation.
 
 ### Formatting
 
@@ -73,7 +77,7 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
 
 ## Color palettes
 
-Each palette is shown in three rows. The first two are Text mode: palette color drawn directly on the datafield background, once on the day-mode white background and once on the night-mode black background, each using its own contrast-tuned variant. The third row is Fill mode: palette color as cell fill with the auto-picked overlay text color (mode-agnostic).
+Each palette is shown in three rows. The first two are Text mode against the Karoo cell background, once in light mode and once in dark mode, each using its contrast-tuned variant. The third row is Fill mode: palette color as cell fill with the auto-picked overlay text color, which renders the same in either theme.
 
 ### Zone palettes
 
