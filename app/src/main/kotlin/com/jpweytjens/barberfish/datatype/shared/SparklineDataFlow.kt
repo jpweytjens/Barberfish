@@ -83,15 +83,20 @@ internal fun sparklineBitmapFlow(
 
             val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
             val dest = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
+            // Climbs-mode debug sweep uses a real climb (Col de Rates); other debug sweeps
+            // keep the mixed RvV terrain so the On-mode preview stays realistic.
+            val debugClimbs = debugSweep && sparkCfg.hudMode == SparklineMode.CLIMBS
             val (elevEncoded, elevSource) = when {
                 route != null -> (route.routeElevationPolyline ?: "") to 0
                 dest != null -> (dest.elevationPolyline ?: "") to 1
+                debugClimbs -> "" to 4
                 debugSweep -> "" to 2
                 else -> "" to 3
             }
             val elevKey = Triple(elevEncoded, sparkCfg.simplification, elevSource)
             if (elevKey != cachedElevKey) {
                 val raw = when {
+                    elevSource == 4 -> colDeRatesElevationFixture()
                     elevSource == 2 -> previewElevationFixture()
                     elevEncoded.isBlank() -> emptyList()
                     else -> decodeElevationPolyline(elevEncoded)
@@ -130,6 +135,7 @@ internal fun sparklineBitmapFlow(
                 route != null -> route.climbs.map { climb ->
                     climb.startDistance.toFloat() to (climb.startDistance + climb.length).toFloat()
                 }
+                debugClimbs -> colDeRatesClimbsFixture()
                 debugSweep -> rvvClimbsFixture()
                 else -> emptyList()
             }
@@ -161,6 +167,7 @@ internal fun sparklineBitmapFlow(
             }
             val poiDistances: List<Float> = when {
                 route != null -> route.pois.flatMap { it.distancesAlongRoute }.map { it.toFloat() }
+                debugClimbs -> colDeRatesPoisFixture()
                 debugSweep -> rvvPoisFixture()
                 else -> emptyList()
             }
