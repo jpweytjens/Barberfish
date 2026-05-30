@@ -23,6 +23,11 @@ Coloring:
 - Speed can be colored against a fixed target or its own running average, like Avg Speed. Thanks to max-t-d for the request.
 - Threshold coloring on Speed, Avg Speed, and Cadence respects text vs fill mode like zoned fields do
 
+Sparkline:
+- New Climbs mode for the HUD sparkline, a third setting next to Off and On: it stays hidden on flat ground and appears only as you come up on a climb, framed from the foot to the top
+- Harder climbs reveal sooner, so a long ascent gives more notice than a short ramp
+- Works while navigating a route, since that's where the climbs come from
+
 Config screen:
 - All configurable fields gathered into one Data fields section; threshold controls live with the fields they belong to
 - Climbing and Sparkline use the same expand-and-collapse layout as the other fields
