@@ -71,7 +71,7 @@ GRADE_PALETTE_ORDER: list[tuple[str, str]] = [
 # README-style band labels — descent → neutral → steep — applied after the
 # Kotlin band list is reversed (Kotlin orders steep → descent).
 GRADE_LABELS_README = {
-    "karoo":  ["[0, 5)", "[5, 8)", "[8, 13)", "[13, 16)", "[16, 20)", "[20, 24)", "[24, ∞)"],
+    "karoo":  ["[0, 2)", "[2, 5)", "[5, 8)", "[8, 11)", "[11, 14)", "[14, 20)", "[20, ∞)"],
     "wahoo":  ["[0, 4)", "[4, 8)", "[8, 12)", "[12, 20)", "[20, ∞)"],
     "garmin": ["[0, 3)", "[3, 6)", "[6, 9)", "[9, 12)", "[12, ∞)"],
     "zwift":  ["[0, 3)", "[3, 6)", "[6, 9)", "[9, ∞)"],
