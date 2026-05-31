@@ -13,13 +13,13 @@ internal const val APPROACH_LARGE_M = 2000f
 internal const val CLIMB_SCORE_T1 = 16.0
 internal const val CLIMB_SCORE_T2 = 50.0
 
-// Climb-frame right margin past the summit, as a fraction of climb length clamped to a floor
-// and a cap, so the crest, summit POI, and position dot clear the right edge without dragging
-// kilometres of descent into the frame on the longest climbs. The left margin is the full
-// approach distance (so the dot advances to the foot).
-internal const val SUMMIT_TAIL_FRAC = 0.08f
-internal const val SUMMIT_TAIL_MIN_M = 100f
-internal const val SUMMIT_TAIL_MAX_M = 800f
+// Breathing room at each end of the climb frame, as a fraction of climb length clamped to a
+// floor and a cap. It keeps the position dot off the left edge during the approach and the
+// summit crest/POI off the right edge, without dragging kilometres of terrain into the frame
+// on the longest climbs.
+internal const val CLIMB_FRAME_MARGIN_FRAC = 0.08f
+internal const val CLIMB_FRAME_MARGIN_MIN_M = 100f
+internal const val CLIMB_FRAME_MARGIN_MAX_M = 800f
 
 /**
  * PCS per-climb profile score: `(gradePct / 2)^2 * (lengthM / 1000)`.

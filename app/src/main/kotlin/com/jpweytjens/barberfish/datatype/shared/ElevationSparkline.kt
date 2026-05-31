@@ -458,6 +458,7 @@ private data class ClimbFrame(
     val foot: Float,
     val windowEnd: Float,
     val summit: Float,
+    val marginM: Float,
 )
 
 /**
@@ -484,11 +485,11 @@ internal fun resolveClimbReveal(
                 val lengthM = (endM - startM).toDouble()
                 val gradePct = if (lengthM > 0) (endElev - startElev) / lengthM * 100.0 else 0.0
                 val approachM = climbApproachM(pcsClimbScore(gradePct, lengthM))
-                val tailM = ((endM - startM) * SUMMIT_TAIL_FRAC)
-                    .coerceIn(SUMMIT_TAIL_MIN_M, SUMMIT_TAIL_MAX_M)
+                val marginM = ((endM - startM) * CLIMB_FRAME_MARGIN_FRAC)
+                    .coerceIn(CLIMB_FRAME_MARGIN_MIN_M, CLIMB_FRAME_MARGIN_MAX_M)
                 // Reveal one approach-length before the foot; hold a short tail past the top so
                 // the summit clears the right edge.
-                ClimbFrame(startM - approachM, startM, endM + tailM, endM)
+                ClimbFrame(startM - approachM, startM, endM + marginM, endM, marginM)
             }
             // Nearest finish wins on overlap.
             .filter { positionM in it.revealStart..it.windowEnd }
@@ -497,8 +498,9 @@ internal fun resolveClimbReveal(
             ClimbReveal(null, false)
         } else {
             // Left edge tracks the rider through the approach (lead-in shrinks), then locks at
-            // the foot for the climb. windowEnd is fixed at summit + tail.
-            val windowStart = minOf(positionM, active.foot)
+            // the foot for the climb. The margin keeps the position dot off the left edge;
+            // windowEnd already holds the matching tail past the summit.
+            val windowStart = minOf(positionM, active.foot) - active.marginM
             ClimbReveal(windowStart to active.windowEnd, true)
         }
     }
