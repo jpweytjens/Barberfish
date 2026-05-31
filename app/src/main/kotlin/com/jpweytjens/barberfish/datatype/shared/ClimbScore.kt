@@ -13,11 +13,12 @@ internal const val APPROACH_LARGE_M = 2000f
 internal const val CLIMB_SCORE_T1 = 16.0
 internal const val CLIMB_SCORE_T2 = 50.0
 
-// Breathing room at each end of the climb frame, as a fraction of climb length clamped to a
-// floor and a cap. It keeps the position dot off the left edge during the approach and the
-// summit crest/POI off the right edge, without dragging kilometres of terrain into the frame
-// on the longest climbs.
-internal const val CLIMB_FRAME_MARGIN_FRAC = 0.08f
+// Breathing room at the ends of the climb frame, as a fraction of climb length clamped to a
+// floor and a cap. The lead (left) just keeps the position dot off the edge during the
+// approach, so it is small; the tail (right) keeps the summit crest/POI off the edge. Both
+// stay bounded so the longest climbs don't drag kilometres of terrain into the frame.
+internal const val CLIMB_LEAD_MARGIN_FRAC = 0.03f
+internal const val CLIMB_TAIL_MARGIN_FRAC = 0.08f
 internal const val CLIMB_FRAME_MARGIN_MIN_M = 100f
 internal const val CLIMB_FRAME_MARGIN_MAX_M = 800f
 
