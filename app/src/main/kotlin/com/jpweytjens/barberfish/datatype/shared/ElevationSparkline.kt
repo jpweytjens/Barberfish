@@ -453,6 +453,13 @@ internal fun elevationAt(points: List<Pair<Float, Float>>, distanceM: Float): Fl
 
 internal data class ClimbReveal(val windowOverride: Pair<Float, Float>?, val visible: Boolean)
 
+private data class ClimbFrame(
+    val revealStart: Float,
+    val foot: Float,
+    val windowEnd: Float,
+    val summit: Float,
+)
+
 /**
  * Climb-only visibility for the HUD sparkline, shared by the live flow and the config preview.
  * In [SparklineMode.CLIMBS] the strip reveals once the rider is within a climb's
@@ -477,12 +484,22 @@ internal fun resolveClimbReveal(
                 val lengthM = (endM - startM).toDouble()
                 val gradePct = if (lengthM > 0) (endElev - startElev) / lengthM * 100.0 else 0.0
                 val approachM = climbApproachM(pcsClimbScore(gradePct, lengthM))
-                Triple(startM, endM, approachM)
+                val tailM = ((endM - startM) * SUMMIT_TAIL_FRAC).coerceAtLeast(SUMMIT_TAIL_MIN_M)
+                // Reveal one approach-length before the foot; hold a short tail past the top so
+                // the summit clears the right edge.
+                ClimbFrame(startM - approachM, startM, endM + tailM, endM)
             }
-            // Reveal within the approach and hold to the top; nearest finish wins on overlap.
-            .filter { (startM, endM, approachM) -> positionM in (startM - approachM)..endM }
-            .minByOrNull { it.second }
-        if (active == null) ClimbReveal(null, false) else ClimbReveal(active.first to active.second, true)
+            // Nearest finish wins on overlap.
+            .filter { positionM in it.revealStart..it.windowEnd }
+            .minByOrNull { it.summit }
+        if (active == null) {
+            ClimbReveal(null, false)
+        } else {
+            // Left edge tracks the rider through the approach (lead-in shrinks), then locks at
+            // the foot for the climb. windowEnd is fixed at summit + tail.
+            val windowStart = minOf(positionM, active.foot)
+            ClimbReveal(windowStart to active.windowEnd, true)
+        }
     }
 }
 
