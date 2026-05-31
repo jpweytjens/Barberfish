@@ -34,9 +34,6 @@ internal data class SparklineFrame(
     val hudEnabled: Boolean,
 )
 
-// An uphill climb on the route plus the approach distance (difficulty-scaled) at which the
-// climb-only sparkline reveals before its foot.
-private data class ClimbSpan(val startM: Float, val endM: Float, val approachM: Float)
 
 /**
  * Shared sparkline data pipeline used by both HUD and standalone sparkline field.
@@ -139,32 +136,14 @@ internal fun sparklineBitmapFlow(
                 debugSweep -> rvvClimbsFixture()
                 else -> emptyList()
             }
-            val climbSpans = rawClimbRanges.mapNotNull { (startM, endM) ->
+            val climbRanges = rawClimbRanges.mapNotNull { (startM, endM) ->
                 val startElev = elevationAt(elevPoints, startM) ?: return@mapNotNull null
                 val endElev = elevationAt(elevPoints, endM) ?: return@mapNotNull null
-                if (endElev <= startElev) return@mapNotNull null
-                val lengthM = (endM - startM).toDouble()
-                val gradePct = if (lengthM > 0) (endElev - startElev) / lengthM * 100.0 else 0.0
-                val approachM = climbApproachM(pcsClimbScore(gradePct, lengthM))
-                ClimbSpan(startM, endM, approachM)
+                if (endElev > startElev) startM to endM else null
             }
-            val climbRanges = climbSpans.map { it.startM to it.endM }
-            // Climb-only mode: reveal once within the (difficulty-scaled) approach of a climb foot
-            // and keep it up through the descent of the climb. Pick the climb finished first when
-            // approaches overlap. Pin the sparkline window to that climb (foot → top).
-            val activeClimb = if (sparkCfg.hudMode == SparklineMode.CLIMBS) {
-                climbSpans
-                    .filter { sparklinePositionM in (it.startM - it.approachM)..it.endM }
-                    .minByOrNull { it.endM }
-            } else {
-                null
-            }
-            val windowOverride = activeClimb?.let { it.startM to it.endM }
-            val showArea = when (sparkCfg.hudMode) {
-                SparklineMode.OFF -> false
-                SparklineMode.ON -> true
-                SparklineMode.CLIMBS -> activeClimb != null
-            }
+            val reveal = resolveClimbReveal(sparkCfg.hudMode, climbRanges, elevPoints, sparklinePositionM)
+            val windowOverride = reveal.windowOverride
+            val showArea = reveal.visible
             val poiDistances: List<Float> = when {
                 route != null -> route.pois.flatMap { it.distancesAlongRoute }.map { it.toFloat() }
                 debugClimbs -> colDeRatesPoisFixture()

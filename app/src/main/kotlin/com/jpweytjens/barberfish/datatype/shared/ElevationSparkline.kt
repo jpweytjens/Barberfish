@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.extension.GradePalette
+import com.jpweytjens.barberfish.extension.SparklineMode
 
 // Elevation polyline: Google Encoded Polyline, precision=1 (divisor=10),
 // lat = cumulative distance in metres, lng = elevation in metres.
@@ -448,6 +449,41 @@ internal fun elevationAt(points: List<Pair<Float, Float>>, distanceM: Float): Fl
         }
     }
     return null
+}
+
+internal data class ClimbReveal(val windowOverride: Pair<Float, Float>?, val visible: Boolean)
+
+/**
+ * Climb-only visibility for the HUD sparkline, shared by the live flow and the config preview.
+ * In [SparklineMode.CLIMBS] the strip reveals once the rider is within a climb's
+ * difficulty-scaled approach and stays until its top, pinned to that climb (foot → top); when
+ * no climb is in range it hides. [SparklineMode.OFF] hides it; [SparklineMode.ON] shows it with
+ * no window override. Approach distance scales with the PCS climb score (see [climbApproachM]).
+ */
+internal fun resolveClimbReveal(
+    mode: SparklineMode,
+    climbRanges: List<Pair<Float, Float>>,
+    elevationPoints: List<Pair<Float, Float>>,
+    positionM: Float,
+): ClimbReveal = when (mode) {
+    SparklineMode.OFF -> ClimbReveal(null, false)
+    SparklineMode.ON -> ClimbReveal(null, true)
+    SparklineMode.CLIMBS -> {
+        val active = climbRanges
+            .mapNotNull { (startM, endM) ->
+                val startElev = elevationAt(elevationPoints, startM) ?: return@mapNotNull null
+                val endElev = elevationAt(elevationPoints, endM) ?: return@mapNotNull null
+                if (endElev <= startElev) return@mapNotNull null
+                val lengthM = (endM - startM).toDouble()
+                val gradePct = if (lengthM > 0) (endElev - startElev) / lengthM * 100.0 else 0.0
+                val approachM = climbApproachM(pcsClimbScore(gradePct, lengthM))
+                Triple(startM, endM, approachM)
+            }
+            // Reveal within the approach and hold to the top; nearest finish wins on overlap.
+            .filter { (startM, endM, approachM) -> positionM in (startM - approachM)..endM }
+            .minByOrNull { it.second }
+        if (active == null) ClimbReveal(null, false) else ClimbReveal(active.first to active.second, true)
+    }
 }
 
 /**
