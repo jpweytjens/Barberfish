@@ -56,8 +56,12 @@ import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
+import com.jpweytjens.barberfish.datatype.shared.colDeRatesClimbsFixture
+import com.jpweytjens.barberfish.datatype.shared.colDeRatesElevationFixture
+import com.jpweytjens.barberfish.datatype.shared.colDeRatesPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.resolveClimbReveal
 import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
@@ -207,9 +211,15 @@ internal fun SparklinePreview(
     var boxWidthPx by remember { mutableIntStateOf(0) }
     var boxHeightPx by remember { mutableIntStateOf(0) }
 
-    val elevationPoints = fixturePoints ?: previewElevationFixture()
-    val climbRanges = fixtureClimbRanges ?: rvvClimbsFixture()
-    val poiDistances = fixturePoiDistances ?: rvvPoisFixture()
+    // Climbs mode previews against a real climb (Col de Rates); other modes keep the mixed RvV
+    // terrain. Explicit fixtures (debug gallery) always win.
+    val climbsMode = sparklineConfig.hudMode == SparklineMode.CLIMBS
+    val elevationPoints = fixturePoints
+        ?: if (climbsMode) colDeRatesElevationFixture() else previewElevationFixture()
+    val climbRanges = fixtureClimbRanges
+        ?: if (climbsMode) colDeRatesClimbsFixture() else rvvClimbsFixture()
+    val poiDistances = fixturePoiDistances
+        ?: if (climbsMode) colDeRatesPoisFixture() else rvvPoisFixture()
 
     // Animate position: sweep from route start to end, then loop
     var positionM by remember { mutableStateOf(elevationPoints.first().first) }
@@ -244,7 +254,10 @@ internal fun SparklinePreview(
         sparklineConfig, zoneConfig, boxWidthPx, boxHeightPx, isNightMode,
         simplifiedElevationPoints, positionM, climbRanges, poiDistances,
     ) {
-        if (boxWidthPx <= 0 || boxHeightPx <= 0) null
+        val reveal = resolveClimbReveal(
+            sparklineConfig.hudMode, climbRanges, simplifiedElevationPoints, positionM,
+        )
+        if (boxWidthPx <= 0 || boxHeightPx <= 0 || !reveal.visible) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
@@ -270,6 +283,7 @@ internal fun SparklinePreview(
                 showClimbs      = sparklineConfig.showClimbs,
                 poiDistances    = poiDistances,
                 showPois        = sparklineConfig.showPois,
+                windowOverride  = reveal.windowOverride,
             )
             displayedRange = newRange
             bitmap
