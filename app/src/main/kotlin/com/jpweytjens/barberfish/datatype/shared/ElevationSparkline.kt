@@ -484,7 +484,8 @@ internal fun resolveClimbReveal(
                 val lengthM = (endM - startM).toDouble()
                 val gradePct = if (lengthM > 0) (endElev - startElev) / lengthM * 100.0 else 0.0
                 val approachM = climbApproachM(pcsClimbScore(gradePct, lengthM))
-                val tailM = ((endM - startM) * SUMMIT_TAIL_FRAC).coerceAtLeast(SUMMIT_TAIL_MIN_M)
+                val tailM = ((endM - startM) * SUMMIT_TAIL_FRAC)
+                    .coerceIn(SUMMIT_TAIL_MIN_M, SUMMIT_TAIL_MAX_M)
                 // Reveal one approach-length before the foot; hold a short tail past the top so
                 // the summit clears the right edge.
                 ClimbFrame(startM - approachM, startM, endM + tailM, endM)
