@@ -701,17 +701,20 @@ internal fun SparklineOptionsControls(
     profile: UserProfile,
     onUpdate: (SparklineConfig) -> Unit,
 ) {
-    LabeledHelper("LOOKAHEAD") {
-        HelperText("Distance shown ahead of your position.")
+    // Lookahead is inert in Climbs mode: the window is pinned to the climb, not your position.
+    if (config.hudMode != SparklineMode.CLIMBS) {
+        LabeledHelper("LOOKAHEAD") {
+            HelperText("Distance shown ahead of your position.")
+        }
+        SegmentedRow(
+            options = listOf(5, 10, 20).map { km ->
+                val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+            },
+            selected = config.lookaheadKm,
+            onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+        )
     }
-    SegmentedRow(
-        options = listOf(5, 10, 20).map { km ->
-            val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-            km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-        },
-        selected = config.lookaheadKm,
-        onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
-    )
     val fillRange = gradeFillRange(
         zoneConfig.gradePalette,
         skipBandsClimb = config.skipBands,
@@ -756,14 +759,17 @@ internal fun SparklineOptionsControls(
         selected = config.simplification,
         onSelect = { onUpdate(config.copy(simplification = it)) },
     )
-    LabeledHelper("X-WARP") {
-        HelperText("Fisheye magnification around the position dot.")
+    // X-warp is inert in Climbs mode: the climb frame uses a linear axis, not a fisheye.
+    if (config.hudMode != SparklineMode.CLIMBS) {
+        LabeledHelper("X-WARP") {
+            HelperText("Fisheye magnification around the position dot.")
+        }
+        SegmentedRow(
+            options = SparklineWarp.entries.map { it to it.label },
+            selected = config.warp,
+            onSelect = { onUpdate(config.copy(warp = it)) },
+        )
     }
-    SegmentedRow(
-        options = SparklineWarp.entries.map { it to it.label },
-        selected = config.warp,
-        onSelect = { onUpdate(config.copy(warp = it)) },
-    )
     LabeledHelper("Y-ZOOM") {
         HelperText("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.")
     }
