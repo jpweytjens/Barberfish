@@ -60,7 +60,7 @@ Average speed comes in two variants: Total and Moving. Total includes paused tim
 
 ### Layout
 
-A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline below the HUD shows recent terrain and the upcoming profile with non-linear zoom around your current position. Tap to cycle 5/10/20 km lookahead.
+A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline sits below the HUD in one of two modes. On shows the whole route's upcoming terrain with non-linear zoom around your current position; tap to cycle 5/10/20 km lookahead. Climbs is a Barberfish take on Hammerhead's Climber: it stays hidden until a climb nears, shows a `Climb 2/5` heads-up, then frames the climb foot to summit as you ride up and clears at the top, revealing earlier for harder climbs.
 
 ## Examples
 
