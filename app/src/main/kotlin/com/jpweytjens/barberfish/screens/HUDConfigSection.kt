@@ -205,6 +205,7 @@ internal fun SparklinePreview(
     fixtureClimbRanges: List<Pair<Float, Float>>? = null,
     fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
+    onVisibleChange: (Boolean) -> Unit = {},
 ) {
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
@@ -250,13 +251,17 @@ internal fun SparklinePreview(
         visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
     }
 
+    val reveal = resolveClimbReveal(
+        sparklineConfig.hudMode, climbRanges, simplifiedElevationPoints, positionM,
+    )
+    // Tell the HUD preview whether the strip is currently showing, so it can reclaim the row
+    // (matching on-device, where the area collapses to the Off-mode layout when no climb is near).
+    LaunchedEffect(reveal.visible) { onVisibleChange(reveal.visible) }
+
     val sparklineBitmap = remember(
         sparklineConfig, zoneConfig, boxWidthPx, boxHeightPx, isNightMode,
         simplifiedElevationPoints, positionM, climbRanges, poiDistances,
     ) {
-        val reveal = resolveClimbReveal(
-            sparklineConfig.hudMode, climbRanges, simplifiedElevationPoints, positionM,
-        )
         if (boxWidthPx <= 0 || boxHeightPx <= 0 || !reveal.visible) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
@@ -333,6 +338,10 @@ private fun HUDPreview(
         }
     }
     val current = states[index.coerceIn(states.indices)]
+    // Driven by the sparkline sweep: in Climbs mode the strip is hidden between climbs, and the
+    // columns then reclaim the row exactly as on-device.
+    var sparklineVisible by remember { mutableStateOf(false) }
+    val showSparkline = sparklineConfig.hudMode != SparklineMode.OFF && sparklineVisible
 
     Box(
         modifier = Modifier
@@ -355,7 +364,7 @@ private fun HUDPreview(
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
                     columns = hudConfig.columns,
-                    reserveSparklineSpace = sparklineConfig.hudMode != SparklineMode.OFF,
+                    reserveSparklineSpace = showSparkline,
                 )
             }
         }
@@ -384,6 +393,7 @@ private fun HUDPreview(
                     fixtureClimbRanges = fixtureClimbRanges,
                     fixturePoiDistances = fixturePoiDistances,
                     previewSweepSeconds = previewSweepSeconds,
+                    onVisibleChange = { sparklineVisible = it },
                 )
             }
         }
