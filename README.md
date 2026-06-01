@@ -74,6 +74,14 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
     <td align="center"><img src="docs/light_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
   </tr>
   <tr>
+    <td align="center">Climbs mode flags the next climb before it arrives</td>
+    <td align="center">Climbs mode frames the climb foot to summit</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
+    <td align="center"><img src="docs/climbs_profile.jpg" alt="Climbs mode sparkline framing a climb foot to summit with the position dot partway up"></td>
+  </tr>
+  <tr>
     <td align="center">Average speed with target-mode threshold, text coloring above target</td>
     <td align="center">Data field configuration grouped by category</td>
   </tr>
