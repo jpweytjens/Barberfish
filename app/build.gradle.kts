@@ -19,8 +19,8 @@ android {
         applicationId = "com.jpweytjens.barberfish"
         minSdk = 23
         targetSdk = 34
-        versionCode = 6
-        versionName = "3.2"
+        versionCode = 7
+        versionName = "3.3"
     }
 
     signingConfigs {
