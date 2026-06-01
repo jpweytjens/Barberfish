@@ -106,7 +106,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     sparklineFlow,
                 ) { hudState, frame ->
                     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                    val showSparklineArea = frame.hudEnabled && (frame.bitmap != null || transitionKm != null)
+                    val showSparklineArea = frame.hudEnabled &&
+                        (frame.bitmap != null || transitionKm != null || frame.counterText != null)
                     val rv = buildHudRemoteViews(
                         hudState,
                         config,
@@ -124,6 +125,17 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             val transitionColor = if (isNightMode) Color.WHITE else Color.BLACK
                             rv.setTextColor(R.id.hud_transition_text, transitionColor)
                             rv.setInt(R.id.hud_transition_icon, "setColorFilter", transitionColor)
+                        }
+                        frame.counterText != null -> {
+                            rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
+                            rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_transition_icon, View.GONE)
+                            rv.setTextViewText(R.id.hud_transition_text, frame.counterText)
+                            rv.setTextColor(
+                                R.id.hud_transition_text,
+                                if (isNightMode) Color.WHITE else Color.BLACK,
+                            )
                         }
                         frame.bitmap != null -> {
                             rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)

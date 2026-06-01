@@ -451,22 +451,28 @@ internal fun elevationAt(points: List<Pair<Float, Float>>, distanceM: Float): Fl
     return null
 }
 
-internal data class ClimbReveal(val windowOverride: Pair<Float, Float>?, val visible: Boolean)
+internal data class ClimbReveal(
+    val visible: Boolean,
+    val windowOverride: Pair<Float, Float>?,
+    // "Climb n/total" heads-up shown in the strip during the counter phase, before the profile.
+    val counterText: String? = null,
+)
 
 private data class ClimbFrame(
-    val revealStart: Float,
     val foot: Float,
-    val windowEnd: Float,
     val summit: Float,
-    val marginM: Float,
+    val approachM: Float,
+    val leadM: Float,
+    val tailM: Float,
 )
 
 /**
  * Climb-only visibility for the HUD sparkline, shared by the live flow and the config preview.
- * In [SparklineMode.CLIMBS] the strip reveals once the rider is within a climb's
- * difficulty-scaled approach and stays until its top, pinned to that climb (foot → top); when
- * no climb is in range it hides. [SparklineMode.OFF] hides it; [SparklineMode.ON] shows it with
- * no window override. Approach distance scales with the PCS climb score (see [climbApproachM]).
+ * In [SparklineMode.CLIMBS] each climb runs through three phases as you ride up to it: a counter
+ * phase ("Climb n/total" text) one approach-length before the profile reveals, then the elevation
+ * profile pinned to the climb (foot → top, left edge tracking you through the approach), then it
+ * hides past the summit. [SparklineMode.OFF] hides it; [SparklineMode.ON] shows it with no window
+ * override. Approach distance scales with the PCS climb score (see [climbApproachM]).
  */
 internal fun resolveClimbReveal(
     mode: SparklineMode,
@@ -474,37 +480,44 @@ internal fun resolveClimbReveal(
     elevationPoints: List<Pair<Float, Float>>,
     positionM: Float,
 ): ClimbReveal = when (mode) {
-    SparklineMode.OFF -> ClimbReveal(null, false)
-    SparklineMode.ON -> ClimbReveal(null, true)
+    SparklineMode.OFF -> ClimbReveal(visible = false, windowOverride = null)
+    SparklineMode.ON -> ClimbReveal(visible = true, windowOverride = null)
     SparklineMode.CLIMBS -> {
-        val active = climbRanges
-            .mapNotNull { (startM, endM) ->
-                val startElev = elevationAt(elevationPoints, startM) ?: return@mapNotNull null
-                val endElev = elevationAt(elevationPoints, endM) ?: return@mapNotNull null
-                if (endElev <= startElev) return@mapNotNull null
-                val lengthM = (endM - startM).toDouble()
-                val gradePct = if (lengthM > 0) (endElev - startElev) / lengthM * 100.0 else 0.0
-                val approachM = climbApproachM(pcsClimbScore(gradePct, lengthM))
-                val lengthF = (endM - startM)
-                val leadM = (lengthF * CLIMB_LEAD_MARGIN_FRAC)
-                    .coerceIn(CLIMB_FRAME_MARGIN_MIN_M, CLIMB_FRAME_MARGIN_MAX_M)
-                val tailM = (lengthF * CLIMB_TAIL_MARGIN_FRAC)
-                    .coerceIn(CLIMB_FRAME_MARGIN_MIN_M, CLIMB_FRAME_MARGIN_MAX_M)
-                // Reveal one approach-length before the foot; hold a short tail past the top so
-                // the summit clears the right edge.
-                ClimbFrame(startM - approachM, startM, endM + tailM, endM, leadM)
+        val frames = climbRanges.mapNotNull { (startM, endM) ->
+            val startElev = elevationAt(elevationPoints, startM) ?: return@mapNotNull null
+            val endElev = elevationAt(elevationPoints, endM) ?: return@mapNotNull null
+            if (endElev <= startElev) return@mapNotNull null
+            val lengthF = endM - startM
+            val gradePct = if (lengthF > 0f) (endElev - startElev) / lengthF * 100.0 else 0.0
+            val approachM = climbApproachM(pcsClimbScore(gradePct, lengthF.toDouble()))
+            val leadM = (lengthF * CLIMB_LEAD_MARGIN_FRAC)
+                .coerceIn(CLIMB_FRAME_MARGIN_MIN_M, CLIMB_FRAME_MARGIN_MAX_M)
+            val tailM = (lengthF * CLIMB_TAIL_MARGIN_FRAC)
+                .coerceIn(CLIMB_FRAME_MARGIN_MIN_M, CLIMB_FRAME_MARGIN_MAX_M)
+            ClimbFrame(startM, endM, approachM, leadM, tailM)
+        }
+        val total = frames.size
+        // Active from one approach before the counter through the summit tail; nearest finish wins.
+        val active = frames.withIndex()
+            .filter { (_, f) -> positionM in (f.foot - 2f * f.approachM)..(f.summit + f.tailM) }
+            .minByOrNull { it.value.summit }
+        when {
+            active == null -> ClimbReveal(visible = false, windowOverride = null)
+            positionM < active.value.foot - active.value.approachM ->
+                // Counter phase: heads-up text before the profile reveals.
+                ClimbReveal(
+                    visible = true,
+                    windowOverride = null,
+                    counterText = "Climb ${active.index + 1}/$total",
+                )
+            else -> {
+                // Profile phase: left edge tracks the rider through the approach (lead-in shrinks),
+                // then locks at the foot; the lead margin keeps the dot off the left edge and the
+                // tail keeps the summit off the right.
+                val f = active.value
+                val windowStart = minOf(positionM, f.foot) - f.leadM
+                ClimbReveal(visible = true, windowOverride = windowStart to (f.summit + f.tailM))
             }
-            // Nearest finish wins on overlap.
-            .filter { positionM in it.revealStart..it.windowEnd }
-            .minByOrNull { it.summit }
-        if (active == null) {
-            ClimbReveal(null, false)
-        } else {
-            // Left edge tracks the rider through the approach (lead-in shrinks), then locks at
-            // the foot for the climb. The margin keeps the position dot off the left edge;
-            // windowEnd already holds the matching tail past the summit.
-            val windowStart = minOf(positionM, active.foot) - active.marginM
-            ClimbReveal(windowStart to active.windowEnd, true)
         }
     }
 }

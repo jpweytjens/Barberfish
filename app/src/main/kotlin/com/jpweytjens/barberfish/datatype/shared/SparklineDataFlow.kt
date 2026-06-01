@@ -32,6 +32,8 @@ internal data class SparklineFrame(
     val displayedRange: Float,
     val lookaheadKm: Int,
     val hudEnabled: Boolean,
+    // "Climb n/total" heads-up text shown in the strip before a climb's profile reveals.
+    val counterText: String? = null,
 )
 
 
@@ -150,7 +152,7 @@ internal fun sparklineBitmapFlow(
                 debugSweep -> rvvPoisFixture()
                 else -> emptyList()
             }
-            val (bitmap, updatedRange) = if (showArea) {
+            val (bitmap, updatedRange) = if (showArea && reveal.counterText == null) {
                 renderElevationSparkline(
                     elevationPoints = elevPoints,
                     positionM = sparklinePositionM,
@@ -186,6 +188,7 @@ internal fun sparklineBitmapFlow(
                 displayedRange = ratchetRange,
                 lookaheadKm = sparkCfg.lookaheadKm,
                 hudEnabled = showArea,
+                counterText = reveal.counterText,
             )
         }
     }
