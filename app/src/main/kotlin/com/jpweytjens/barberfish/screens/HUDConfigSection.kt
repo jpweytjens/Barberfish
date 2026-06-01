@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.DeviceFontFamilyName
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.DropdownMenuItem
@@ -197,6 +200,9 @@ internal fun HUDConfigSection(
     }
 }
 
+// Matches the data-field header font (ibm-plex-sans-condensed) used in the rendered cells.
+private val HudHeaderFontFamily = FontFamily(Font(DeviceFontFamilyName("ibm-plex-sans-condensed")))
+
 @Composable
 internal fun SparklinePreview(
     sparklineConfig: SparklineConfig,
@@ -206,6 +212,7 @@ internal fun SparklinePreview(
     fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
     onVisibleChange: (Boolean) -> Unit = {},
+    spaceReserved: Boolean = true,
 ) {
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
@@ -260,9 +267,9 @@ internal fun SparklinePreview(
 
     val sparklineBitmap = remember(
         sparklineConfig, zoneConfig, boxWidthPx, boxHeightPx, isNightMode,
-        simplifiedElevationPoints, positionM, climbRanges, poiDistances,
+        simplifiedElevationPoints, positionM, climbRanges, poiDistances, spaceReserved,
     ) {
-        if (boxWidthPx <= 0 || boxHeightPx <= 0 || !reveal.visible) null
+        if (boxWidthPx <= 0 || boxHeightPx <= 0 || !reveal.visible || reveal.counterText != null || !spaceReserved) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
@@ -305,6 +312,14 @@ internal fun SparklinePreview(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.FillBounds,
+            )
+        } else if (reveal.counterText != null && spaceReserved) {
+            Text(
+                text = reveal.counterText,
+                color = if (isNightMode) Color.White else Color.Black,
+                fontSize = 14.sp,
+                fontFamily = HudHeaderFontFamily,
+                modifier = Modifier.align(Alignment.Center),
             )
         }
     }
@@ -394,6 +409,7 @@ private fun HUDPreview(
                     fixturePoiDistances = fixturePoiDistances,
                     previewSweepSeconds = previewSweepSeconds,
                     onVisibleChange = { sparklineVisible = it },
+                    spaceReserved = showSparkline,
                 )
             }
         }
