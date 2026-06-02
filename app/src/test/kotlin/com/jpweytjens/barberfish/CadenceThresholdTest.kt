@@ -1,9 +1,12 @@
 package com.jpweytjens.barberfish
 
+import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.cadenceFieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
+import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -107,5 +110,20 @@ class CadenceThresholdTest {
         val color = cadenceFieldColor(90.0, cfg) as FieldColor.DangerZone
         assertEquals(0f, color.outsideFactor, 0.001f)
         assertTrue(!color.hasSafeZone)
+    }
+
+    // --- previewStates: colorMode propagates to FieldState ---
+
+    @Test fun preview_propagates_background_color_mode() {
+        val cfg = CadenceFieldConfig(
+            threshold = CadenceThresholdConfig(
+                mode = ThresholdMode.TARGET,
+                thresholdRpm = 90.0,
+            ),
+            colorMode = ZoneColorMode.BACKGROUND,
+        )
+        val states = CadenceField.previewStates(cfg)
+        assertTrue(states.isNotEmpty())
+        assertTrue(states.all { it.colorMode == ZoneColorMode.BACKGROUND })
     }
 }

@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.DeviceFontFamilyName
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.DropdownMenuItem
@@ -41,7 +44,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -50,45 +52,61 @@ import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
-import com.jpweytjens.barberfish.datatype.shared.Delay
+import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
-import com.jpweytjens.barberfish.datatype.shared.ELEVATION_FIXTURES
-import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
+import com.jpweytjens.barberfish.datatype.shared.colDeRatesClimbsFixture
+import com.jpweytjens.barberfish.datatype.shared.colDeRatesElevationFixture
+import com.jpweytjens.barberfish.datatype.shared.colDeRatesPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.resolveClimbReveal
 import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
-import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
-import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.ElevationZoom
 import com.jpweytjens.barberfish.extension.SparklineWarp
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
-import com.jpweytjens.barberfish.datatype.shared.Grey400
+import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
 import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
+
+private sealed interface HudSelection {
+    data class Slot(val index: Int) : HudSelection
+    data object Strip : HudSelection
+}
+
+// Vertical space reserved inside each HUD preview cell for the sparkline strip below.
+// Matches HUD_SPARKLINE_HEIGHT_DP in HUDField (the live overlay strip). The strip itself
+// here is rendered at 30.dp — the 4dp difference is an unresolved cosmetic mismatch
+// (see audit #24); the reservation matches the live experience so cells size correctly.
+private const val HUD_SPARKLINE_CELL_RESERVATION_DP = 34f
+
+// Total height of the HUD preview container (3 or 4 cells side-by-side + sparkline strip).
+private val HUD_PREVIEW_HEIGHT = 90.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,99 +116,47 @@ internal fun HUDConfigSection(
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
-    currentRouteElevationPolyline: String?,
     onUpdate: (HUDConfig) -> Unit,
+    onSparklineUpdate: (SparklineConfig) -> Unit,
 ) {
-    var selectedSlot by remember { mutableStateOf<Int?>(null) }
+    var selection by remember { mutableStateOf<HudSelection?>(null) }
+    val selectedSlot = (selection as? HudSelection.Slot)?.index
+    val stripSelected = selection is HudSelection.Strip
 
+    ControlLabel("NUMBER OF COLUMNS")
     ColumnCountToggle(
         columns = hudConfig.columns,
         onSelect = { cols ->
             if (cols != hudConfig.columns) {
-                selectedSlot = null
+                selection = null
                 onUpdate(hudConfig.copy(columns = cols))
             }
         },
     )
-    Text(
-        "Tap a column to configure it.",
-        fontSize = 12.sp,
-        color = TextDark,
+    SparklineModeToggle(
+        mode = sparklineConfig.hudMode,
+        onSelect = { mode ->
+            if (mode == SparklineMode.OFF && stripSelected) selection = null
+            onSparklineUpdate(sparklineConfig.copy(mode = mode))
+        },
     )
-    if (BuildConfig.DEBUG) {
-        // "Current route" is prepended when a route (or destination) is loaded on the device,
-        // so VW / warp tuning can be judged against real Strava-density data instead of the
-        // synthetic fixtures, which have perfectly collinear climbs and therefore don't
-        // exhibit the rainbow-banding problem.
-        val fixtures: Map<String, () -> List<Pair<Float, Float>>> =
-            remember(currentRouteElevationPolyline) {
-                buildMap {
-                    val poly = currentRouteElevationPolyline
-                    if (!poly.isNullOrBlank()) {
-                        put("Current route") { decodeElevationPolyline(poly) }
-                    }
-                    putAll(ELEVATION_FIXTURES)
-                }
-            }
-        var selectedFixtureName by remember(fixtures) { mutableStateOf(fixtures.keys.first()) }
-        var expanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            OutlinedTextField(
-                value = selectedFixtureName,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Fixture") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                fixtures.keys.forEach { name ->
-                    DropdownMenuItem(
-                        text = { Text(name) },
-                        onClick = { selectedFixtureName = name; expanded = false },
-                    )
-                }
-            }
-        }
-        var previewSweepSeconds by remember { mutableIntStateOf(10) }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Grey200)
-                .padding(12.dp),
-        ) {
-            SegmentedRow(
-                options = listOf(10 to "10s", 30 to "30s", 60 to "60s"),
-                selected = previewSweepSeconds,
-                onSelect = { previewSweepSeconds = it },
-            )
-        }
-        val isRvvFixture = selectedFixtureName == "RvV (last 20km)"
-        HUDPreview(
-            hudConfig = hudConfig,
-            sparklineConfig = sparklineConfig,
-            zoneConfig = zoneConfig,
-            timeCfg = timeCfg,
-            profile = profile,
-            selectedSlot = selectedSlot,
-            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
-            fixturePoints = fixtures[selectedFixtureName]?.invoke() ?: previewElevationFixture(),
-            fixtureClimbRanges = if (isRvvFixture) rvvClimbsFixture() else emptyList(),
-            fixturePoiDistances = if (isRvvFixture) rvvPoisFixture() else emptyList(),
-            previewSweepSeconds = previewSweepSeconds,
-        )
-    } else {
-        HUDPreview(
-            hudConfig = hudConfig,
-            sparklineConfig = sparklineConfig,
-            zoneConfig = zoneConfig,
-            timeCfg = timeCfg,
-            profile = profile,
-            selectedSlot = selectedSlot,
-            onSlotSelected = { idx -> selectedSlot = if (selectedSlot == idx) null else idx },
-        )
-    }
+    HelperText(
+        if (sparklineConfig.hudMode != SparklineMode.OFF) "Tap a column or the sparkline to configure it."
+        else "Tap a column to configure it.",
+    )
+    HUDPreview(
+        hudConfig = hudConfig,
+        sparklineConfig = sparklineConfig,
+        zoneConfig = zoneConfig,
+        timeCfg = timeCfg,
+        profile = profile,
+        selectedSlot = selectedSlot,
+        onSlotSelected = { idx ->
+            selection = if (selectedSlot == idx) null else HudSelection.Slot(idx)
+        },
+        stripSelected = stripSelected,
+        onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
+    )
 
     val slot = when (selectedSlot) {
         0 -> hudConfig.leftSlot
@@ -215,43 +181,53 @@ internal fun HUDConfigSection(
             },
         )
     }
+    if (stripSelected && sparklineConfig.hudMode != SparklineMode.OFF) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .border(1.dp, Grey200, RoundedCornerShape(6.dp))
+                .background(Grey200)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SparklineOptionsControls(
+                config = sparklineConfig,
+                zoneConfig = zoneConfig,
+                profile = profile,
+                onUpdate = onSparklineUpdate,
+            )
+        }
+    }
 }
 
+// Matches the data-field header font (ibm-plex-sans-condensed) used in the rendered cells.
+private val HudHeaderFontFamily = FontFamily(Font(DeviceFontFamilyName("ibm-plex-sans-condensed")))
+
 @Composable
-private fun HUDPreview(
-    hudConfig: HUDConfig,
+internal fun SparklinePreview(
     sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
-    timeCfg: TimeConfig,
-    profile: UserProfile,
-    selectedSlot: Int?,
-    onSlotSelected: (Int) -> Unit,
     fixturePoints: List<Pair<Float, Float>>? = null,
     fixtureClimbRanges: List<Pair<Float, Float>>? = null,
     fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
+    onVisibleChange: (Boolean) -> Unit = {},
+    spaceReserved: Boolean = true,
 ) {
-    val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
-        HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
-    }
-    var index by remember { mutableIntStateOf(0) }
-    LaunchedEffect(states) {
-        index = 0
-        while (true) {
-            delay(Delay.PREVIEW.time)
-            index = (index + 1) % states.size
-        }
-    }
-    val current = states[index.coerceIn(states.indices)]
-
     val density = LocalDensity.current.density
     val isNightMode = isSystemInDarkTheme()
-    val sparklineDisplayHeightPx = (34f * density).toInt()
     var boxWidthPx by remember { mutableIntStateOf(0) }
+    var boxHeightPx by remember { mutableIntStateOf(0) }
 
-    val elevationPoints = fixturePoints ?: previewElevationFixture()
-    val climbRanges = fixtureClimbRanges ?: rvvClimbsFixture()
-    val poiDistances = fixturePoiDistances ?: rvvPoisFixture()
+    // Climbs mode previews against a real climb (Col de Rates); other modes keep the mixed RvV
+    // terrain. Explicit fixtures (debug gallery) always win.
+    val climbsMode = sparklineConfig.hudMode == SparklineMode.CLIMBS
+    val elevationPoints = fixturePoints
+        ?: if (climbsMode) colDeRatesElevationFixture() else previewElevationFixture()
+    val climbRanges = fixtureClimbRanges
+        ?: if (climbsMode) colDeRatesClimbsFixture() else rvvClimbsFixture()
+    val poiDistances = fixturePoiDistances
+        ?: if (climbsMode) colDeRatesPoisFixture() else rvvPoisFixture()
 
     // Animate position: sweep from route start to end, then loop
     var positionM by remember { mutableStateOf(elevationPoints.first().first) }
@@ -282,8 +258,18 @@ private fun HUDPreview(
         visvalingamWhyatt(elevationPoints, sparklineConfig.simplification.minAreaM2)
     }
 
-    val sparklineBitmap = remember(sparklineConfig, zoneConfig, boxWidthPx, isNightMode, simplifiedElevationPoints, positionM, climbRanges, poiDistances) {
-        if (!sparklineConfig.enabled || boxWidthPx <= 0) null
+    val reveal = resolveClimbReveal(
+        sparklineConfig.hudMode, climbRanges, simplifiedElevationPoints, positionM,
+    )
+    // Tell the HUD preview whether the strip is currently showing, so it can reclaim the row
+    // (matching on-device, where the area collapses to the Off-mode layout when no climb is near).
+    LaunchedEffect(reveal.visible) { onVisibleChange(reveal.visible) }
+
+    val sparklineBitmap = remember(
+        sparklineConfig, zoneConfig, boxWidthPx, boxHeightPx, isNightMode,
+        simplifiedElevationPoints, positionM, climbRanges, poiDistances, spaceReserved,
+    ) {
+        if (boxWidthPx <= 0 || boxHeightPx <= 0 || !reveal.visible || reveal.counterText != null || !spaceReserved) null
         else {
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
@@ -291,10 +277,11 @@ private fun HUDPreview(
                 elevationPoints = simplifiedElevationPoints,
                 positionM       = positionM,
                 widthPx         = boxWidthPx,
-                heightPx        = sparklineDisplayHeightPx,
+                heightPx        = boxHeightPx,
                 density         = density,
                 palette         = zoneConfig.gradePalette,
-                readable        = zoneConfig.readableColors,
+                // Sparkline always renders as a fill; use brand colors.
+                readable        = false,
                 lookaheadM      = sparklineConfig.lookaheadKm * 1_000f,
                 skipBands       = sparklineConfig.skipBands,
                 skipBandsDescent = sparklineConfig.skipBandsDescent,
@@ -308,38 +295,82 @@ private fun HUDPreview(
                 showClimbs      = sparklineConfig.showClimbs,
                 poiDistances    = poiDistances,
                 showPois        = sparklineConfig.showPois,
+                windowOverride  = reveal.windowOverride,
             )
             displayedRange = newRange
             bitmap
         }
     }
 
-    // Bleed 8 dp each side to reclaim the CollapsibleSection inner padding so the
-    // preview spans the section card's full width — wider than default but inside the
-    // section bounds (no screen-edge clipping of the rightmost label).
+    Box(modifier = Modifier.fillMaxSize().onSizeChanged {
+        boxWidthPx = it.width
+        boxHeightPx = it.height
+    }) {
+        if (sparklineBitmap != null) {
+            Image(
+                bitmap = sparklineBitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds,
+            )
+        } else if (reveal.counterText != null && spaceReserved) {
+            Text(
+                text = reveal.counterText,
+                color = if (isNightMode) Color.White else Color.Black,
+                fontSize = 14.sp,
+                fontFamily = HudHeaderFontFamily,
+                modifier = Modifier.align(Alignment.Center),
+            )
+        }
+    }
+}
+
+@Composable
+private fun HUDPreview(
+    hudConfig: HUDConfig,
+    sparklineConfig: SparklineConfig,
+    zoneConfig: ZoneConfig,
+    timeCfg: TimeConfig,
+    profile: UserProfile,
+    selectedSlot: Int?,
+    onSlotSelected: (Int) -> Unit,
+    stripSelected: Boolean,
+    onStripSelected: () -> Unit,
+    fixturePoints: List<Pair<Float, Float>>? = null,
+    fixtureClimbRanges: List<Pair<Float, Float>>? = null,
+    fixturePoiDistances: List<Float>? = null,
+    previewSweepSeconds: Int = 10,
+) {
+    val states = remember(hudConfig, zoneConfig, timeCfg, profile) {
+        HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
+    }
+    var index by remember { mutableIntStateOf(0) }
+    LaunchedEffect(states) {
+        index = 0
+        while (true) {
+            delay(PREVIEW_DELAY_MS)
+            index = (index + 1) % states.size
+        }
+    }
+    val current = states[index.coerceIn(states.indices)]
+    // Driven by the sparkline sweep: in Climbs mode the strip is hidden between climbs, and the
+    // columns then reclaim the row exactly as on-device.
+    var sparklineVisible by remember { mutableStateOf(false) }
+    val showSparkline = sparklineConfig.hudMode != SparklineMode.OFF && sparklineVisible
+
     Box(
         modifier = Modifier
-            .layout { measurable, constraints ->
-                val bleed = 12.dp.roundToPx()
-                val placeable = measurable.measure(
-                    constraints.copy(maxWidth = constraints.maxWidth + bleed)
-                )
-                layout(constraints.maxWidth, placeable.height) {
-                    placeable.place(-bleed / 2, 0)
-                }
-            }
             .fillMaxWidth()
-            .height(90.dp)
+            .height(HUD_PREVIEW_HEIGHT)
             .clip(RoundedCornerShape(8.dp))
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
-            .onSizeChanged { boxWidthPx = it.width }
     ) {
         Row(Modifier.fillMaxSize()) {
             buildList {
-                add(Triple(0, current.leftSlot, current.leftColorMode))
-                add(Triple(1, current.middleSlot, current.middleColorMode))
-                add(Triple(2, current.rightSlot, current.rightColorMode))
-                if (hudConfig.columns == 4) add(Triple(3, current.fourthSlot, current.fourthColorMode))
+                add(Triple(0, current.left.field, current.left.colorMode))
+                add(Triple(1, current.middle.field, current.middle.colorMode))
+                add(Triple(2, current.right.field, current.right.colorMode))
+                if (hudConfig.columns == 4) add(Triple(3, current.fourth.field, current.fourth.colorMode))
             }.forEach { (idx, field, colorMode) ->
                 HUDPreviewCell(
                     field = field,
@@ -348,17 +379,39 @@ private fun HUDPreview(
                     onClick = { onSlotSelected(idx) },
                     modifier = Modifier.weight(1f),
                     columns = hudConfig.columns,
-                    sparklineEnabled = sparklineConfig.enabled,
+                    reserveSparklineSpace = showSparkline,
                 )
             }
         }
-        if (sparklineBitmap != null) {
-            Image(
-                bitmap = sparklineBitmap.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(30.dp).align(Alignment.BottomCenter),
-                contentScale = ContentScale.FillBounds,
-            )
+        if (sparklineConfig.hudMode != SparklineMode.OFF) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(30.dp)
+                    .align(Alignment.BottomCenter)
+                    .pointerInput(onStripSelected) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            onStripSelected()
+                        }
+                    }
+                    .then(
+                        if (stripSelected)
+                            Modifier.border(2.dp, BarberfishYellow, RoundedCornerShape(6.dp))
+                        else Modifier
+                    )
+            ) {
+                SparklinePreview(
+                    sparklineConfig = sparklineConfig,
+                    zoneConfig = zoneConfig,
+                    fixturePoints = fixturePoints,
+                    fixtureClimbRanges = fixtureClimbRanges,
+                    fixturePoiDistances = fixturePoiDistances,
+                    previewSweepSeconds = previewSweepSeconds,
+                    onVisibleChange = { sparklineVisible = it },
+                    spaceReserved = showSparkline,
+                )
+            }
         }
     }
 }
@@ -371,7 +424,7 @@ private fun HUDPreviewCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     columns: Int = 3,
-    sparklineEnabled: Boolean = true,
+    reserveSparklineSpace: Boolean = true,
 ) {
     val context = LocalContext.current
     val baseConfig = if (columns == 4) ViewSizeConfig.PREVIEW_HUD_FOUR
@@ -387,14 +440,14 @@ private fun HUDPreviewCell(
                 }
                 .then(
                     if (selected)
-                        Modifier.border(2.dp, ICON_TINT_TEAL, RoundedCornerShape(6.dp))
+                        Modifier.border(2.dp, BarberfishYellow, RoundedCornerShape(6.dp))
                     else Modifier
                 )
     ) {
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sparklineMarginPx = if (sparklineEnabled) 34f * density else 0f
+        val sparklineMarginPx = if (reserveSparklineSpace) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
             baseConfig.copy(
@@ -423,40 +476,27 @@ private fun HUDPreviewCell(
 
 @Composable
 private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
-    Row(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(50))
-                .background(Grey200)
-                .padding(3.dp)
-                .pointerInput(columns, onSelect) {
-                    val slotWidthPx = size.width.toFloat() / 2
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-                        val idx = (down.position.x / slotWidthPx).toInt().coerceIn(0, 1)
-                        onSelect(if (idx == 0) 3 else 4)
-                    }
-                }
-    ) {
-        listOf(3 to "3 columns", 4 to "4 columns").forEach { (cols, label) ->
-            val isSelected = columns == cols
-            Box(
-                modifier =
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
-                        .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 10.sp,
-                    color = TextDark,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                )
-            }
-        }
-    }
+    SegmentedRow(
+        options = listOf(3 to "3", 4 to "4"),
+        selected = columns,
+        onSelect = onSelect,
+        trackColor = Grey200,
+    )
+}
+
+@Composable
+private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -> Unit) {
+    ControlLabel("SPARKLINE")
+    SegmentedRow(
+        options = listOf(
+            SparklineMode.OFF to "Off",
+            SparklineMode.CLIMBS to "Climbs",
+            SparklineMode.ON to "On",
+        ),
+        selected = mode,
+        onSelect = onSelect,
+        trackColor = Grey200,
+    )
 }
 
 
@@ -492,10 +532,15 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.NP -> {}
                 HUDSlotField.LapPower -> {}
                 HUDSlotField.LastLapPower -> {}
+                HUDSlotField.PowerZone -> {}
+                HUDSlotField.MaxPower -> {}
                 HUDSlotField.HR -> {}
                 HUDSlotField.AvgHR -> {}
                 HUDSlotField.LapAvgHR -> {}
                 HUDSlotField.LastLapAvgHR -> {}
+                HUDSlotField.HRMaxPercent -> {}
+                HUDSlotField.MaxHR -> {}
+                HUDSlotField.HRZone -> {}
                 HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
                 is HUDSlotField.AvgSpeed -> AvgSpeedThresholdControls(
                     config = slot.avgSpeedConfig,
@@ -509,13 +554,21 @@ private fun HUDSlotFieldCard(
             }
             if (slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower ||
                 slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower ||
-                slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.HR ||
+                slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.PowerZone ||
+                slot.field == HUDSlotField.MaxPower || slot.field == HUDSlotField.HR ||
                 slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR ||
-                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.Grade ||
-                slot.field == HUDSlotField.Cadence) {
+                slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.HRMaxPercent ||
+                slot.field == HUDSlotField.MaxHR || slot.field == HUDSlotField.HRZone ||
+                slot.field == HUDSlotField.Grade || slot.field == HUDSlotField.Cadence) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
                     onSelected = { onUpdate(slot.copy(colorMode = it)) },
+                )
+            }
+            if (slot.field == HUDSlotField.HRZone || slot.field == HUDSlotField.PowerZone) {
+                ZoneDisplaySlider(
+                    selected = slot.zoneDisplayMode,
+                    onSelected = { onUpdate(slot.copy(zoneDisplayMode = it)) },
                 )
             }
         }
@@ -532,10 +585,15 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             HUDSlotField.NP -> "NP"
             HUDSlotField.LapPower -> "Lap Power"
             HUDSlotField.LastLapPower -> "Last Lap Power"
+            HUDSlotField.PowerZone -> "Power Zone"
+            HUDSlotField.MaxPower -> "Max Power"
             HUDSlotField.HR -> "Heart rate"
             HUDSlotField.AvgHR -> "Avg heart rate"
             HUDSlotField.LapAvgHR -> "Lap avg heart rate"
             HUDSlotField.LastLapAvgHR -> "Last lap avg heart rate"
+            HUDSlotField.HRMaxPercent -> "%Max HR"
+            HUDSlotField.MaxHR -> "Max HR"
+            HUDSlotField.HRZone -> "HR Zone"
             HUDSlotField.Speed -> "Speed"
             is HUDSlotField.AvgSpeed -> if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
             HUDSlotField.Cadence -> "Cadence"
@@ -561,12 +619,17 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                     "NP" to HUDSlotField.NP,
                     "Lap Power" to HUDSlotField.LapPower,
                     "Last Lap Power" to HUDSlotField.LastLapPower,
+                    "Power Zone" to HUDSlotField.PowerZone,
+                    "Max Power" to HUDSlotField.MaxPower,
                 ),
                 "Heart rate" to listOf(
                     "Heart rate" to HUDSlotField.HR,
                     "Avg heart rate" to HUDSlotField.AvgHR,
                     "Lap avg heart rate" to HUDSlotField.LapAvgHR,
                     "Last lap avg heart rate" to HUDSlotField.LastLapAvgHR,
+                    "%Max HR" to HUDSlotField.HRMaxPercent,
+                    "Max HR" to HUDSlotField.MaxHR,
+                    "HR Zone" to HUDSlotField.HRZone,
                 ),
                 "Speed" to listOf(
                     "Speed" to HUDSlotField.Speed,
@@ -598,11 +661,8 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             )
             groups.forEachIndexed { groupIndex, (groupLabel, fields) ->
                 if (groupIndex > 0) HorizontalDivider()
-                Text(
+                Caption(
                     groupLabel,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Grey400,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                 )
                 fields.forEach { (label, field) ->
@@ -621,7 +681,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
 
 @Composable
 private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
         selected = slot.speedSmoothing,
@@ -633,7 +693,7 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 
 @Composable
 private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = PowerSmoothingStream.entries,
         selected = slot.powerSmoothing,
@@ -646,7 +706,7 @@ private fun HUDPowerCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
 
 @Composable
 private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
-    Text("SMOOTHING", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+    ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = CadenceSmoothingStream.entries,
         selected = slot.cadenceSmoothing,
@@ -661,141 +721,174 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
 }
 
 @Composable
-internal fun SparklineCard(
+internal fun SparklineOptionsControls(
     config: SparklineConfig,
-    palette: GradePalette,
+    zoneConfig: ZoneConfig,
     profile: UserProfile,
     onUpdate: (SparklineConfig) -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(Grey200)
-                .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text("ELEVATION SPARKLINE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-        Text("Shows elevation ahead when a route is loaded.", fontSize = 12.sp, color = TextDark)
-        SegmentedRow(
-            options = listOf(false to "Off", true to "On"),
-            selected = config.enabled,
-            onSelect = { onUpdate(config.copy(enabled = it)) },
-        )
-        if (config.enabled) {
-            Text("LOOKAHEAD", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Distance shown ahead of your position.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = listOf(5, 10, 20).map { km ->
-                    val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-                    km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-                },
-                selected = config.lookaheadKm,
-                onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
-            )
-            val fillRange = gradeFillRange(
-                palette,
-                skipBandsClimb = config.skipBands,
-                skipBandsDescent = config.skipBandsDescent,
-            )
-            val hasDescentBands = gradeFillRange(palette).negMax != null
-            val posMin = fillRange.posMin
-            val negMax = fillRange.negMax
-            val readout = when {
-                hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
-                    val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
-                    val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
-                    "Grades between $lower% and $upper% stay uncoloured."
-                }
-                !hasDescentBands && config.skipBands > 0 && posMin != null ->
-                    "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
-                else -> null
-            }
-            Text("EMPHASIS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text(
-                "Filter out gentle grades so meaningful climbs and descents stand out.",
-                fontSize = 12.sp, color = TextDark,
-            )
-            if (readout != null) {
-                Text(readout, fontSize = 12.sp, color = TextDark)
-            }
-            Text(
-                if (hasDescentBands) "Climbs" else "Bands",
-                fontSize = 11.sp, color = TextDark,
-            )
-            SegmentedRow(
-                options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                selected = config.skipBands,
-                onSelect = { onUpdate(config.copy(skipBands = it)) },
-            )
-            if (hasDescentBands) {
-                Text("Descents", fontSize = 11.sp, color = TextDark)
-                SegmentedRow(
-                    options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                    selected = config.skipBandsDescent,
-                    onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
-                )
-            }
-            Text("SIMPLIFICATION", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Merges small elevation wiggles into larger same-colour blocks.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = ElevationSimplification.entries.map { it to it.label },
-                selected = config.simplification,
-                onSelect = { onUpdate(config.copy(simplification = it)) },
-            )
-            Text("X-WARP", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Fisheye magnification around the position dot.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = SparklineWarp.entries.map { it to it.label },
-                selected = config.warp,
-                onSelect = { onUpdate(config.copy(warp = it)) },
-            )
-            Text("Y-ZOOM", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = ElevationZoom.entries.map { it to it.label },
-                selected = config.yZoom,
-                onSelect = { onUpdate(config.copy(yZoom = it)) },
-            )
-            Text("CLIMBS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Tint the outline blue on climbs as detected by Karoo Climber.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = listOf(false to "Off", true to "On"),
-                selected = config.showClimbs,
-                onSelect = { onUpdate(config.copy(showClimbs = it)) },
-            )
-            Text("POIs", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text("Mark points of interest (POIs) along the sparkline.", fontSize = 12.sp, color = TextDark)
-            SegmentedRow(
-                options = listOf(false to "Off", true to "On"),
-                selected = config.showPois,
-                onSelect = { onUpdate(config.copy(showPois = it)) },
-            )
+    // Lookahead is inert in Climbs mode: the window is pinned to the climb, not your position.
+    if (config.hudMode != SparklineMode.CLIMBS) {
+        LabeledHelper("LOOKAHEAD") {
+            HelperText("Distance shown ahead of your position.")
         }
+        SegmentedRow(
+            options = listOf(5, 10, 20).map { km ->
+                val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+            },
+            selected = config.lookaheadKm,
+            onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+        )
+    }
+    val fillRange = gradeFillRange(
+        zoneConfig.gradePalette,
+        skipBandsClimb = config.skipBands,
+        skipBandsDescent = config.skipBandsDescent,
+    )
+    val hasDescentBands = gradeFillRange(zoneConfig.gradePalette).negMax != null
+    val posMin = fillRange.posMin
+    val negMax = fillRange.negMax
+    val readout = when {
+        hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
+            val upper = if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
+            val lower = if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax) else "0"
+            "Grades between $lower% and $upper% stay uncoloured."
+        }
+        !hasDescentBands && config.skipBands > 0 && posMin != null ->
+            "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+        else -> null
+    }
+    LabeledHelper("EMPHASIS") {
+        HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
+        if (readout != null) HelperText(readout)
+    }
+    SubControlLabel(if (hasDescentBands) "CLIMBS" else "BANDS")
+    SegmentedRow(
+        options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+        selected = config.skipBands,
+        onSelect = { onUpdate(config.copy(skipBands = it)) },
+    )
+    if (hasDescentBands) {
+        SubControlLabel("DESCENTS")
+        SegmentedRow(
+            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+            selected = config.skipBandsDescent,
+            onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
+        )
+    }
+    LabeledHelper("SIMPLIFICATION") {
+        HelperText("Merges small elevation wiggles into larger same-colour blocks.")
+    }
+    SegmentedRow(
+        options = ElevationSimplification.entries.map { it to it.label },
+        selected = config.simplification,
+        onSelect = { onUpdate(config.copy(simplification = it)) },
+    )
+    // X-warp is inert in Climbs mode: the climb frame uses a linear axis, not a fisheye.
+    if (config.hudMode != SparklineMode.CLIMBS) {
+        LabeledHelper("X-WARP") {
+            HelperText("Fisheye magnification around the position dot.")
+        }
+        SegmentedRow(
+            options = SparklineWarp.entries.map { it to it.label },
+            selected = config.warp,
+            onSelect = { onUpdate(config.copy(warp = it)) },
+        )
+    }
+    LabeledHelper("Y-ZOOM") {
+        HelperText("Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.")
+    }
+    SegmentedRow(
+        options = ElevationZoom.entries.map { it to it.label },
+        selected = config.yZoom,
+        onSelect = { onUpdate(config.copy(yZoom = it)) },
+    )
+    LabeledHelper("CLIMBS") {
+        HelperText("Tint the outline blue on climbs as detected by Karoo Climber.")
+    }
+    SegmentedRow(
+        options = listOf(false to "Off", true to "On"),
+        selected = config.showClimbs,
+        onSelect = { onUpdate(config.copy(showClimbs = it)) },
+    )
+    LabeledHelper("POIs") {
+        HelperText("Mark points of interest (POIs) along the sparkline.")
+    }
+    SegmentedRow(
+        options = listOf(false to "Off", true to "On"),
+        selected = config.showPois,
+        onSelect = { onUpdate(config.copy(showPois = it)) },
+    )
+}
+
+@Composable
+internal fun SparklineCard(
+    config: SparklineConfig,
+    zoneConfig: ZoneConfig,
+    profile: UserProfile,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onUpdate: (SparklineConfig) -> Unit,
+) {
+    ExpandableCard(
+        title = "SPARKLINE",
+        selected = selected,
+        onSelect = onSelect,
+        headerExtra = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HelperText("Elevation profile shown ahead when a route is loaded.")
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(60.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+                ) {
+                    SparklinePreview(
+                        sparklineConfig = config,
+                        zoneConfig = zoneConfig,
+                    )
+                }
+            }
+        },
+    ) {
+        SparklineOptionsControls(
+            config = config,
+            zoneConfig = zoneConfig,
+            profile = profile,
+            onUpdate = onUpdate,
+        )
     }
 }
 
 @Composable
-private fun <T> SegmentedRow(
+internal fun <T> SegmentedRow(
     options: List<Pair<T, String>>,
     selected: T,
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
+    trackColor: Color = Color.White,
 ) {
     Row(
         modifier =
             modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(50))
-                .background(Color.White)
+                .background(trackColor)
                 .padding(3.dp)
                 .pointerInput(options, onSelect) {
                     val slotWidthPx = size.width.toFloat() / options.size
+                    fun idxAt(x: Float) =
+                        (x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
-                        val idx =
-                            (down.position.x / slotWidthPx).toInt().coerceIn(0, options.lastIndex)
-                        onSelect(options[idx].first)
+                        onSelect(options[idxAt(down.position.x)].first)
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            onSelect(options[idxAt(change.position.x)].first)
+                            event = awaitPointerEvent()
+                        }
                     }
                 }
     ) {
@@ -805,8 +898,8 @@ private fun <T> SegmentedRow(
                 modifier =
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(50))
-                        .background(if (isSelected) Grey400 else Color.Transparent)
-                        .padding(vertical = 8.dp),
+                        .background(if (isSelected) BarberfishYellow else Color.Transparent)
+                        .padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

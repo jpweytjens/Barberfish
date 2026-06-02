@@ -10,12 +10,17 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
+import com.jpweytjens.barberfish.datatype.HRMaxPercentField
+import com.jpweytjens.barberfish.datatype.HRZoneField
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.LapAvgHRField
 import com.jpweytjens.barberfish.datatype.LapPowerField
 import com.jpweytjens.barberfish.datatype.LastLapAvgHRField
+import com.jpweytjens.barberfish.datatype.MaxHRField
+import com.jpweytjens.barberfish.datatype.MaxPowerField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
+import com.jpweytjens.barberfish.datatype.PowerZoneField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
@@ -37,11 +42,16 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             NPField(karooSystem),
             LapPowerField(karooSystem, isLastLap = false),
             LapPowerField(karooSystem, isLastLap = true),
+            PowerZoneField(karooSystem),
+            MaxPowerField(karooSystem),
             // HR
             HRField(karooSystem),
             AvgHRField(karooSystem),
             LapAvgHRField(karooSystem),
             LastLapAvgHRField(karooSystem),
+            HRMaxPercentField(karooSystem),
+            MaxHRField(karooSystem),
+            HRZoneField(karooSystem),
             // Speed
             SpeedField(karooSystem),
             AvgSpeedField(karooSystem, includePaused = true),

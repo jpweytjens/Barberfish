@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
@@ -30,21 +31,13 @@ internal fun avgSpeedFieldState(
     val converted = ConvertType.SPEED.apply(rawMs, profile)
     val color =
         when (cfg.mode) {
-            ThresholdMode.TARGET -> {
-                if (cfg.thresholdKph <= 0.0) {
-                    FieldColor.Default
-                } else {
-                    val thresh = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile)
-                    val rangePercent =
-                        if (converted >= thresh) cfg.rangePercentAbove
-                        else cfg.rangePercentBelow
-                    val factor =
-                        ((converted - thresh) / thresh * 100.0 / rangePercent)
-                            .coerceIn(-1.0, 1.0)
-                            .toFloat()
-                    FieldColor.Threshold(factor)
-                }
-            }
+            ThresholdMode.TARGET ->
+                targetThresholdColor(
+                    converted = converted,
+                    threshDisplay = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile),
+                    rangePercentBelow = cfg.rangePercentBelow,
+                    rangePercentAbove = cfg.rangePercentAbove,
+                )
             ThresholdMode.MIN_MAX -> {
                 val min = cfg.minKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
                 val max = cfg.maxKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
@@ -89,6 +82,7 @@ internal fun avgSpeedFieldState(
         label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
         color = color,
         iconRes = R.drawable.ic_speed_average,
+        colorMode = cfg.colorMode,
     )
 }
 
@@ -117,12 +111,14 @@ class AvgSpeedField(
             }
 
     companion object {
-        fun streamFlow(
+        // Raw average speed in m/s, derived from DISTANCE / elapsed time. Total-vs-moving
+        // is controlled by includePaused (RIDE_TIME vs ELAPSED_TIME). Returns 0.0 until
+        // the time field has accumulated at least one second. Shared between AvgSpeedField
+        // and SpeedField (which uses it as a dynamic threshold source).
+        fun avgSpeedRawMsFlow(
             karooSystem: KarooSystemService,
-            cfg: AvgSpeedConfig,
-            profile: UserProfile,
             includePaused: Boolean,
-        ): Flow<FieldState> {
+        ): Flow<Double> {
             val timeType = if (includePaused) DataType.Type.RIDE_TIME else DataType.Type.ELAPSED_TIME
             val timeField = if (includePaused) DataType.Field.RIDE_TIME else DataType.Field.ELAPSED_TIME
             val distanceFlow =
@@ -141,10 +137,19 @@ class AvgSpeedField(
                 }
             return combine(distanceFlow, timeFlow) { distanceM: Double, timeMs: Double ->
                 val seconds = ConvertType.TIME.apply(timeMs)
-                val rawMs = if (seconds > 0) distanceM / seconds else 0.0
-                avgSpeedFieldState(rawMs, cfg, profile, includePaused)
+                if (seconds > 0) distanceM / seconds else 0.0
             }
         }
+
+        fun streamFlow(
+            karooSystem: KarooSystemService,
+            cfg: AvgSpeedConfig,
+            profile: UserProfile,
+            includePaused: Boolean,
+        ): Flow<FieldState> =
+            avgSpeedRawMsFlow(karooSystem, includePaused).map { rawMs ->
+                avgSpeedFieldState(rawMs, cfg, profile, includePaused)
+            }
         fun previewStates(
             cfg: AvgSpeedConfig,
             profile: UserProfile,

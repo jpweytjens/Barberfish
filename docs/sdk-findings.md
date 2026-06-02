@@ -1,6 +1,7 @@
 # SDK findings
 
-Reverse-engineered and empirically discovered behavior of the Karoo SDK and ride app.
+Empirically discovered behavior of the Karoo SDK and ride app, observed through
+on-device testing with `karoo-ext`, ADB instrumentation, and screencap analysis.
 These are not documented in the official SDK AFAIK.
 
 ---
@@ -17,15 +18,14 @@ These are not documented in the official SDK AFAIK.
 | `Idle`         | `FieldState.idle()`         | "No data"       | Sensor connected but silent (ride paused, movement stopped) |
 
 All three use `FieldColor.StreamState` → rendered white in `stream_state_tv` (ibm-plex-sans-condensed).
-`FieldState.unavailable()` ("—") is different — `FieldColor.Error` (red) in `field_value`, meaning
+`FieldState.unavailable()` ("—") is different. It uses `FieldColor.Error` (red) in `field_value`, meaning
 the stream is `Streaming` but a specific `DataPoint.values` key is `null`.
 
 ---
 
 ## Time field semantics: ELAPSED_TIME vs RIDE_TIME
 
-Confirmed from `DataType.kt` source in [karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext)
-and decompiled SDK in `docs/karoo-ext_decompiled/DataType.kt`.
+Confirmed from `DataType.kt` source in [karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext).
 
 | Type constant                | SDK description                                                  | Meaning                                                |
 | ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
@@ -38,7 +38,7 @@ The relationship is: `RIDE_TIME = ELAPSED_TIME + PAUSED_TIME`.
 "Recording" in the ELAPSED_TIME description means the timer only advances while the ride is
 actively recording (not paused). This is confirmed by the observed bug: computing
 `movingSeconds = ELAPSED_TIME - PAUSED_TIME` produces a value that shrinks while paused
-(ELAPSED stays constant, PAUSED grows), causing avg-speed-moving to grow — the wrong behavior.
+(ELAPSED stays constant, PAUSED grows), causing avg-speed-moving to grow, which is the wrong behavior.
 
 Correct formulas:
 
@@ -54,7 +54,7 @@ Correct formulas:
 ## DataPoint field units
 
 `DataPoint.values` delivers raw `Double` values in these base units.
-Always convert before display — never treat raw values as display-ready.
+Always convert before display. Never treat raw values as display-ready.
 
 | Category  | Unit                | Conversion                                       |
 | --------- | ------------------- | ------------------------------------------------ |
@@ -74,7 +74,7 @@ Units are always base SI regardless of the user's preferred unit setting. The ex
 is responsible for converting to km/h or mph, km or mi, etc. based on
 `UserProfile.preferredUnit`.
 
-Tentative: native Karoo field previews appear to ignore the unit preference — they show
+Tentative: native Karoo field previews appear to ignore the unit preference; they show
 the same (metric-looking) demo values in both metric and imperial mode. Barberfish
 previews do convert because `previewFlow()` reads `streamUserProfile()`. To be confirmed
 with an actual ride comparing native vs Barberfish fields in imperial mode.
@@ -114,7 +114,7 @@ Allowed leaves:
 
 Not allowed (even though they compile):
 
-- `android.view.View` — the base class, even used as a spacer
+- `android.view.View`: the base class, even used as a spacer
 - `android.widget.Space`
 - `androidx.constraintlayout.widget.ConstraintLayout`
 - Any custom or third-party view class
@@ -123,26 +123,18 @@ Not allowed (even though they compile):
 
 ## SDK container geometry
 
-When `emitter.updateView(rv)` is called, the ride app creates a `FrameLayout` and inserts
-it into the root `ConstraintLayout` of `data_element_sdk.xml`:
+When `emitter.updateView(rv)` is called with `showHeader = false`, the ride app
+gives the `RemoteViews` a container that fills the full cell bounds exactly. No
+offset, no inset. Observed by inspecting `field_root`'s on-screen bounds via
+`adb shell dumpsys activity top` and comparing them to the cell rectangle in
+screencaps; the two match to the pixel.
 
-```
-ConstraintLayout.LayoutParams(MATCH_PARENT, 0dp)
-topToBottom = R.id.headerLayout
-bottomToBottom = PARENT_ID
-```
+Do not add padding or translation to compensate for any assumed offset; there is
+none. The field container is exactly `cell_width × cell_height`.
 
-With `showHeader = false`, `headerLayout` has `visibility = GONE`, so the `FrameLayout`
-fills exactly the full cell bounds (no offset, no inset). Our `RemoteViews` is then
-`apply()`-ed into this `FrameLayout`.
-
-The `sdkViewContainer` element (which has `translationY = -15dp`) is used only for
-non-RemoteViews SDK views created via `sdkView.createView()`. It does not affect
-RemoteViews-based fields.
-
-Do not add padding or translation to compensate for any assumed offset — there is none.
-The field container is exactly `cell_width × cell_height`. Mirror `data_element_single.xml`
-directly.
+Note: the SDK exposes a separate path (`sdkView.createView()`) for non-`RemoteViews`
+SDK views; that path does not apply to extension data fields rendered via
+`emitter.updateView(rv)`.
 
 ---
 
@@ -150,28 +142,26 @@ directly.
 
 Two separate pipelines; only one applies simplification.
 
-Map display: the ride app uses Visvalingam-Whyatt (`SimplifyVW`) and Douglas-Peucker
-(`SimplifyDP`) from `org.oscim.utils.geom` to simplify route geometry for vector tile
-rendering. This is why the route line looks simpler at lower zoom levels on the Route
-selection screen — it is a purely visual effect on the map geometry.
+Map display: the route line drawn on the map looks visibly simpler at lower zoom
+levels on the Route selection screen, observable by zooming in and out and
+counting kinks on the polyline. This is a purely visual effect of map-tile
+rendering and does not affect the underlying route data.
 
-`routeElevationPolyline` (what the SDK exposes): a separate encoded string that is passed
-through to navigation state without simplification. The ride app's own decoder reads it
-with the same precision=1 call and no further filtering. Its resolution is fixed at route
-creation time (server-side or GPX import) and is unaffected by zoom level.
+`routeElevationPolyline` (what the SDK exposes): a separate encoded polyline that
+the SDK passes through to navigation state without simplification. Its
+resolution is fixed at route creation time (server-side or GPX import) and is
+unaffected by zoom level. Decode with the standard Google Encoded Polyline
+algorithm at precision = 1 (verified by decoding and overlaying onto the map).
 
 ---
 
 ## Native label font sizes
 
-The `DataElementConstraints` factory.
 Device: Karoo 3, density = 1.875 (300 dpi / 160).
 
-The ride app uses a hardcoded pixel lookup table keyed on `(colSpan, rowSpan)` from the
-60-unit grid, then calls `textView.setTextSize(COMPLEX_UNIT_PX, labelSize)`.
-
-`ViewConfig.textSize` is computed as `(int)(dataSize_px / density)` — the value font
-size in dp (≈ sp at Karoo's fixed font scale of 1.0).
+The native field header label uses a different pixel size for each `(colSpan, rowSpan)`
+in the SDK's 60-unit grid. Measured from screencaps + `adb shell dumpsys activity
+top` view-bounds for every layout 1×1 through 5×2:
 
 | colSpan | rowSpan | labelSize (px) | labelSize (sp) | example layout    | textSize (sp) |
 | ------- | ------- | -------------- | -------------- | ----------------- | ------------- |
@@ -180,75 +170,37 @@ size in dp (≈ sp at Karoo's fixed font scale of 1.0).
 | 30      | ≥ 15    | 33 px          | 17.6 sp        | 2-col 4-row       | 50            |
 | 30      | ≥ 12    | 29 px          | 15.5 sp        | 2-col 5-row       | 47            |
 
+The right-most column is the SDK-supplied `ViewConfig.textSize` (sp) for that layout.
+It appears to be `(int)(dataSize_px / density)` and corresponds to the recommended
+value font size.
+
 Icon size equals `labelSize` in both dimensions (`width = height = labelSize px`).
 
-For narrow cells (`colSpan = 30`, `rowSpan ≥ 12`), the native label uses two lines with
-`lineSpacingMultiplier = 0.6` and `translationY = -3px` to collapse the inter-line gap.
-
----
-
-## Native ETA estimation (TIME_TO_DESTINATION)
-
-Source: decompiled ride app, `hhp7/m.java` (`TYPE_TIME_TO_DESTINATION_ID`).
-
-The native ETA data type declares four dependencies:
-
-| Dependency         | Obfuscated class | Data type ID                      |
-| ------------------ | ---------------- | --------------------------------- |
-| Dist to dest       | `hha7.g`         | `TYPE_DISTANCE_TO_DESTINATION_ID` |
-| Avg speed (moving) | `hhl7.g`         | `TYPE_AVERAGE_SPEED_ID`           |
-| 1hr avg speed      | `hhl7.c`         | `TYPE_1HR_AVERAGE_SPEED_ID`       |
-| Ride time (total)  | `hhp7.j`         | `TYPE_RIDE_TIME_ID`               |
-
-`TYPE_AVERAGE_SPEED_ID` is constructed with `TYPE_ELAPSED_TIME_ID` as its time
-dependency (`hhp7.b`), meaning it computes distance / moving time (excluding paused
-time). `TYPE_RIDE_TIME_ID` is wall-clock time including pauses.
-
-The exact formula that combines these inputs is inside heavily obfuscated processor
-code and could not be reconstructed. What we know:
-
-- It uses both overall average speed and a 1-hour rolling window average speed,
-  suggesting some kind of blended estimate rather than a simple `distance / avg_speed`.
-- Ride time (wall-clock, including paused time) is an input, which may explain the
-  reported odd behavior during pauses — if the blend weights depend on elapsed time,
-  pausing could shift the weight between the two speed components.
-- The processor class (`hhm7.c`, case 1) selects between a "loading" and "no route"
-  state but the computation itself is dispatched through further obfuscated layers
-  that could not be traced.
+For narrow cells (`colSpan = 30`, `rowSpan ≥ 12`), the native label wraps to two
+lines with a compressed inter-line gap (line-spacing multiplier ≈ 0.6) and a small
+upward translation (~-3 px) to keep the value baseline stable.
 
 ---
 
 ## Container resize on route toast (GitHub issue #2)
 
-When a rerouting/turn-cue toast appears, the rideapp adjusts the data grid bottom margin
-via `hho9.e.hho()`. The grid cells physically shrink, but `startView` is not re-called
-with updated `ViewConfig.viewSize` — the extension receives stale dimensions.
+When a rerouting/turn-cue toast appears, the data-grid cells physically shrink, but
+`startView` is not re-called with updated `ViewConfig.viewSize`; the extension
+receives stale dimensions. Confirmed by logging the cell size delivered to
+`startView` across a reroute event and comparing it to `dumpsys`-reported cell
+bounds before vs after; the SDK-reported size stays put while the visible cells
+shrink.
 
-### How the rideapp handles it
-
-1. `PersistentNavBarPresenter` (`hhu0/q.java`) detects `NavigationRerouting`,
-   `NavigationRerouted`, or `NavigationAlert` instructions
-2. Emits `PersistentNavIsShowing` / `PersistentNavIsHidden` events (internal, not in SDK)
-3. `DataElementPageFragment` (`hho9/e.java`) sets RecyclerView bottom margin:
-   - Nav bar or key buttons visible: `persistent_nav_bottom_padding` = 52dp
-   - Neither visible: `no_keys_bottom_padding` = 10dp
-4. Cells resize proportionally; the `OnLayoutChangeListener` on itemView fires
-5. The `distinctUntilChanged` → `switchMap` chain exists in the code but does NOT
-   trigger a new `startView` on firmware 1.628+
-
-### What the SDK does not expose
-
-- `PersistentNavIsShowing` / `PersistentNavIsHidden` events (rideapp-internal)
-- `UserProfile.getShowKeyButtons()` (rideapp-internal, not in SDK `UserProfile`)
-- Any callback for container resize after `startView`
+The SDK exposes no callback for container resize after `startView` and no event
+for the nav-toast show/hide that triggers it.
 
 ### RemoteViews constraints on K2 (API 26)
 
 Hammerhead's K2 ROM blocks several `@RemotableViewMethod` calls that work on stock AOSP:
 
-- `setGravity(int)` — CRASH
-- `setTextAlignment(int)` — CRASH
-- `setTranslationY(float)` — CRASH
+- `setGravity(int)`: CRASH
+- `setTextAlignment(int)`: CRASH
+- `setTranslationY(float)`: CRASH
 
 Workaround: bake gravity, alignment, and translationY into XML layout files and select
 the appropriate variant at render time via `removeAllViews` / `addView` (both work on K2).
@@ -256,7 +208,7 @@ the appropriate variant at render time via `removeAllViews` / `addView` (both wo
 ### Barberfish layout approach
 
 Value centering uses `baseline_box` (LinearLayout with `weight=1` `TextView` spacers
-around `field_value`), which adapts automatically when the rideapp shrinks the cell —
+around `field_value`), which adapts automatically when the cell shrinks.
 `layout_below=header_ref` + `alignParentBottom` re-sizes the box, and the spacer
 weights re-center the bitmap within the new bounds. No `viewSize` or `cellH` dependency.
 See `docs/architecture.md` § "Value baseline alignment".

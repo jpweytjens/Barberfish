@@ -40,6 +40,18 @@
         displayName="@string/last_lap_power_name"
         description="@string/last_lap_power_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="power-zone"
+        displayName="@string/power_zone_name"
+        description="@string/power_zone_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_power"
+        typeId="max-power"
+        displayName="@string/max_power_name"
+        description="@string/max_power_description"
+        graphical="true" />
     <!-- HR -->
     <DataType
         icon="@drawable/ic_col_hr"
@@ -64,6 +76,24 @@
         typeId="last-lap-avg-hr"
         displayName="@string/last_lap_avg_hr_name"
         description="@string/last_lap_avg_hr_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_hr"
+        typeId="hr-percent-max"
+        displayName="@string/hr_percent_max_name"
+        description="@string/hr_percent_max_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_hr"
+        typeId="max-hr"
+        displayName="@string/max_hr_name"
+        description="@string/max_hr_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_hr"
+        typeId="hr-zone"
+        displayName="@string/hr_zone_name"
+        description="@string/hr_zone_description"
         graphical="true" />
     <!-- Speed -->
     <DataType

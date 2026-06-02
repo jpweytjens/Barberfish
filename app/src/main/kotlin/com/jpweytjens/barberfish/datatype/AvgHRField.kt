@@ -45,7 +45,7 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             state.toErrorFieldState(label, iconRes)?.let { return it }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVG_HR]
-                    ?: return FieldState.unavailable(label, iconRes)
+                    ?: return FieldState.notAvailable(label, iconRes)
             val zone = hrZone(raw, profile.heartRateZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = true)
             return FieldState(

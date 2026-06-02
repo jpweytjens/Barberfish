@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="78" viewBox="0 0 380 78">
+<rect x="0" y="0" width="76" height="26" fill="#FFFFFF" />
+<text x="38.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#02C500" text-anchor="middle">[0, 4)</text>
+<rect x="76" y="0" width="76" height="26" fill="#FFFFFF" />
+<text x="114.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#B1B100" text-anchor="middle">[4, 8)</text>
+<rect x="152" y="0" width="76" height="26" fill="#FFFFFF" />
+<text x="190.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FF5501" text-anchor="middle">[8, 12)</text>
+<rect x="228" y="0" width="76" height="26" fill="#FFFFFF" />
+<text x="266.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#AA0200" text-anchor="middle">[12, 20)</text>
+<rect x="304" y="0" width="76" height="26" fill="#FFFFFF" />
+<text x="342.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#540000" text-anchor="middle">[20, ∞)</text>
+<rect x="0" y="26" width="76" height="26" fill="#000000" />
+<text x="38.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#04FE00" text-anchor="middle">[0, 4)</text>
+<rect x="76" y="26" width="76" height="26" fill="#000000" />
+<text x="114.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FEFF00" text-anchor="middle">[4, 8)</text>
+<rect x="152" y="26" width="76" height="26" fill="#000000" />
+<text x="190.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FF5C23" text-anchor="middle">[8, 12)</text>
+<rect x="228" y="26" width="76" height="26" fill="#000000" />
+<text x="266.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FF5958" text-anchor="middle">[12, 20)</text>
+<rect x="304" y="26" width="76" height="26" fill="#000000" />
+<text x="342.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FF5959" text-anchor="middle">[20, ∞)</text>
+<rect x="0" y="52" width="76" height="26" fill="#04FE00" />
+<text x="38.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">[0, 4)</text>
+<rect x="76" y="52" width="76" height="26" fill="#FEFF00" />
+<text x="114.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">[4, 8)</text>
+<rect x="152" y="52" width="76" height="26" fill="#FF5501" />
+<text x="190.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">[8, 12)</text>
+<rect x="228" y="52" width="76" height="26" fill="#AA0200" />
+<text x="266.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">[12, 20)</text>
+<rect x="304" y="52" width="76" height="26" fill="#540000" />
+<text x="342.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">[20, ∞)</text>
+</svg>

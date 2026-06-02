@@ -9,20 +9,27 @@ import android.view.View
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.SlotState
+import com.jpweytjens.barberfish.datatype.shared.HUD_UPDATE_INTERVAL_MS
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldConfig
+import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
+import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
+import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
+import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
+import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -31,6 +38,7 @@ import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
@@ -56,6 +64,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 
+// Fixed-height overlay strip inside a HUD slot. Independent of cell size — the HUD
+// design budgets 34dp of vertical space for the sparkline regardless of slot height.
+private const val HUD_SPARKLINE_HEIGHT_DP = 34f
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class HUDField(private val karooSystem: KarooSystemService) :
     HUDDataType("barberfish", "three-column") {
@@ -75,9 +87,10 @@ class HUDField(private val karooSystem: KarooSystemService) :
         scope.launch {
             val hudStateFlow = if (config.preview) previewFlow(context) else liveFlow(context)
             val dm = context.resources.displayMetrics
-            val sparklineHeightPx = (34f * dm.density).toInt()
+            val sparklineHeightPx = (HUD_SPARKLINE_HEIGHT_DP * dm.density).toInt()
             val sparklineFlow = sparklineBitmapFlow(
                 karooSystem, context,
+                configFlow = context.streamHudSparklineConfig(),
                 widthPx = dm.widthPixels,
                 heightPx = sparklineHeightPx,
                 isPreview = config.preview,
@@ -89,11 +102,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 }
             transitionFlow.flatMapLatest { transitionKm ->
                 combine(
-                    hudStateFlow.sample(1000L),
+                    hudStateFlow.sample(HUD_UPDATE_INTERVAL_MS),
                     sparklineFlow,
                 ) { hudState, frame ->
                     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                    val showSparklineArea = frame.enabled && (frame.bitmap != null || transitionKm != null)
+                    val showSparklineArea = frame.hudEnabled &&
+                        (frame.bitmap != null || transitionKm != null || frame.counterText != null)
                     val rv = buildHudRemoteViews(
                         hudState,
                         config,
@@ -101,7 +115,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         sparklineHeightPx = if (showSparklineArea) sparklineHeightPx else 0,
                     )
                     when {
-                        transitionKm != null && frame.enabled -> {
+                        transitionKm != null && frame.hudEnabled -> {
                             rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
                             rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
                             rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
@@ -112,6 +126,17 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             rv.setTextColor(R.id.hud_transition_text, transitionColor)
                             rv.setInt(R.id.hud_transition_icon, "setColorFilter", transitionColor)
                         }
+                        frame.counterText != null -> {
+                            rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
+                            rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_transition_icon, View.GONE)
+                            rv.setTextViewText(R.id.hud_transition_text, frame.counterText)
+                            rv.setTextColor(
+                                R.id.hud_transition_text,
+                                if (isNightMode) Color.WHITE else Color.BLACK,
+                            )
+                        }
                         frame.bitmap != null -> {
                             rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
                             rv.setImageViewBitmap(R.id.hud_elevation_sparkline, frame.bitmap)
@@ -120,12 +145,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         }
                         else -> rv.setViewVisibility(R.id.hud_sparkline_container, View.GONE)
                     }
-                    if (!config.preview && frame.enabled) {
+                    if (!config.preview && frame.hudEnabled) {
                         val layoutRes = if (hudState.columns == 4)
                             R.layout.barberfish_hud_four else R.layout.barberfish_hud
                         val intent = Intent(context, SparklineTapReceiver::class.java).apply {
                             action = SparklineTapReceiver.ACTION
-                            putExtra(SparklineTapReceiver.EXTRA_LOOKAHEAD, frame.lookaheadKm)
+                            putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_HUD)
                         }
                         val pi = PendingIntent.getBroadcast(
                             context,
@@ -157,12 +182,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     slotFlow(cfg.fourthSlot, zones, profile, context),
                 ) { left, middle, right, fourth ->
                     HUDState(
-                        cfg.columns,
-                        left, cfg.leftSlot.colorMode,
-                        middle, cfg.middleSlot.colorMode,
-                        right, cfg.rightSlot.colorMode,
-                        fourth, cfg.fourthSlot.colorMode,
-                        profile,
+                        columns = cfg.columns,
+                        left = SlotState(left, cfg.leftSlot.colorMode),
+                        middle = SlotState(middle, cfg.middleSlot.colorMode),
+                        right = SlotState(right, cfg.rightSlot.colorMode),
+                        fourth = SlotState(fourth, cfg.fourthSlot.colorMode),
+                        profile = profile,
                     )
                 }
             }
@@ -225,6 +250,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 ) { state, lapState ->
                     LapPowerField.toFieldState(state, profile, zones, slot.colorMode, isLastLap = true, lapNumber = lapNumberFrom(lapState))
                 }
+            HUDSlotField.PowerZone ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.POWER_ZONE)
+                    .map { PowerZoneField.toFieldState(it, profile, zones, slot.colorMode, slot.zoneDisplayMode) }
+            HUDSlotField.MaxPower ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.MAX_POWER)
+                    .map { MaxPowerField.toFieldState(it, profile, zones, slot.colorMode) }
             HUDSlotField.AvgHR ->
                 karooSystem
                     .streamDataFlow(DataType.Type.AVERAGE_HR)
@@ -244,9 +277,24 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         isLastLap = true, lapNumber = lapNumberFrom(lapState),
                     )
                 }
+            HUDSlotField.HRMaxPercent ->
+                combine(
+                    karooSystem.streamDataFlow(DataType.Type.PERCENT_MAX_HR),
+                    karooSystem.streamDataFlow(DataType.Type.HEART_RATE),
+                ) { percentState, hrState ->
+                    HRMaxPercentField.toFieldState(percentState, hrState, profile, zones, slot.colorMode)
+                }
+            HUDSlotField.MaxHR ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.MAX_HR)
+                    .map { MaxHRField.toFieldState(it, profile, zones, slot.colorMode) }
+            HUDSlotField.HRZone ->
+                karooSystem
+                    .streamDataFlow(DataType.Type.HR_ZONE)
+                    .map { HRZoneField.toFieldState(it, profile, zones, slot.colorMode, slot.zoneDisplayMode) }
             HUDSlotField.Grade ->
-                GradeField.gradeEmaFlow(karooSystem)
-                    .map { GradeField.toGradeFieldState(it, GradeFieldConfig(slot.colorMode), zones.gradePalette, zones.readableColors) }
+                GradeField.gradeOlsFlow(karooSystem)
+                    .map { GradeField.toGradeFieldState(it, GradeFieldConfig(slot.colorMode), zones.gradePalette) }
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(karooSystem, slot.avgSpeedConfig, profile, slot.field.includePaused)
             is HUDSlotField.Time ->
@@ -300,12 +348,22 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     LapPowerField.previewStates(LapPowerFieldConfig(slotCfg.colorMode), profile, zones, isLastLap = false)
                 HUDSlotField.LastLapPower ->
                     LapPowerField.previewStates(LapPowerFieldConfig(slotCfg.colorMode), profile, zones, isLastLap = true)
+                HUDSlotField.PowerZone ->
+                    PowerZoneField.previewStates(PowerZoneFieldConfig(slotCfg.colorMode, slotCfg.zoneDisplayMode), profile, zones)
+                HUDSlotField.MaxPower ->
+                    MaxPowerField.previewStates(MaxPowerFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.AvgHR ->
                     AvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.LapAvgHR ->
                     LapAvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                 HUDSlotField.LastLapAvgHR ->
                     LastLapAvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.HRMaxPercent ->
+                    HRMaxPercentField.previewStates(HRMaxPercentFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.MaxHR ->
+                    MaxHRField.previewStates(MaxHRFieldConfig(slotCfg.colorMode), profile, zones)
+                HUDSlotField.HRZone ->
+                    HRZoneField.previewStates(HRZoneFieldConfig(slotCfg.colorMode, slotCfg.zoneDisplayMode), profile, zones)
                 HUDSlotField.Grade ->
                     GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
                 is HUDSlotField.Time ->
@@ -322,10 +380,10 @@ class HUDField(private val karooSystem: KarooSystemService) :
             return (0 until n).map { i ->
                 HUDState(
                     columns = hudConfig.columns,
-                    leftSlot = l[i],   leftColorMode = hudConfig.leftSlot.colorMode,
-                    middleSlot = m[i], middleColorMode = hudConfig.middleSlot.colorMode,
-                    rightSlot = r[i],  rightColorMode = hudConfig.rightSlot.colorMode,
-                    fourthSlot = f[i], fourthColorMode = hudConfig.fourthSlot.colorMode,
+                    left = SlotState(l[i], hudConfig.leftSlot.colorMode),
+                    middle = SlotState(m[i], hudConfig.middleSlot.colorMode),
+                    right = SlotState(r[i], hudConfig.rightSlot.colorMode),
+                    fourth = SlotState(f[i], hudConfig.fourthSlot.colorMode),
                     profile = profile,
                 )
             }

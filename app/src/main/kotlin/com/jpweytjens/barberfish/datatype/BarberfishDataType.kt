@@ -26,9 +26,8 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         val density = context.resources.displayMetrics.density
         val cellHeightDp = config.viewSize.second / density
-        val sizeConfig = config.toViewSizeConfig()
         val cellWidthPx = config.viewSize.first
-        Log.d("Barberfish", "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} → headerSp=${sizeConfig.headerFontSize} typeId=$typeId")
+        Log.d("Barberfish", "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} → headerSp=${config.toViewSizeConfig().headerFontSize} typeId=$typeId")
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }

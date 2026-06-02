@@ -13,6 +13,7 @@ import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -42,7 +43,10 @@ private suspend inline fun <reified T> Context.saveConfig(
 }
 
 private val sparklineConfigKey = stringPreferencesKey("sparkline_config")
-private val threeColumnConfigKey = stringPreferencesKey("three_column_config")
+private val fieldSparklineConfigKey = stringPreferencesKey("field_sparkline_config")
+// Persisted as "three_column_config" for backwards compatibility with installs from the
+// pre-4-column era; the HUDConfig blob covers both layouts now.
+private val hudConfigKey = stringPreferencesKey("three_column_config")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
 private val zoneConfigKey = stringPreferencesKey("zone_config")
@@ -78,11 +82,21 @@ sealed interface HUDSlotField {
 
     @Serializable data object LastLapPower : HUDSlotField
 
+    @Serializable data object PowerZone : HUDSlotField
+
+    @Serializable data object MaxPower : HUDSlotField
+
     @Serializable data object AvgHR : HUDSlotField
 
     @Serializable data object LapAvgHR : HUDSlotField
 
     @Serializable data object LastLapAvgHR : HUDSlotField
+
+    @Serializable data object HRMaxPercent : HUDSlotField
+
+    @Serializable data object MaxHR : HUDSlotField
+
+    @Serializable data object HRZone : HUDSlotField
 
     @Serializable data object Grade : HUDSlotField
 
@@ -102,6 +116,7 @@ data class HUDSlotConfig(
     val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
     val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
 )
 
 @Serializable
@@ -128,8 +143,14 @@ enum class ElevationZoom(val label: String, val minRangeM: Float) {
 }
 
 @Serializable
+enum class SparklineMode { OFF, CLIMBS, ON }
+
+@Serializable
 data class SparklineConfig(
-    val enabled: Boolean = true,
+    // `mode` is nullable so an absent key falls through to the legacy `enabled` boolean
+    // (pre-3.x installs) instead of masking it with a default. Resolve via `hudMode`.
+    val mode: SparklineMode? = null,
+    @SerialName("enabled") private val legacyEnabled: Boolean? = null,
     val lookaheadKm: Int = 5,
     val skipBands: Int = 1,
     val skipBandsDescent: Int = 0,
@@ -138,7 +159,10 @@ data class SparklineConfig(
     val yZoom: ElevationZoom = ElevationZoom.NORMAL,
     val showClimbs: Boolean = true,
     val showPois: Boolean = true,
-)
+) {
+    val hudMode: SparklineMode
+        get() = mode ?: if (legacyEnabled == false) SparklineMode.OFF else SparklineMode.ON
+}
 
 @Serializable
 data class HUDConfig(
@@ -151,28 +175,48 @@ data class HUDConfig(
 )
 
 fun Context.streamHUDConfig(): Flow<HUDConfig> =
-    streamConfig(threeColumnConfigKey, HUDConfig())
+    streamConfig(hudConfigKey, HUDConfig())
 
 suspend fun Context.saveHUDConfig(config: HUDConfig) =
-    saveConfig(threeColumnConfigKey, config)
+    saveConfig(hudConfigKey, config)
 
-// --- SparklineConfig (shared by HUD and standalone sparkline field) ---
+// --- SparklineConfig ---
+// Two independent instances: the HUD strip and the standalone elevation-sparkline field.
+// The HUD instance keeps the original "sparkline_config" key; the field instance has its
+// own key and, when unset, seeds its options from the HUD value at read time so a user's
+// tuned options carry over after upgrade instead of resetting to defaults.
 
-fun Context.streamSparklineConfig(): Flow<SparklineConfig> =
+// Resolves the HUD sparkline config: own key first, then the legacy embedded HUDConfig
+// blob (pre-split installs), then defaults.
+private fun Preferences.hudSparklineConfig(): SparklineConfig =
+    this[sparklineConfigKey]?.let {
+        runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
+    }
+        ?: this[hudConfigKey]?.let {
+            runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
+        }?.sparkline
+        ?: SparklineConfig()
+
+fun Context.streamHudSparklineConfig(): Flow<SparklineConfig> =
+    dataStore.data
+        .map { it.hudSparklineConfig() }
+        .distinctUntilChanged()
+
+suspend fun Context.saveHudSparklineConfig(config: SparklineConfig) =
+    saveConfig(sparklineConfigKey, config)
+
+fun Context.streamFieldSparklineConfig(): Flow<SparklineConfig> =
     dataStore.data
         .map { prefs ->
-            prefs[sparklineConfigKey]?.let {
+            prefs[fieldSparklineConfigKey]?.let {
                 runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
             }
-                ?: prefs[threeColumnConfigKey]?.let {
-                    runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
-                }?.sparkline
-                ?: SparklineConfig()
+                ?: prefs.hudSparklineConfig() // seed options from the HUD value until first saved
         }
         .distinctUntilChanged()
 
-suspend fun Context.saveSparklineConfig(config: SparklineConfig) =
-    saveConfig(sparklineConfigKey, config)
+suspend fun Context.saveFieldSparklineConfig(config: SparklineConfig) =
+    saveConfig(fieldSparklineConfigKey, config)
 
 // --- PowerFieldConfig ---
 
@@ -223,6 +267,54 @@ fun Context.streamHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR): Flow<HRFiel
 suspend fun Context.saveHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR, config: HRFieldConfig) =
     saveConfig(kind.key, config)
 
+// --- HRMaxPercentFieldConfig ---
+
+@Serializable
+data class HRMaxPercentFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val hrMaxPercentFieldConfigKey = stringPreferencesKey("hr_max_percent_field_config")
+
+fun Context.streamHRMaxPercentFieldConfig(): Flow<HRMaxPercentFieldConfig> =
+    streamConfig(hrMaxPercentFieldConfigKey, HRMaxPercentFieldConfig())
+
+suspend fun Context.saveHRMaxPercentFieldConfig(config: HRMaxPercentFieldConfig) =
+    saveConfig(hrMaxPercentFieldConfigKey, config)
+
+// --- MaxHRFieldConfig ---
+
+@Serializable
+data class MaxHRFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val maxHrFieldConfigKey = stringPreferencesKey("max_hr_field_config")
+
+fun Context.streamMaxHRFieldConfig(): Flow<MaxHRFieldConfig> =
+    streamConfig(maxHrFieldConfigKey, MaxHRFieldConfig())
+
+suspend fun Context.saveMaxHRFieldConfig(config: MaxHRFieldConfig) =
+    saveConfig(maxHrFieldConfigKey, config)
+
+// --- HRZoneFieldConfig ---
+
+@Serializable
+enum class ZoneDisplayMode(val label: String) {
+    INTEGER("Integer"),
+    FLOAT("Decimal"),
+}
+
+@Serializable
+data class HRZoneFieldConfig(
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+)
+
+private val hrZoneFieldConfigKey = stringPreferencesKey("hr_zone_field_config")
+
+fun Context.streamHRZoneFieldConfig(): Flow<HRZoneFieldConfig> =
+    streamConfig(hrZoneFieldConfigKey, HRZoneFieldConfig())
+
+suspend fun Context.saveHRZoneFieldConfig(config: HRZoneFieldConfig) =
+    saveConfig(hrZoneFieldConfigKey, config)
+
 // --- SpeedFieldConfig ---
 
 @Serializable
@@ -233,8 +325,22 @@ enum class SpeedSmoothingStream(val label: String, val typeId: String, val field
     S10("10s", DataType.Type.SMOOTHED_10S_AVERAGE_SPEED, DataType.Field.SMOOTHED_10S_AVERAGE_SPEED),
 }
 
+// SpeedThresholdSource selects what the live speed is compared against for color:
+// FIXED — the user-entered thresholdKph (0.0 disables coloring).
+// AVG_TOTAL / AVG_MOVING — the ride's running average (including / excluding paused time).
+// AVG sources are gated by ELAPSED_TIME >= 30 s so a near-zero startup avg doesn't flash colors.
 @Serializable
-data class SpeedFieldConfig(val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S3)
+enum class SpeedThresholdSource { FIXED, AVG_TOTAL, AVG_MOVING }
+
+@Serializable
+data class SpeedFieldConfig(
+    val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S3,
+    val source: SpeedThresholdSource = SpeedThresholdSource.FIXED,
+    val thresholdKph: Double = 0.0,
+    val rangePercentBelow: Double = 10.0,
+    val rangePercentAbove: Double = 10.0,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+)
 
 private val speedFieldConfigKey = stringPreferencesKey("speed_field_config")
 
@@ -264,6 +370,7 @@ data class AvgSpeedConfig(
     val rangePercentBelow: Double = 10.0,
     val minKph: Double? = null,
     val maxKph: Double? = null,
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
 fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedConfig> =
@@ -285,7 +392,6 @@ data class ZoneConfig(
     val hrPalette: ZonePalette = ZonePalette.KAROO,
     val powerPalette: ZonePalette = ZonePalette.KAROO,
     val gradePalette: GradePalette = GradePalette.KAROO,
-    val readableColors: Boolean = false,
 )
 
 fun Context.streamZoneConfig(): Flow<ZoneConfig> =
@@ -293,6 +399,27 @@ fun Context.streamZoneConfig(): Flow<ZoneConfig> =
 
 suspend fun Context.saveZoneConfig(config: ZoneConfig) =
     saveConfig(zoneConfigKey, config)
+
+// --- ClimberMapConfig ---
+
+@Serializable
+data class ClimberMapConfig(
+    val enabled: Boolean = true,
+    val showChevrons: Boolean = true,
+    // When true, skipBands/simplification are taken from the field sparkline config
+    // at the consumer via resolveClimbTuning(); the two fields below are ignored.
+    val syncWithSparkline: Boolean = true,
+    val skipBands: Int = 1,
+    val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
+)
+
+private val climberMapConfigKey = stringPreferencesKey("climber_map_config")
+
+fun Context.streamClimberMapConfig(): Flow<ClimberMapConfig> =
+    streamConfig(climberMapConfigKey, ClimberMapConfig())
+
+suspend fun Context.saveClimberMapConfig(config: ClimberMapConfig) =
+    saveConfig(climberMapConfigKey, config)
 
 // --- CadenceFieldConfig ---
 
@@ -322,6 +449,7 @@ data class CadenceThresholdConfig(
 data class CadenceFieldConfig(
     val smoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0,
     val threshold: CadenceThresholdConfig = CadenceThresholdConfig(),
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
 fun Context.streamCadenceFieldConfig(): Flow<CadenceFieldConfig> =
@@ -368,6 +496,35 @@ suspend fun Context.saveLapPowerFieldConfig(isLastLap: Boolean, config: LapPower
         if (isLastLap) lastLapPowerFieldConfigKey else lapPowerFieldConfigKey,
         config,
     )
+
+// --- PowerZoneFieldConfig ---
+
+@Serializable
+data class PowerZoneFieldConfig(
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+)
+
+private val powerZoneFieldConfigKey = stringPreferencesKey("power_zone_field_config")
+
+fun Context.streamPowerZoneFieldConfig(): Flow<PowerZoneFieldConfig> =
+    streamConfig(powerZoneFieldConfigKey, PowerZoneFieldConfig())
+
+suspend fun Context.savePowerZoneFieldConfig(config: PowerZoneFieldConfig) =
+    saveConfig(powerZoneFieldConfigKey, config)
+
+// --- MaxPowerFieldConfig ---
+
+@Serializable
+data class MaxPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val maxPowerFieldConfigKey = stringPreferencesKey("max_power_field_config")
+
+fun Context.streamMaxPowerFieldConfig(): Flow<MaxPowerFieldConfig> =
+    streamConfig(maxPowerFieldConfigKey, MaxPowerFieldConfig())
+
+suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
+    saveConfig(maxPowerFieldConfigKey, config)
 
 // --- GradeFieldConfig ---
 

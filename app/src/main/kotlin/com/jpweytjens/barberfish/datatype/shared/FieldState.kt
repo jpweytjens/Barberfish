@@ -14,9 +14,6 @@ data class FieldState(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
-        fun unavailable(label: String, iconRes: Int? = null) =
-            FieldState("Not available", label, FieldColor.StreamState, iconRes = iconRes)
-
         fun searching(label: String = "", iconRes: Int? = null) =
             FieldState("Searching...", label, FieldColor.StreamState, iconRes = iconRes)
 
@@ -35,16 +32,19 @@ sealed interface FieldColor {
 
     data object Default : FieldColor
 
-    // zone: 1-based zone number, total: number of zones (7 for power, 5 for HR)
+    // zone: 1-based zone number, total: number of zones (7 for power, 5 for HR).
+    // The palette variant (readable for TEXT mode, brand for BACKGROUND mode) is
+    // decided at render time in toColorConfig, not stored here.
     data class Zone(
         val zone: Int,
         val total: Int,
         val palette: ZonePalette,
         val isHr: Boolean,
-        val readable: Boolean = true,
     ) : FieldColor
 
-    // factor: -1.0 (fully red) to 0.0 (yellow, at threshold) to +1.0 (fully green) — RdYlGn map
+    // factor: -1.0 (fully red) to 0.0 (neutral, at threshold) to +1.0 (fully green) — RdYlGn map.
+    // The neutral at factor=0 is mode-aware (see thresholdColorConfig in FieldColors.kt):
+    // text mode blends into the default text color; background mode blends into the cell.
     data class Threshold(val factor: Float) : FieldColor
 
     // outsideFactor: 0→1, how far outside a boundary (0 = at/inside boundary, 1 = far outside)
@@ -63,7 +63,7 @@ sealed interface FieldColor {
     data object StreamState : FieldColor // SDK non-Streaming state — white ibm-plex-sans-condensed in stream_state_tv
 
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
-    data class Grade(val percent: Double, val palette: GradePalette, val readable: Boolean = true) : FieldColor
+    data class Grade(val percent: Double, val palette: GradePalette) : FieldColor
 }
 
 fun zoneFieldColor(
@@ -79,5 +79,4 @@ fun zoneFieldColor(
         (if (isHr) profile.heartRateZones else profile.powerZones).size.coerceAtLeast(1),
         if (isHr) zones.hrPalette else zones.powerPalette,
         isHr = isHr,
-        readable = zones.readableColors,
     )

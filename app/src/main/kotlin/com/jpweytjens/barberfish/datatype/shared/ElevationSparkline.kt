@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.extension.GradePalette
+import com.jpweytjens.barberfish.extension.SparklineMode
 
 // Elevation polyline: Google Encoded Polyline, precision=1 (divisor=10),
 // lat = cumulative distance in metres, lng = elevation in metres.
@@ -87,7 +88,7 @@ internal fun visvalingamWhyatt(
     }
 
     data class HeapEntry(val index: Int, val area: Float, val ver: Int)
-    val heap = java.util.PriorityQueue<HeapEntry>(compareBy { it.area })
+    val heap = java.util.PriorityQueue<HeapEntry>(n, compareBy { it.area })
     for (i in 1 until n - 1) heap.add(HeapEntry(i, triArea(i), version[i]))
 
     while (true) {
@@ -163,7 +164,7 @@ internal fun renderElevationSparkline(
     skipBandsDescent: Int = 0,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
-    dotColor: Int = ICON_TINT_TEAL.toArgb(),
+    dotColor: Int = BarberfishYellow.toArgb(),
     isNightMode: Boolean = true,
     minElevRangeM: Float = 50f,
     logWarpK: Float = 8f,
@@ -172,16 +173,29 @@ internal fun renderElevationSparkline(
     showClimbs: Boolean = false,
     poiDistances: List<Float> = emptyList(),
     showPois: Boolean = false,
+    windowOverride: Pair<Float, Float>? = null,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
-    // Clamp window to route bounds so the sparkline fills full width even at the start.
-    // The dot migrates from the left edge to the 25% position as you accumulate past distance.
     val firstDist = elevationPoints.first().first
     val lastDist  = elevationPoints.last().first
-    val rawEnd    = positionM - lookaheadM * positionFraction + lookaheadM
-    val windowEnd = rawEnd.coerceAtMost(lastDist)
-    val windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
+    val windowStart: Float
+    val windowEnd: Float
+    val effWarpK: Float
+    if (windowOverride != null) {
+        // Climb-only mode: pin the frame to the climb (foot → top) and map linearly —
+        // warp centred on the rider is meaningless while approaching from outside the window.
+        windowStart = windowOverride.first.coerceAtLeast(firstDist)
+        windowEnd   = windowOverride.second.coerceAtMost(lastDist)
+        effWarpK    = 0f
+    } else {
+        // Clamp window to route bounds so the sparkline fills full width even at the start.
+        // The dot migrates from the left edge to the 25% position as you accumulate past distance.
+        val rawEnd  = positionM - lookaheadM * positionFraction + lookaheadM
+        windowEnd   = rawEnd.coerceAtMost(lastDist)
+        windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
+        effWarpK    = logWarpK
+    }
 
     // Include one point beyond each edge so segments spanning the window boundary
     // are partially drawn instead of popping in only when fully visible.
@@ -205,7 +219,7 @@ internal fun renderElevationSparkline(
     val newDisplayedRange = if (elevRange > displayedRange) elevRange
         else (displayedRange - RATCHET_DECAY_M_PER_M * distanceDeltaM).coerceAtLeast(elevRange)
 
-    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, logWarpK)
+    val toX = buildWarpedXMapper(windowStart, windowEnd, positionM, lookaheadM, widthPx, effWarpK)
     fun toY(e: Float) = (heightPx - (e - elevMin) / newDisplayedRange * (heightPx - 2 * MARKER_PAD_PX) - MARKER_PAD_PX).coerceIn(0f, heightPx.toFloat())
 
     // Partition `visible` around positionM once. Points exactly at positionM appear in
@@ -219,7 +233,10 @@ internal fun renderElevationSparkline(
     val dotX = toX(positionM)
     // Linear-interpolated elevation at positionM keeps the dot on the outline since
     // the outline pass below uses the same interpolation at the positionM breakpoint.
-    val dotY = elevationAt(visible, positionM)?.let { toY(it) } ?: (heightPx * 0.9f)
+    // When the rider is outside the window (climb-only approach phase), anchor the dot to
+    // the nearest edge (the climb foot) instead of dropping to the bottom fallback.
+    val dotAnchorM = positionM.coerceIn(windowStart, windowEnd)
+    val dotY = elevationAt(visible, dotAnchorM)?.let { toY(it) } ?: (heightPx * 0.9f)
 
     val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888).also {
         it.density = Bitmap.DENSITY_NONE  // prevent RemoteViews auto-scaling; fitXY handles fill
@@ -230,8 +247,7 @@ internal fun renderElevationSparkline(
     // 1. Ahead silhouette fill — subtle (~6% alpha)
     if (aheadSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
-        paint.color = if (isNightMode) android.graphics.Color.argb(15, 255, 255, 255)
-            else android.graphics.Color.argb(15, 0, 0, 0)
+        paint.color = (if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY).toArgb()
         val path = Path().apply {
             moveTo(dotX, dotY)
             aheadSilPts.forEach { (d, e) -> lineTo(toX(d), toY(e)) }
@@ -275,7 +291,7 @@ internal fun renderElevationSparkline(
             val withinFill =
                 (fillRange.posMin != null && grade >= fillRange.posMin) ||
                 (fillRange.negMax != null && grade < fillRange.negMax)
-            val segColor = if (withinFill) gradeColor(grade, palette, readable)?.toArgb() else null
+            val segColor = if (withinFill) gradeColor(grade, palette, readable, isNightMode)?.toArgb() else null
             if (segColor == null) { flushRun(); continue }
             if (segColor != runColor) { flushRun(); runColor = segColor }
             if (runPts.isEmpty()) runPts.add(d1 to e1)
@@ -287,8 +303,7 @@ internal fun renderElevationSparkline(
     // 2b. Dark overlay on past region to grey out grade fills
     if (pastSilPts.isNotEmpty()) {
         paint.style = Paint.Style.FILL
-        paint.color = if (isNightMode) android.graphics.Color.argb(140, 0, 0, 0)
-            else android.graphics.Color.argb(200, 180, 180, 180)
+        paint.color = (if (isNightMode) SPARKLINE_PAST_OVERLAY_NIGHT else SPARKLINE_PAST_OVERLAY_DAY).toArgb()
         val path = Path().apply {
             moveTo(toX(pastSilPts.first().first), toY(pastSilPts.first().second))
             pastSilPts.drop(1).forEach { (d, e) -> lineTo(toX(d), toY(e)) }
@@ -312,10 +327,10 @@ internal fun renderElevationSparkline(
         paint.strokeWidth = 3f
         paint.strokeJoin = Paint.Join.ROUND
 
-        val pastGrey = android.graphics.Color.argb(255, 100, 100, 100)
+        val pastGrey = SPARKLINE_PAST_OUTLINE.toArgb()
         val aheadColor = if (isNightMode) android.graphics.Color.WHITE else android.graphics.Color.BLACK
         val aheadClimb = CLIMBER_BLUE.toArgb()
-        val pastClimb = android.graphics.Color.argb(255, 66, 117, 158)  // CLIMBER_BLUE blended with pastGrey
+        val pastClimb = SPARKLINE_PAST_CLIMB.toArgb()
 
         val visibleStart = visible.first().first
         val visibleEnd = visible.last().first
@@ -384,11 +399,9 @@ internal fun renderElevationSparkline(
     // Past markers use the past-outline grey to match the muting applied to the past
     // outline; ahead markers keep their bright fill so upcoming POIs stay legible.
     if (showPois && poiDistances.isNotEmpty()) {
-        val poiRadius = POI_RADIUS_PX
-        val aheadFill = if (isNightMode) android.graphics.Color.argb(230, 255, 255, 255)
-            else android.graphics.Color.argb(230, 0, 0, 0)
+        val aheadFill = (if (isNightMode) SPARKLINE_POI_FILL_NIGHT else SPARKLINE_POI_FILL_DAY).toArgb()
         val aheadStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
-        val pastFill = android.graphics.Color.argb(255, 100, 100, 100)
+        val pastFill = SPARKLINE_PAST_OUTLINE.toArgb()
         val pastStroke = if (isNightMode) android.graphics.Color.BLACK else android.graphics.Color.WHITE
         for (d in poiDistances) {
             if (d < windowStart || d > windowEnd) continue
@@ -398,11 +411,11 @@ internal fun renderElevationSparkline(
             val isPast = d < positionM
             paint.style = Paint.Style.FILL
             paint.color = if (isPast) pastFill else aheadFill
-            canvas.drawCircle(cx, cy, poiRadius, paint)
+            canvas.drawCircle(cx, cy, POI_RADIUS_PX, paint)
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = MARKER_STROKE_PX
             paint.color = if (isPast) pastStroke else aheadStroke
-            canvas.drawCircle(cx, cy, poiRadius, paint)
+            canvas.drawCircle(cx, cy, POI_RADIUS_PX, paint)
         }
     }
 
@@ -436,6 +449,77 @@ internal fun elevationAt(points: List<Pair<Float, Float>>, distanceM: Float): Fl
         }
     }
     return null
+}
+
+internal data class ClimbReveal(
+    val visible: Boolean,
+    val windowOverride: Pair<Float, Float>?,
+    // "Climb n/total" heads-up shown in the strip during the counter phase, before the profile.
+    val counterText: String? = null,
+)
+
+private data class ClimbFrame(
+    val foot: Float,
+    val summit: Float,
+    val approachM: Float,
+    val leadM: Float,
+    val tailM: Float,
+)
+
+/**
+ * Climb-only visibility for the HUD sparkline, shared by the live flow and the config preview.
+ * In [SparklineMode.CLIMBS] each climb runs through three phases as you ride up to it: a counter
+ * phase ("Climb n/total" text) one approach-length before the profile reveals, then the elevation
+ * profile pinned to the climb (foot → top, left edge tracking you through the approach), then it
+ * hides past the summit. [SparklineMode.OFF] hides it; [SparklineMode.ON] shows it with no window
+ * override. Approach distance scales with the PCS climb score (see [climbApproachM]).
+ */
+internal fun resolveClimbReveal(
+    mode: SparklineMode,
+    climbRanges: List<Pair<Float, Float>>,
+    elevationPoints: List<Pair<Float, Float>>,
+    positionM: Float,
+): ClimbReveal = when (mode) {
+    SparklineMode.OFF -> ClimbReveal(visible = false, windowOverride = null)
+    SparklineMode.ON -> ClimbReveal(visible = true, windowOverride = null)
+    SparklineMode.CLIMBS -> {
+        val frames = climbRanges.mapNotNull { (startM, endM) ->
+            val startElev = elevationAt(elevationPoints, startM) ?: return@mapNotNull null
+            val endElev = elevationAt(elevationPoints, endM) ?: return@mapNotNull null
+            if (endElev <= startElev) return@mapNotNull null
+            val lengthF = endM - startM
+            val gradePct = if (lengthF > 0f) (endElev - startElev) / lengthF * 100.0 else 0.0
+            val approachM = climbApproachM(pcsClimbScore(gradePct, lengthF.toDouble()))
+            val leadM = (lengthF * CLIMB_LEAD_MARGIN_FRAC)
+                .coerceIn(CLIMB_FRAME_MARGIN_MIN_M, CLIMB_FRAME_MARGIN_MAX_M)
+            val tailM = (lengthF * CLIMB_TAIL_MARGIN_FRAC)
+                .coerceIn(CLIMB_FRAME_MARGIN_MIN_M, CLIMB_FRAME_MARGIN_MAX_M)
+            ClimbFrame(startM, endM, approachM, leadM, tailM)
+        }
+        val total = frames.size
+        // Active from one approach before the counter through the summit tail; nearest finish wins.
+        val active = frames.withIndex()
+            .filter { (_, f) -> positionM in (f.foot - 2f * f.approachM)..(f.summit + f.tailM) }
+            .minByOrNull { it.value.summit }
+        when {
+            active == null -> ClimbReveal(visible = false, windowOverride = null)
+            positionM < active.value.foot - active.value.approachM ->
+                // Counter phase: heads-up text before the profile reveals.
+                ClimbReveal(
+                    visible = true,
+                    windowOverride = null,
+                    counterText = "Climb ${active.index + 1}/$total",
+                )
+            else -> {
+                // Profile phase: left edge tracks the rider through the approach (lead-in shrinks),
+                // then locks at the foot; the lead margin keeps the dot off the left edge and the
+                // tail keeps the summit off the right.
+                val f = active.value
+                val windowStart = minOf(positionM, f.foot) - f.leadM
+                ClimbReveal(visible = true, windowOverride = windowStart to (f.summit + f.tailM))
+            }
+        }
+    }
 }
 
 /**
@@ -668,3 +752,49 @@ internal fun rvvElevationFixture(): List<Pair<Float, Float>> = listOf(
     18847.3f to 11.0f, 18907.7f to 10.0f, 19176.3f to 11.0f, 19478.3f to 11.0f, 19712.0f to 10.0f, 19772.7f to 9.0f,
     19869.4f to 9.0f, 19947.3f to 9.0f, 20000.0f to 10.0f,
 )
+
+/**
+ * Opening climb of the Col de Rates (Costa Blanca), from a real GPX trace, used by the
+ * debug sweep when the HUD sparkline is in Climbs mode. A ~3.8 km descent lead-in, the
+ * ~9.8 km / 649 m sustained climb (avg ~6.6%, PCS ≈ 107 → large approach tier), then a
+ * ~3.8 km descent lead-out — so the climb-only reveal both appears and disappears as the
+ * sweep rolls past. Downsampled to ~100 m spacing to match [rvvElevationFixture].
+ */
+internal fun colDeRatesElevationFixture(): List<Pair<Float, Float>> = listOf(
+    0.0f to 350.0f, 108.4f to 342.0f, 201.0f to 335.0f, 310.8f to 329.0f, 409.4f to 325.0f, 501.4f to 321.0f,
+    600.8f to 317.0f, 706.0f to 313.0f, 808.1f to 310.0f, 906.6f to 308.0f, 1001.3f to 305.0f, 1110.4f to 299.0f,
+    1206.2f to 296.0f, 1311.9f to 294.0f, 1407.7f to 293.0f, 1505.6f to 296.0f, 1605.7f to 299.0f, 1700.7f to 299.0f,
+    1800.6f to 302.0f, 1900.4f to 304.0f, 2002.3f to 306.0f, 2107.8f to 306.0f, 2207.1f to 304.0f, 2310.8f to 301.0f,
+    2404.1f to 298.0f, 2508.8f to 296.0f, 2609.8f to 294.0f, 2701.8f to 292.0f, 2811.2f to 288.0f, 2918.0f to 286.0f,
+    3010.9f to 285.0f, 3115.5f to 282.0f, 3204.9f to 282.0f, 3307.2f to 281.0f, 3402.8f to 279.0f, 3502.8f to 277.0f,
+    3606.9f to 276.0f, 3700.9f to 273.0f, 3801.2f to 271.0f, 3907.1f to 271.0f, 4002.4f to 274.0f, 4104.3f to 278.0f,
+    4201.0f to 284.0f, 4302.6f to 289.0f, 4403.2f to 293.0f, 4502.4f to 296.0f, 4602.2f to 299.0f, 4700.5f to 303.0f,
+    4807.0f to 306.0f, 4905.2f to 311.0f, 5001.9f to 316.0f, 5100.6f to 322.0f, 5203.0f to 328.0f, 5301.5f to 332.0f,
+    5400.1f to 338.0f, 5503.9f to 344.0f, 5600.3f to 349.0f, 5700.1f to 353.0f, 5803.2f to 358.0f, 5900.4f to 365.0f,
+    6000.9f to 372.0f, 6101.9f to 376.0f, 6202.7f to 382.0f, 6301.2f to 388.0f, 6403.7f to 393.0f, 6502.4f to 396.0f,
+    6603.9f to 403.0f, 6706.0f to 408.0f, 6804.0f to 413.0f, 6900.9f to 418.0f, 7000.4f to 424.0f, 7103.6f to 430.0f,
+    7203.3f to 435.0f, 7303.7f to 441.0f, 7402.3f to 445.0f, 7503.4f to 450.0f, 7603.6f to 454.0f, 7700.8f to 459.0f,
+    7802.9f to 464.0f, 7902.8f to 471.0f, 8003.0f to 479.0f, 8102.3f to 485.0f, 8202.9f to 492.0f, 8301.9f to 499.0f,
+    8402.8f to 508.0f, 8502.2f to 514.0f, 8603.2f to 522.0f, 8702.1f to 529.0f, 8802.8f to 538.0f, 8902.3f to 544.0f,
+    9001.0f to 549.0f, 9101.6f to 554.0f, 9201.1f to 559.0f, 9303.7f to 565.0f, 9403.8f to 570.0f, 9501.0f to 575.0f,
+    9603.9f to 579.0f, 9700.3f to 584.0f, 9802.2f to 587.0f, 9900.4f to 589.0f, 10000.3f to 596.0f, 10100.8f to 602.0f,
+    10203.2f to 610.0f, 10300.7f to 615.0f, 10403.6f to 621.0f, 10502.3f to 630.0f, 10604.1f to 634.0f, 10700.4f to 638.0f,
+    10801.6f to 638.0f, 10900.8f to 639.0f, 11001.1f to 651.0f, 11100.1f to 662.0f, 11200.3f to 675.0f, 11300.2f to 686.0f,
+    11400.6f to 695.0f, 11500.4f to 707.0f, 11601.1f to 717.0f, 11703.6f to 726.0f, 11801.5f to 740.0f, 11900.8f to 753.0f,
+    12002.1f to 767.0f, 12100.7f to 776.0f, 12201.9f to 787.0f, 12301.4f to 802.0f, 12401.5f to 816.0f, 12501.7f to 828.0f,
+    12601.2f to 839.0f, 12701.9f to 850.0f, 12800.8f to 862.0f, 12900.4f to 874.0f, 13004.7f to 879.0f, 13106.0f to 884.0f,
+    13202.1f to 887.0f, 13301.7f to 890.0f, 13400.7f to 899.0f, 13500.4f to 908.0f, 13600.1f to 920.0f, 13700.4f to 905.0f,
+    13802.4f to 899.0f, 13900.7f to 909.0f, 14003.7f to 913.0f, 14100.5f to 902.0f, 14203.0f to 892.0f, 14305.2f to 888.0f,
+    14400.4f to 885.0f, 14503.2f to 878.0f, 14600.9f to 874.0f, 14702.8f to 865.0f, 14805.3f to 854.0f, 14901.1f to 844.0f,
+    15007.1f to 829.0f, 15108.2f to 816.0f, 15203.4f to 804.0f, 15302.5f to 788.0f, 15403.8f to 777.0f, 15502.4f to 767.0f,
+    15608.7f to 753.0f, 15703.1f to 741.0f, 15802.1f to 725.0f, 15902.9f to 717.0f, 16004.3f to 706.0f, 16101.6f to 694.0f,
+    16205.0f to 684.0f, 16301.2f to 672.0f, 16402.6f to 661.0f, 16509.4f to 645.0f, 16600.1f to 636.0f, 16703.1f to 635.0f,
+    16804.5f to 635.0f, 16903.2f to 632.0f, 17002.0f to 626.0f, 17105.0f to 621.0f, 17205.9f to 616.0f, 17305.1f to 608.0f,
+    17411.8f to 600.0f,
+)
+
+/** Climb range (foot → summit) for [colDeRatesElevationFixture]. */
+internal fun colDeRatesClimbsFixture(): List<Pair<Float, Float>> = listOf(3801f to 13600f)
+
+/** Summit POI for [colDeRatesElevationFixture]. */
+internal fun colDeRatesPoisFixture(): List<Float> = listOf(13600f)

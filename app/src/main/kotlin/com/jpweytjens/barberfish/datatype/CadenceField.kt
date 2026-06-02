@@ -9,8 +9,10 @@ import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -81,7 +83,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
     override fun liveFlow(context: Context): Flow<FieldState> =
         context.streamCadenceFieldConfig().flatMapLatest { cfg ->
             karooSystem.streamDataFlow(cfg.smoothing.typeId).map { state ->
-                toFieldState(state, cfg.smoothing, cfg.threshold)
+                toFieldState(state, cfg.smoothing, cfg.threshold, cfg.colorMode)
             }
         }
 
@@ -98,16 +100,19 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             state: StreamState,
             smoothing: CadenceSmoothingStream,
             threshold: CadenceThresholdConfig,
+            colorMode: ZoneColorMode = ZoneColorMode.TEXT,
         ): FieldState {
             val label = cadenceLabel(smoothing)
+            state.toErrorFieldState(label, R.drawable.ic_cadence)?.let { return it }
             val raw =
-                (state as? StreamState.Streaming)?.dataPoint?.values?.get(smoothing.fieldId)
-                    ?: return FieldState.unavailable(label, R.drawable.ic_cadence)
+                (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
+                    ?: return FieldState.notAvailable(label, R.drawable.ic_cadence)
             return FieldState(
                 raw.toInt().toString(),
                 label = label,
                 color = cadenceFieldColor(raw, threshold),
                 iconRes = R.drawable.ic_cadence,
+                colorMode = colorMode,
             )
         }
 
@@ -126,6 +131,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
                         label = label,
                         color = FieldColor.Default,
                         iconRes = R.drawable.ic_cadence,
+                        colorMode = cfg.colorMode,
                     )
                 }
             }
@@ -150,6 +156,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
                     label = label,
                     color = cadenceFieldColor(rpm, cfg.threshold),
                     iconRes = R.drawable.ic_cadence,
+                    colorMode = cfg.colorMode,
                 )
             }
         }

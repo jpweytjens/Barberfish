@@ -42,11 +42,11 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
             rv.setBoolean(R.id.hud_root, "setClipToOutline", true)
         }
         buildList {
-            add(Triple(R.id.hud_slot_left,   state.leftSlot,   state.leftColorMode))
-            add(Triple(R.id.hud_slot_middle, state.middleSlot, state.middleColorMode))
-            add(Triple(R.id.hud_slot_right,  state.rightSlot,  state.rightColorMode))
+            add(Triple(R.id.hud_slot_left,   state.left.field,   state.left.colorMode))
+            add(Triple(R.id.hud_slot_middle, state.middle.field, state.middle.colorMode))
+            add(Triple(R.id.hud_slot_right,  state.right.field,  state.right.colorMode))
             if (state.columns == 4)
-                add(Triple(R.id.hud_slot_fourth, state.fourthSlot, state.fourthColorMode))
+                add(Triple(R.id.hud_slot_fourth, state.fourth.field, state.fourth.colorMode))
         }.forEach { (slotId, field, colorMode) ->
             rv.removeAllViews(slotId)
             rv.addView(

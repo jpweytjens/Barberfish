@@ -7,10 +7,10 @@ import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamRideState
-import com.jpweytjens.barberfish.extension.streamSparklineConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
@@ -31,8 +31,11 @@ internal data class SparklineFrame(
     val bitmap: Bitmap?,
     val displayedRange: Float,
     val lookaheadKm: Int,
-    val enabled: Boolean,
+    val hudEnabled: Boolean,
+    // "Climb n/total" heads-up text shown in the strip before a climb's profile reveals.
+    val counterText: String? = null,
 )
+
 
 /**
  * Shared sparkline data pipeline used by both HUD and standalone sparkline field.
@@ -45,6 +48,7 @@ internal data class SparklineFrame(
 internal fun sparklineBitmapFlow(
     karooSystem: KarooSystemService,
     context: Context,
+    configFlow: Flow<SparklineConfig>,
     widthPx: Int,
     heightPx: Int,
     isPreview: Boolean,
@@ -63,30 +67,35 @@ internal fun sparklineBitmapFlow(
     return rideStateFlow.flatMapLatest { rideState ->
         val debugSweep = (BuildConfig.DEBUG && rideState !is RideState.Recording) || isPreview
         val distFlow: Flow<StreamState> = if (debugSweep)
-            flow { while (true) { emit(StreamState.NotAvailable); delay(1000L) } }
+            flow { while (true) { emit(StreamState.NotAvailable); delay(HUD_UPDATE_INTERVAL_MS) } }
         else
-            karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).sample(1000L)
+            karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).sample(HUD_UPDATE_INTERVAL_MS)
 
         combine(
-            karooSystem.streamNavigationState().sample(1000L),
+            karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
             distFlow,
             context.streamZoneConfig(),
-            context.streamSparklineConfig(),
+            configFlow,
         ) { navState, distState, zoneConfig, sparkCfg ->
             val isNightMode = (context.resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
 
             val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
             val dest = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
+            // Climbs-mode debug sweep uses a real climb (Col de Rates); other debug sweeps
+            // keep the mixed RvV terrain so the On-mode preview stays realistic.
+            val debugClimbs = debugSweep && sparkCfg.hudMode == SparklineMode.CLIMBS
             val (elevEncoded, elevSource) = when {
                 route != null -> (route.routeElevationPolyline ?: "") to 0
                 dest != null -> (dest.elevationPolyline ?: "") to 1
+                debugClimbs -> "" to 4
                 debugSweep -> "" to 2
                 else -> "" to 3
             }
             val elevKey = Triple(elevEncoded, sparkCfg.simplification, elevSource)
             if (elevKey != cachedElevKey) {
                 val raw = when {
+                    elevSource == 4 -> colDeRatesElevationFixture()
                     elevSource == 2 -> previewElevationFixture()
                     elevEncoded.isBlank() -> emptyList()
                     else -> decodeElevationPolyline(elevEncoded)
@@ -117,7 +126,7 @@ internal fun sparklineBitmapFlow(
             val dotColor = when {
                 isOffRoute -> KAROO_REJOIN_RED.toArgb()
                 dest != null -> KAROO_DESTINATION_PURPLE.toArgb()
-                else -> ICON_TINT_TEAL.toArgb()
+                else -> BarberfishYellow.toArgb()
             }
             val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
             lastPositionM = positionM
@@ -125,6 +134,7 @@ internal fun sparklineBitmapFlow(
                 route != null -> route.climbs.map { climb ->
                     climb.startDistance.toFloat() to (climb.startDistance + climb.length).toFloat()
                 }
+                debugClimbs -> colDeRatesClimbsFixture()
                 debugSweep -> rvvClimbsFixture()
                 else -> emptyList()
             }
@@ -133,12 +143,16 @@ internal fun sparklineBitmapFlow(
                 val endElev = elevationAt(elevPoints, endM) ?: return@mapNotNull null
                 if (endElev > startElev) startM to endM else null
             }
+            val reveal = resolveClimbReveal(sparkCfg.hudMode, climbRanges, elevPoints, sparklinePositionM)
+            val windowOverride = reveal.windowOverride
+            val showArea = reveal.visible
             val poiDistances: List<Float> = when {
                 route != null -> route.pois.flatMap { it.distancesAlongRoute }.map { it.toFloat() }
+                debugClimbs -> colDeRatesPoisFixture()
                 debugSweep -> rvvPoisFixture()
                 else -> emptyList()
             }
-            val (bitmap, updatedRange) = if (sparkCfg.enabled)
+            val (bitmap, updatedRange) = if (showArea && reveal.counterText == null) {
                 renderElevationSparkline(
                     elevationPoints = elevPoints,
                     positionM = sparklinePositionM,
@@ -146,7 +160,8 @@ internal fun sparklineBitmapFlow(
                     heightPx = heightPx,
                     density = context.resources.displayMetrics.density,
                     palette = zoneConfig.gradePalette,
-                    readable = zoneConfig.readableColors,
+                    // Sparkline always renders as a fill; use brand colors.
+                    readable = false,
                     lookaheadM = sparkCfg.lookaheadKm * 1000f,
                     skipBands = sparkCfg.skipBands,
                     skipBandsDescent = sparkCfg.skipBandsDescent,
@@ -161,15 +176,19 @@ internal fun sparklineBitmapFlow(
                     showClimbs = sparkCfg.showClimbs,
                     poiDistances = poiDistances,
                     showPois = sparkCfg.showPois,
+                    windowOverride = windowOverride,
                 )
-            else ElevationSparklineResult(null, ratchetRange)
+            } else {
+                ElevationSparklineResult(null, ratchetRange)
+            }
             ratchetRange = updatedRange
 
             SparklineFrame(
                 bitmap = bitmap,
                 displayedRange = ratchetRange,
                 lookaheadKm = sparkCfg.lookaheadKm,
-                enabled = sparkCfg.enabled,
+                hudEnabled = showArea,
+                counterText = reveal.counterText,
             )
         }
     }

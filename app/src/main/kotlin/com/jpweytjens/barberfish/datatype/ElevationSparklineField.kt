@@ -9,10 +9,16 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
+import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+
+// Standalone sparkline cell height as a fraction of screen height. Approximates a
+// typical 3-row data cell; the SDK doesn't surface the actual cell height through
+// this code path, so this is a best-guess default rather than a precise fit.
+private const val STANDALONE_HEIGHT_FRACTION = 0.25f
 
 class ElevationSparklineField(private val karooSystem: KarooSystemService) :
     BarberfishBase<Bitmap?>("barberfish", "elevation-sparkline") {
@@ -20,9 +26,15 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
     private fun bitmapFlow(context: Context, isPreview: Boolean): Flow<Bitmap?> {
         val dm = context.resources.displayMetrics
         val widthPx = dm.widthPixels
-        val heightPx = (dm.heightPixels * 0.25f).toInt() // reasonable default for full-width cell
-        return sparklineBitmapFlow(karooSystem, context, widthPx, heightPx, isPreview)
-            .map { it.bitmap }
+        val heightPx = (dm.heightPixels * STANDALONE_HEIGHT_FRACTION).toInt()
+        return sparklineBitmapFlow(
+            karooSystem,
+            context,
+            configFlow = context.streamFieldSparklineConfig(),
+            widthPx = widthPx,
+            heightPx = heightPx,
+            isPreview = isPreview,
+        ).map { it.bitmap }
     }
 
     override fun liveFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = false)
@@ -36,6 +48,7 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
         if (!config.preview) {
             val intent = Intent(context, SparklineTapReceiver::class.java).apply {
                 action = SparklineTapReceiver.ACTION
+                putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_FIELD)
             }
             val pi = PendingIntent.getBroadcast(
                 context,

@@ -10,16 +10,19 @@ import io.hammerhead.karooext.models.ViewConfig
 private const val MIN_BITMAP_HEIGHT_PX = 30
 private const val LETTER_SPACING = -0.04f
 
+// Bitmap height as a fraction of the value font base sp. Sized to the
+// visible cap (~0.7 × textSize) plus a small buffer; tight enough to fit
+// 5×1's baseline_box without ImageView fitCenter downscaling.
+internal const val VALUE_BITMAP_HEIGHT_RATIO = 0.74f
+
 /**
- * Constant bitmap height per layout: `0.74 × valueFontBaseSp × density`.
+ * Constant bitmap height per layout: `VALUE_BITMAP_HEIGHT_RATIO × valueFontBaseSp × density`.
  *
- * Sized to the visible cap (~0.7 × textSize) plus a small buffer; tight
- * enough to fit 5×1's baseline_box without ImageView fitCenter downscaling.
  * Independent of `fontSizeForCell` shrinks so the baseline stays stable
  * across content-driven font changes.
  */
 fun valueBitmapHeightPx(valueFontBaseSp: Int, density: Float): Int {
-    val raw = (0.74f * valueFontBaseSp * density).toInt()
+    val raw = (VALUE_BITMAP_HEIGHT_RATIO * valueFontBaseSp * density).toInt()
     return raw.coerceAtLeast(MIN_BITMAP_HEIGHT_PX)
 }
 

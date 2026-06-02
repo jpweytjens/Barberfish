@@ -19,8 +19,8 @@ android {
         applicationId = "com.jpweytjens.barberfish"
         minSdk = 23
         targetSdk = 34
-        versionCode = 6
-        versionName = "3.2"
+        versionCode = 7
+        versionName = "3.3"
     }
 
     signingConfigs {
@@ -88,5 +88,5 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
-    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.junit)
 }

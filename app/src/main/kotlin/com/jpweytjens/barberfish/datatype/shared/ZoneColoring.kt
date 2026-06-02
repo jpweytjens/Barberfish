@@ -40,6 +40,20 @@ internal val karooDark = Color(0xFF1B2D2D)
 internal fun Color.isReadableOnKaroo(minLc: Double = 45.0) =
     abs(apcaContrast(this, karooDark)) >= minLc
 
+// Pick whichever of [textOptions] yields the higher APCA |Lc| against [bg].
+// Used in BACKGROUND colorMode so dark fills (Turbo crimson, etc.) get black
+// text while light fills keep white, regardless of system night mode.
+internal fun bestTextOnBackground(
+    bg: Color,
+    textOptions: Pair<Color, Color> = Color.White to Color.Black,
+): Color {
+    val (a, b) = textOptions
+    return if (abs(apcaContrast(a, bg)) >= abs(apcaContrast(b, bg))) a else b
+}
+
+internal const val MAX_POWER_ZONES = 7
+internal const val MAX_HR_ZONES = 5
+
 // Karoo power zones (7 zones, low to high)
 internal val karooPowerColors =
     listOf(
@@ -129,9 +143,11 @@ internal val hsluvPowerColors =
 // HSLuv HR zones: Z1, Z2, Z4, Z6, Z7 from the power palette (Wahoo-style selection)
 internal val hsluvHrColors = listOf(0, 1, 3, 5, 6).map { hsluvPowerColors[it] }
 
-// Readable palettes: HSLuv-corrected to |Lc| ≥ 45 against black (#000000).
-// Pre-computed via scripts/apca_hsluv.py. HR palettes are index subsets of their power palette.
-internal val karooPowerColorsReadable = listOf(
+// Readable palettes: HSLuv-corrected to |Lc| ≥ 45 against the datafield
+// background. Dark variants target #000000 (night mode); Light variants
+// target #FFFFFF (day mode). Pre-computed via scripts/apca_hsluv.py.
+// HR palettes are index subsets of their power palette.
+internal val karooPowerColorsReadableDark = listOf(
     Color(0xFF22AA48), // Zone 1 – Active Recovery   (dark green)
     Color(0xFF40D078), // Zone 2 – Endurance         (mint green)
     Color(0xFFF0D800), // Zone 3 – Tempo             (yellow)
@@ -140,9 +156,9 @@ internal val karooPowerColorsReadable = listOf(
     Color(0xFFFC5C61), // Zone 6 – Anaerobic         (red)
     Color(0xFFDE5AF3), // Zone 7 – Neuromuscular     (purple)
 )
-internal val karooHrColorsReadable = listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadable[it] }
+internal val karooHrColorsReadableDark = listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadableDark[it] }
 
-internal val wahooPowerColorsReadable = listOf(
+internal val wahooPowerColorsReadableDark = listOf(
     Color(0xFFC0C0C0), // Zone 1 – Recovery Miles    (grey)
     Color(0xFF868FDC), // Zone 2 – Foundation Miles  (navy)
     Color(0xFF549AD9), // Zone 3 – Endurance Miles   (blue)
@@ -151,9 +167,9 @@ internal val wahooPowerColorsReadable = listOf(
     Color(0xFFED6F1A), // Zone 6 – Climbing Repeats  (orange)
     Color(0xFFF86159), // Zone 7 – Power Intervals   (red)
 )
-internal val wahooHrColorsReadable = listOf(0, 1, 3, 5, 6).map { wahooPowerColorsReadable[it] }
+internal val wahooHrColorsReadableDark = listOf(0, 1, 3, 5, 6).map { wahooPowerColorsReadableDark[it] }
 
-internal val intervalsPowerColorsReadable = listOf(
+internal val intervalsPowerColorsReadableDark = listOf(
     Color(0xFF3DB39F), // Zone 1 – Active Recovery   (teal)
     Color(0xFF3DB33F), // Zone 2 – Endurance         (green)
     Color(0xFFFCD549), // Zone 3 – Tempo             (yellow)
@@ -162,9 +178,9 @@ internal val intervalsPowerColorsReadable = listOf(
     Color(0xFFA086E2), // Zone 6 – Anaerobic         (purple)
     Color(0xFF9793A3), // Zone 7 – Neuromuscular     (grey-purple)
 )
-internal val intervalsHrColorsReadable = intervalsPowerColorsReadable.take(5)
+internal val intervalsHrColorsReadableDark = intervalsPowerColorsReadableDark.take(5)
 
-internal val zwiftPowerColorsReadable = listOf(
+internal val zwiftPowerColorsReadableDark = listOf(
     Color(0xFF929698), // Zone 1 – Active Recovery   (grey)
     Color(0xFF5594F5), // Zone 2 – Endurance         (blue)
     Color(0xFF59B962), // Zone 3 – Tempo             (green)
@@ -173,27 +189,118 @@ internal val zwiftPowerColorsReadable = listOf(
     Color(0xFFFA604D), // Zone 6 – Anaerobic         (red)
     Color(0xFFFA604D), // Zone 7 – Neuromuscular     (red, same as zone 6)
 )
-internal val zwiftHrColorsReadable = zwiftPowerColorsReadable.take(5)
+internal val zwiftHrColorsReadableDark = zwiftPowerColorsReadableDark.take(5)
 
-fun powerZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO, readable: Boolean = true): Color {
+internal val karooPowerColorsReadableLight = listOf(
+    Color(0xFF1A8C3A), // Zone 1 – Active Recovery   (dark green)
+    Color(0xFF3BC16F), // Zone 2 – Endurance         (mint green)
+    Color(0xFFC0AC00), // Zone 3 – Tempo             (yellow)
+    Color(0xFFF08868), // Zone 4 – Lactate Threshold (salmon)
+    Color(0xFFF06020), // Zone 5 – VO2 Max           (orange)
+    Color(0xFFD01020), // Zone 6 – Anaerobic         (red)
+    Color(0xFF9020A0), // Zone 7 – Neuromuscular     (purple)
+)
+internal val karooHrColorsReadableLight = listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadableLight[it] }
+
+internal val wahooPowerColorsReadableLight = listOf(
+    Color(0xFFABABAB), // Zone 1 – Recovery Miles    (grey)
+    Color(0xFF253070), // Zone 2 – Foundation Miles  (navy)
+    Color(0xFF4E90CC), // Zone 3 – Endurance Miles   (blue)
+    Color(0xFF48B830), // Zone 4 – Tempo             (green)
+    Color(0xFFC0AC11), // Zone 5 – Steady State      (yellow)
+    Color(0xFFE06818), // Zone 6 – Climbing Repeats  (orange)
+    Color(0xFFE03020), // Zone 7 – Power Intervals   (red)
+)
+internal val wahooHrColorsReadableLight = listOf(0, 1, 3, 5, 6).map { wahooPowerColorsReadableLight[it] }
+
+internal val intervalsPowerColorsReadableLight = listOf(
+    Color(0xFF3DB39F), // Zone 1 – Active Recovery   (teal)
+    Color(0xFF3DB33F), // Zone 2 – Endurance         (green)
+    Color(0xFFC8A834), // Zone 3 – Tempo             (yellow)
+    Color(0xFFF79226), // Zone 4 – Lactate Threshold (orange)
+    Color(0xFFE34074), // Zone 5 – VO2 Max           (pink)
+    Color(0xFF8963D8), // Zone 6 – Anaerobic         (purple)
+    Color(0xFF797388), // Zone 7 – Neuromuscular     (grey-purple)
+)
+internal val intervalsHrColorsReadableLight = intervalsPowerColorsReadableLight.take(5)
+
+internal val zwiftPowerColorsReadableLight = listOf(
+    Color(0xFF7B7E80), // Zone 1 – Active Recovery   (grey)
+    Color(0xFF368AF4), // Zone 2 – Endurance         (blue)
+    Color(0xFF59B962), // Zone 3 – Tempo             (green)
+    Color(0xFFCBA73C), // Zone 4 – Lactate Threshold (yellow)
+    Color(0xFFF06B45), // Zone 5 – VO2 Max           (orange)
+    Color(0xFFF8431F), // Zone 6 – Anaerobic         (red)
+    Color(0xFFF8431F), // Zone 7 – Neuromuscular     (red, same as zone 6)
+)
+internal val zwiftHrColorsReadableLight = zwiftPowerColorsReadableLight.take(5)
+
+// When readable = true, isNightMode picks between the dark-bg-corrected
+// (#000000) and light-bg-corrected (#FFFFFF) variant of the palette.
+// readable = false ignores isNightMode and returns the original fill
+// palette — BACKGROUND mode renders this color as the cell fill and lets
+// bestTextOnBackground handle text contrast on top.
+fun powerZoneColor(
+    zone: Int,
+    palette: ZonePalette = ZonePalette.KAROO,
+    readable: Boolean = true,
+    isNightMode: Boolean = true,
+): Color {
     val colors =
         when (palette) {
-            ZonePalette.KAROO -> if (readable) karooPowerColorsReadable else karooPowerColors
-            ZonePalette.WAHOO -> if (readable) wahooPowerColorsReadable else wahooPowerColors
-            ZonePalette.INTERVALS -> if (readable) intervalsPowerColorsReadable else intervalsPowerColors
-            ZonePalette.ZWIFT -> if (readable) zwiftPowerColorsReadable else zwiftPowerColors
+            ZonePalette.KAROO -> when {
+                !readable -> karooPowerColors
+                isNightMode -> karooPowerColorsReadableDark
+                else -> karooPowerColorsReadableLight
+            }
+            ZonePalette.WAHOO -> when {
+                !readable -> wahooPowerColors
+                isNightMode -> wahooPowerColorsReadableDark
+                else -> wahooPowerColorsReadableLight
+            }
+            ZonePalette.INTERVALS -> when {
+                !readable -> intervalsPowerColors
+                isNightMode -> intervalsPowerColorsReadableDark
+                else -> intervalsPowerColorsReadableLight
+            }
+            ZonePalette.ZWIFT -> when {
+                !readable -> zwiftPowerColors
+                isNightMode -> zwiftPowerColorsReadableDark
+                else -> zwiftPowerColorsReadableLight
+            }
             ZonePalette.HSLUV -> hsluvPowerColors
         }
     return colors.getOrElse(zone - 1) { Color.White }
 }
 
-fun hrZoneColor(zone: Int, palette: ZonePalette = ZonePalette.KAROO, readable: Boolean = true): Color {
+fun hrZoneColor(
+    zone: Int,
+    palette: ZonePalette = ZonePalette.KAROO,
+    readable: Boolean = true,
+    isNightMode: Boolean = true,
+): Color {
     val colors =
         when (palette) {
-            ZonePalette.KAROO -> if (readable) karooHrColorsReadable else karooHrColors
-            ZonePalette.WAHOO -> if (readable) wahooHrColorsReadable else wahooHrColors
-            ZonePalette.INTERVALS -> if (readable) intervalsHrColorsReadable else intervalsHrColors
-            ZonePalette.ZWIFT -> if (readable) zwiftHrColorsReadable else zwiftHrColors
+            ZonePalette.KAROO -> when {
+                !readable -> karooHrColors
+                isNightMode -> karooHrColorsReadableDark
+                else -> karooHrColorsReadableLight
+            }
+            ZonePalette.WAHOO -> when {
+                !readable -> wahooHrColors
+                isNightMode -> wahooHrColorsReadableDark
+                else -> wahooHrColorsReadableLight
+            }
+            ZonePalette.INTERVALS -> when {
+                !readable -> intervalsHrColors
+                isNightMode -> intervalsHrColorsReadableDark
+                else -> intervalsHrColorsReadableLight
+            }
+            ZonePalette.ZWIFT -> when {
+                !readable -> zwiftHrColors
+                isNightMode -> zwiftHrColorsReadableDark
+                else -> zwiftHrColorsReadableLight
+            }
             ZonePalette.HSLUV -> hsluvHrColors
         }
     return colors.getOrElse(zone - 1) { Color.White }

@@ -43,6 +43,10 @@
     <string name="lap_power_description">Lap power with zone coloring</string>
     <string name="last_lap_power_name">Last Lap Power</string>
     <string name="last_lap_power_description">Last lap power with zone coloring</string>
+    <string name="power_zone_name">Power Zone</string>
+    <string name="power_zone_description">Current power zone, with zone coloring and integer or decimal display</string>
+    <string name="max_power_name">Max Power</string>
+    <string name="max_power_description">Maximum power reached this ride, with zone coloring</string>
     <string name="grade_name">Grade</string>
     <string name="grade_description">Current road gradient with gradient palette coloring</string>
     <string name="elevation_sparkline_name">Elevation Sparkline</string>
@@ -53,6 +57,12 @@
     <string name="lap_avg_hr_description">Average heart rate this lap with zone coloring</string>
     <string name="last_lap_avg_hr_name">Last Lap Heart Rate</string>
     <string name="last_lap_avg_hr_description">Average heart rate from the previous lap with zone coloring</string>
+    <string name="hr_percent_max_name">%Max HR</string>
+    <string name="hr_percent_max_description">Current heart rate as a percentage of maximum HR, with zone coloring</string>
+    <string name="max_hr_name">Max HR</string>
+    <string name="max_hr_description">Maximum heart rate reached this ride, with zone coloring</string>
+    <string name="hr_zone_name">HR Zone</string>
+    <string name="hr_zone_description">Current heart rate zone, with zone coloring and integer or decimal display</string>
     <string name="time_lap_name">Lap Time</string>
     <string name="time_lap_description">Recording duration this lap</string>
     <string name="time_last_lap_name">Last Lap Time</string>
