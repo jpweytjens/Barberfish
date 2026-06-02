@@ -66,5 +66,8 @@ docs/karoo-ext_decompiled/
 # Superpowers
 docs/superpowers/
 
+# Local development roadmap (not for publishing)
+/ROADMAP.md
+
 # Diagnostic script output (regenerated via scripts/preview_bg_text_picks.py)
 scripts/output/
