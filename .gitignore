@@ -71,3 +71,5 @@ docs/superpowers/
 
 # Diagnostic script output (regenerated via scripts/preview_bg_text_picks.py)
 scripts/output/
+# Brainstorming visual-companion mockups (local only)
+.superpowers/
