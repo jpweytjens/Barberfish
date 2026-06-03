@@ -27,6 +27,7 @@ import com.jpweytjens.barberfish.datatype.shared.resolveClimbTuning
 import com.jpweytjens.barberfish.extension.ClimberMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -105,7 +106,7 @@ private fun DrawScope.drawConnected(points: List<Offset>, color: Color, widthPx:
 }
 
 private fun DrawScope.drawChevron(center: Offset, bearingDeg: Float, color: Color, sizePx: Float) {
-    val a = bearingDeg * (Math.PI / 180.0)
+    val a = bearingDeg * (PI / 180.0)
     val fx = sin(a).toFloat()   // forward (travel) unit: screen east = +x
     val fy = -cos(a).toFloat()  // screen north = -y
     val px = -fy                // perpendicular unit
