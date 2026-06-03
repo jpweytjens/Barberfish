@@ -38,7 +38,8 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import kotlin.math.roundToInt
 
 // Fixed preview "zoom": every coloured run gets a chevron so the toggle reads clearly.
-private const val PREVIEW_CHEVRON_SPACING_M = 80.0
+// Spaced wide enough that chevrons don't overlap at the middle-section crop's zoom.
+private const val PREVIEW_CHEVRON_SPACING_M = 150.0
 
 // On-screen chevron width; the drawable's 25x17 viewport fixes the height ratio. Drawing
 // the real ic_climber_chevron_* drawables (grade fill + black outline) matches the device,
