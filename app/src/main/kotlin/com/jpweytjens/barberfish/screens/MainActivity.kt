@@ -980,9 +980,19 @@ private fun ClimberMapCard(
     onSelect: () -> Unit,
     onUpdate: (ClimberMapConfig) -> Unit,
 ) {
-    ExpandableCard(title = "MAP OVERLAY", selected = selected, onSelect = onSelect) {
-        HelperText("Gradient-colour upcoming climbs along the route on the map.")
-
+    ExpandableCard(
+        title = "MAP OVERLAY",
+        selected = selected,
+        onSelect = onSelect,
+        headerExtra = {
+            HelperText("Gradient-colour upcoming climbs along the route on the map.")
+            ClimbOverlayPreview(
+                config = config,
+                sparklineConfig = sparklineConfig,
+                gradePalette = gradePalette,
+            )
+        },
+    ) {
         ControlLabel("ENABLED")
         SegmentedRow(
             options = listOf(true to "On", false to "Off"),
