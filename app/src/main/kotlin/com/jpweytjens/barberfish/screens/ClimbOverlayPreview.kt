@@ -9,30 +9,42 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ClimbPreviewFixture
 import com.jpweytjens.barberfish.datatype.shared.LemonYellow
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.mercatorBoundsAspect
 import com.jpweytjens.barberfish.datatype.shared.projectToUnit
 import com.jpweytjens.barberfish.datatype.shared.resolveClimbTuning
 import com.jpweytjens.barberfish.extension.ClimberMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+import kotlin.math.roundToInt
 
 // Fixed preview "zoom": every coloured run gets a chevron so the toggle reads clearly.
 private const val PREVIEW_CHEVRON_SPACING_M = 80.0
+
+// On-screen chevron width; the drawable's 25x17 viewport fixes the height ratio. Drawing
+// the real ic_climber_chevron_* drawables (grade fill + black outline) matches the device,
+// where chevrons sit above the route line as their own symbol layer.
+private val CHEVRON_WIDTH = 12.dp
+private const val CHEVRON_HEIGHT_RATIO = 17f / 25f
 
 @Composable
 internal fun ClimbOverlayPreview(
@@ -70,6 +82,19 @@ internal fun ClimbOverlayPreview(
         else R.drawable.preview_climb_map_light,
     )
 
+    // Rasterise one bitmap per distinct grade colour from the real chevron drawables.
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
+    val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
+    val chevronBitmaps: Map<Int, ImageBitmap> = remember(specs, chevW, chevH) {
+        specs.chevrons.map { it.colorArgb }.distinct().mapNotNull { argb ->
+            val drawable = ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
+                ?: return@mapNotNull null
+            argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
+        }.toMap()
+    }
+
     Canvas(
         modifier
             .fillMaxWidth()
@@ -89,9 +114,16 @@ internal fun ClimbOverlayPreview(
             drawConnected(points.map { project(it.lat, it.lng) }, Color(spec.colorArgb), routeWidth)
         }
 
-        val chevronSize = 6.dp.toPx()
         specs.chevrons.forEach { ch ->
-            drawChevron(project(ch.lat, ch.lng), ch.bearingDeg, Color(ch.colorArgb), chevronSize)
+            val bmp = chevronBitmaps[ch.colorArgb] ?: return@forEach
+            val center = project(ch.lat, ch.lng)
+            // Drawable points up (tip = north); rotate clockwise by the travel bearing.
+            rotate(degrees = ch.bearingDeg, pivot = center) {
+                drawImage(
+                    image = bmp,
+                    topLeft = Offset(center.x - bmp.width / 2f, center.y - bmp.height / 2f),
+                )
+            }
         }
     }
 }
@@ -103,24 +135,4 @@ private fun DrawScope.drawConnected(points: List<Offset>, color: Color, widthPx:
         for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
     }
     drawPath(path, color, style = Stroke(width = widthPx, cap = StrokeCap.Round, join = StrokeJoin.Round))
-}
-
-private fun DrawScope.drawChevron(center: Offset, bearingDeg: Float, color: Color, sizePx: Float) {
-    val a = bearingDeg * (PI / 180.0)
-    val fx = sin(a).toFloat()   // forward (travel) unit: screen east = +x
-    val fy = -cos(a).toFloat()  // screen north = -y
-    val px = -fy                // perpendicular unit
-    val py = fx
-    val tip = Offset(center.x + fx * sizePx, center.y + fy * sizePx)
-    val baseX = center.x - fx * sizePx * 0.4f
-    val baseY = center.y - fy * sizePx * 0.4f
-    val left = Offset(baseX + px * sizePx * 0.8f, baseY + py * sizePx * 0.8f)
-    val right = Offset(baseX - px * sizePx * 0.8f, baseY - py * sizePx * 0.8f)
-    val path = Path().apply {
-        moveTo(tip.x, tip.y)
-        lineTo(left.x, left.y)
-        lineTo(right.x, right.y)
-        close()
-    }
-    drawPath(path, color)
 }
