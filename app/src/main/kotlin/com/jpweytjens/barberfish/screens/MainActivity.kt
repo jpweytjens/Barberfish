@@ -113,6 +113,7 @@ import com.jpweytjens.barberfish.datatype.shared.RDYLGN_RED
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
@@ -130,6 +131,8 @@ import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
+import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
@@ -181,8 +184,10 @@ import com.jpweytjens.barberfish.extension.streamHRZoneFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.saveClimberMapConfig
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.saveHudSparklineConfig
+import com.jpweytjens.barberfish.extension.streamClimberMapConfig
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
@@ -235,6 +240,7 @@ class MainActivity : ComponentActivity() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
         var hudSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
+        var climberMapConfig by remember { mutableStateOf(ClimberMapConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -287,6 +293,7 @@ class MainActivity : ComponentActivity() {
             launch { streamHUDConfig().collect { hudConfig = it } }
             launch { streamHudSparklineConfig().collect { hudSparklineConfig = it } }
             launch { streamFieldSparklineConfig().collect { fieldSparklineConfig = it } }
+            launch { streamClimberMapConfig().collect { climberMapConfig = it } }
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
             launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
             launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
@@ -846,6 +853,18 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveFieldSparklineConfig(updated) }
                         },
                     )
+                    var climberMapExpanded by remember { mutableStateOf(false) }
+                    ClimberMapCard(
+                        config = climberMapConfig,
+                        sparklineConfig = fieldSparklineConfig,
+                        gradePalette = zoneConfig.gradePalette,
+                        selected = climberMapExpanded,
+                        onSelect = { climberMapExpanded = !climberMapExpanded },
+                        onUpdate = { updated ->
+                            climberMapConfig = updated
+                            lifecycleScope.launch { saveClimberMapConfig(updated) }
+                        },
+                    )
                 } // end Climbing
 
                 CollapsibleSection(
@@ -951,6 +970,74 @@ class MainActivity : ComponentActivity() {
 
 // Duration (ms) of expand/shrink/chevron animations for collapsible sections and cards.
 internal const val SECTION_ANIM_MS = 200
+
+@Composable
+private fun ClimberMapCard(
+    config: ClimberMapConfig,
+    sparklineConfig: SparklineConfig,
+    gradePalette: GradePalette,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onUpdate: (ClimberMapConfig) -> Unit,
+) {
+    ExpandableCard(title = "MAP OVERLAY", selected = selected, onSelect = onSelect) {
+        HelperText("Gradient-colour upcoming climbs along the route on the map.")
+
+        ControlLabel("ENABLED")
+        SegmentedRow(
+            options = listOf(true to "On", false to "Off"),
+            selected = config.enabled,
+            onSelect = { onUpdate(config.copy(enabled = it)) },
+        )
+
+        if (config.enabled) {
+            ControlLabel("TUNING")
+            SegmentedRow(
+                options = listOf(true to "Sync", false to "Independent"),
+                selected = config.syncWithSparkline,
+                onSelect = { onUpdate(config.copy(syncWithSparkline = it)) },
+            )
+
+            if (config.syncWithSparkline) {
+                HelperText("Following the sparkline's emphasis and simplification.")
+            } else {
+                val posMin = gradeFillRange(gradePalette, skipBandsClimb = config.skipBands).posMin
+                val emphasisReadout =
+                    if (config.skipBands > 0 && posMin != null) {
+                        "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+                    } else {
+                        null
+                    }
+                LabeledHelper("EMPHASIS") {
+                    HelperText("Filter out gentle grades so meaningful climbs stand out.")
+                    if (emphasisReadout != null) HelperText(emphasisReadout)
+                }
+                SegmentedRow(
+                    options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
+                    selected = config.skipBands,
+                    onSelect = { onUpdate(config.copy(skipBands = it)) },
+                )
+
+                LabeledHelper("SIMPLIFICATION") {
+                    HelperText("Merges small elevation wiggles into larger same-colour blocks.")
+                }
+                SegmentedRow(
+                    options = ElevationSimplification.entries.map { it to it.label },
+                    selected = config.simplification,
+                    onSelect = { onUpdate(config.copy(simplification = it)) },
+                )
+            }
+
+            ControlLabel("CHEVRONS")
+            HelperText("Draw direction chevrons inside each coloured segment.")
+            SegmentedRow(
+                options = listOf(true to "On", false to "Off"),
+                selected = config.showChevrons,
+                onSelect = { onUpdate(config.copy(showChevrons = it)) },
+            )
+        }
+    }
+}
 
 @Composable
 internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
