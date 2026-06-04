@@ -78,6 +78,15 @@ fun renderOverviewSparkline(
     return bitmap
 }
 
+/** Static preview of the overview sparkline from the bundled fixture, dot at ~45%. */
+fun overviewPreviewBitmap(widthPx: Int, heightPx: Int, isNightMode: Boolean): Bitmap? {
+    val points = visvalingamWhyatt(previewElevationFixture(), OVERVIEW_MIN_AREA_M2)
+    if (points.size < 2) return null
+    val len = points.last().first - points.first().first
+    val positionM = points.first().first + len * 0.45f
+    return renderOverviewSparkline(points, positionM, widthPx, heightPx, BarberfishYellow.toArgb(), isNightMode)
+}
+
 @OptIn(FlowPreview::class)
 fun overviewBitmapFlow(
     karooSystem: KarooSystemService,

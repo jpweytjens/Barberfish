@@ -82,6 +82,7 @@ import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.EffortField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HRMaxPercentField
@@ -99,6 +100,7 @@ import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
+import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -287,6 +289,7 @@ class MainActivity : ComponentActivity() {
         var hudExpanded by remember { mutableStateOf(false) }
         var climberExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
+        var navigationExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
@@ -890,6 +893,22 @@ class MainActivity : ComponentActivity() {
                 }
 
                 CollapsibleSection(
+                    title = "Navigation",
+                    description = "Distance, elevation, and route-remaining fields",
+                    icon = R.drawable.ic_section_fields,
+                    expanded = navigationExpanded,
+                    onToggle = { navigationExpanded = !navigationExpanded },
+                ) {
+                    ControlLabel("ROUTE REMAINING")
+                    HelperText("Whole-route elevation profile with your position.")
+                    OverviewPreviewBox()
+
+                    ControlLabel("REMAINING EFFORT")
+                    HelperText("Distance and climbing left, stacked.")
+                    FieldPreviewBox(EffortField.previewStates(userProfile), ZoneColorMode.NONE)
+                }
+
+                CollapsibleSection(
                     title = "Global",
                     description = "Color palettes and time format shared across all data fields",
                     icon = R.drawable.ic_section_global,
@@ -1295,6 +1314,29 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
             .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
         contentScale = ContentScale.FillBounds,
     )
+}
+
+@Composable
+private fun OverviewPreviewBox() {
+    val densityValue = LocalDensity.current.density
+    val isNight = isSystemInDarkTheme()
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val widthPx = (maxWidth.value * densityValue).toInt().coerceAtLeast(1)
+        val heightPx = (80.dp.value * densityValue).toInt()
+        val bitmap = remember(widthPx, heightPx, isNight) {
+            overviewPreviewBitmap(widthPx, heightPx, isNight)
+        }
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(80.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (isNight) Color.Black else Color.White),
+                contentScale = ContentScale.FillBounds,
+            )
+        }
+    }
 }
 
 // Shared expand/collapse shell for FieldCard and SparklineCard. The header shows
