@@ -995,7 +995,7 @@ private fun ClimberMapCard(
     ) {
         ControlLabel("ENABLED")
         SegmentedRow(
-            options = listOf(true to "On", false to "Off"),
+            options = listOf(false to "Off", true to "On"),
             selected = config.enabled,
             onSelect = { onUpdate(config.copy(enabled = it)) },
         )
@@ -1041,7 +1041,7 @@ private fun ClimberMapCard(
             ControlLabel("CHEVRONS")
             HelperText("Draw direction chevrons inside each coloured segment.")
             SegmentedRow(
-                options = listOf(true to "On", false to "Off"),
+                options = listOf(false to "Off", true to "On"),
                 selected = config.showChevrons,
                 onSelect = { onUpdate(config.copy(showChevrons = it)) },
             )
