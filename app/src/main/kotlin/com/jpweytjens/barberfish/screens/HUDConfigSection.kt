@@ -549,6 +549,10 @@ private fun HUDSlotFieldCard(
                 )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.Grade -> {}
+                HUDSlotField.Distance -> {}
+                HUDSlotField.DistanceRemaining -> {}
+                HUDSlotField.ElevationRemaining -> {}
+                HUDSlotField.DescentRemaining -> {}
                 is HUDSlotField.Time -> {}
                 is HUDSlotField.ETA -> {}
             }
@@ -598,6 +602,10 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             is HUDSlotField.AvgSpeed -> if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
             HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.Grade -> "Grade"
+            HUDSlotField.Distance -> "Distance"
+            HUDSlotField.DistanceRemaining -> "Distance remaining"
+            HUDSlotField.ElevationRemaining -> "Elevation remaining"
+            HUDSlotField.DescentRemaining -> "Descent remaining"
             is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
             is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
         }
@@ -639,6 +647,10 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                 "Other" to listOf(
                     "Cadence" to HUDSlotField.Cadence,
                     "Grade" to HUDSlotField.Grade,
+                    "Distance" to HUDSlotField.Distance,
+                    "Distance remaining" to HUDSlotField.DistanceRemaining,
+                    "Elevation remaining" to HUDSlotField.ElevationRemaining,
+                    "Descent remaining" to HUDSlotField.DescentRemaining,
                 ),
                 "Duration" to listOf(
                     "Elapsed time" to HUDSlotField.Time(TimeKind.TOTAL),

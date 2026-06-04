@@ -295,6 +295,18 @@ class HUDField(private val karooSystem: KarooSystemService) :
             HUDSlotField.Grade ->
                 GradeField.gradeOlsFlow(karooSystem)
                     .map { GradeField.toGradeFieldState(it, GradeFieldConfig(slot.colorMode), zones.gradePalette) }
+            HUDSlotField.Distance ->
+                karooSystem.streamDataFlow(ValueKind.DISTANCE.sourceType)
+                    .map { ValueField.toFieldState(it, ValueKind.DISTANCE, profile) }
+            HUDSlotField.DistanceRemaining ->
+                karooSystem.streamDataFlow(ValueKind.DISTANCE_REMAINING.sourceType)
+                    .map { ValueField.toFieldState(it, ValueKind.DISTANCE_REMAINING, profile) }
+            HUDSlotField.ElevationRemaining ->
+                karooSystem.streamDataFlow(ValueKind.ELEVATION_REMAINING.sourceType)
+                    .map { ValueField.toFieldState(it, ValueKind.ELEVATION_REMAINING, profile) }
+            HUDSlotField.DescentRemaining ->
+                karooSystem.streamDataFlow(ValueKind.DESCENT_REMAINING.sourceType)
+                    .map { ValueField.toFieldState(it, ValueKind.DESCENT_REMAINING, profile) }
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(karooSystem, slot.avgSpeedConfig, profile, slot.field.includePaused)
             is HUDSlotField.Time ->
@@ -366,6 +378,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     HRZoneField.previewStates(HRZoneFieldConfig(slotCfg.colorMode, slotCfg.zoneDisplayMode), profile, zones)
                 HUDSlotField.Grade ->
                     GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
+                HUDSlotField.Distance ->
+                    ValueField.previewStates(ValueKind.DISTANCE, profile)
+                HUDSlotField.DistanceRemaining ->
+                    ValueField.previewStates(ValueKind.DISTANCE_REMAINING, profile)
+                HUDSlotField.ElevationRemaining ->
+                    ValueField.previewStates(ValueKind.ELEVATION_REMAINING, profile)
+                HUDSlotField.DescentRemaining ->
+                    ValueField.previewStates(ValueKind.DESCENT_REMAINING, profile)
                 is HUDSlotField.Time ->
                     TimeField.previewStates(timeCfg, field.kind)
                 is HUDSlotField.ETA ->

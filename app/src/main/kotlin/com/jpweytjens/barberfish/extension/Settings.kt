@@ -100,6 +100,14 @@ sealed interface HUDSlotField {
 
     @Serializable data object Grade : HUDSlotField
 
+    @Serializable data object Distance : HUDSlotField
+
+    @Serializable data object DistanceRemaining : HUDSlotField
+
+    @Serializable data object ElevationRemaining : HUDSlotField
+
+    @Serializable data object DescentRemaining : HUDSlotField
+
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
 
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
