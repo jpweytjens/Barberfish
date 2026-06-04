@@ -34,6 +34,7 @@ import com.jpweytjens.barberfish.datatype.shared.resolveClimbTuning
 import com.jpweytjens.barberfish.extension.ClimberMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 // Fixed preview "zoom": every coloured run gets a chevron so the toggle reads clearly.
@@ -119,9 +120,17 @@ internal fun ClimbOverlayPreview(
         drawConnected(routePx, LemonYellow, routeWidth)
 
         // Grade-coloured segments overlay the native yellow line only when polylines are on.
+        // Pull each contiguous chain's outer ends in by half the stroke so the round cap
+        // lands on the true endpoint, mirroring the device's metre-space cap trim.
         if (config.showPolylines) {
             specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
-                drawConnected(points.map { project(it.lat, it.lng) }, Color(spec.colorArgb), routeWidth)
+                val px = points.map { project(it.lat, it.lng) }
+                val trimmed = trimEndsPx(
+                    px,
+                    startPx = if (spec.trimStart) routeWidth / 2f else 0f,
+                    endPx = if (spec.trimEnd) routeWidth / 2f else 0f,
+                )
+                drawConnected(trimmed, Color(spec.colorArgb), routeWidth)
             }
         }
 
@@ -254,4 +263,32 @@ private fun DrawScope.drawConnected(points: List<Offset>, color: Color, widthPx:
         for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
     }
     drawPath(path, color, style = Stroke(width = widthPx, cap = StrokeCap.Round, join = StrokeJoin.Round))
+}
+
+/** Removes [startPx] from the front and [endPx] from the back of a projected polyline. */
+private fun trimEndsPx(points: List<Offset>, startPx: Float, endPx: Float): List<Offset> {
+    if (points.size < 2) return points
+    var pts = points
+    if (startPx > 0f) pts = dropFromStart(pts, startPx)
+    if (endPx > 0f && pts.size >= 2) pts = dropFromStart(pts.asReversed(), endPx).asReversed()
+    return pts
+}
+
+/** Drops [dist] pixels of length from the start of [points], interpolating a new first point. */
+private fun dropFromStart(points: List<Offset>, dist: Float): List<Offset> {
+    if (points.size < 2 || dist <= 0f) return points
+    var remaining = dist
+    for (i in 0 until points.size - 1) {
+        val a = points[i]
+        val b = points[i + 1]
+        val seg = hypot(b.x - a.x, b.y - a.y)
+        if (seg == 0f) continue
+        if (seg >= remaining) {
+            val t = remaining / seg
+            val moved = Offset(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)
+            return listOf(moved) + points.subList(i + 1, points.size)
+        }
+        remaining -= seg
+    }
+    return listOf(points.last())
 }
