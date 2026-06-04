@@ -986,11 +986,6 @@ private fun ClimberMapCard(
         onSelect = onSelect,
         headerExtra = {
             HelperText("Gradient-colour upcoming climbs along the route on the map.")
-            ClimbOverlayPreview(
-                config = config,
-                sparklineConfig = sparklineConfig,
-                gradePalette = gradePalette,
-            )
         },
     ) {
         ControlLabel("ENABLED")
@@ -1001,6 +996,12 @@ private fun ClimberMapCard(
         )
 
         if (config.enabled) {
+            ClimbOverlayPreview(
+                config = config,
+                sparklineConfig = sparklineConfig,
+                gradePalette = gradePalette,
+            )
+
             ControlLabel("TUNING")
             SegmentedRow(
                 options = listOf(true to "Sync", false to "Independent"),
