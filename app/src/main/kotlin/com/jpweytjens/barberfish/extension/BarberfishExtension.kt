@@ -29,6 +29,7 @@ import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.groundResolution
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
@@ -40,6 +41,7 @@ import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -158,7 +160,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     .onStart { emit(OnMapZoomLevel(15.0)) },
                 karooSystem.consumerFlow<OnLocationChanged>()
                     .onStart { emit(OnLocationChanged(0.0, 0.0, null)) },
-            ) { zoom, loc -> ViewportInputs(zoom.zoomLevel, loc.lat, loc.lng) }
+            ) { zoom, loc ->
+                // Round to integer zoom: the rideapp emits continuous zoom on every
+                // SCALE_EVENT (including the double-tap settling animation), but each rebuild
+                // is a cross-IPC full overlay rebuild. Snapping to integer levels collapses a
+                // gesture to one rebuild that settles cleanly and makes spacing deterministic.
+                ViewportInputs(zoom.zoomLevel.roundToInt().toDouble(), loc.lat, loc.lng)
+            }
 
             configNavFlow.combine(viewportFlow) { cfg, vp -> cfg to vp }
                 .distinctUntilChanged { prev, next ->
@@ -195,6 +203,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         (it.startDistance - rejoinOffset) to
                             (it.startDistance + it.length - rejoinOffset)
                     }
+                    // Round line-cap overhang per end = (width/2) px in ground metres at the
+                    // current (stepped) zoom. Trimmed at chain outer ends inside the builder.
+                    val capTrimM = (CLIMB_OVERLAY_WIDTH / 2.0) *
+                        groundResolution(viewport.lat, viewport.zoomLevel)
                     val specs = buildClimbOverlaySpecs(
                         routePolyline = route.routePolyline,
                         routeElevationPolyline = route.routeElevationPolyline,
@@ -209,6 +221,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronGuaranteePerRun = guaranteePerRun,
                         chevronMinSpacingM = chevronCollision,
                         chevronViewport = bounds,
+                        capTrimM = capTrimM,
                     )
                     Timber.d("climber: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° guarantee=$guaranteePerRun zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     if (BuildConfig.DEBUG) {
@@ -281,9 +294,10 @@ private data class ViewportInputs(
     val lat: Double,
     val lng: Double,
 ) {
-    /** Bucket lat/lng to ~11 m and zoom to 0.5 so GPS jitter doesn't trigger rebuilds. */
+    /** Bucket lat/lng to ~11 m so GPS jitter doesn't trigger rebuilds; zoom is already
+     *  integer-stepped at the flow source. */
     fun bucketedSignature() = ViewportSignature(
-        zoomBucket = (zoomLevel * 2).toInt(),
+        zoomBucket = zoomLevel.toInt(),
         latBucket = (lat * 1e4).toLong(),
         lngBucket = (lng * 1e4).toLong(),
     )
