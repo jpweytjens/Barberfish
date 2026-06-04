@@ -1,13 +1,17 @@
 package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.toArgb
+import com.jpweytjens.barberfish.datatype.shared.ClimbPolylineSpec
 import com.jpweytjens.barberfish.datatype.shared.LemonYellow
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
+import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
+import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.ClimberMapConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradePalette
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -414,6 +418,107 @@ class ClimbPolylinesTest {
         )
         assertEquals(1, overlay.polylines.size)
         assertTrue(overlay.chevrons.isEmpty())
+    }
+
+    private fun segLenM(spec: ClimbPolylineSpec): Double =
+        decodeGpsPolyline(spec.encoded).let {
+            if (it.size < 2) 0.0 else cumulativeDistancesM(it).last()
+        }
+
+    @Test fun cap_trim_flags_mark_chain_outer_ends() {
+        // Default fixture: salmon [0,200] and flat [200,300] are adjacent → one chain.
+        // First run owns the chain start, second owns the chain end.
+        val specs = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+        ).polylines
+        assertEquals(2, specs.size)
+        assertTrue(specs[0].trimStart); assertFalse(specs[0].trimEnd)
+        assertFalse(specs[1].trimStart); assertTrue(specs[1].trimEnd)
+    }
+
+    @Test fun cap_trim_shortens_outer_ends_only() {
+        val full = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+        ).polylines
+        val trimmed = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            capTrimM = 20.0,
+        ).polylines
+        // First run: only the chain-start end is pulled in by ~20 m.
+        assertEquals(segLenM(full[0]) - 20.0, segLenM(trimmed[0]), 2.0)
+        // Last run: only the chain-end is pulled in by ~20 m.
+        assertEquals(segLenM(full[1]) - 20.0, segLenM(trimmed[1]), 2.0)
+        // Interior junction is untouched: trimmed[0] still ends where trimmed[1] starts.
+        val end0 = decodeGpsPolyline(trimmed[0].encoded).last()
+        val start1 = decodeGpsPolyline(trimmed[1].encoded).first()
+        assertEquals(end0.lat, start1.lat, 1e-6)
+        assertEquals(end0.lng, start1.lng, 1e-6)
+    }
+
+    @Test fun cap_trim_treats_gap_separated_runs_as_separate_chains() {
+        // dip: 10% [0,100], skipped -5% dip, 15% [200,300] → two non-adjacent chains,
+        // so each run is trimmed at BOTH ends.
+        val dipPolyline = encodeElevationManually(
+            listOf(
+                0f to 100f,
+                100f to 110f,
+                200f to 105f,
+                300f to 120f,
+            ),
+        )
+        val full = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = dipPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+        ).polylines
+        val specs = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = dipPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            capTrimM = 15.0,
+        ).polylines
+        assertEquals(2, specs.size)
+        assertTrue(specs[0].trimStart && specs[0].trimEnd)
+        assertTrue(specs[1].trimStart && specs[1].trimEnd)
+        // Both ends trimmed → each isolated run loses ~2 × 15 m of geometry.
+        assertEquals(segLenM(full[0]) - 30.0, segLenM(specs[0]), 3.0)
+        assertEquals(segLenM(full[1]) - 30.0, segLenM(specs[1]), 3.0)
+    }
+
+    @Test fun cap_trim_does_not_move_chevrons() {
+        val none = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+        ).chevrons
+        val trimmed = buildClimbOverlaySpecs(
+            routePolyline = routePolyline,
+            routeElevationPolyline = elevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = true,
+            cfg = noneCfg,
+            capTrimM = 20.0,
+        ).chevrons
+        assertEquals(none.map { it.id }, trimmed.map { it.id })
+        assertEquals(none.map { it.lat to it.lng }, trimmed.map { it.lat to it.lng })
     }
 
     // --- inline polyline encoders (test-only) -----------------------------------

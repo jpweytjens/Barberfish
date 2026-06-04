@@ -16,6 +16,11 @@ internal data class ClimbPolylineSpec(
     val id: String,
     val encoded: String,
     val colorArgb: Int,
+    // True when this end is the outer end of a contiguous coloured chain (no adjacent
+    // run beyond it). Renderers trim only these ends to cancel the round cap overhang;
+    // interior junctions keep their cap overlap so no gap opens to the native line.
+    val trimStart: Boolean = false,
+    val trimEnd: Boolean = false,
 )
 
 /**
@@ -90,6 +95,7 @@ internal fun buildClimbOverlaySpecs(
     chevronGuaranteePerRun: Boolean = true,
     chevronMinSpacingM: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
+    capTrimM: Double = 0.0,
 ): ClimbOverlaySpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
         return ClimbOverlaySpecs(emptyList(), emptyList())
@@ -134,13 +140,29 @@ internal fun buildClimbOverlaySpecs(
     val polylines = mutableListOf<ClimbPolylineSpec>()
     val chevrons = mutableListOf<ClimbChevronSpec>()
     runs.forEachIndexed { runIdx, run ->
-        val sub = extractSubPolyline(gps, cumDist, run.startM, run.endM)
-        if (sub.size < 2) return@forEachIndexed
-        polylines += ClimbPolylineSpec(
-            id = "barberfish-seg-$runIdx",
-            encoded = encodeGpsPolyline(sub),
-            colorArgb = run.colorArgb,
-        )
+        // A contiguous chain is a maximal run sequence with no distance gap between
+        // neighbours. Only the chain's outer ends overhang the true climb extent via the
+        // renderer's round line-cap, so only those are pulled in by capTrimM; the cap then
+        // lands on the true endpoint. Interior junctions stay full (cap overlap, no gap).
+        val chainStart = runIdx == 0 || runs[runIdx - 1].endM != run.startM
+        val chainEnd = runIdx == runs.lastIndex || runs[runIdx + 1].startM != run.endM
+        // Cap each end's trim so the two never cross: the 0.5 m buffer keeps drawEnd >
+        // drawStart even when both ends of an isolated run trim to the maximum.
+        val maxTrim = ((run.endM - run.startM) * 0.5 - 0.5).coerceAtLeast(0.0)
+        val drawStart = run.startM + (if (chainStart) capTrimM else 0.0).coerceAtMost(maxTrim)
+        val drawEnd = run.endM - (if (chainEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
+        val sub = extractSubPolyline(gps, cumDist, drawStart, drawEnd)
+        if (sub.size >= 2) {
+            polylines += ClimbPolylineSpec(
+                id = "barberfish-seg-$runIdx",
+                encoded = encodeGpsPolyline(sub),
+                colorArgb = run.colorArgb,
+                trimStart = chainStart,
+                trimEnd = chainEnd,
+            )
+        }
+        // Chevrons are an independent symbol layer; cap-trim must not shift them, so they
+        // are still sampled across the full, untrimmed run.
         if (includeChevrons) {
             chevrons += chevronsForRun(
                 runIdx = runIdx,
