@@ -836,7 +836,7 @@ class MainActivity : ComponentActivity() {
 
                 CollapsibleSection(
                     title = "Climbing",
-                    description = "Configure the elevation sparkline",
+                    description = "Configure the elevation sparkline and map overlay",
                     icon = R.drawable.ic_grade,
                     expanded = climberExpanded,
                     onToggle = { climberExpanded = !climberExpanded },
