@@ -67,4 +67,12 @@
     <string name="time_lap_description">Recording duration this lap</string>
     <string name="time_last_lap_name">Last Lap Time</string>
     <string name="time_last_lap_description">Recording duration of the previous lap</string>
+    <string name="distance_name">Distance</string>
+    <string name="distance_description">Ride odometer.</string>
+    <string name="distance_remaining_name">Distance Remaining</string>
+    <string name="distance_remaining_description">Distance to the destination.</string>
+    <string name="elevation_remaining_name">Elevation Remaining</string>
+    <string name="elevation_remaining_description">Climbing left to the destination.</string>
+    <string name="descent_remaining_name">Descent Remaining</string>
+    <string name="descent_remaining_description">Descent left to the destination.</string>
 </resources>

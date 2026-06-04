@@ -134,6 +134,31 @@
         displayName="@string/elevation_sparkline_name"
         description="@string/elevation_sparkline_description"
         graphical="true" />
+    <!-- Distance & route-remaining -->
+    <DataType
+        icon="@drawable/ic_col_speed"
+        typeId="distance"
+        displayName="@string/distance_name"
+        description="@string/distance_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_col_speed"
+        typeId="distance-remaining"
+        displayName="@string/distance_remaining_name"
+        description="@string/distance_remaining_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_grade"
+        typeId="elevation-remaining"
+        displayName="@string/elevation_remaining_name"
+        description="@string/elevation_remaining_description"
+        graphical="true" />
+    <DataType
+        icon="@drawable/ic_grade"
+        typeId="descent-remaining"
+        displayName="@string/descent_remaining_name"
+        description="@string/descent_remaining_description"
+        graphical="true" />
     <!-- Time -->
     <DataType
         icon="@drawable/ic_time_to_dest"
