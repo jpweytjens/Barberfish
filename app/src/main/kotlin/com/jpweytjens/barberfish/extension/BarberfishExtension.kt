@@ -220,7 +220,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             .sorted()
                         Timber.d("climber: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}")
                     }
-                    polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
+                    if (inputs.cfg.showPolylines) {
+                        polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
+                    } else {
+                        // Native route line shows through; we just drop our grade overlay.
+                        polylineController.clearAll(emitter)
+                    }
                     chevronController.emit(emitter, specs.chevrons)
                 }
         }
@@ -243,6 +248,7 @@ private data class ClimbMapConfigInputs(
         val route = state as? OnNavigationState.NavigationState.NavigatingRoute
         return ClimbMapConfigSignature(
             enabled = enabled,
+            showPolylines = cfg.showPolylines,
             showChevrons = showChevrons,
             palette = palette,
             simplification = cfg.simplification,
@@ -259,6 +265,7 @@ private data class ClimbMapConfigInputs(
 
 private data class ClimbMapConfigSignature(
     val enabled: Boolean,
+    val showPolylines: Boolean,
     val showChevrons: Boolean,
     val palette: GradePalette,
     val simplification: ElevationSimplification,

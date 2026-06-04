@@ -1039,8 +1039,16 @@ private fun ClimberMapCard(
                 )
             }
 
+            ControlLabel("POLYLINES")
+            HelperText("Gradient-colour the route line; off keeps the native line.")
+            SegmentedRow(
+                options = listOf(false to "Off", true to "On"),
+                selected = config.showPolylines,
+                onSelect = { onUpdate(config.copy(showPolylines = it)) },
+            )
+
             ControlLabel("CHEVRONS")
-            HelperText("Draw direction chevrons inside each coloured segment.")
+            HelperText("Gradient-colour the direction chevrons; off keeps the native ones.")
             SegmentedRow(
                 options = listOf(false to "Off", true to "On"),
                 selected = config.showChevrons,

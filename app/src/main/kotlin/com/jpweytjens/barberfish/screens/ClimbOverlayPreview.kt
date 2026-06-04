@@ -110,8 +110,11 @@ internal fun ClimbOverlayPreview(
         val routeWidth = 5.dp.toPx()
         drawConnected(routePx, LemonYellow, routeWidth)
 
-        specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
-            drawConnected(points.map { project(it.lat, it.lng) }, Color(spec.colorArgb), routeWidth)
+        // Grade-coloured segments overlay the native yellow line only when polylines are on.
+        if (config.showPolylines) {
+            specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
+                drawConnected(points.map { project(it.lat, it.lng) }, Color(spec.colorArgb), routeWidth)
+            }
         }
 
         specs.chevrons.forEach { ch ->

@@ -405,6 +405,7 @@ suspend fun Context.saveZoneConfig(config: ZoneConfig) =
 @Serializable
 data class ClimberMapConfig(
     val enabled: Boolean = true,
+    val showPolylines: Boolean = true,
     val showChevrons: Boolean = true,
     // When true, skipBands/simplification are taken from the field sparkline config
     // at the consumer via resolveClimbTuning(); the two fields below are ignored.
