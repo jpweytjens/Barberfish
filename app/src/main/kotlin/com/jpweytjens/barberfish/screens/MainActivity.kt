@@ -289,7 +289,6 @@ class MainActivity : ComponentActivity() {
         var hudExpanded by remember { mutableStateOf(false) }
         var climberExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
-        var navigationExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
@@ -835,6 +834,15 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
+                    ControlLabel("ROUTE REMAINING")
+                    HelperText("Whole-route elevation profile with your position.")
+                    OverviewPreviewBox()
+
+                    ControlLabel("REMAINING EFFORT")
+                    HelperText("Distance and climbing left, stacked.")
+                    FieldPreviewBox(EffortField.previewStates(userProfile), ZoneColorMode.NONE)
+
                 } // end Fields
 
                 CollapsibleSection(
@@ -890,22 +898,6 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveETAConfig(etaConfig) }
                         },
                     )
-                }
-
-                CollapsibleSection(
-                    title = "Navigation",
-                    description = "Distance, elevation, and route-remaining fields",
-                    icon = R.drawable.ic_section_fields,
-                    expanded = navigationExpanded,
-                    onToggle = { navigationExpanded = !navigationExpanded },
-                ) {
-                    ControlLabel("ROUTE REMAINING")
-                    HelperText("Whole-route elevation profile with your position.")
-                    OverviewPreviewBox()
-
-                    ControlLabel("REMAINING EFFORT")
-                    HelperText("Distance and climbing left, stacked.")
-                    FieldPreviewBox(EffortField.previewStates(userProfile), ZoneColorMode.NONE)
                 }
 
                 CollapsibleSection(
