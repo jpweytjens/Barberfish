@@ -9,6 +9,7 @@ import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.EffortField
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
+import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HRMaxPercentField
@@ -102,6 +103,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             ValueField(karooSystem, ValueKind.ELEVATION_REMAINING),
             ValueField(karooSystem, ValueKind.DESCENT_REMAINING),
             EffortField(karooSystem),
+            RouteRemainingField(karooSystem),
             // Time
             TimeField(karooSystem, TimeKind.TOTAL),
             TimeField(karooSystem, TimeKind.RIDING),

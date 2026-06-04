@@ -165,6 +165,12 @@
         displayName="@string/remaining_effort_name"
         description="@string/remaining_effort_description"
         graphical="true" />
+    <DataType
+        icon="@drawable/ic_grade"
+        typeId="route-remaining"
+        displayName="@string/route_remaining_name"
+        description="@string/route_remaining_description"
+        graphical="true" />
     <!-- Time -->
     <DataType
         icon="@drawable/ic_time_to_dest"
