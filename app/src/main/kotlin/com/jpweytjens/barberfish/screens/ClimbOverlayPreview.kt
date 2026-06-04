@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -66,7 +67,8 @@ internal fun ClimbOverlayPreview(
             readable = false,
             cfg = cfg,
             climbRanges = ClimbPreviewFixture.climbRanges,
-            includeChevrons = config.showChevrons,
+            // Always place chevrons; the toggle only changes their colour (grade vs native).
+            includeChevrons = true,
             chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,
             chevronGuaranteePerRun = true,
         )
@@ -76,13 +78,19 @@ internal fun ClimbOverlayPreview(
     val bounds = ClimbPreviewFixture.bounds
     val aspect = remember { mercatorBoundsAspect(bounds).toFloat() }
 
-    // Rasterise one bitmap per distinct grade colour from the real chevron drawables.
+    // Rasterise one chevron bitmap per colour we will draw: grade-band colours when the
+    // chevron toggle is on, otherwise the single native LemonYellow chevron.
     val context = LocalContext.current
     val density = LocalDensity.current
     val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
     val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
-    val chevronBitmaps: Map<Int, ImageBitmap> = remember(specs, chevW, chevH) {
-        specs.chevrons.map { it.colorArgb }.distinct().mapNotNull { argb ->
+    val chevronBitmaps: Map<Int, ImageBitmap> = remember(specs, config.showChevrons, chevW, chevH) {
+        val argbs = if (config.showChevrons) {
+            specs.chevrons.map { it.colorArgb }.distinct()
+        } else {
+            listOf(LemonYellow.toArgb())
+        }
+        argbs.mapNotNull { argb ->
             val drawable = ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
                 ?: return@mapNotNull null
             argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
@@ -118,7 +126,8 @@ internal fun ClimbOverlayPreview(
         }
 
         specs.chevrons.forEach { ch ->
-            val bmp = chevronBitmaps[ch.colorArgb] ?: return@forEach
+            val argb = if (config.showChevrons) ch.colorArgb else LemonYellow.toArgb()
+            val bmp = chevronBitmaps[argb] ?: return@forEach
             val center = project(ch.lat, ch.lng)
             // Drawable points up (tip = north); rotate clockwise by the travel bearing.
             rotate(degrees = ch.bearingDeg, pivot = center) {
