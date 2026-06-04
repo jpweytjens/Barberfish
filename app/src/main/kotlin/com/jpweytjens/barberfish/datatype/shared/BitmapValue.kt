@@ -27,6 +27,59 @@ fun valueBitmapHeightPx(valueFontBaseSp: Int, density: Float): Int {
 }
 
 /**
+ * Render two stacked value rows into an `ARGB_8888` bitmap. Paint setup mirrors
+ * [renderValueBitmap] exactly (same typeface, letterSpacing, density). Row baselines
+ * are pinned to the bottom of each equal half of [bitmapHeightPx].
+ *
+ * Both rows are expected to be non-empty (callers pass formatted numbers).
+ */
+fun renderTwoRowValueBitmap(
+    row1: String,
+    row2: String,
+    fontSizePx: Float,
+    bitmapHeightPx: Int,
+    cellWidthPx: Float,
+    color: Int,
+    alignment: ViewConfig.Alignment,
+    rowGapPx: Float = 4f,
+): Bitmap {
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("relative", Typeface.NORMAL)
+        textSize = fontSizePx
+        this.color = color
+        letterSpacing = LETTER_SPACING
+        textAlign = when (alignment) {
+            ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
+            ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
+            ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+        }
+    }
+    val cellW = cellWidthPx.toInt().coerceAtLeast(1)
+    val measuredWidth = maxOf(paint.measureText(row1), paint.measureText(row2))
+    val width = measuredWidth.toInt().coerceIn(1, cellW)
+
+    val bitmap = Bitmap.createBitmap(width, bitmapHeightPx, Bitmap.Config.ARGB_8888)
+    bitmap.density = Bitmap.DENSITY_NONE
+    val canvas = Canvas(bitmap)
+
+    val xPos = when (alignment) {
+        ViewConfig.Alignment.LEFT -> 0f
+        ViewConfig.Alignment.CENTER -> width / 2f
+        ViewConfig.Alignment.RIGHT -> width.toFloat()
+    }
+    val rowHeight = (bitmapHeightPx - rowGapPx) / 2f
+
+    val bounds = Rect()
+    paint.getTextBounds(row1, 0, row1.length, bounds)
+    canvas.drawText(row1, xPos, rowHeight - bounds.bottom, paint)
+
+    paint.getTextBounds(row2, 0, row2.length, bounds)
+    canvas.drawText(row2, xPos, bitmapHeightPx - bounds.bottom.toFloat(), paint)
+
+    return bitmap
+}
+
+/**
  * Render `text` into an `ARGB_8888` bitmap with the baseline pinned to the
  * bitmap's bottom edge (`bounds.bottom` ≈ 0 for digits).
  *

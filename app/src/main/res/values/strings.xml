@@ -75,4 +75,6 @@
     <string name="elevation_remaining_description">Climbing left to the destination.</string>
     <string name="descent_remaining_name">Descent Remaining</string>
     <string name="descent_remaining_description">Descent left to the destination.</string>
+    <string name="remaining_effort_name">Remaining Effort</string>
+    <string name="remaining_effort_description">Distance and climbing left, stacked.</string>
 </resources>

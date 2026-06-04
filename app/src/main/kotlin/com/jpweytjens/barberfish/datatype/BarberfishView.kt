@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
+import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -186,14 +187,38 @@ private fun makeFieldRemoteViews(
     }
 
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
-    val valueBitmap = renderValueBitmap(
-        text = field.primary,
-        fontSizePx = fontSp * density,
-        bitmapHeightPx = bitmapHeightPx,
-        cellWidthPx = cellWidthPx,
-        color = colors.valueText.toArgb(),
-        alignment = alignment,
-    )
+    val valueBitmap = if (field.secondary != null) {
+        // Fit BOTH rows: take the smaller of the two width-fitting sizes (the visually
+        // wider row needs the smaller font). Character count is a poor width proxy here
+        // because the "↗" marker makes the ascent row wide despite being short.
+        val widthFitSp = minOf(
+            fontSizeForCell(
+                field.primary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+            ).first,
+            fontSizeForCell(
+                field.secondary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+            ).first,
+        )
+        // Two rows split one value box: cap each at ~0.62× the single-row base so both
+        // rows plus the inter-row gap stay inside bitmapHeightPx. Tunable on-device.
+        val twoRowSp = widthFitSp.coerceAtMost((sizeConfig.valueFontSizeBase * 0.62f).toInt()).coerceAtLeast(20)
+        renderTwoRowValueBitmap(
+            row1 = field.primary, row2 = field.secondary,
+            fontSizePx = twoRowSp * density, bitmapHeightPx = bitmapHeightPx,
+            cellWidthPx = cellWidthPx, color = colors.valueText.toArgb(), alignment = alignment,
+        )
+    } else {
+        renderValueBitmap(
+            text = field.primary,
+            fontSizePx = fontSp * density,
+            bitmapHeightPx = bitmapHeightPx,
+            cellWidthPx = cellWidthPx,
+            color = colors.valueText.toArgb(),
+            alignment = alignment,
+        )
+    }
     rv.setImageViewBitmap(R.id.field_value, valueBitmap)
 
     // Stream state overlay (Searching / NotAvailable / Idle) replaces

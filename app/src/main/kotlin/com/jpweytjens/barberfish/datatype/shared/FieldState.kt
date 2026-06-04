@@ -11,6 +11,8 @@ data class FieldState(
     val color: FieldColor,
     val iconRes: Int? = null,
     val secondaryIconRes: Int? = null,
+    // Optional second value row, rendered stacked below `primary` (Remaining effort).
+    val secondary: String? = null,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
