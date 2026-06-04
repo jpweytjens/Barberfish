@@ -163,13 +163,20 @@ Complete list of data fields provided by Barberfish, grouped by category.
     <tr><th colspan="5" align="center">Climbing</th></tr>
     <tr><td>Grade</td><td>Grade</td><td></td><td></td><td>OLS (30 m window)</td></tr>
     <tr><td>Elevation sparkline</td><td>Grade</td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Navigation</th></tr>
+    <tr><td>Distance</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Distance Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Elevation Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Descent Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Remaining Effort</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Route Remaining</td><td></td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Time</th></tr>
     <tr><td>Elapsed</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Moving</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Paused</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Last Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
-    <tr><th colspan="5" align="center">Navigation &amp; ETA</th></tr>
+    <tr><th colspan="5" align="center">ETA</th></tr>
     <tr><td>Time to destination</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Remaining ride time</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Time of arrival</td><td></td><td></td><td></td><td></td></tr>
