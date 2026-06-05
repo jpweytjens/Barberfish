@@ -486,6 +486,19 @@ fun Context.streamNPFieldConfig(): Flow<NPFieldConfig> =
 suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) =
     saveConfig(npFieldConfigKey, config)
 
+// --- EffortFieldConfig ---
+
+@Serializable
+data class EffortFieldConfig(val climbFirst: Boolean = false)
+
+private val effortFieldConfigKey = stringPreferencesKey("remaining_effort_field_config")
+
+fun Context.streamEffortFieldConfig(): Flow<EffortFieldConfig> =
+    streamConfig(effortFieldConfigKey, EffortFieldConfig())
+
+suspend fun Context.saveEffortFieldConfig(config: EffortFieldConfig) =
+    saveConfig(effortFieldConfigKey, config)
+
 // --- LapPowerFieldConfig ---
 
 @Serializable data class LapPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)

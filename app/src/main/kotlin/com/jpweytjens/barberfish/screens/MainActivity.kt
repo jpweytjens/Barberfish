@@ -146,6 +146,7 @@ import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
+import com.jpweytjens.barberfish.extension.EffortFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
@@ -157,6 +158,7 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
@@ -175,6 +177,7 @@ import com.jpweytjens.barberfish.extension.savePowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
+import com.jpweytjens.barberfish.extension.streamEffortFieldConfig
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
@@ -264,6 +267,7 @@ class MainActivity : ComponentActivity() {
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
+        var effortFieldConfig by remember { mutableStateOf(EffortFieldConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
         var userProfile by remember {
             mutableStateOf(
@@ -317,6 +321,7 @@ class MainActivity : ComponentActivity() {
             launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
             launch { streamTimeConfig().collect { timeConfig = it } }
             launch { streamETAConfig().collect { etaConfig = it } }
+            launch { streamEffortFieldConfig().collect { effortFieldConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
@@ -401,6 +406,9 @@ class MainActivity : ComponentActivity() {
                 }
                 val gradePreviewStates = remember(gradeFieldConfig, zoneConfig) {
                     GradeField.previewStates(gradeFieldConfig, zoneConfig)
+                }
+                val effortPreviewStates = remember(effortFieldConfig, userProfile) {
+                    EffortField.previewStates(userProfile, effortFieldConfig.climbFirst)
                 }
 
                 CollapsibleSection(
@@ -839,9 +847,27 @@ class MainActivity : ComponentActivity() {
                     HelperText("Whole-route elevation profile with your position.")
                     OverviewPreviewBox()
 
-                    ControlLabel("REMAINING EFFORT")
-                    HelperText("Distance and climbing left, stacked.")
-                    FieldPreviewBox(EffortField.previewStates(userProfile), ZoneColorMode.NONE)
+                    FieldCard(
+                        title = "REMAINING EFFORT",
+                        description = "Distance and climbing left, stacked.",
+                        previewFields = effortPreviewStates,
+                        colorMode = ZoneColorMode.NONE,
+                        selected = selectedDataField == "REMAINING EFFORT",
+                        onSelect = {
+                            selectedDataField =
+                                if (selectedDataField == "REMAINING EFFORT") null else "REMAINING EFFORT"
+                        },
+                    ) {
+                        ControlLabel("STACK ORDER")
+                        SegmentedRow(
+                            options = listOf(false to "Distance", true to "Climb"),
+                            selected = effortFieldConfig.climbFirst,
+                            onSelect = {
+                                effortFieldConfig = effortFieldConfig.copy(climbFirst = it)
+                                lifecycleScope.launch { saveEffortFieldConfig(effortFieldConfig) }
+                            },
+                        )
+                    }
 
                 } // end Fields
 
