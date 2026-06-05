@@ -10,6 +10,7 @@ import android.graphics.Path
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamNavigationState
+import com.jpweytjens.barberfish.extension.streamRouteRemainingConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.OnNavigationState
@@ -24,7 +25,6 @@ private const val OVERVIEW_STROKE_PX = 2f
 private const val OVERVIEW_MARKER_STROKE_PX = 1.5f
 private const val OVERVIEW_PAD_PX = 8f
 private const val OVERVIEW_MIN_ELEV_RANGE_M = 50f
-private const val OVERVIEW_MIN_AREA_M2 = 100f
 
 /**
  * Draw the whole route as a single uncolored polyline with a position dot.
@@ -79,8 +79,8 @@ fun renderOverviewSparkline(
 }
 
 /** Static preview of the overview sparkline from the bundled fixture, dot at ~45%. */
-fun overviewPreviewBitmap(widthPx: Int, heightPx: Int, isNightMode: Boolean): Bitmap? {
-    val points = visvalingamWhyatt(previewElevationFixture(), OVERVIEW_MIN_AREA_M2)
+fun overviewPreviewBitmap(widthPx: Int, heightPx: Int, isNightMode: Boolean, minAreaM2: Float): Bitmap? {
+    val points = visvalingamWhyatt(previewElevationFixture(), minAreaM2)
     if (points.size < 2) return null
     val len = points.last().first - points.first().first
     val positionM = points.first().first + len * 0.45f
@@ -104,17 +104,19 @@ fun overviewBitmapFlow(
     return combine(
         karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
         distFlow,
-    ) { navState, distState ->
+        context.streamRouteRemainingConfig(),
+    ) { navState, distState, routeConfig ->
         val isNight = (context.resources.configuration.uiMode and
             Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
         val encoded = route?.routeElevationPolyline ?: ""
         if (encoded.isBlank() && !isPreview) return@combine null
 
-        val key = if (isPreview) "preview" else encoded
+        // Cache by route AND simplification so changing the knob re-simplifies.
+        val key = (if (isPreview) "preview" else encoded) + "|" + routeConfig.simplification.name
         if (key != cachedKey) {
             val raw = if (isPreview) previewElevationFixture() else decodeElevationPolyline(encoded)
-            cachedPoints = visvalingamWhyatt(raw, OVERVIEW_MIN_AREA_M2)
+            cachedPoints = visvalingamWhyatt(raw, routeConfig.simplification.minAreaM2)
             cachedKey = key
         }
         val points = cachedPoints

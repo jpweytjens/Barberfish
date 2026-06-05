@@ -499,6 +499,24 @@ fun Context.streamEffortFieldConfig(): Flow<EffortFieldConfig> =
 suspend fun Context.saveEffortFieldConfig(config: EffortFieldConfig) =
     saveConfig(effortFieldConfigKey, config)
 
+// --- RouteRemainingConfig ---
+// Reuses ElevationSimplification (the sparkline enum); HEAVY ≈ the previous hardcoded
+// OVERVIEW_MIN_AREA_M2 default. Only simplification is exposed: the field shows the whole
+// route, so a Y-zoom floor would be meaningless.
+
+@Serializable
+data class RouteRemainingConfig(
+    val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
+)
+
+private val routeRemainingConfigKey = stringPreferencesKey("route_remaining_field_config")
+
+fun Context.streamRouteRemainingConfig(): Flow<RouteRemainingConfig> =
+    streamConfig(routeRemainingConfigKey, RouteRemainingConfig())
+
+suspend fun Context.saveRouteRemainingConfig(config: RouteRemainingConfig) =
+    saveConfig(routeRemainingConfigKey, config)
+
 // --- LapPowerFieldConfig ---
 
 @Serializable data class LapPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
