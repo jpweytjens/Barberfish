@@ -147,6 +147,9 @@ import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
+import com.jpweytjens.barberfish.extension.RouteRemainingConfig
+import com.jpweytjens.barberfish.extension.saveRouteRemainingConfig
+import com.jpweytjens.barberfish.extension.streamRouteRemainingConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
@@ -268,6 +271,7 @@ class MainActivity : ComponentActivity() {
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var effortFieldConfig by remember { mutableStateOf(EffortFieldConfig()) }
+        var routeRemainingConfig by remember { mutableStateOf(RouteRemainingConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
         var userProfile by remember {
             mutableStateOf(
@@ -322,6 +326,7 @@ class MainActivity : ComponentActivity() {
             launch { streamTimeConfig().collect { timeConfig = it } }
             launch { streamETAConfig().collect { etaConfig = it } }
             launch { streamEffortFieldConfig().collect { effortFieldConfig = it } }
+            launch { streamRouteRemainingConfig().collect { routeRemainingConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
@@ -843,9 +848,18 @@ class MainActivity : ComponentActivity() {
                     }
 
                     ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
-                    ControlLabel("ROUTE REMAINING")
-                    HelperText("Whole-route elevation profile with your position.")
-                    OverviewPreviewBox()
+                    RouteRemainingCard(
+                        config = routeRemainingConfig,
+                        selected = selectedDataField == "ROUTE REMAINING",
+                        onSelect = {
+                            selectedDataField =
+                                if (selectedDataField == "ROUTE REMAINING") null else "ROUTE REMAINING"
+                        },
+                        onUpdate = { updated ->
+                            routeRemainingConfig = updated
+                            lifecycleScope.launch { saveRouteRemainingConfig(updated) }
+                        },
+                    )
 
                     FieldCard(
                         title = "REMAINING EFFORT",
@@ -1335,14 +1349,14 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
 }
 
 @Composable
-private fun OverviewPreviewBox() {
+private fun OverviewPreviewBox(minAreaM2: Float) {
     val densityValue = LocalDensity.current.density
     val isNight = isSystemInDarkTheme()
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val widthPx = (maxWidth.value * densityValue).toInt().coerceAtLeast(1)
         val heightPx = (80.dp.value * densityValue).toInt()
-        val bitmap = remember(widthPx, heightPx, isNight) {
-            overviewPreviewBitmap(widthPx, heightPx, isNight)
+        val bitmap = remember(widthPx, heightPx, isNight, minAreaM2) {
+            overviewPreviewBitmap(widthPx, heightPx, isNight, minAreaM2)
         }
         if (bitmap != null) {
             Image(
@@ -1354,6 +1368,33 @@ private fun OverviewPreviewBox() {
                 contentScale = ContentScale.FillBounds,
             )
         }
+    }
+}
+
+@Composable
+private fun RouteRemainingCard(
+    config: RouteRemainingConfig,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onUpdate: (RouteRemainingConfig) -> Unit,
+) {
+    ExpandableCard(
+        title = "ROUTE REMAINING",
+        selected = selected,
+        onSelect = onSelect,
+        headerExtra = {
+            HelperText("Whole-route elevation profile with your position.")
+            OverviewPreviewBox(config.simplification.minAreaM2)
+        },
+    ) {
+        LabeledHelper("SIMPLIFICATION") {
+            HelperText("Smooths the whole-route profile into broader strokes.")
+        }
+        SegmentedRow(
+            options = ElevationSimplification.entries.map { it to it.label },
+            selected = config.simplification,
+            onSelect = { onUpdate(config.copy(simplification = it)) },
+        )
     }
 }
 

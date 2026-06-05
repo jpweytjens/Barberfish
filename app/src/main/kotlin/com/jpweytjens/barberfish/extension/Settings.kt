@@ -500,9 +500,9 @@ suspend fun Context.saveEffortFieldConfig(config: EffortFieldConfig) =
     saveConfig(effortFieldConfigKey, config)
 
 // --- RouteRemainingConfig ---
-// Reuses ElevationSimplification (the sparkline enum); HEAVY ≈ the previous hardcoded
-// OVERVIEW_MIN_AREA_M2 default. Only simplification is exposed: the field shows the whole
-// route, so a Y-zoom floor would be meaningless.
+// Reuses ElevationSimplification (the sparkline enum); HEAVY (120 m²) sits just above the
+// previous hardcoded 100 m² default, in the same perceptual regime. Only simplification is
+// exposed: the field shows the whole route, so a Y-zoom floor would be meaningless.
 
 @Serializable
 data class RouteRemainingConfig(
