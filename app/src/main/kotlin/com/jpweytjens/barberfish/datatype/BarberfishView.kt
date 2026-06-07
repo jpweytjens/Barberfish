@@ -83,7 +83,9 @@ private fun makeFieldRemoteViews(
     val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
     val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
         ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
-    val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+    val numIcons =
+        if (!sizeConfig.showIcons) 0
+        else (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
     val iconWidthPx = if (numIcons > 0)
         (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
     else 0f
@@ -156,7 +158,7 @@ private fun makeFieldRemoteViews(
     // Icons
     val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
     val iconSizePx = (sizeConfig.headerIconSize.value * density).toInt()
-    if (field.iconRes != null) {
+    if (sizeConfig.showIcons && field.iconRes != null) {
         rv.setViewVisibility(R.id.field_icon, View.VISIBLE)
         rv.setImageViewResource(R.id.field_icon, field.iconRes)
         rv.setInt(R.id.field_icon, "setColorFilter", colors.iconTint.toArgb())
@@ -165,7 +167,7 @@ private fun makeFieldRemoteViews(
     } else {
         rv.setViewVisibility(R.id.field_icon, View.GONE)
     }
-    if (field.secondaryIconRes != null) {
+    if (sizeConfig.showIcons && field.secondaryIconRes != null) {
         rv.setViewVisibility(R.id.field_icon_secondary, View.VISIBLE)
         rv.setImageViewResource(R.id.field_icon_secondary, field.secondaryIconRes)
         rv.setInt(R.id.field_icon_secondary, "setColorFilter", colors.iconTint.toArgb())
