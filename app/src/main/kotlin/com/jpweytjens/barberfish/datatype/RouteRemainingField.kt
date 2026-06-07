@@ -34,7 +34,7 @@ class RouteRemainingField(private val karooSystem: KarooSystemService) :
         applySparklineHeaderChrome(
             rv,
             context.getString(R.string.route_remaining_name),
-            R.drawable.ic_grade,
+            R.drawable.ic_route,
             config,
             context,
         )
