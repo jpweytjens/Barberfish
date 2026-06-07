@@ -4,6 +4,12 @@ const val GRADE_BASELINE_M = 30.0
 const val GRADE_SPEED_THRESHOLD_MS = 0.5
 const val GRADE_RING_CAPACITY = 64
 
+// Minimum distance between buffered samples. Samples arrive per time (the combine fires on
+// every stream emission), so a slow climb or a high update rate would pile far more than
+// GRADE_RING_CAPACITY samples into the baseline window. Admitting one sample per this distance
+// bounds occupancy to baseline / spacing = 60, independent of speed and update rate.
+const val GRADE_MIN_SAMPLE_SPACING_M = 0.5
+
 private class GradeRingBuffer(private val capacity: Int) {
     private val dist = FloatArray(capacity)
     private val elev = FloatArray(capacity)
@@ -39,6 +45,7 @@ private class GradeRingBuffer(private val capacity: Int) {
 class GradeSmoother(
     private val baselineM: Double = GRADE_BASELINE_M,
     private val speedThresholdMs: Double = GRADE_SPEED_THRESHOLD_MS,
+    private val minSampleSpacingM: Double = GRADE_MIN_SAMPLE_SPACING_M,
     capacity: Int = GRADE_RING_CAPACITY,
 ) {
     private val buf = GradeRingBuffer(capacity)
@@ -47,6 +54,7 @@ class GradeSmoother(
     private var sumXY = 0.0
     private var sumXX = 0.0
     private var minAnchorD: Float = 0.0f
+    private var lastPushedDist: Float = Float.NEGATIVE_INFINITY
 
     // Moving-state tracking for the snapshot/barrier mechanism (see update()).
     private var elevAtPause: Float? = null
@@ -83,14 +91,19 @@ class GradeSmoother(
 
         if (!moving) return null
 
-        // Push current sample.
-        buf.push(distM, elevM)
-        val xD = distM.toDouble()
-        val yD = elevM.toDouble()
-        sumX += xD
-        sumY += yD
-        sumXY += xD * yD
-        sumXX += xD * xD
+        // Admit one sample per minSampleSpacingM of distance. Eviction is distance-based, so
+        // closer samples would overflow the ring on slow climbs or high update rates without
+        // improving the slope estimate. An empty buffer always admits (post-barrier restart).
+        if (buf.size == 0 || distM - lastPushedDist >= minSampleSpacingM) {
+            buf.push(distM, elevM)
+            val xD = distM.toDouble()
+            val yD = elevM.toDouble()
+            sumX += xD
+            sumY += yD
+            sumXY += xD * yD
+            sumXX += xD * xD
+            lastPushedDist = distM
+        }
 
         // Evict any sample whose distance is below the current anchor floor.
         while (buf.size > 0 && buf.oldestDist() < minAnchorD) {

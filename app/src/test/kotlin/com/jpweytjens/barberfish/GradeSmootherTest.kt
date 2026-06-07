@@ -96,6 +96,28 @@ class GradeSmootherTest {
         }
     }
 
+    @Test
+    fun ringBufferDoesNotOverflow_onSlowClimbAtHighUpdateRate() {
+        // Samples arrive per TIME, not per metre: the combine of elevation/distance/speed
+        // fires on every stream emission. On a slow climb at a high update rate, many
+        // samples fall inside the 30 m distance window. An 8 km/h (2.222 m/s) climb sampled
+        // at 10 Hz advances 0.222 m per tick → ~135 samples per 30 m window, far over the
+        // 64-slot ring. The eviction is distance-based, so it cannot drain fast enough.
+        val speedMs = 8.0f / 3.6f          // 2.222 m/s
+        val step = speedMs / 10.0f         // 10 Hz → 0.222 m per sample
+        val grade = 0.08f                  // 8 % climb
+        val n = (60.0f / step).toInt()     // 60 m of climb
+        val s = GradeSmoother()
+        val out = (0 until n).map { i ->
+            val dist = i * step
+            s.update(100.0f + grade * dist, dist, speedMs) // throws if ring buffer overflows
+        }
+        // Once past the baseline, the smoother must report the 8 % grade.
+        val finalGrade = out.last()
+        assertNotNull(finalGrade)
+        assertEquals(8.0f, finalGrade!!, 0.1f)
+    }
+
     // --- Moving guard ---
 
     @Test
