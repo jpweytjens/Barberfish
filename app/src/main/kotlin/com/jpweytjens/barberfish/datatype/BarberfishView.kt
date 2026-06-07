@@ -40,7 +40,9 @@ fun barberfishFieldRemoteViews(
     val dm = context.resources.displayMetrics
     val paddingHPx = (sizeConfig.paddingH.value * dm.density).toInt()
     val displayLabel = field.label.replace("\n", " ")
-    val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    val isNightMode =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
     val colors = field.color.toColorConfig(colorMode, isNightMode)
     val rv =
         makeFieldRemoteViews(
@@ -82,17 +84,25 @@ private fun makeFieldRemoteViews(
     val density = dm.density
     val labelArgb = colors.headerText.toArgb()
     val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
-    val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
-        ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
-    val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
-    val iconWidthPx = if (numIcons > 0)
-        (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
-    else 0f
+    val cellWidthPx =
+        sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
+            ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
+    val numIcons =
+        (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+    val iconWidthPx =
+        if (numIcons > 0)
+            (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) *
+                density
+        else 0f
     val labelAvailableWidthPx = cellWidthPx - iconWidthPx
-    val (fontSp, maxLines) = fontSizeForCell(
-        field.primary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
-        wrapThresholdSp = sizeConfig.wrapThresholdSp,
-    )
+    val (fontSp, maxLines) =
+        fontSizeForCell(
+            field.primary,
+            sizeConfig.valueFontSizeBase,
+            cellWidthPx,
+            density,
+            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+        )
 
     if (DEBUG_LAYOUT) {
         Log.d(
@@ -108,8 +118,8 @@ private fun makeFieldRemoteViews(
     val rv = RemoteViews(context.packageName, layoutRes)
 
     if (DEBUG_LAYOUT) {
-        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())  // red: header
-        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt())   // green: value
+        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt()) // red: header
+        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt()) // green: value
     }
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
@@ -130,16 +140,17 @@ private fun makeFieldRemoteViews(
     val labelFontSp: Float
     val labelLines: Int
     if (sizeConfig.colSpan < 30) {
-        val (sp, _) = fontSizeForCell(
-            displayLabel,
-            sizeConfig.headerFontSize.value.toInt(),
-            labelAvailableWidthPx,
-            density,
-            wrapThresholdSp = sizeConfig.wrapThresholdSp,
-            typeface = Typeface.DEFAULT,
-        )
+        val (sp, _) =
+            fontSizeForCell(
+                displayLabel,
+                sizeConfig.headerFontSize.value.toInt(),
+                labelAvailableWidthPx,
+                density,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                typeface = Typeface.DEFAULT,
+            )
         labelFontSp = sp.toFloat()
-        labelLines = 2  // all HUD slots always reserve 2-line height for consistent alignment
+        labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
     } else {
         labelFontSp = sizeConfig.headerFontSize.value
         labelLines = sizeConfig.labelMaxLines
@@ -187,52 +198,77 @@ private fun makeFieldRemoteViews(
     }
 
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
-    val valueBitmap = if (field.secondary != null) {
-        // Fit BOTH rows: take the smaller of the two width-fitting sizes (the visually
-        // wider row needs the smaller font). Character count is a poor width proxy here
-        // because the "↗" marker makes the ascent row wide despite being short.
-        val widthFitSp = minOf(
-            fontSizeForCell(
-                field.primary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
-                wrapThresholdSp = sizeConfig.wrapThresholdSp,
-            ).first,
-            fontSizeForCell(
-                field.secondary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
-                wrapThresholdSp = sizeConfig.wrapThresholdSp,
-            ).first,
-        )
-        // Two rows split one value box: cap each at ~0.62× the single-row base so both
-        // rows plus the inter-row gap stay inside bitmapHeightPx. Tunable on-device.
-        val twoRowSp = widthFitSp.coerceAtMost((sizeConfig.valueFontSizeBase * 0.62f).toInt()).coerceAtLeast(20)
-        renderTwoRowValueBitmap(
-            row1 = field.primary, row2 = field.secondary,
-            fontSizePx = twoRowSp * density, bitmapHeightPx = bitmapHeightPx,
-            cellWidthPx = cellWidthPx, color = colors.valueText.toArgb(), alignment = alignment,
-        )
-    } else {
-        renderValueBitmap(
-            text = field.primary,
-            fontSizePx = fontSp * density,
-            bitmapHeightPx = bitmapHeightPx,
-            cellWidthPx = cellWidthPx,
-            color = colors.valueText.toArgb(),
-            alignment = alignment,
-        )
-    }
+    val valueBitmap =
+        if (field.secondary != null) {
+            // Fit BOTH rows: take the smaller of the two width-fitting sizes (the visually
+            // wider row needs the smaller font). Character count is a poor width proxy here
+            // because the "↗" marker makes the ascent row wide despite being short.
+            val widthFitSp =
+                minOf(
+                    fontSizeForCell(
+                            field.primary,
+                            sizeConfig.valueFontSizeBase,
+                            cellWidthPx,
+                            density,
+                            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                        )
+                        .first,
+                    fontSizeForCell(
+                            field.secondary,
+                            sizeConfig.valueFontSizeBase,
+                            cellWidthPx,
+                            density,
+                            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                        )
+                        .first,
+                )
+            // Two rows split one value box: cap each at ~0.62× the single-row base so both
+            // rows plus the inter-row gap stay inside bitmapHeightPx. Tunable on-device.
+            val twoRowSp =
+                widthFitSp
+                    .coerceAtMost((sizeConfig.valueFontSizeBase * 0.62f).toInt())
+                    .coerceAtLeast(20)
+            renderTwoRowValueBitmap(
+                row1 = field.primary,
+                row2 = field.secondary,
+                fontSizePx = twoRowSp * density,
+                bitmapHeightPx = bitmapHeightPx,
+                cellWidthPx = cellWidthPx,
+                color = colors.valueText.toArgb(),
+                alignment = alignment,
+            )
+        } else {
+            renderValueBitmap(
+                text = field.primary,
+                fontSizePx = fontSp * density,
+                bitmapHeightPx = bitmapHeightPx,
+                cellWidthPx = cellWidthPx,
+                color = colors.valueText.toArgb(),
+                alignment = alignment,
+            )
+        }
     rv.setImageViewBitmap(R.id.field_value, valueBitmap)
 
     // Stream state overlay (Searching / NotAvailable / Idle) replaces
     // field_value. Sized from "Searching..." — widest single-line state.
     if (field.color is FieldColor.StreamState) {
-        val (stateFont, stateMaxLines) = fontSizeForCell(
-            "Searching...", sizeConfig.valueFontSizeBase, cellWidthPx, density,
-            wrapThresholdSp = sizeConfig.wrapThresholdSp,
-        )
+        val (stateFont, stateMaxLines) =
+            fontSizeForCell(
+                "Searching...",
+                sizeConfig.valueFontSizeBase,
+                cellWidthPx,
+                density,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+            )
         rv.setViewVisibility(R.id.field_value, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
         rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
-        rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, stateFont.coerceAtMost(19).toFloat())
+        rv.setTextViewTextSize(
+            R.id.stream_state_tv,
+            TypedValue.COMPLEX_UNIT_SP,
+            stateFont.coerceAtMost(19).toFloat()
+        )
         val actualHeaderPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
         rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, 0)
         if (stateMaxLines == 2) {
@@ -251,15 +287,14 @@ private fun makeFieldRemoteViews(
 private fun layoutRes(
     alignment: ViewConfig.Alignment,
     translationDp: Int,
-): Int = when (alignment) {
-    ViewConfig.Alignment.RIGHT ->
-        if (translationDp == -3) R.layout.barberfish_field_neg3
-        else R.layout.barberfish_field
-    ViewConfig.Alignment.LEFT ->
-        if (translationDp == -3) R.layout.barberfish_field_left_neg3
-        else R.layout.barberfish_field_left
-    ViewConfig.Alignment.CENTER ->
-        if (translationDp == -3) R.layout.barberfish_field_center_neg3
-        else R.layout.barberfish_field_center
-}
-
+): Int =
+    when (alignment) {
+        ViewConfig.Alignment.RIGHT ->
+            if (translationDp == -3) R.layout.barberfish_field_neg3 else R.layout.barberfish_field
+        ViewConfig.Alignment.LEFT ->
+            if (translationDp == -3) R.layout.barberfish_field_left_neg3
+            else R.layout.barberfish_field_left
+        ViewConfig.Alignment.CENTER ->
+            if (translationDp == -3) R.layout.barberfish_field_center_neg3
+            else R.layout.barberfish_field_center
+    }

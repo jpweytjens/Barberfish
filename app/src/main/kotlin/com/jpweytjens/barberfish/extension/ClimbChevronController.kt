@@ -9,13 +9,12 @@ import io.hammerhead.karooext.models.ShowSymbols
 import io.hammerhead.karooext.models.Symbol
 
 /**
- * Tracks previously-emitted chevron symbol IDs so each call to [emit] only sends
- * `HideSymbols` for IDs that are no longer wanted and `ShowSymbols` for the new set.
- * Chevrons are drawn above extension polylines (symbol layers 16/18 vs polyline layer
+ * Tracks previously-emitted chevron symbol IDs so each call to [emit] only sends `HideSymbols` for
+ * IDs that are no longer wanted and `ShowSymbols` for the new set. Chevrons are drawn above
+ * extension polylines (symbol layers 16/18 vs polyline layer
  * 13) so the gradient fill is always visible beneath them.
  *
- * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not
- * thread-safe.
+ * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not thread-safe.
  */
 internal class ClimbChevronController {
     private var previousIds: Set<String> = emptySet()
@@ -29,15 +28,16 @@ internal class ClimbChevronController {
             emitter.onNext(HideSymbols(previousIds.toList()))
         }
         if (specs.isNotEmpty()) {
-            val icons = specs.map { spec ->
-                Symbol.Icon(
-                    id = spec.id,
-                    lat = spec.lat,
-                    lng = spec.lng,
-                    iconRes = gradeChevronDrawable(spec.colorArgb),
-                    orientation = spec.bearingDeg,
-                )
-            }
+            val icons =
+                specs.map { spec ->
+                    Symbol.Icon(
+                        id = spec.id,
+                        lat = spec.lat,
+                        lng = spec.lng,
+                        iconRes = gradeChevronDrawable(spec.colorArgb),
+                        orientation = spec.bearingDeg,
+                    )
+                }
             emitter.onNext(ShowSymbols(icons))
         }
         previousIds = specs.mapTo(mutableSetOf()) { it.id }

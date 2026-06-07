@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
-import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
@@ -28,17 +27,20 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
         val widthPx = dm.widthPixels
         val heightPx = (dm.heightPixels * STANDALONE_HEIGHT_FRACTION).toInt()
         return sparklineBitmapFlow(
-            karooSystem,
-            context,
-            configFlow = context.streamFieldSparklineConfig(),
-            widthPx = widthPx,
-            heightPx = heightPx,
-            isPreview = isPreview,
-        ).map { it.bitmap }
+                karooSystem,
+                context,
+                configFlow = context.streamFieldSparklineConfig(),
+                widthPx = widthPx,
+                heightPx = heightPx,
+                isPreview = isPreview,
+            )
+            .map { it.bitmap }
     }
 
     override fun liveFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = false)
-    override fun previewFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = true)
+
+    override fun previewFlow(context: Context): Flow<Bitmap?> =
+        bitmapFlow(context, isPreview = true)
 
     override fun renderState(state: Bitmap?, config: ViewConfig, context: Context): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
@@ -46,16 +48,18 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
             rv.setImageViewBitmap(R.id.sparkline_image, state)
         }
         if (!config.preview) {
-            val intent = Intent(context, SparklineTapReceiver::class.java).apply {
-                action = SparklineTapReceiver.ACTION
-                putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_FIELD)
-            }
-            val pi = PendingIntent.getBroadcast(
-                context,
-                R.layout.barberfish_sparkline,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            val intent =
+                Intent(context, SparklineTapReceiver::class.java).apply {
+                    action = SparklineTapReceiver.ACTION
+                    putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_FIELD)
+                }
+            val pi =
+                PendingIntent.getBroadcast(
+                    context,
+                    R.layout.barberfish_sparkline,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
             rv.setOnClickPendingIntent(R.id.sparkline_root, pi)
         }
         return rv

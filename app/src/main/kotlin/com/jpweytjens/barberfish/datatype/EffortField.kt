@@ -54,12 +54,18 @@ class EffortField(
             return streaming.dataPoint.values[fieldId]
         }
 
-        private fun effortFieldState(distText: String, ascentText: String, climbFirst: Boolean): FieldState {
+        private fun effortFieldState(
+            distText: String,
+            ascentText: String,
+            climbFirst: Boolean
+        ): FieldState {
             val climb = ASCENT_MARKER + ascentText
             return FieldState(
                 primary = if (climbFirst) climb else distText,
                 secondary = if (climbFirst) distText else climb,
-                label = LABEL, color = FieldColor.Default, iconRes = ICON,
+                label = LABEL,
+                color = FieldColor.Default,
+                iconRes = ICON,
             )
         }
 

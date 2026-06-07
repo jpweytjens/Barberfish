@@ -9,8 +9,8 @@ import io.hammerhead.karooext.models.ViewConfig
 // Grid spans: 60-unit internal grid; columns = 60 / colSpan, rows = 60 / rowSpan.
 private const val ONE_COL = 60
 private const val TWO_COLS = 30
-private const val THREE_COLS = 20  // HUD 3-col
-private const val FOUR_COLS = 15   // HUD 4-col
+private const val THREE_COLS = 20 // HUD 3-col
+private const val FOUR_COLS = 15 // HUD 4-col
 private const val TWO_ROWS = 30
 private const val THREE_ROWS = 20
 private const val FOUR_ROWS = 15
@@ -37,30 +37,33 @@ fun ViewConfig.toViewSizeConfig(
         }
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
     val labelMaxLines = if (colSpan != TWO_COLS) 1 else 2
-    val wrapThresholdSp = when {
-        colSpan == ONE_COL    -> 22
-        colSpan == TWO_COLS    -> 18
-        colSpan == THREE_COLS   -> 14
-        else                    -> 12
-    }
+    val wrapThresholdSp =
+        when {
+            colSpan == ONE_COL -> 22
+            colSpan == TWO_COLS -> 18
+            colSpan == THREE_COLS -> 14
+            else -> 12
+        }
     val paddingH = if (colSpan <= THREE_COLS) 2.dp else 4.dp
     // header_ref minHeight = max(icon-row floor 26 dp, label text band).
     // 2-line band uses native's lineSpacingMultiplier=0.6 for narrow cells.
-    val labelBandDp = if (labelMaxLines == 1) {
-        labelSp * 1.2f
-    } else {
-        labelSp * 1.2f * (1f + (labelMaxLines - 1) * 0.6f)
-    }
+    val labelBandDp =
+        if (labelMaxLines == 1) {
+            labelSp * 1.2f
+        } else {
+            labelSp * 1.2f * (1f + (labelMaxLines - 1) * 0.6f)
+        }
     val headerMinHeightDp = maxOf(26, labelBandDp.toInt())
     val valueFontBase = textSizeEff.coerceAtLeast(20)
     val valueBitmapHeightDp = (VALUE_BITMAP_HEIGHT_RATIO * valueFontBase).toInt().coerceAtLeast(16)
     // Matches the small upward translation observed in native narrow-cell
     // layouts. Applied via XML-baked android:translationY (see
     // BarberfishView.layoutRes).
-    val valueTranslationDp = when {
-        colSpan == ONE_COL && rowSpan == FIVE_ROWS   -> -3   // 5×1
-        else                                          -> 0
-    }
+    val valueTranslationDp =
+        when {
+            colSpan == ONE_COL && rowSpan == FIVE_ROWS -> -3 // 5×1
+            else -> 0
+        }
     return ViewSizeConfig.STANDARD.copy(
         colSpan = colSpan,
         rowSpan = rowSpan,

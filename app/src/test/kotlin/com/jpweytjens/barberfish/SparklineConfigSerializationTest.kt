@@ -5,7 +5,6 @@ import com.jpweytjens.barberfish.extension.SparklineMode
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -43,7 +42,8 @@ class SparklineConfigSerializationTest {
 
     @Test
     fun `encodes mode to the mode wire key`() {
-        val encoded = json.encodeToString<SparklineConfig>(SparklineConfig(mode = SparklineMode.CLIMBS))
+        val encoded =
+            json.encodeToString<SparklineConfig>(SparklineConfig(mode = SparklineMode.CLIMBS))
         assertTrue("expected mode wire key", encoded.contains("\"mode\":\"CLIMBS\""))
     }
 }

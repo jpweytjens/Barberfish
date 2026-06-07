@@ -33,7 +33,9 @@ class MaxPowerField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_power
-            state.toErrorFieldState(LABEL, iconRes)?.let { return it }
+            state.toErrorFieldState(LABEL, iconRes)?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.MAX_POWER]
                     ?: return FieldState.notAvailable(LABEL, iconRes)
@@ -74,7 +76,9 @@ class MaxPowerField(private val karooSystem: KarooSystemService) :
             zones = context.streamZoneConfig(),
             sdkType = DataType.Type.MAX_POWER,
             karooSystem = karooSystem,
-        ) { state, profile, zones, cfg -> toFieldState(state, profile, zones, cfg.colorMode) }
+        ) { state, profile, zones, cfg ->
+            toFieldState(state, profile, zones, cfg.colorMode)
+        }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         zoneFieldPreviewFlow(

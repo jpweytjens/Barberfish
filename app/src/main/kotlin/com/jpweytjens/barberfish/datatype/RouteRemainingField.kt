@@ -17,7 +17,8 @@ class RouteRemainingField(private val karooSystem: KarooSystemService) :
     private fun bitmapFlow(context: Context, isPreview: Boolean): Flow<Bitmap?> {
         val dm = context.resources.displayMetrics
         return overviewBitmapFlow(
-            karooSystem, context,
+            karooSystem,
+            context,
             widthPx = dm.widthPixels,
             heightPx = (dm.heightPixels * STANDALONE_HEIGHT_FRACTION).toInt(),
             isPreview = isPreview,
@@ -25,7 +26,9 @@ class RouteRemainingField(private val karooSystem: KarooSystemService) :
     }
 
     override fun liveFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = false)
-    override fun previewFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = true)
+
+    override fun previewFlow(context: Context): Flow<Bitmap?> =
+        bitmapFlow(context, isPreview = true)
 
     override fun renderState(state: Bitmap?, config: ViewConfig, context: Context): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)

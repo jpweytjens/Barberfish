@@ -11,9 +11,9 @@ private fun mercatorY(latDeg: Double): Double {
 }
 
 /**
- * Projects [lat]/[lng] to a (u, v) pair in [0, 1] within [bounds] using Web Mercator.
- * u runs west->east; v runs north->south so that screen-top is north. Map tiles are
- * Mercator, so projecting the route the same way keeps geometry registered to the tile.
+ * Projects [lat]/[lng] to a (u, v) pair in [0, 1] within [bounds] using Web Mercator. u runs
+ * west->east; v runs north->south so that screen-top is north. Map tiles are Mercator, so
+ * projecting the route the same way keeps geometry registered to the tile.
  */
 internal fun projectToUnit(bounds: LatLngBounds, lat: Double, lng: Double): Pair<Double, Double> {
     val u = (lng - bounds.minLng) / (bounds.maxLng - bounds.minLng)

@@ -23,8 +23,8 @@ internal const val CLIMB_FRAME_MARGIN_MIN_M = 100f
 internal const val CLIMB_FRAME_MARGIN_MAX_M = 800f
 
 /**
- * PCS per-climb profile score: `(gradePct / 2)^2 * (lengthM / 1000)`.
- * No distance-to-finish factor — purely the climb's own shape.
+ * PCS per-climb profile score: `(gradePct / 2)^2 * (lengthM / 1000)`. No distance-to-finish factor
+ * — purely the climb's own shape.
  */
 internal fun pcsClimbScore(gradePct: Double, lengthM: Double): Double =
     (gradePct / 2.0) * (gradePct / 2.0) * (lengthM / 1000.0)

@@ -11,8 +11,8 @@ data class EffectiveClimbTuning(
 )
 
 /**
- * When [map].syncWithSparkline is true the overlay follows the field sparkline's
- * emphasis and simplification; otherwise it uses its own stored values.
+ * When [map].syncWithSparkline is true the overlay follows the field sparkline's emphasis and
+ * simplification; otherwise it uses its own stored values.
  */
 fun resolveClimbTuning(map: ClimberMapConfig, sparkline: SparklineConfig): EffectiveClimbTuning =
     if (map.syncWithSparkline) {

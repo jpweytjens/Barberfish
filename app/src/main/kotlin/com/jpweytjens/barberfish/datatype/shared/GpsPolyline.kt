@@ -21,21 +21,19 @@ private const val EARTH_CIRCUMFERENCE_M = 40_075_016.686
 private const val KAROO3_SCREEN_WIDTH_PX = 480
 private const val KAROO3_SCREEN_HEIGHT_PX = 800
 
-/**
- * Metres per pixel at [lat] degrees latitude and the given VTM [zoomLevel].
- */
+/** Metres per pixel at [lat] degrees latitude and the given VTM [zoomLevel]. */
 internal fun groundResolution(lat: Double, zoomLevel: Double): Double {
     val scale = 2.0.pow(zoomLevel)
     return cos(lat * PI / 180.0) * EARTH_CIRCUMFERENCE_M / (VTM_TILE_SIZE * scale)
 }
 
 /**
- * Computes an axis-aligned viewport bounding box centred on [lat]/[lng] at a given
- * Karoo map [zoomLevel] (range 8.0–18.0, see `OnMapZoomLevel`). Uses the VTM ground
- * resolution and the Karoo 3 screen size for accurate bounds.
+ * Computes an axis-aligned viewport bounding box centred on [lat]/[lng] at a given Karoo map
+ * [zoomLevel] (range 8.0–18.0, see `OnMapZoomLevel`). Uses the VTM ground resolution and the Karoo
+ * 3 screen size for accurate bounds.
  *
- * The bounds are widened by [paddingFactor] on each side so chevrons near the edge
- * don't pop in/out on small pans.
+ * The bounds are widened by [paddingFactor] on each side so chevrons near the edge don't pop in/out
+ * on small pans.
  */
 internal fun mapViewportBounds(
     lat: Double,
@@ -59,41 +57,41 @@ internal fun mapViewportBounds(
 }
 
 /**
- * Map diagonal in metres for the Karoo 3 display at [lat]/[lng] and the given VTM
- * [zoomLevel]. Uses the exact ground resolution to compute the pixel-to-metre mapping,
- * then Pythagoras on the screen dimensions.
+ * Map diagonal in metres for the Karoo 3 display at [lat]/[lng] and the given VTM [zoomLevel]. Uses
+ * the exact ground resolution to compute the pixel-to-metre mapping, then Pythagoras on the screen
+ * dimensions.
  */
 internal fun mapDiagonalMeters(lat: Double, lng: Double, zoomLevel: Double): Double {
     val mpp = groundResolution(lat, zoomLevel)
-    return mpp * sqrt(
-        (KAROO3_SCREEN_WIDTH_PX.toDouble()).pow(2) +
-            (KAROO3_SCREEN_HEIGHT_PX.toDouble()).pow(2),
-    )
+    return mpp *
+        sqrt(
+            (KAROO3_SCREEN_WIDTH_PX.toDouble()).pow(2) +
+                (KAROO3_SCREEN_HEIGHT_PX.toDouble()).pow(2),
+        )
 }
 
 // Native chevron geometry (reverse-engineered from rideapp hhq5/m.java):
 // spacing = xdpi * 0.4 * groundResolution(zoom), heading threshold per zoom band.
 
 /**
- * Spacing in metres between consecutive direction chevrons, matching the rideapp's
- * native route-arrow placement. On Karoo 3 (~240 dpi) at zoom 14 this is ~50 m.
+ * Spacing in metres between consecutive direction chevrons, matching the rideapp's native
+ * route-arrow placement. On Karoo 3 (~240 dpi) at zoom 14 this is ~50 m.
  */
 internal fun nativeChevronSpacingM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
     xdpi * 0.4 * groundResolution(lat, zoomLevel)
 
 /**
- * Half-width in metres of the neighbourhood around a candidate chevron position used
- * to measure local bearing spread, matching the rideapp's `hhj` constant
- * (`xdpi × 0.05 × groundResolution`).
+ * Half-width in metres of the neighbourhood around a candidate chevron position used to measure
+ * local bearing spread, matching the rideapp's `hhj` constant (`xdpi × 0.05 × groundResolution`).
  */
 internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
     xdpi * 0.05 * groundResolution(lat, zoomLevel)
 
 /**
- * Ground length in metres of a chevron icon [heightDp] tall at display [density] and the
- * given [zoomLevel]. Two chevrons closer than this overlap on screen, so it doubles as
- * the collision-dedup minimum spacing. Unlike the rideapp's fixed `hhi`, this tracks our
- * actual (enlarged) icon rather than the native 10×12 dp arrow.
+ * Ground length in metres of a chevron icon [heightDp] tall at display [density] and the given
+ * [zoomLevel]. Two chevrons closer than this overlap on screen, so it doubles as the
+ * collision-dedup minimum spacing. Unlike the rideapp's fixed `hhi`, this tracks our actual
+ * (enlarged) icon rather than the native 10×12 dp arrow.
  */
 internal fun chevronIconLengthM(
     heightDp: Float,
@@ -103,10 +101,10 @@ internal fun chevronIconLengthM(
 ): Double = heightDp * density * groundResolution(lat, zoomLevel)
 
 /**
- * Maximum bearing spread (degrees) allowed inside the local window for a chevron to be
- * emitted. Spreads at or above this threshold suppress the chevron because the route is
- * curving too sharply for a single rotation to faithfully indicate direction. Matches
- * the rideapp's zoom-dependent `hhk` constant.
+ * Maximum bearing spread (degrees) allowed inside the local window for a chevron to be emitted.
+ * Spreads at or above this threshold suppress the chevron because the route is curving too sharply
+ * for a single rotation to faithfully indicate direction. Matches the rideapp's zoom-dependent
+ * `hhk` constant.
  */
 internal fun nativeChevronHeadingThresholdDeg(zoomLevel: Double): Double =
     when {
@@ -116,8 +114,8 @@ internal fun nativeChevronHeadingThresholdDeg(zoomLevel: Double): Double =
     }
 
 /**
- * Decodes a Google encoded polyline at the given precision (default 5 for GPS).
- * Returns an empty list on blank input.
+ * Decodes a Google encoded polyline at the given precision (default 5 for GPS). Returns an empty
+ * list on blank input.
  */
 internal fun decodeGpsPolyline(encoded: String, precision: Int = 5): List<LatLng> {
     if (encoded.isBlank()) return emptyList()
@@ -150,8 +148,8 @@ internal fun decodeGpsPolyline(encoded: String, precision: Int = 5): List<LatLng
 }
 
 /**
- * Encodes a list of points into a Google encoded polyline at the given precision.
- * Returns an empty string if [points] is empty.
+ * Encodes a list of points into a Google encoded polyline at the given precision. Returns an empty
+ * string if [points] is empty.
  */
 internal fun encodeGpsPolyline(points: List<LatLng>, precision: Int = 5): String {
     if (points.isEmpty()) return ""
@@ -180,10 +178,10 @@ private fun encodeSigned(v: Long, sb: StringBuilder) {
 }
 
 /**
- * Cumulative distance along [points] in metres using an equirectangular approximation
- * (acceptable for sub-kilometre segments at temperate latitudes; Barberfish targets
- * road cycling, not polar exploration). Returns a DoubleArray where `result[0] == 0.0`
- * and `result[i] = result[i-1] + distance(points[i-1], points[i])`.
+ * Cumulative distance along [points] in metres using an equirectangular approximation (acceptable
+ * for sub-kilometre segments at temperate latitudes; Barberfish targets road cycling, not polar
+ * exploration). Returns a DoubleArray where `result[0] == 0.0` and `result[i] = result[i-1] +
+ * distance(points[i-1], points[i])`.
  */
 internal fun cumulativeDistancesM(points: List<LatLng>): DoubleArray {
     val out = DoubleArray(points.size)
@@ -194,9 +192,8 @@ internal fun cumulativeDistancesM(points: List<LatLng>): DoubleArray {
 }
 
 /**
- * Distance in metres between two points using the same equirectangular approximation
- * as [cumulativeDistancesM] — accurate enough for the sub-kilometre spans Barberfish
- * works with.
+ * Distance in metres between two points using the same equirectangular approximation as
+ * [cumulativeDistancesM] — accurate enough for the sub-kilometre spans Barberfish works with.
  */
 internal fun latLngDistanceM(a: LatLng, b: LatLng): Double {
     val meanLatRad = (a.lat + b.lat) * 0.5 * (PI / 180.0)
@@ -207,14 +204,13 @@ internal fun latLngDistanceM(a: LatLng, b: LatLng): Double {
 }
 
 /**
- * Returns the sub-polyline covering [startM, endM] (clamped to the route bounds),
- * linearly interpolating lat/lng at each endpoint when the distance falls between
- * two vertices. The result always includes both endpoints in order and has size ≥ 2
- * when `endM > startM`.
+ * Returns the sub-polyline covering [startM, endM] (clamped to the route bounds), linearly
+ * interpolating lat/lng at each endpoint when the distance falls between two vertices. The result
+ * always includes both endpoints in order and has size ≥ 2 when `endM > startM`.
  *
- * If `startM >= endM` after clamping, returns an empty list.
- * Linear lat/lng interpolation is fine for the visual overlay — elevation polyline
- * spacing is ~80-100 m which is far below the scale where spherical geometry matters.
+ * If `startM >= endM` after clamping, returns an empty list. Linear lat/lng interpolation is fine
+ * for the visual overlay — elevation polyline spacing is ~80-100 m which is far below the scale
+ * where spherical geometry matters.
  */
 internal fun extractSubPolyline(
     points: List<LatLng>,
@@ -238,9 +234,9 @@ internal fun extractSubPolyline(
 }
 
 /**
- * Returns the LatLng at distance [distanceM] along [points]. If it falls exactly
- * on a vertex, returns that vertex; otherwise linearly interpolates between the
- * two bracketing vertices. Caller must ensure `0 ≤ distanceM ≤ cumDist.last()`.
+ * Returns the LatLng at distance [distanceM] along [points]. If it falls exactly on a vertex,
+ * returns that vertex; otherwise linearly interpolates between the two bracketing vertices. Caller
+ * must ensure `0 ≤ distanceM ≤ cumDist.last()`.
  */
 internal fun interpolateAt(points: List<LatLng>, cumDist: DoubleArray, distanceM: Double): LatLng {
     if (distanceM <= 0.0) return points.first()

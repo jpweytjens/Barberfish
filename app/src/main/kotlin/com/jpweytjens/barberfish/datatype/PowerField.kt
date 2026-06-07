@@ -4,8 +4,8 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
-import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -63,9 +63,10 @@ class PowerField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode,
         ): FieldState {
             val label =
-                if (smoothing == PowerSmoothingStream.S0) "Power"
-                else "${smoothing.label} Power"
-            state.toErrorFieldState(label, R.drawable.ic_col_power)?.let { return it }
+                if (smoothing == PowerSmoothingStream.S0) "Power" else "${smoothing.label} Power"
+            state.toErrorFieldState(label, R.drawable.ic_col_power)?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
                     ?: return FieldState.notAvailable(label, R.drawable.ic_col_power)

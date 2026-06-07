@@ -13,27 +13,32 @@ class GradeReadingScanTest {
         return acc
     }
 
-    @Test fun startsUnavailable_andStaysUnavailable_untilFirstFresh() {
+    @Test
+    fun startsUnavailable_andStaysUnavailable_untilFirstFresh() {
         val result = reduce(GradeReading.Unavailable, listOf(null, null, null))
         assertEquals(GradeReading.Unavailable, result)
     }
 
-    @Test fun firstFresh_producesFresh() {
+    @Test
+    fun firstFresh_producesFresh() {
         val result = reduce(GradeReading.Unavailable, listOf(null, 5.0f))
         assertEquals(GradeReading.Fresh(5.0f), result)
     }
 
-    @Test fun freshThenNull_producesStaleHoldingLastValue() {
+    @Test
+    fun freshThenNull_producesStaleHoldingLastValue() {
         val result = reduce(GradeReading.Unavailable, listOf(5.0f, null))
         assertEquals(GradeReading.Stale(5.0f), result)
     }
 
-    @Test fun staleStaysStaleAtSameValue_acrossMultipleNulls() {
+    @Test
+    fun staleStaysStaleAtSameValue_acrossMultipleNulls() {
         val result = reduce(GradeReading.Unavailable, listOf(5.0f, null, null, null))
         assertEquals(GradeReading.Stale(5.0f), result)
     }
 
-    @Test fun freshOverwritesStale_withNewValue() {
+    @Test
+    fun freshOverwritesStale_withNewValue() {
         val result = reduce(GradeReading.Unavailable, listOf(5.0f, null, 7.5f))
         assertEquals(GradeReading.Fresh(7.5f), result)
     }

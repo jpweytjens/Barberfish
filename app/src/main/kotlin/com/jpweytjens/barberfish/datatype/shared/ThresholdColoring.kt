@@ -10,8 +10,7 @@ internal fun targetThresholdColor(
     rangePercentAbove: Double,
 ): FieldColor {
     if (threshDisplay <= 0.0) return FieldColor.Default
-    val rangePercent =
-        if (converted >= threshDisplay) rangePercentAbove else rangePercentBelow
+    val rangePercent = if (converted >= threshDisplay) rangePercentAbove else rangePercentBelow
     val factor =
         ((converted - threshDisplay) / threshDisplay * 100.0 / rangePercent)
             .coerceIn(-1.0, 1.0)

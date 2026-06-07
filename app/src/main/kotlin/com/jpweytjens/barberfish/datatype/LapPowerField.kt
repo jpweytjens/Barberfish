@@ -4,16 +4,16 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
-import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.powerZone
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
-import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
@@ -31,7 +31,8 @@ class LapPowerField(
     private val isLastLap: Boolean,
 ) : BarberfishDataType("barberfish", if (isLastLap) "last-lap-power" else "lap-power") {
 
-    private val sdkType = if (isLastLap) DataType.Type.AVERAGE_POWER_LAST_LAP else DataType.Type.POWER_LAP
+    private val sdkType =
+        if (isLastLap) DataType.Type.AVERAGE_POWER_LAST_LAP else DataType.Type.POWER_LAP
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         combine(
@@ -43,9 +44,11 @@ class LapPowerField(
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 combine(
-                    karooSystem.streamDataFlow(sdkType),
-                    karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER),
-                ) { state, lapState -> state to lapNumberFrom(lapState) }
+                        karooSystem.streamDataFlow(sdkType),
+                        karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER),
+                    ) { state, lapState ->
+                        state to lapNumberFrom(lapState)
+                    }
                     .map { (state, lapNumber) ->
                         toFieldState(state, profile, zones, cfg.colorMode, isLastLap, lapNumber)
                     }
@@ -75,7 +78,9 @@ class LapPowerField(
             val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
             val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
             if (isLastLap && lapNumber <= 1) return FieldState.noLapsYet(label, iconRes)
-            state.toErrorFieldState(label, iconRes)?.let { return it }
+            state.toErrorFieldState(label, iconRes)?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
                     ?: return FieldState.notAvailable(label, iconRes)

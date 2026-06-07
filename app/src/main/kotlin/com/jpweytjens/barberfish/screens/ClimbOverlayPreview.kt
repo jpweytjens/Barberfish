@@ -54,52 +54,59 @@ internal fun ClimbOverlayPreview(
     gradePalette: GradePalette,
     modifier: Modifier = Modifier,
 ) {
-    val specs = remember(config, sparklineConfig, gradePalette) {
-        val eff = resolveClimbTuning(config, sparklineConfig)
-        val cfg = config.copy(
-            skipBands = eff.skipBands,
-            simplification = eff.simplification,
-            syncWithSparkline = false,
-        )
-        buildClimbOverlaySpecs(
-            routePolyline = ClimbPreviewFixture.routePolyline,
-            routeElevationPolyline = ClimbPreviewFixture.elevationPolyline,
-            palette = gradePalette,
-            readable = false,
-            cfg = cfg,
-            climbRanges = ClimbPreviewFixture.climbRanges,
-            includeChevrons = config.showChevrons,
-            chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,
-            chevronGuaranteePerRun = true,
-        )
-    }
+    val specs =
+        remember(config, sparklineConfig, gradePalette) {
+            val eff = resolveClimbTuning(config, sparklineConfig)
+            val cfg =
+                config.copy(
+                    skipBands = eff.skipBands,
+                    simplification = eff.simplification,
+                    syncWithSparkline = false,
+                )
+            buildClimbOverlaySpecs(
+                routePolyline = ClimbPreviewFixture.routePolyline,
+                routeElevationPolyline = ClimbPreviewFixture.elevationPolyline,
+                palette = gradePalette,
+                readable = false,
+                cfg = cfg,
+                climbRanges = ClimbPreviewFixture.climbRanges,
+                includeChevrons = config.showChevrons,
+                chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,
+                chevronGuaranteePerRun = true,
+            )
+        }
     val routePoints = remember { decodeGpsPolyline(ClimbPreviewFixture.routePolyline) }
     val segmentPoints = remember(specs) { specs.polylines.map { decodeGpsPolyline(it.encoded) } }
     val bounds = ClimbPreviewFixture.bounds
     val aspect = remember { mercatorBoundsAspect(bounds).toFloat() }
 
-    val tile = painterResource(
-        if (isSystemInDarkTheme()) R.drawable.preview_climb_map_dark
-        else R.drawable.preview_climb_map_light,
-    )
+    val tile =
+        painterResource(
+            if (isSystemInDarkTheme()) R.drawable.preview_climb_map_dark
+            else R.drawable.preview_climb_map_light,
+        )
 
     // Rasterise one bitmap per distinct grade colour from the real chevron drawables.
     val context = LocalContext.current
     val density = LocalDensity.current
     val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
     val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
-    val chevronBitmaps: Map<Int, ImageBitmap> = remember(specs, chevW, chevH) {
-        specs.chevrons.map { it.colorArgb }.distinct().mapNotNull { argb ->
-            val drawable = ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
-                ?: return@mapNotNull null
-            argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
-        }.toMap()
-    }
+    val chevronBitmaps: Map<Int, ImageBitmap> =
+        remember(specs, chevW, chevH) {
+            specs.chevrons
+                .map { it.colorArgb }
+                .distinct()
+                .mapNotNull { argb ->
+                    val drawable =
+                        ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
+                            ?: return@mapNotNull null
+                    argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
+                }
+                .toMap()
+        }
 
     Canvas(
-        modifier
-            .fillMaxWidth()
-            .aspectRatio(aspect),
+        modifier.fillMaxWidth().aspectRatio(aspect),
     ) {
         with(tile) { draw(size) }
 
@@ -131,9 +138,14 @@ internal fun ClimbOverlayPreview(
 
 private fun DrawScope.drawConnected(points: List<Offset>, color: Color, widthPx: Float) {
     if (points.size < 2) return
-    val path = Path().apply {
-        moveTo(points[0].x, points[0].y)
-        for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
-    }
-    drawPath(path, color, style = Stroke(width = widthPx, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    val path =
+        Path().apply {
+            moveTo(points[0].x, points[0].y)
+            for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+        }
+    drawPath(
+        path,
+        color,
+        style = Stroke(width = widthPx, cap = StrokeCap.Round, join = StrokeJoin.Round)
+    )
 }

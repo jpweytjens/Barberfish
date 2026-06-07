@@ -18,8 +18,8 @@ internal const val VALUE_BITMAP_HEIGHT_RATIO = 0.74f
 /**
  * Constant bitmap height per layout: `VALUE_BITMAP_HEIGHT_RATIO × valueFontBaseSp × density`.
  *
- * Independent of `fontSizeForCell` shrinks so the baseline stays stable
- * across content-driven font changes.
+ * Independent of `fontSizeForCell` shrinks so the baseline stays stable across content-driven font
+ * changes.
  */
 fun valueBitmapHeightPx(valueFontBaseSp: Int, density: Float): Int {
     val raw = (VALUE_BITMAP_HEIGHT_RATIO * valueFontBaseSp * density).toInt()
@@ -27,9 +27,9 @@ fun valueBitmapHeightPx(valueFontBaseSp: Int, density: Float): Int {
 }
 
 /**
- * Render two stacked value rows into an `ARGB_8888` bitmap. Paint setup mirrors
- * [renderValueBitmap] exactly (same typeface, letterSpacing, density). Row baselines
- * are pinned to the bottom of each equal half of [bitmapHeightPx].
+ * Render two stacked value rows into an `ARGB_8888` bitmap. Paint setup mirrors [renderValueBitmap]
+ * exactly (same typeface, letterSpacing, density). Row baselines are pinned to the bottom of each
+ * equal half of [bitmapHeightPx].
  *
  * Both rows are expected to be non-empty (callers pass formatted numbers).
  */
@@ -43,17 +43,19 @@ fun renderTwoRowValueBitmap(
     alignment: ViewConfig.Alignment,
     rowGapPx: Float = 4f,
 ): Bitmap {
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = Typeface.create("relative", Typeface.NORMAL)
-        textSize = fontSizePx
-        this.color = color
-        letterSpacing = LETTER_SPACING
-        textAlign = when (alignment) {
-            ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
-            ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
-            ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+    val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create("relative", Typeface.NORMAL)
+            textSize = fontSizePx
+            this.color = color
+            letterSpacing = LETTER_SPACING
+            textAlign =
+                when (alignment) {
+                    ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
+                    ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
+                    ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+                }
         }
-    }
     val cellW = cellWidthPx.toInt().coerceAtLeast(1)
     val measuredWidth = maxOf(paint.measureText(row1), paint.measureText(row2))
     val width = measuredWidth.toInt().coerceIn(1, cellW)
@@ -62,11 +64,12 @@ fun renderTwoRowValueBitmap(
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
 
-    val xPos = when (alignment) {
-        ViewConfig.Alignment.LEFT -> 0f
-        ViewConfig.Alignment.CENTER -> width / 2f
-        ViewConfig.Alignment.RIGHT -> width.toFloat()
-    }
+    val xPos =
+        when (alignment) {
+            ViewConfig.Alignment.LEFT -> 0f
+            ViewConfig.Alignment.CENTER -> width / 2f
+            ViewConfig.Alignment.RIGHT -> width.toFloat()
+        }
     val rowHeight = (bitmapHeightPx - rowGapPx) / 2f
 
     val bounds = Rect()
@@ -80,11 +83,11 @@ fun renderTwoRowValueBitmap(
 }
 
 /**
- * Render `text` into an `ARGB_8888` bitmap with the baseline pinned to the
- * bitmap's bottom edge (`bounds.bottom` ≈ 0 for digits).
+ * Render `text` into an `ARGB_8888` bitmap with the baseline pinned to the bitmap's bottom edge
+ * (`bounds.bottom` ≈ 0 for digits).
  *
- * `bitmap.density = Bitmap.DENSITY_NONE` so RemoteViews renders at native
- * pixel size with no scaling. Width is clamped to `cellWidthPx`.
+ * `bitmap.density = Bitmap.DENSITY_NONE` so RemoteViews renders at native pixel size with no
+ * scaling. Width is clamped to `cellWidthPx`.
  */
 fun renderValueBitmap(
     text: String,
@@ -94,17 +97,19 @@ fun renderValueBitmap(
     color: Int,
     alignment: ViewConfig.Alignment,
 ): Bitmap {
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = Typeface.create("relative", Typeface.NORMAL)
-        textSize = fontSizePx
-        this.color = color
-        letterSpacing = LETTER_SPACING
-        textAlign = when (alignment) {
-            ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
-            ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
-            ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+    val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create("relative", Typeface.NORMAL)
+            textSize = fontSizePx
+            this.color = color
+            letterSpacing = LETTER_SPACING
+            textAlign =
+                when (alignment) {
+                    ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
+                    ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
+                    ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+                }
         }
-    }
     val measuredWidth = paint.measureText(text)
     val cellW = cellWidthPx.toInt().coerceAtLeast(1)
     val width = measuredWidth.toInt().coerceIn(1, cellW)
@@ -117,11 +122,12 @@ fun renderValueBitmap(
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
 
-    val xPos = when (alignment) {
-        ViewConfig.Alignment.LEFT -> 0f
-        ViewConfig.Alignment.CENTER -> width / 2f
-        ViewConfig.Alignment.RIGHT -> width.toFloat()
-    }
+    val xPos =
+        when (alignment) {
+            ViewConfig.Alignment.LEFT -> 0f
+            ViewConfig.Alignment.CENTER -> width / 2f
+            ViewConfig.Alignment.RIGHT -> width.toFloat()
+        }
     canvas.drawText(text, xPos, baselineY, paint)
     return bitmap
 }

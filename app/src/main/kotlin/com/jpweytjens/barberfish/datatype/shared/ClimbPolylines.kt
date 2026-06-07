@@ -9,9 +9,7 @@ import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
 
-/**
- * A single coloured fill polyline for a route gradient segment.
- */
+/** A single coloured fill polyline for a route gradient segment. */
 internal data class ClimbPolylineSpec(
     val id: String,
     val encoded: String,
@@ -19,9 +17,9 @@ internal data class ClimbPolylineSpec(
 )
 
 /**
- * A single chevron symbol placed along a coloured gradient run. The bearing is the
- * direction the chevron points (derived from two adjacent route vertices ~10 m apart).
- * [colorArgb] is the gradient-band colour of the polyline run the chevron sits on.
+ * A single chevron symbol placed along a coloured gradient run. The bearing is the direction the
+ * chevron points (derived from two adjacent route vertices ~10 m apart). [colorArgb] is the
+ * gradient-band colour of the polyline run the chevron sits on.
  */
 internal data class ClimbChevronSpec(
     val id: String,
@@ -44,35 +42,32 @@ internal data class LatLngBounds(
     val minLng: Double,
     val maxLng: Double,
 ) {
-    fun contains(lat: Double, lng: Double): Boolean =
-        lat in minLat..maxLat && lng in minLng..maxLng
+    fun contains(lat: Double, lng: Double): Boolean = lat in minLat..maxLat && lng in minLng..maxLng
 }
 
 /** Default chevron spacing when no zoom-adaptive step is supplied. */
 internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
 
 /**
- * Builds gradient polyline specs and chevron symbol specs along a route's elevation
- * profile, mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is
- * intentionally not used — the rider's mental model of "where it gets coloured" must
- * match the sparkline, and the sparkline is driven purely by the elevation polyline +
- * per-consumer simplification/skipBands.
+ * Builds gradient polyline specs and chevron symbol specs along a route's elevation profile,
+ * mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is intentionally not used — the
+ * rider's mental model of "where it gets coloured" must match the sparkline, and the sparkline is
+ * driven purely by the elevation polyline + per-consumer simplification/skipBands.
  *
  * Algorithm:
  * 1. Decode the GPS polyline and compute cumulative distance.
  * 2. Decode the elevation polyline and run Visvalingam–Whyatt simplification.
- * 3. Walk adjacent elevation-vertex pairs, computing local grade. Above-threshold segments
- *    take a grade colour; below-threshold segments that fall inside a [climbRanges] entry
- *    take the native route yellow so our overlay fully covers Karoo's blue `CLIMB_LINE`;
- *    all other below-threshold segments are skipped (the native route line shows there).
- *    Consecutive same-colour segments are grouped into runs, each emitting a single
- *    polyline spanning `[runStartM, runEndM]`.
- * 4. For each run, sample chevron positions every [chevronSpacingM] metres, computing
- *    each chevron's bearing from two route points 10 m apart. Short runs still get at
- *    least one chevron at their midpoint so climbs shorter than the spacing remain marked.
- * 5. If [chevronViewport] is non-null, drop any chevron whose lat/lng falls outside the
- *    viewport bounds. This keeps the emitted symbol count bounded regardless of route
- *    length — we only render what the rider can see.
+ * 3. Walk adjacent elevation-vertex pairs, computing local grade. Above-threshold segments take a
+ *    grade colour; below-threshold segments that fall inside a [climbRanges] entry take the native
+ *    route yellow so our overlay fully covers Karoo's blue `CLIMB_LINE`; all other below-threshold
+ *    segments are skipped (the native route line shows there). Consecutive same-colour segments are
+ *    grouped into runs, each emitting a single polyline spanning `[runStartM, runEndM]`.
+ * 4. For each run, sample chevron positions every [chevronSpacingM] metres, computing each
+ *    chevron's bearing from two route points 10 m apart. Short runs still get at least one chevron
+ *    at their midpoint so climbs shorter than the spacing remain marked.
+ * 5. If [chevronViewport] is non-null, drop any chevron whose lat/lng falls outside the viewport
+ *    bounds. This keeps the emitted symbol count bounded regardless of route length — we only
+ *    render what the rider can see.
  *
  * Returns empty lists if either polyline is missing.
  */
@@ -100,8 +95,9 @@ internal fun buildClimbOverlaySpecs(
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
     if (rawElev.isEmpty()) return ClimbOverlaySpecs(emptyList(), emptyList())
     val elevPoints = visvalingamWhyatt(rawElev, cfg.simplification.minAreaM2)
-    val threshold = gradeFillRange(palette, skipBandsClimb = cfg.skipBands).posMin
-        ?: return ClimbOverlaySpecs(emptyList(), emptyList())
+    val threshold =
+        gradeFillRange(palette, skipBandsClimb = cfg.skipBands).posMin
+            ?: return ClimbOverlaySpecs(emptyList(), emptyList())
 
     // Collect same-colour runs, then emit one polyline per run. A below-threshold segment
     // inside a Karoo climb range is kept as a route-yellow run so our overlay covers the
@@ -117,12 +113,13 @@ internal fun buildClimbOverlaySpecs(
         val e0 = pair[0].second.toDouble()
         val e1 = pair[1].second.toDouble()
         val localGradePct = ((e1 - e0) / (d1 - d0)) * 100.0
-        val color = when {
-            localGradePct >= threshold ->
-                gradeColor(localGradePct, palette, readable)?.toArgb() ?: fillerArgb
-            climbRanges.any { (s, e) -> d0 < e && d1 > s } -> fillerArgb
-            else -> return@forEach
-        }
+        val color =
+            when {
+                localGradePct >= threshold ->
+                    gradeColor(localGradePct, palette, readable)?.toArgb() ?: fillerArgb
+                climbRanges.any { (s, e) -> d0 < e && d1 > s } -> fillerArgb
+                else -> return@forEach
+            }
         val last = runs.lastOrNull()
         if (last != null && last.colorArgb == color && last.endM == d0) {
             last.endM = d1
@@ -136,47 +133,53 @@ internal fun buildClimbOverlaySpecs(
     runs.forEachIndexed { runIdx, run ->
         val sub = extractSubPolyline(gps, cumDist, run.startM, run.endM)
         if (sub.size < 2) return@forEachIndexed
-        polylines += ClimbPolylineSpec(
-            id = "barberfish-seg-$runIdx",
-            encoded = encodeGpsPolyline(sub),
-            colorArgb = run.colorArgb,
-        )
-        if (includeChevrons) {
-            chevrons += chevronsForRun(
-                runIdx = runIdx,
-                startM = run.startM,
-                endM = run.endM,
-                gps = gps,
-                cumDist = cumDist,
-                spacingM = chevronSpacingM,
-                windowHalfM = chevronWindowHalfM,
-                headingThresholdDeg = chevronHeadingThresholdDeg,
-                guaranteePerRun = chevronGuaranteePerRun,
+        polylines +=
+            ClimbPolylineSpec(
+                id = "barberfish-seg-$runIdx",
+                encoded = encodeGpsPolyline(sub),
                 colorArgb = run.colorArgb,
             )
+        if (includeChevrons) {
+            chevrons +=
+                chevronsForRun(
+                    runIdx = runIdx,
+                    startM = run.startM,
+                    endM = run.endM,
+                    gps = gps,
+                    cumDist = cumDist,
+                    spacingM = chevronSpacingM,
+                    windowHalfM = chevronWindowHalfM,
+                    headingThresholdDeg = chevronHeadingThresholdDeg,
+                    guaranteePerRun = chevronGuaranteePerRun,
+                    colorArgb = run.colorArgb,
+                )
         }
     }
     // Collision pass: drop any chevron within [chevronMinSpacingM] of an already-kept
     // one. Checked against ALL kept chevrons, not just the route-previous one — where the
     // route loops, switchbacks or passes near itself, two chevrons can be far apart in
     // route distance yet geographically overlap. Matches the rideapp's full marker scan.
-    val dedupedChevrons = if (chevronMinSpacingM > 0.0) {
-        val kept = ArrayList<ClimbChevronSpec>(chevrons.size)
-        for (c in chevrons) {
-            val collides = kept.any { k ->
-                latLngDistanceM(LatLng(k.lat, k.lng), LatLng(c.lat, c.lng)) < chevronMinSpacingM
+    val dedupedChevrons =
+        if (chevronMinSpacingM > 0.0) {
+            val kept = ArrayList<ClimbChevronSpec>(chevrons.size)
+            for (c in chevrons) {
+                val collides =
+                    kept.any { k ->
+                        latLngDistanceM(LatLng(k.lat, k.lng), LatLng(c.lat, c.lng)) <
+                            chevronMinSpacingM
+                    }
+                if (!collides) kept += c
             }
-            if (!collides) kept += c
+            kept
+        } else {
+            chevrons
         }
-        kept
-    } else {
-        chevrons
-    }
-    val filteredChevrons = if (chevronViewport != null) {
-        dedupedChevrons.filter { chevronViewport.contains(it.lat, it.lng) }
-    } else {
-        dedupedChevrons
-    }
+    val filteredChevrons =
+        if (chevronViewport != null) {
+            dedupedChevrons.filter { chevronViewport.contains(it.lat, it.lng) }
+        } else {
+            dedupedChevrons
+        }
     return ClimbOverlaySpecs(polylines, filteredChevrons)
 }
 
@@ -250,8 +253,8 @@ private fun chevronSpecAt(
 }
 
 /**
- * Bearing at [distanceM] looking 10 m forward (or 10 m backward at end-of-route,
- * flipped by 180° so the chevron still points along travel direction).
+ * Bearing at [distanceM] looking 10 m forward (or 10 m backward at end-of-route, flipped by 180° so
+ * the chevron still points along travel direction).
  */
 private fun bearingAtDistance(
     gps: List<LatLng>,
@@ -268,10 +271,9 @@ private fun bearingAtDistance(
 }
 
 /**
- * Spread (max − min) in degrees of edge bearings whose start vertex falls inside
- * `[centerM − halfM, centerM + halfM]`. Result is folded to `[0°, 180°]` so spans
- * that cross the 0/360 wraparound report the shorter arc. Returns 0 when fewer than
- * two edges fall in the window.
+ * Spread (max − min) in degrees of edge bearings whose start vertex falls inside `[centerM − halfM,
+ * centerM + halfM]`. Result is folded to `[0°, 180°]` so spans that cross the 0/360 wraparound
+ * report the shorter arc. Returns 0 when fewer than two edges fall in the window.
  */
 private fun bearingSpreadInWindow(
     gps: List<LatLng>,
@@ -299,8 +301,8 @@ private fun bearingSpreadInWindow(
 }
 
 /**
- * Initial bearing in degrees from [from] to [to], measured clockwise from North
- * (0 = N, 90 = E, 180 = S, 270 = W). Standard spherical forward-azimuth formula.
+ * Initial bearing in degrees from [from] to [to], measured clockwise from North (0 = N, 90 = E, 180
+ * = S, 270 = W). Standard spherical forward-azimuth formula.
  */
 private fun bearingDeg(from: LatLng, to: LatLng): Float {
     val lat1 = from.lat * PI / 180.0

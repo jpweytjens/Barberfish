@@ -20,14 +20,14 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
 /**
- * The four thin numeric fields. Each streams one native datatype, converts the raw
- * value, and emits a FieldState. Route-gated kinds report "Not available" off-route.
- * Icons are interim; final icons are a follow-up.
+ * The four thin numeric fields. Each streams one native datatype, converts the raw value, and emits
+ * a FieldState. Route-gated kinds report "Not available" off-route. Icons are interim; final icons
+ * are a follow-up.
  */
 enum class ValueKind(
     val typeId: String,
-    val sourceType: String,   // DataType.Type.*
-    val fieldId: String,      // DataType.Field.*
+    val sourceType: String, // DataType.Type.*
+    val fieldId: String, // DataType.Field.*
     val convert: ConvertType,
     val decimals: Int,
     val label: String,
@@ -36,23 +36,47 @@ enum class ValueKind(
     val previewRaw: List<Double>,
 ) {
     DISTANCE(
-        "distance", DataType.Type.DISTANCE, DataType.Field.DISTANCE,
-        ConvertType.DISTANCE, 1, "Distance", R.drawable.ic_col_speed, false,
+        "distance",
+        DataType.Type.DISTANCE,
+        DataType.Field.DISTANCE,
+        ConvertType.DISTANCE,
+        1,
+        "Distance",
+        R.drawable.ic_col_speed,
+        false,
         listOf(12_300.0, 47_200.0, 103_800.0),
     ),
     DISTANCE_REMAINING(
-        "distance-remaining", DataType.Type.DISTANCE_TO_DESTINATION, DataType.Field.DISTANCE_TO_DESTINATION,
-        ConvertType.DISTANCE, 1, "Dist\nLeft", R.drawable.ic_col_speed, true,
+        "distance-remaining",
+        DataType.Type.DISTANCE_TO_DESTINATION,
+        DataType.Field.DISTANCE_TO_DESTINATION,
+        ConvertType.DISTANCE,
+        1,
+        "Dist\nLeft",
+        R.drawable.ic_col_speed,
+        true,
         listOf(42_100.0, 23_400.0, 4_800.0),
     ),
     ELEVATION_REMAINING(
-        "elevation-remaining", DataType.Type.ELEVATION_REMAINING, DataType.Field.ASCENT_REMAINING,
-        ConvertType.ELEVATION, 0, "Climb\nLeft", R.drawable.ic_grade, true,
+        "elevation-remaining",
+        DataType.Type.ELEVATION_REMAINING,
+        DataType.Field.ASCENT_REMAINING,
+        ConvertType.ELEVATION,
+        0,
+        "Climb\nLeft",
+        R.drawable.ic_grade,
+        true,
         listOf(1240.0, 540.0, 80.0),
     ),
     DESCENT_REMAINING(
-        "descent-remaining", DataType.Type.DESCENT_REMAINING, DataType.Field.DESCENT_REMAINING,
-        ConvertType.ELEVATION, 0, "Desc\nLeft", R.drawable.ic_grade, true,
+        "descent-remaining",
+        DataType.Type.DESCENT_REMAINING,
+        DataType.Field.DESCENT_REMAINING,
+        ConvertType.ELEVATION,
+        0,
+        "Desc\nLeft",
+        R.drawable.ic_grade,
+        true,
         listOf(1310.0, 610.0, 95.0),
     ),
 }
@@ -77,17 +101,21 @@ class ValueField(
 
     companion object {
         fun toFieldState(state: StreamState, kind: ValueKind, profile: UserProfile): FieldState {
-            state.toErrorFieldState(kind.label, kind.iconRes)?.let { return it }
-            val streaming = state as? StreamState.Streaming
-                ?: return FieldState.notAvailable(kind.label, kind.iconRes)
+            state.toErrorFieldState(kind.label, kind.iconRes)?.let {
+                return it
+            }
+            val streaming =
+                state as? StreamState.Streaming
+                    ?: return FieldState.notAvailable(kind.label, kind.iconRes)
             if (kind.requiresRoute) {
                 val onRoute = streaming.dataPoint.values[DataType.Field.ON_ROUTE]
                 if (onRoute != null && onRoute == 0.0) {
                     return FieldState.notAvailable(kind.label, kind.iconRes)
                 }
             }
-            val raw = streaming.dataPoint.values[kind.fieldId]
-                ?: return FieldState.notAvailable(kind.label, kind.iconRes)
+            val raw =
+                streaming.dataPoint.values[kind.fieldId]
+                    ?: return FieldState.notAvailable(kind.label, kind.iconRes)
             val converted = kind.convert.apply(raw, profile)
             return FieldState(
                 primary = formatFixed(converted, kind.decimals),

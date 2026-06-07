@@ -26,13 +26,15 @@ class EffortFieldOrderTest {
             powerZones = emptyList(),
         )
 
-    @Test fun `distance first by default, arrow on the climb row`() {
+    @Test
+    fun `distance first by default, arrow on the climb row`() {
         val s = EffortField.previewStates(metricProfile, climbFirst = false).first()
         assertFalse("distance should not carry the arrow", s.primary.startsWith("↗"))
         assertTrue("climb row carries the arrow", s.secondary!!.startsWith("↗"))
     }
 
-    @Test fun `climb first swaps the rows and keeps the arrow on the climb`() {
+    @Test
+    fun `climb first swaps the rows and keeps the arrow on the climb`() {
         val s = EffortField.previewStates(metricProfile, climbFirst = true).first()
         assertTrue("climb now on top, still carries the arrow", s.primary.startsWith("↗"))
         assertFalse("distance now on the bottom row", s.secondary!!.startsWith("↗"))
