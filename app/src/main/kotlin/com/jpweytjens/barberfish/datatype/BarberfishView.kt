@@ -19,6 +19,7 @@ import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
+import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
@@ -69,6 +70,44 @@ fun barberfishFieldRemoteViews(
     }
 
     return rv
+}
+
+/**
+ * Applies the Barberfish field header (icon + label) to a graphical (sparkline) field's [rv], which
+ * shares the header view ids with the numeric layout. The field draws its own header (the native
+ * header is disabled via UpdateGraphicConfig), matching the numeric fields. [label] and [iconRes]
+ * should be the field's registered name and icon so the header matches the picker.
+ */
+fun applySparklineHeaderChrome(
+    rv: RemoteViews,
+    label: String,
+    iconRes: Int,
+    config: ViewConfig,
+    context: Context,
+) {
+    val dm = context.resources.displayMetrics
+    val density = dm.density
+    val sizeConfig = config.toViewSizeConfig()
+    val isNightMode =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+    val colors = FieldColor.Default.toColorConfig(ZoneColorMode.NONE, isNightMode)
+    val paddingHPx = (sizeConfig.paddingH.value * density).toInt()
+    val cellWidthPx =
+        sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
+            ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
+    val field =
+        FieldState(primary = "", label = label, color = FieldColor.Default, iconRes = iconRes)
+    applyHeaderChrome(
+        rv,
+        field,
+        label.replace("\n", " "),
+        config.alignment,
+        colors,
+        sizeConfig,
+        density,
+        cellWidthPx,
+    )
 }
 
 private fun makeFieldRemoteViews(

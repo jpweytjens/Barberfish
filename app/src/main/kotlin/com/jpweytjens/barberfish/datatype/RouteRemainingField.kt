@@ -32,6 +32,13 @@ class RouteRemainingField(private val karooSystem: KarooSystemService) :
 
     override fun renderState(state: Bitmap?, config: ViewConfig, context: Context): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
+        applySparklineHeaderChrome(
+            rv,
+            context.getString(R.string.route_remaining_name),
+            R.drawable.ic_grade,
+            config,
+            context,
+        )
         if (state != null) rv.setImageViewBitmap(R.id.sparkline_image, state)
         return rv
     }
