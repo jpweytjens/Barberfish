@@ -169,7 +169,7 @@ Complete list of data fields provided by Barberfish, grouped by category.
     <tr><td>Elevation Remaining</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>Descent Remaining</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>Remaining Effort</td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>Route Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Overview</td><td></td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Time</th></tr>
     <tr><td>Elapsed</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Moving</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>

@@ -8,7 +8,7 @@ New data fields:
 - Elevation Remaining, the climbing left to the destination
 - Descent Remaining to the destination
 - Remaining Effort, distance and remaining climb stacked in one field
-- Route Remaining, a plain elevation profile of the whole route with a dot for where you are
+- Overview, a plain elevation profile of the whole route with a dot for where you are
 - Distance and the remaining fields also selectable as HUD slots
 
 ## 3.3
