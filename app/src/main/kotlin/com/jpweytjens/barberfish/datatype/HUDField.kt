@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
+import android.util.Log
 import android.view.View
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
@@ -56,6 +57,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -318,6 +320,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 }.flatMapLatest { (etaCfg, timeCfg) ->
                     ETAField.streamFlow(karooSystem, slot.field.kind, etaCfg, timeCfg.format)
                 }
+        }.catch { e ->
+            // Isolate a slot failure: degrade it to Not available rather than let the
+            // exception cancel the whole HUD combine and freeze every slot for the ride.
+            Log.e("Barberfish", "HUD slot ${slot.field} threw; showing Not available", e)
+            emit(FieldState.notAvailable())
         }
 
     companion object {

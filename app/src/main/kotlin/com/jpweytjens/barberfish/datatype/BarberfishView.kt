@@ -88,8 +88,13 @@ private fun makeFieldRemoteViews(
         (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
     else 0f
     val labelAvailableWidthPx = cellWidthPx - iconWidthPx
+    // Match the native Karoo fields, which always show a dot decimal regardless of locale.
+    // Value strings are numeric/time only (no grouping separators), so the only comma a
+    // locale can introduce is the decimal separator — safe to normalize to a dot here, the
+    // single point every field value (standalone, HUD slot, preview) flows through.
+    val valueText = field.primary.replace(',', '.')
     val (fontSp, maxLines) = fontSizeForCell(
-        field.primary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
+        valueText, sizeConfig.valueFontSizeBase, cellWidthPx, density,
         wrapThresholdSp = sizeConfig.wrapThresholdSp,
     )
 
@@ -187,7 +192,7 @@ private fun makeFieldRemoteViews(
 
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
     val valueBitmap = renderValueBitmap(
-        text = field.primary,
+        text = valueText,
         fontSizePx = fontSp * density,
         bitmapHeightPx = bitmapHeightPx,
         cellWidthPx = cellWidthPx,
