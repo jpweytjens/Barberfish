@@ -449,9 +449,11 @@ private fun HUDPreviewCell(
         val heightPx = (maxHeight.value * density).toInt()
         val sparklineMarginPx = if (reserveSparklineSpace) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
-        val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx) {
+        val design = LocalDataFieldDesign.current
+        val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx, design) {
             baseConfig.copy(
                 cellWidthPxOverride = widthPx.toFloat(),
+                showIcons = design.showIcons,
             )
         }
         val bitmap = remember(field, colorMode, sizeConfig, slotHeightPx) {

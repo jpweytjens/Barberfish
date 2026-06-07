@@ -49,12 +49,14 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -104,6 +106,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.withDesign
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
@@ -326,6 +329,7 @@ class MainActivity : ComponentActivity() {
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 
+        CompositionLocalProvider(LocalDataFieldDesign provides dataFieldDesignConfig) {
         Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
             Column(
                 modifier =
@@ -1001,6 +1005,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
         } // end Box
+        }
     }
 }
 
@@ -1298,6 +1303,8 @@ private fun CollapsibleSection(
     }
 }
 
+internal val LocalDataFieldDesign = staticCompositionLocalOf { DataFieldDesignConfig() }
+
 private val FIELD_PREVIEW_WIDTH = 120.dp
 private val FIELD_PREVIEW_HEIGHT = 80.dp
 
@@ -1307,10 +1314,11 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     val densityValue = LocalDensity.current.density
     val widthPx = (FIELD_PREVIEW_WIDTH.value * densityValue).toInt()
     val heightPx = (FIELD_PREVIEW_HEIGHT.value * densityValue).toInt()
-    val sizeConfig = remember(widthPx) {
+    val design = LocalDataFieldDesign.current
+    val sizeConfig = remember(widthPx, design) {
         ViewSizeConfig.STANDARD.copy(
             cellWidthPxOverride = widthPx.toFloat(),
-        )
+        ).withDesign(design)
     }
     var index by remember { mutableIntStateOf(0) }
     LaunchedEffect(previewFields) {
