@@ -214,38 +214,11 @@ private fun makeFieldRemoteViews(
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
     val valueBitmap =
         if (field.secondary != null) {
-            // Fit BOTH rows: take the smaller of the two width-fitting sizes (the visually
-            // wider row needs the smaller font). Character count is a poor width proxy here
-            // because the "↗" marker makes the ascent row wide despite being short.
-            val widthFitSp =
-                minOf(
-                    fontSizeForCell(
-                            field.primary,
-                            sizeConfig.valueFontSizeBase,
-                            cellWidthPx,
-                            density,
-                            wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                        )
-                        .first,
-                    fontSizeForCell(
-                            field.secondary,
-                            sizeConfig.valueFontSizeBase,
-                            cellWidthPx,
-                            density,
-                            wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                        )
-                        .first,
-                )
-            // Two rows split one value box: cap each at ~0.62× the single-row base so both
-            // rows plus the inter-row gap stay inside bitmapHeightPx. Tunable on-device.
-            val twoRowSp =
-                widthFitSp
-                    .coerceAtMost((sizeConfig.valueFontSizeBase * 0.62f).toInt())
-                    .coerceAtLeast(20)
+            // Two stacked rows share the single-row value height (same footprint as the numeric
+            // fields); the renderer splits it into two equal bands and sizes the font to fit.
             renderTwoRowValueBitmap(
                 row1 = field.primary,
                 row2 = field.secondary,
-                fontSizePx = twoRowSp * density,
                 bitmapHeightPx = bitmapHeightPx,
                 cellWidthPx = cellWidthPx,
                 color = colors.valueText.toArgb(),
