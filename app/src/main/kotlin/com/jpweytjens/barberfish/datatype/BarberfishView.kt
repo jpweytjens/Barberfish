@@ -87,14 +87,6 @@ private fun makeFieldRemoteViews(
     val cellWidthPx =
         sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
             ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
-    val numIcons =
-        (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
-    val iconWidthPx =
-        if (numIcons > 0)
-            (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) *
-                density
-        else 0f
-    val labelAvailableWidthPx = cellWidthPx - iconWidthPx
     val (fontSp, maxLines) =
         fontSizeForCell(
             field.primary,
@@ -124,78 +116,17 @@ private fun makeFieldRemoteViews(
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
 
-    // header_ref anchors baseline_box's top via layout_below; its minHeight
-    // must match the visible header so the centering region mirrors native's.
-    val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
-    rv.setInt(R.id.field_header, "setMinimumHeight", headerMinHeightPx)
-    rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
-
-    if (LAYOUT_PROBE_MODE) {
-        rv.setViewVisibility(R.id.header_ref, View.VISIBLE)
-        rv.setInt(R.id.header_ref, "setBackgroundColor", PROBE_MARKER_COLOR)
-    }
-
-    // HUD slots size labels dynamically from headerFontSize using the default
-    // typeface; regular cells use the per-layout values from sizeConfig.
-    val labelFontSp: Float
-    val labelLines: Int
-    if (sizeConfig.colSpan < 30) {
-        val (sp, _) =
-            fontSizeForCell(
-                displayLabel,
-                sizeConfig.headerFontSize.value.toInt(),
-                labelAvailableWidthPx,
-                density,
-                wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                typeface = Typeface.DEFAULT,
-            )
-        labelFontSp = sp.toFloat()
-        labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
-    } else {
-        labelFontSp = sizeConfig.headerFontSize.value
-        labelLines = sizeConfig.labelMaxLines
-    }
-    rv.setTextViewText(R.id.field_label, displayLabel)
-    rv.setTextColor(R.id.field_label, labelArgb)
-    rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
-    // setLines(2) forces a 2-line reservation; without it short 2-col labels
-    // collapse to 1-line height and the header sits ~12 px above native.
-    when {
-        labelLines == 1 -> rv.setInt(R.id.field_label, "setMaxLines", 1)
-        labelLines == 2 -> rv.setInt(R.id.field_label, "setLines", 2)
-    }
-
-    // Icons
-    val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
-    val iconSizePx = (sizeConfig.headerIconSize.value * density).toInt()
-    if (field.iconRes != null) {
-        rv.setViewVisibility(R.id.field_icon, View.VISIBLE)
-        rv.setImageViewResource(R.id.field_icon, field.iconRes)
-        rv.setInt(R.id.field_icon, "setColorFilter", colors.iconTint.toArgb())
-        rv.setInt(R.id.field_icon, "setMaxWidth", iconSizePx)
-        rv.setInt(R.id.field_icon, "setMaxHeight", iconSizePx)
-    } else {
-        rv.setViewVisibility(R.id.field_icon, View.GONE)
-    }
-    if (field.secondaryIconRes != null) {
-        rv.setViewVisibility(R.id.field_icon_secondary, View.VISIBLE)
-        rv.setImageViewResource(R.id.field_icon_secondary, field.secondaryIconRes)
-        rv.setInt(R.id.field_icon_secondary, "setColorFilter", colors.iconTint.toArgb())
-        rv.setInt(R.id.field_icon_secondary, "setMaxWidth", iconSizePx)
-        rv.setInt(R.id.field_icon_secondary, "setMaxHeight", iconSizePx)
-    } else {
-        rv.setViewVisibility(R.id.field_icon_secondary, View.GONE)
-    }
-    // Gap between icon and label: side depends on alignment (left layout has label before icons)
-    if (numIcons > 0) {
-        if (alignment == ViewConfig.Alignment.LEFT) {
-            rv.setViewPadding(R.id.field_label, 0, 0, gapPx, 0)
-        } else {
-            rv.setViewPadding(R.id.field_label, gapPx, 0, 0, 0)
-        }
-    } else {
-        rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
-    }
+    val labelLines =
+        applyHeaderChrome(
+            rv,
+            field,
+            displayLabel,
+            alignment,
+            colors,
+            sizeConfig,
+            density,
+            cellWidthPx
+        )
 
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
     val valueBitmap =
@@ -280,6 +211,106 @@ private fun makeFieldRemoteViews(
     }
 
     return rv
+}
+
+/**
+ * Applies the Barberfish field header (icon[s] + label) to [rv], sized from [sizeConfig]. Shared by
+ * the numeric field layout and the graphical (sparkline) field layout, which use the same header
+ * view ids. Returns the label line count, needed to position the stream-state overlay.
+ */
+private fun applyHeaderChrome(
+    rv: RemoteViews,
+    field: FieldState,
+    displayLabel: String,
+    alignment: ViewConfig.Alignment,
+    colors: ColorConfig,
+    sizeConfig: ViewSizeConfig,
+    density: Float,
+    cellWidthPx: Float,
+): Int {
+    val labelArgb = colors.headerText.toArgb()
+    val numIcons =
+        (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+    val iconWidthPx =
+        if (numIcons > 0)
+            (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) *
+                density
+        else 0f
+    val labelAvailableWidthPx = cellWidthPx - iconWidthPx
+
+    // header_ref anchors baseline_box's top via layout_below; its minHeight
+    // must match the visible header so the centering region mirrors native's.
+    val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
+    rv.setInt(R.id.field_header, "setMinimumHeight", headerMinHeightPx)
+    rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
+
+    if (LAYOUT_PROBE_MODE) {
+        rv.setViewVisibility(R.id.header_ref, View.VISIBLE)
+        rv.setInt(R.id.header_ref, "setBackgroundColor", PROBE_MARKER_COLOR)
+    }
+
+    // HUD slots size labels dynamically from headerFontSize using the default
+    // typeface; regular cells use the per-layout values from sizeConfig.
+    val labelFontSp: Float
+    val labelLines: Int
+    if (sizeConfig.colSpan < 30) {
+        val (sp, _) =
+            fontSizeForCell(
+                displayLabel,
+                sizeConfig.headerFontSize.value.toInt(),
+                labelAvailableWidthPx,
+                density,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                typeface = Typeface.DEFAULT,
+            )
+        labelFontSp = sp.toFloat()
+        labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
+    } else {
+        labelFontSp = sizeConfig.headerFontSize.value
+        labelLines = sizeConfig.labelMaxLines
+    }
+    rv.setTextViewText(R.id.field_label, displayLabel)
+    rv.setTextColor(R.id.field_label, labelArgb)
+    rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
+    // setLines(2) forces a 2-line reservation; without it short 2-col labels
+    // collapse to 1-line height and the header sits ~12 px above native.
+    when {
+        labelLines == 1 -> rv.setInt(R.id.field_label, "setMaxLines", 1)
+        labelLines == 2 -> rv.setInt(R.id.field_label, "setLines", 2)
+    }
+
+    // Icons
+    val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
+    val iconSizePx = (sizeConfig.headerIconSize.value * density).toInt()
+    if (field.iconRes != null) {
+        rv.setViewVisibility(R.id.field_icon, View.VISIBLE)
+        rv.setImageViewResource(R.id.field_icon, field.iconRes)
+        rv.setInt(R.id.field_icon, "setColorFilter", colors.iconTint.toArgb())
+        rv.setInt(R.id.field_icon, "setMaxWidth", iconSizePx)
+        rv.setInt(R.id.field_icon, "setMaxHeight", iconSizePx)
+    } else {
+        rv.setViewVisibility(R.id.field_icon, View.GONE)
+    }
+    if (field.secondaryIconRes != null) {
+        rv.setViewVisibility(R.id.field_icon_secondary, View.VISIBLE)
+        rv.setImageViewResource(R.id.field_icon_secondary, field.secondaryIconRes)
+        rv.setInt(R.id.field_icon_secondary, "setColorFilter", colors.iconTint.toArgb())
+        rv.setInt(R.id.field_icon_secondary, "setMaxWidth", iconSizePx)
+        rv.setInt(R.id.field_icon_secondary, "setMaxHeight", iconSizePx)
+    } else {
+        rv.setViewVisibility(R.id.field_icon_secondary, View.GONE)
+    }
+    // Gap between icon and label: side depends on alignment (left layout has label before icons)
+    if (numIcons > 0) {
+        if (alignment == ViewConfig.Alignment.LEFT) {
+            rv.setViewPadding(R.id.field_label, 0, 0, gapPx, 0)
+        } else {
+            rv.setViewPadding(R.id.field_label, gapPx, 0, 0, 0)
+        }
+    } else {
+        rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
+    }
+    return labelLines
 }
 
 // translationY is baked into the *_neg3 XML variants because
