@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.1
+
+Fixes:
+- The HUD and grade no longer freeze on a slow climb, and one stuck field can no longer freeze the rest of the HUD. Thanks to NevBailey for the report.
+- Grade and other decimal values are no longer cut off on devices set to Spanish, German, and similar languages; they now show a dot, like the native fields. Thanks to Sasker for the report.
+
 ## 3.3
 
 New data fields:
