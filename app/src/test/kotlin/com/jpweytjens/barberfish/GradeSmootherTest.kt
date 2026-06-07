@@ -112,6 +112,60 @@ class GradeSmootherTest {
         assertEquals(8.0f, finalGrade!!, 0.1f)
     }
 
+    @Test
+    fun ringBufferDoesNotOverflow_onProlongedSlowClimbNearAutoPauseSpeed() {
+        // Just above the 0.5 m/s moving guard, sampled fast for minutes — the worst case for
+        // the window: 0.55 m/s at 10 Hz is 0.055 m per tick, ~545 samples per 30 m if ungated.
+        // The gate admits one per 0.5 m, so it stays bounded and still resolves the grade.
+        val speedMs = 0.55f                // just above GRADE_SPEED_THRESHOLD_MS
+        val step = speedMs / 10.0f         // 10 Hz → 0.055 m per sample
+        val grade = 0.06f                  // 6 % climb
+        val n = 3000                       // ~165 m, well past baseline
+        val s = GradeSmoother()
+        val out = (0 until n).map { i ->
+            val dist = i * step
+            s.update(100.0f + grade * dist, dist, speedMs)
+        }
+        val finalGrade = out.last()
+        assertNotNull(finalGrade)
+        assertEquals(6.0f, finalGrade!!, 0.1f)
+    }
+
+    @Test
+    fun ringBufferDoesNotOverflow_acrossManyStopAndGoCycles() {
+        // Flat road, repeated move/stop cycles. Elevation is stable across each stop, so no
+        // barrier fires and the buffer PERSISTS across resumes — eviction by distance is the
+        // only bound over a long stop-and-go ride. 40 × 50 m at 0.1 m sampling = 2000 m.
+        val step = 0.1f                    // dense sampling, 0.1 m per moving tick
+        val s = GradeSmoother()
+        var dist = 0.0f
+        var lastMoving: Float? = null
+        repeat(40) {
+            repeat(500) {                  // move 50 m
+                dist += step
+                lastMoving = s.update(100.0f, dist, 5.0f)
+            }
+            repeat(30) {                   // stop: distance frozen, elevation stable
+                s.update(100.0f, dist, 0.0f)
+            }
+        }
+        assertNotNull(lastMoving)
+        assertEquals(0.0f, lastMoving!!, 0.01f)
+    }
+
+    @Test
+    fun ringBufferDoesNotOverflow_whenDistanceFrozenWhileMoving() {
+        // Speed reads as moving but distance is stuck (indoor trainer without a distance
+        // source, or a GPS hold). Every tick repeats the same distance, so the gate admits
+        // only the first sample and drops the rest — no overflow, grade stays unavailable.
+        val s = GradeSmoother()
+        var last: Float? = 0.0f
+        repeat(2000) {
+            last = s.update(100.0f, 10.0f, 5.0f) // moving, but distance pinned at 10 m
+        }
+        assertNull(last)
+    }
+
     // --- Moving guard ---
 
     @Test
