@@ -958,12 +958,12 @@ class MainActivity : ComponentActivity() {
                 CollapsibleSection(
                     title = "Data Field Design",
                     description = "Match Karoo's icon and label-size settings for Barberfish fields",
-                    icon = R.drawable.ic_section_global,
+                    icon = R.drawable.ic_section_grid,
                     expanded = designExpanded,
                     onToggle = { designExpanded = !designExpanded },
                 ) {
                     ControlLabel("ICONS")
-                    HelperText("Show the icon in each field header. Match your Karoo Data Icons setting.")
+                    HelperText("Show the icon in each field header.")
                     SegmentedRow(
                         options = listOf(false to "Off", true to "On"),
                         selected = dataFieldDesignConfig.showIcons,
@@ -971,10 +971,11 @@ class MainActivity : ComponentActivity() {
                             dataFieldDesignConfig = dataFieldDesignConfig.copy(showIcons = on)
                             lifecycleScope.launch { saveDataFieldDesignConfig(dataFieldDesignConfig) }
                         },
+                        trackColor = Grey100,
                     )
 
                     ControlLabel("LABEL SIZE")
-                    HelperText("Header label size on dense (2-column) pages. Match your Karoo Label Size setting.")
+                    HelperText("Header label size on dense (2-column) pages.")
                     SegmentedRow(
                         options = LabelSize.entries.map { it to it.label },
                         selected = dataFieldDesignConfig.labelSize,
@@ -982,6 +983,7 @@ class MainActivity : ComponentActivity() {
                             dataFieldDesignConfig = dataFieldDesignConfig.copy(labelSize = size)
                             lifecycleScope.launch { saveDataFieldDesignConfig(dataFieldDesignConfig) }
                         },
+                        trackColor = Grey100,
                     )
                 } // end Data Field Design
                 Spacer(modifier = Modifier.height(72.dp))
