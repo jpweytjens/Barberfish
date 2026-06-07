@@ -30,7 +30,10 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
         val density = context.resources.displayMetrics.density
         val cellHeightDp = config.viewSize.second / density
         val cellWidthPx = config.viewSize.first
-        Log.d("Barberfish", "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} → headerSp=${config.toViewSizeConfig().headerFontSize} typeId=$typeId")
+        // headerSp omitted here: it depends on DataFieldDesignConfig (label size), which is
+        // combined into the render flow below — logging toViewSizeConfig() with defaults would
+        // misreport the live header size. See renderState for the design-aware sizing.
+        Log.d("Barberfish", "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId")
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
