@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.screens
 
 import android.os.Bundle
+import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
@@ -98,7 +99,9 @@ import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.PowerZoneField
 import com.jpweytjens.barberfish.datatype.SpeedField
+import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
+import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
@@ -989,11 +992,11 @@ class MainActivity : ComponentActivity() {
                     ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
                     RouteRemainingCard(
                         config = routeRemainingConfig,
-                        selected = selectedDataField == "ROUTE REMAINING",
+                        selected = selectedDataField == "OVERVIEW",
                         onSelect = {
                             selectedDataField =
-                                if (selectedDataField == "ROUTE REMAINING") null
-                                else "ROUTE REMAINING"
+                                if (selectedDataField == "OVERVIEW") null
+                                else "OVERVIEW"
                         },
                         onUpdate = { updated ->
                             routeRemainingConfig = updated
@@ -1507,28 +1510,40 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
 
 @Composable
 private fun OverviewPreviewBox(targetCount: Int) {
-    val densityValue = LocalDensity.current.density
+    val context = LocalContext.current
+    val density = LocalDensity.current.density
     val isNight = isSystemInDarkTheme()
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val widthPx = (maxWidth.value * densityValue).toInt().coerceAtLeast(1)
-        val heightPx = (80.dp.value * densityValue).toInt()
-        val bitmap =
-            remember(widthPx, heightPx, isNight, targetCount) {
-                overviewPreviewBitmap(widthPx, heightPx, isNight, targetCount)
-            }
-        if (bitmap != null) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = null,
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .height(80.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(if (isNight) Color.Black else Color.White),
-                contentScale = ContentScale.FillBounds,
+    val widthPx = (FIELD_PREVIEW_WIDTH.value * density).toInt()
+    val heightPx = (FIELD_PREVIEW_HEIGHT.value * density).toInt()
+    // Rasterize the same field RemoteViews the live cell uses (header + full-bleed profile), at
+    // the standard preview size, so the preview matches the live field and the other previews.
+    val bitmap =
+        remember(widthPx, heightPx, isNight, targetCount) {
+            val sizeConfig = ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat())
+            val imgH = (heightPx - sparklineHeaderPx(sizeConfig, density)).coerceAtLeast(1)
+            val spark = overviewPreviewBitmap(widthPx, imgH, isNight, targetCount)
+            val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
+            applySparklineHeaderChrome(
+                rv,
+                context.getString(R.string.route_remaining_name),
+                R.drawable.ic_grade,
+                sizeConfig,
+                ViewConfig.Alignment.RIGHT,
+                context,
             )
+            if (spark != null) rv.setImageViewBitmap(R.id.sparkline_image, spark)
+            remoteViewsToBitmap(rv, widthPx, heightPx, context)
         }
-    }
+    Image(
+        bitmap = bitmap.asImageBitmap(),
+        contentDescription = null,
+        modifier =
+            Modifier.width(FIELD_PREVIEW_WIDTH)
+                .height(FIELD_PREVIEW_HEIGHT)
+                .clip(RoundedCornerShape(6.dp))
+                .background(if (isNight) Color.Black else Color.White),
+        contentScale = ContentScale.FillBounds,
+    )
 }
 
 @Composable
@@ -1539,12 +1554,20 @@ private fun RouteRemainingCard(
     onUpdate: (RouteRemainingConfig) -> Unit,
 ) {
     ExpandableCard(
-        title = "ROUTE REMAINING",
+        title = "OVERVIEW",
         selected = selected,
         onSelect = onSelect,
         headerExtra = {
-            HelperText("Whole-route elevation profile with your position.")
-            OverviewPreviewBox(config.simplification.targetCount)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HelperText(
+                    "Whole-route elevation profile with your position.",
+                    modifier = Modifier.weight(1f),
+                )
+                OverviewPreviewBox(config.simplification.targetCount)
+            }
         },
     ) {
         LabeledHelper("SIMPLIFICATION") {

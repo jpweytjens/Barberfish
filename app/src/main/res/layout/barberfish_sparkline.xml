@@ -71,7 +71,7 @@
         android:id="@+id/sparkline_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/header_ref"
+        android:layout_below="@id/field_header"
         android:layout_alignParentBottom="true"
         android:scaleType="fitXY" />
 

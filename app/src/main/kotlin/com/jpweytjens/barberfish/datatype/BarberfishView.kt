@@ -84,10 +84,26 @@ fun applySparklineHeaderChrome(
     iconRes: Int,
     config: ViewConfig,
     context: Context,
+) = applySparklineHeaderChrome(
+    rv,
+    label,
+    iconRes,
+    config.toViewSizeConfig(),
+    config.alignment,
+    context,
+)
+
+/** Overload taking a [ViewSizeConfig] directly, for config-screen previews with no live ViewConfig. */
+fun applySparklineHeaderChrome(
+    rv: RemoteViews,
+    label: String,
+    iconRes: Int,
+    sizeConfig: ViewSizeConfig,
+    alignment: ViewConfig.Alignment,
+    context: Context,
 ) {
     val dm = context.resources.displayMetrics
     val density = dm.density
-    val sizeConfig = config.toViewSizeConfig()
     val isNightMode =
         (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
@@ -102,12 +118,20 @@ fun applySparklineHeaderChrome(
         rv,
         field,
         label.replace("\n", " "),
-        config.alignment,
+        alignment,
         colors,
         sizeConfig,
         density,
         cellWidthPx,
     )
+}
+
+/** Height in px the sparkline field reserves for its header (max of min-height and content). */
+fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int {
+    val headerMinPx = (sizeConfig.headerMinHeightDp * density).toInt()
+    val headerContentPx =
+        headerHeightPx(sizeConfig.headerFontSize.value, sizeConfig.labelMaxLines, density)
+    return maxOf(headerMinPx, headerContentPx)
 }
 
 /**
@@ -118,11 +142,7 @@ fun applySparklineHeaderChrome(
  */
 fun sparklineImageSize(config: ViewConfig, context: Context): Pair<Int, Int> {
     val density = context.resources.displayMetrics.density
-    val sizeConfig = config.toViewSizeConfig()
-    val headerMinPx = (sizeConfig.headerMinHeightDp * density).toInt()
-    val headerContentPx =
-        headerHeightPx(sizeConfig.headerFontSize.value, sizeConfig.labelMaxLines, density)
-    val headerPx = maxOf(headerMinPx, headerContentPx)
+    val headerPx = sparklineHeaderPx(config.toViewSizeConfig(), density)
     val widthPx = config.viewSize.first.coerceAtLeast(1)
     val heightPx = (config.viewSize.second - headerPx).coerceAtLeast(1)
     return widthPx to heightPx

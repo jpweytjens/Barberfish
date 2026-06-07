@@ -77,6 +77,6 @@
     <string name="descent_remaining_description">Descent left to the destination.</string>
     <string name="remaining_effort_name">Remaining Effort</string>
     <string name="remaining_effort_description">Distance and climbing left, stacked.</string>
-    <string name="route_remaining_name">Route Remaining</string>
+    <string name="route_remaining_name">Overview</string>
     <string name="route_remaining_description">Whole-route elevation profile with your position.</string>
 </resources>
