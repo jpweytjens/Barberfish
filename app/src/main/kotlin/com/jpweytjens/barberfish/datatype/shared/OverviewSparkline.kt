@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.sample
 
 private const val OVERVIEW_DOT_RADIUS_PX = 7f
-private const val OVERVIEW_STROKE_PX = 2f
+private const val OVERVIEW_STROKE_PX = 3f
 private const val OVERVIEW_MARKER_STROKE_PX = 1.5f
 private const val OVERVIEW_PAD_PX = 8f
 private const val OVERVIEW_MIN_ELEV_RANGE_M = 50f
