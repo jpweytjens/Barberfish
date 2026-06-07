@@ -110,6 +110,24 @@ fun applySparklineHeaderChrome(
     )
 }
 
+/**
+ * Pixel size of a graphical field's image region: the full cell width, and the cell height minus
+ * the header the field draws. Rendering the sparkline bitmap at exactly this size makes the
+ * ImageView's fitXY an identity (no aspect distortion) in any layout. Sized from [config].viewSize
+ * — the freshest cell size the field has; clamped so a degenerate viewSize can't yield 0.
+ */
+fun sparklineImageSize(config: ViewConfig, context: Context): Pair<Int, Int> {
+    val density = context.resources.displayMetrics.density
+    val sizeConfig = config.toViewSizeConfig()
+    val headerMinPx = (sizeConfig.headerMinHeightDp * density).toInt()
+    val headerContentPx =
+        headerHeightPx(sizeConfig.headerFontSize.value, sizeConfig.labelMaxLines, density)
+    val headerPx = maxOf(headerMinPx, headerContentPx)
+    val widthPx = config.viewSize.first.coerceAtLeast(1)
+    val heightPx = (config.viewSize.second - headerPx).coerceAtLeast(1)
+    return widthPx to heightPx
+}
+
 private fun makeFieldRemoteViews(
     field: FieldState,
     displayLabel: String,

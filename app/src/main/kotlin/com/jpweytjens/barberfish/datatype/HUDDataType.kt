@@ -8,9 +8,21 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import io.hammerhead.karooext.models.ViewConfig
+import kotlinx.coroutines.flow.Flow
 
 abstract class HUDDataType(extensionId: String, typeId: String) :
     BarberfishBase<HUDState>(extensionId, typeId) {
+
+    // The HUD strip sizes itself from its own layout; it doesn't need the cell size in the flow.
+    abstract fun liveFlow(context: Context): Flow<HUDState>
+
+    abstract fun previewFlow(context: Context): Flow<HUDState>
+
+    final override fun liveFlow(context: Context, config: ViewConfig): Flow<HUDState> =
+        liveFlow(context)
+
+    final override fun previewFlow(context: Context, config: ViewConfig): Flow<HUDState> =
+        previewFlow(context)
 
     override fun renderState(state: HUDState, config: ViewConfig, context: Context): RemoteViews =
         buildHudRemoteViews(state, config, context)
