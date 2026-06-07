@@ -5,11 +5,14 @@
 New data fields:
 - Distance, the ride odometer
 - Distance Remaining to the destination
-- Elevation Remaining, the climbing left to the destination
+- Ascent Remaining, the climbing left to the destination
 - Descent Remaining to the destination
-- Remaining Effort, distance and remaining climb stacked in one field
+- Ride Remaining, the distance and climbing left stacked in one field
 - Overview, a plain elevation profile of the whole route with a dot for where you are
 - Distance and the remaining fields also selectable as HUD slots
+- The standalone elevation sparkline is now called Profile
+
+Navigation fields take their names and icons from the Karoo, so they sit naturally beside the native ones: a finish flag for Distance Remaining, up and down arrows for Ascent and Descent Remaining, the route line for Distance.
 
 ## 3.3
 

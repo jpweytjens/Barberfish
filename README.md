@@ -162,13 +162,13 @@ Complete list of data fields provided by Barberfish, grouped by category.
     <tr><td>Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
     <tr><th colspan="5" align="center">Climbing</th></tr>
     <tr><td>Grade</td><td>Grade</td><td></td><td></td><td>OLS (30 m window)</td></tr>
-    <tr><td>Elevation sparkline</td><td>Grade</td><td></td><td></td><td></td></tr>
+    <tr><td>Profile</td><td>Grade</td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Navigation</th></tr>
     <tr><td>Distance</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>Distance Remaining</td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>Elevation Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Ascent Remaining</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>Descent Remaining</td><td></td><td></td><td></td><td></td></tr>
-    <tr><td>Remaining Effort</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Ride Remaining</td><td></td><td></td><td></td><td></td></tr>
     <tr><td>Overview</td><td></td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Time</th></tr>
     <tr><td>Elapsed</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
