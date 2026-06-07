@@ -1,0 +1,14 @@
+<!-- "arrow_outward" mirrored vertically (↘) for Descent Remaining — the same arrow as the ascent
+     icon, flipped top-to-bottom so up/down read as a matched pair. scaleY=-1 about y=0 maps the
+     source path's y∈[-960,0] to [0,960], so no translate is needed. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:scaleY="-1">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="m256-240-56-56 384-384H240v-80h480v480h-80v-344L256-240Z" />
+    </group>
+</vector>

@@ -4,11 +4,16 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
+import android.graphics.RectF
 import android.graphics.Typeface
 import io.hammerhead.karooext.models.ViewConfig
 
 private const val MIN_BITMAP_HEIGHT_PX = 30
 private const val LETTER_SPACING = -0.04f
+
+/** Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent
+ *  arrow icon (see [renderTwoRowValueBitmap]). */
+const val ASCENT_MARKER = "↗ "
 
 // Bitmap height as a fraction of the value font base sp. Sized to the
 // visible cap (~0.7 × textSize) plus a small buffer; tight enough to fit
@@ -37,8 +42,11 @@ private const val TWO_ROW_DIGIT_FILL = 0.86f
  * edge per [alignment] (matching the single-row fields) and vertically centered in its band. The
  * font is sized so a digit fills [TWO_ROW_DIGIT_FILL] of a band, then shrunk to fit the cell width.
  *
- * The climb [marker] travels inline with its number (e.g. "↗ 1240" right-aligned as one unit).
- * Both rows are expected to be non-empty (callers pass formatted numbers).
+ * Each row may carry a leading icon ([row1Icon] / [row2Icon], pre-tinted) drawn inline before its
+ * number as [icon][gap][number] — e.g. the route glyph before the distance and the ascent arrow
+ * before the climb in Ride Remaining. A row whose text starts with [marker] has the glyph stripped
+ * (the icon replaces it); a row with an icon but no marker keeps its full number. Rows without an
+ * icon draw their whole string aligned to the field edge. Both rows are expected to be non-empty.
  */
 fun renderTwoRowValueBitmap(
     row1: String,
@@ -48,6 +56,9 @@ fun renderTwoRowValueBitmap(
     color: Int,
     alignment: ViewConfig.Alignment,
     rowGapPx: Float = 4f,
+    marker: String = ASCENT_MARKER,
+    row1Icon: Bitmap? = null,
+    row2Icon: Bitmap? = null,
 ): Bitmap {
     val width = cellWidthPx.toInt().coerceAtLeast(1)
     val bandPx = ((bitmapHeightPx - rowGapPx) / 2f).coerceAtLeast(1f)
@@ -58,12 +69,6 @@ fun renderTwoRowValueBitmap(
             textSize = sizePx
             this.color = color
             letterSpacing = LETTER_SPACING
-            textAlign =
-                when (alignment) {
-                    ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
-                    ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
-                    ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
-                }
         }
 
     val bounds = Rect()
@@ -77,25 +82,63 @@ fun renderTwoRowValueBitmap(
         if (needed > width) fontPx *= width / needed
     }
     val paint = paintAt(fontPx)
-    val xPos =
-        when (alignment) {
-            ViewConfig.Alignment.LEFT -> 0f
-            ViewConfig.Alignment.CENTER -> width / 2f
-            ViewConfig.Alignment.RIGHT -> width.toFloat()
-        }
+    val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
+    val iconGapPx = fontPx * 0.12f
 
     val bitmap = Bitmap.createBitmap(width, bitmapHeightPx, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
 
-    // Draw [text] vertically centered within the band starting at [bandTop].
-    fun drawRow(text: String, bandTop: Float) {
-        paint.getTextBounds(text, 0, text.length, bounds)
-        val baseline = bandTop + bandPx / 2f - (bounds.top + bounds.bottom) / 2f
-        canvas.drawText(text, xPos, baseline, paint)
+    // Draw a row vertically centered within the band starting at [bandTop]. With an [icon] it is
+    // drawn as [icon][gap][number] (the [marker] glyph stripped if present); otherwise the whole
+    // string is drawn aligned to the field edge.
+    fun drawRow(text: String, bandTop: Float, icon: Bitmap?) {
+        val center = bandTop + bandPx / 2f
+        if (icon == null) {
+            paint.textAlign =
+                when (alignment) {
+                    ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
+                    ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
+                    ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+                }
+            val xPos =
+                when (alignment) {
+                    ViewConfig.Alignment.LEFT -> 0f
+                    ViewConfig.Alignment.CENTER -> width / 2f
+                    ViewConfig.Alignment.RIGHT -> width.toFloat()
+                }
+            paint.getTextBounds(text, 0, text.length, bounds)
+            canvas.drawText(text, xPos, center - (bounds.top + bounds.bottom) / 2f, paint)
+            return
+        }
+        val number = if (text.startsWith(marker)) text.removePrefix(marker) else text
+        paint.textAlign = Paint.Align.LEFT
+        paint.getTextBounds(number, 0, number.length, bounds)
+        val numW = paint.measureText(number)
+        val iconSize = bounds.height() * 1.3f
+        val unitW = iconSize + iconGapPx + numW
+        val unitLeft =
+            when (alignment) {
+                ViewConfig.Alignment.LEFT -> 0f
+                ViewConfig.Alignment.CENTER -> (width - unitW) / 2f
+                ViewConfig.Alignment.RIGHT -> width - unitW
+            }
+        val iconTop = center - iconSize / 2f
+        canvas.drawBitmap(
+            icon,
+            null,
+            RectF(unitLeft, iconTop, unitLeft + iconSize, iconTop + iconSize),
+            iconPaint,
+        )
+        canvas.drawText(
+            number,
+            unitLeft + iconSize + iconGapPx,
+            center - (bounds.top + bounds.bottom) / 2f,
+            paint,
+        )
     }
-    drawRow(row1, 0f)
-    drawRow(row2, bandPx + rowGapPx)
+    drawRow(row1, 0f, row1Icon)
+    drawRow(row2, bandPx + rowGapPx, row2Icon)
     return bitmap
 }
 

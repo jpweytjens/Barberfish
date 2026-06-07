@@ -21,8 +21,7 @@ import kotlinx.coroutines.flow.map
 
 /**
  * The four thin numeric fields. Each streams one native datatype, converts the raw value, and emits
- * a FieldState. Route-gated kinds report "Not available" off-route. Icons are interim; final icons
- * are a follow-up.
+ * a FieldState. Route-gated kinds report "Not available" off-route.
  */
 enum class ValueKind(
     val typeId: String,
@@ -42,7 +41,7 @@ enum class ValueKind(
         ConvertType.DISTANCE,
         1,
         "Distance",
-        R.drawable.ic_col_speed,
+        R.drawable.ic_route,
         false,
         listOf(12_300.0, 47_200.0, 103_800.0),
     ),
@@ -52,8 +51,8 @@ enum class ValueKind(
         DataType.Field.DISTANCE_TO_DESTINATION,
         ConvertType.DISTANCE,
         1,
-        "Dist\nLeft",
-        R.drawable.ic_col_speed,
+        "Dist\nRemaining",
+        R.drawable.ic_finish_flag,
         true,
         listOf(42_100.0, 23_400.0, 4_800.0),
     ),
@@ -63,8 +62,8 @@ enum class ValueKind(
         DataType.Field.ASCENT_REMAINING,
         ConvertType.ELEVATION,
         0,
-        "Climb\nLeft",
-        R.drawable.ic_grade,
+        "Ascent\nRemaining",
+        R.drawable.ic_arrow_outward,
         true,
         listOf(1240.0, 540.0, 80.0),
     ),
@@ -74,8 +73,8 @@ enum class ValueKind(
         DataType.Field.DESCENT_REMAINING,
         ConvertType.ELEVATION,
         0,
-        "Desc\nLeft",
-        R.drawable.ic_grade,
+        "Descent\nRemaining",
+        R.drawable.ic_arrow_outward_down,
         true,
         listOf(1310.0, 610.0, 95.0),
     ),

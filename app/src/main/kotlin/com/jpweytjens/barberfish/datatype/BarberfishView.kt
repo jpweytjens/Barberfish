@@ -9,7 +9,10 @@ import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.shared.ASCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -215,14 +218,27 @@ private fun makeFieldRemoteViews(
     val valueBitmap =
         if (field.secondary != null) {
             // Two stacked rows share the single-row value height (same footprint as the numeric
-            // fields); the renderer splits it into two equal bands and sizes the font to fit.
+            // fields); the renderer splits it into two equal bands and sizes the font to fit. Each
+            // row gets an inline icon tinted to the value color: the route glyph before the distance
+            // and the ascent arrow before the climb (the row carrying the ASCENT_MARKER prefix).
+            val tint = colors.valueText.toArgb()
+            fun glyph(res: Int) =
+                ContextCompat.getDrawable(context, res)
+                    ?.mutate()
+                    ?.apply { setTint(tint) }
+                    ?.toBitmap(bitmapHeightPx, bitmapHeightPx)
+            val arrowGlyph = glyph(R.drawable.ic_arrow_outward)
+            val routeGlyph = glyph(R.drawable.ic_route)
+            val primaryIsClimb = field.primary.startsWith(ASCENT_MARKER)
             renderTwoRowValueBitmap(
                 row1 = field.primary,
                 row2 = field.secondary,
                 bitmapHeightPx = bitmapHeightPx,
                 cellWidthPx = cellWidthPx,
-                color = colors.valueText.toArgb(),
+                color = tint,
                 alignment = alignment,
+                row1Icon = if (primaryIsClimb) arrowGlyph else routeGlyph,
+                row2Icon = if (primaryIsClimb) routeGlyph else arrowGlyph,
             )
         } else {
             renderValueBitmap(

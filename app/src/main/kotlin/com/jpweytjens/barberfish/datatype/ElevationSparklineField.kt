@@ -41,7 +41,7 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
         applySparklineHeaderChrome(
             rv,
             context.getString(R.string.elevation_sparkline_name),
-            R.drawable.ic_landscape,
+            R.drawable.ic_grade,
             config,
             context,
         )

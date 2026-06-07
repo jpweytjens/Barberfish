@@ -1010,15 +1010,15 @@ class MainActivity : ComponentActivity() {
                     )
 
                     FieldCard(
-                        title = "REMAINING EFFORT",
-                        description = "Distance and climbing left, stacked.",
+                        title = "RIDE REMAINING",
+                        description = "Distance and ascent remaining, stacked.",
                         previewFields = effortPreviewStates,
                         colorMode = ZoneColorMode.NONE,
-                        selected = selectedDataField == "REMAINING EFFORT",
+                        selected = selectedDataField == "RIDE REMAINING",
                         onSelect = {
                             selectedDataField =
-                                if (selectedDataField == "REMAINING EFFORT") null
-                                else "REMAINING EFFORT"
+                                if (selectedDataField == "RIDE REMAINING") null
+                                else "RIDE REMAINING"
                         },
                     ) {
                         ControlLabel("STACK ORDER")
@@ -1554,7 +1554,7 @@ private fun OverviewPreviewBox(targetCount: Int) {
             applySparklineHeaderChrome(
                 rv,
                 context.getString(R.string.route_remaining_name),
-                R.drawable.ic_route,
+                R.drawable.ic_landscape,
                 sizeConfig,
                 ViewConfig.Alignment.RIGHT,
                 context,

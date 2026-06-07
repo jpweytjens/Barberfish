@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.shared.ASCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -19,9 +20,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 
-private const val LABEL = "Effort\nLeft"
-private val ICON = R.drawable.ic_grade
-private const val ASCENT_MARKER = "↗ "
+private const val LABEL = "Ride\nRemaining"
+private val ICON = R.drawable.ic_road
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EffortField(

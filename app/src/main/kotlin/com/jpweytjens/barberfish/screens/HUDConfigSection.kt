@@ -644,7 +644,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             HUDSlotField.Grade -> "Grade"
             HUDSlotField.Distance -> "Distance"
             HUDSlotField.DistanceRemaining -> "Distance remaining"
-            HUDSlotField.ElevationRemaining -> "Elevation remaining"
+            HUDSlotField.ElevationRemaining -> "Ascent remaining"
             HUDSlotField.DescentRemaining -> "Descent remaining"
             is HUDSlotField.Time -> f.kind.label.replace("\n", " ")
             is HUDSlotField.ETA -> f.kind.label.replace("\n", " ")
@@ -694,7 +694,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                             "Grade" to HUDSlotField.Grade,
                             "Distance" to HUDSlotField.Distance,
                             "Distance remaining" to HUDSlotField.DistanceRemaining,
-                            "Elevation remaining" to HUDSlotField.ElevationRemaining,
+                            "Ascent remaining" to HUDSlotField.ElevationRemaining,
                             "Descent remaining" to HUDSlotField.DescentRemaining,
                         ),
                     "Duration" to
