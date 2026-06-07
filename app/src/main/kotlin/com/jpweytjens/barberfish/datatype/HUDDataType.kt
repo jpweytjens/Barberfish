@@ -7,16 +7,18 @@ import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import io.hammerhead.karooext.models.ViewConfig
 
 abstract class HUDDataType(extensionId: String, typeId: String) :
     BarberfishBase<HUDState>(extensionId, typeId) {
 
-    override fun renderState(state: HUDState, config: ViewConfig, context: Context): RemoteViews =
-        buildHudRemoteViews(state, config, context)
+    override fun renderState(state: HUDState, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews =
+        buildHudRemoteViews(state, design, config, context)
 
     protected fun buildHudRemoteViews(
         state: HUDState,
+        design: DataFieldDesignConfig,
         config: ViewConfig,
         context: Context,
         sparklineHeightPx: Int = 0,
@@ -28,7 +30,8 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         // sits above the sparkline. The field layout's baseline_box uses
         // layout_alignParentBottom, so its centering region shrinks with the slot and
         // keeps the bitmap value above the sparkline.
-        val sizeConfig = if (state.columns == 4) ViewSizeConfig.HUD_FOUR else ViewSizeConfig.HUD_THREE
+        val baseSize = if (state.columns == 4) ViewSizeConfig.HUD_FOUR else ViewSizeConfig.HUD_THREE
+        val sizeConfig = baseSize.copy(showIcons = design.showIcons)
         val layoutRes =
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
         val rv = RemoteViews(context.packageName, layoutRes)
