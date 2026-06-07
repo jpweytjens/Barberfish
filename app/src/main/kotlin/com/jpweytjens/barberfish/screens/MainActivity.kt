@@ -5,7 +5,12 @@ import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -1508,6 +1513,11 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     )
 }
 
+// Position dot sweeps start→end on a loop; quantized to OVERVIEW_PREVIEW_STEPS so the field
+// bitmap re-rasterizes at ~10 fps rather than every animation frame.
+private const val OVERVIEW_PREVIEW_SWEEP_MS = 6000
+private const val OVERVIEW_PREVIEW_STEPS = 60
+
 @Composable
 private fun OverviewPreviewBox(targetCount: Int) {
     val context = LocalContext.current
@@ -1515,13 +1525,31 @@ private fun OverviewPreviewBox(targetCount: Int) {
     val isNight = isSystemInDarkTheme()
     val widthPx = (FIELD_PREVIEW_WIDTH.value * density).toInt()
     val heightPx = (FIELD_PREVIEW_HEIGHT.value * density).toInt()
+
+    val transition = rememberInfiniteTransition(label = "overviewDot")
+    val sweep by
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(durationMillis = OVERVIEW_PREVIEW_SWEEP_MS, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "overviewDotFraction",
+        )
+    val step = (sweep * OVERVIEW_PREVIEW_STEPS).toInt().coerceIn(0, OVERVIEW_PREVIEW_STEPS)
+
     // Rasterize the same field RemoteViews the live cell uses (header + full-bleed profile), at
     // the standard preview size, so the preview matches the live field and the other previews.
     val bitmap =
-        remember(widthPx, heightPx, isNight, targetCount) {
+        remember(widthPx, heightPx, isNight, targetCount, step) {
+            val positionFraction = step / OVERVIEW_PREVIEW_STEPS.toFloat()
             val sizeConfig = ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat())
             val imgH = (heightPx - sparklineHeaderPx(sizeConfig, density)).coerceAtLeast(1)
-            val spark = overviewPreviewBitmap(widthPx, imgH, isNight, targetCount)
+            val spark =
+                overviewPreviewBitmap(widthPx, imgH, isNight, targetCount, positionFraction)
             val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
             applySparklineHeaderChrome(
                 rv,

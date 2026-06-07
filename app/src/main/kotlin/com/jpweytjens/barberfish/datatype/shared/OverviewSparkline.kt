@@ -80,17 +80,18 @@ fun renderOverviewSparkline(
     return bitmap
 }
 
-/** Static preview of the overview sparkline from the bundled fixture, dot at ~45%. */
+/** Preview of the overview sparkline from the bundled fixture, dot at [positionFraction] (0..1). */
 fun overviewPreviewBitmap(
     widthPx: Int,
     heightPx: Int,
     isNightMode: Boolean,
-    targetCount: Int
+    targetCount: Int,
+    positionFraction: Float = 0.45f,
 ): Bitmap? {
     val points = visvalingamToCount(previewElevationFixture(), targetCount)
     if (points.size < 2) return null
     val len = points.last().first - points.first().first
-    val positionM = points.first().first + len * 0.45f
+    val positionM = points.first().first + len * positionFraction.coerceIn(0f, 1f)
     return renderOverviewSparkline(
         points,
         positionM,
