@@ -112,6 +112,12 @@ fun applySparklineHeaderChrome(
     val cellWidthPx =
         sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
             ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
+    // Numeric fields inset field_root by paddingHPx (makeFieldRemoteViews); the graphical image
+    // stays full-bleed, so inset only the header to align the icon/label with the numeric fields.
+    // The +1dp mirrors the header's XML paddingStart/End that the numeric path keeps on top of the
+    // root padding.
+    val onePx = density.toInt().coerceAtLeast(1)
+    rv.setViewPadding(R.id.field_header, paddingHPx + onePx, 0, paddingHPx + onePx, 0)
     val field =
         FieldState(primary = "", label = label, color = FieldColor.Default, iconRes = iconRes)
     applyHeaderChrome(
