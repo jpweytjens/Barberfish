@@ -16,8 +16,11 @@ import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.sample
 
 private const val OVERVIEW_DOT_RADIUS_PX = 7f
@@ -25,6 +28,13 @@ private const val OVERVIEW_STROKE_PX = 2f
 private const val OVERVIEW_MARKER_STROKE_PX = 1.5f
 private const val OVERVIEW_PAD_PX = 8f
 private const val OVERVIEW_MIN_ELEV_RANGE_M = 50f
+
+// Preview-only: sweep the dot at a fixed ~3 px/s. On-screen jump = speed × the host's redraw
+// interval, so a slow fixed speed keeps each visible step small (~3 px even if Karoo only redraws
+// data fields ~1 Hz). Full-width cells therefore traverse slowly; raise PX_PER_SEC to speed it up
+// at the cost of larger jumps. On a real ride the dot uses the live distance-to-destination.
+private const val OVERVIEW_PREVIEW_PX_PER_SEC = 3f
+private const val OVERVIEW_PREVIEW_TICK_MS = 125L
 
 /**
  * Draw the whole route as a single uncolored polyline with a position dot. No grade coloring, no
@@ -118,11 +128,30 @@ fun overviewBitmapFlow(
             .streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION)
             .sample(HUD_UPDATE_INTERVAL_MS)
 
+    // Drives the dot in preview only; a single constant in live mode so it adds no emissions.
+    val sweepFlow: Flow<Float> =
+        if (isPreview) {
+            val fracPerTick =
+                OVERVIEW_PREVIEW_PX_PER_SEC * OVERVIEW_PREVIEW_TICK_MS / 1000f /
+                    widthPx.coerceAtLeast(1).toFloat()
+            flow {
+                var frac = 0f
+                while (true) {
+                    emit(frac)
+                    frac = if (frac + fracPerTick > 1f) 0f else frac + fracPerTick
+                    delay(OVERVIEW_PREVIEW_TICK_MS)
+                }
+            }
+        } else {
+            flowOf(0f)
+        }
+
     return combine(
         karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
         distFlow,
         context.streamRouteRemainingConfig(),
-    ) { navState, distState, routeConfig ->
+        sweepFlow,
+    ) { navState, distState, routeConfig, sweep ->
         val isNight =
             (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
@@ -148,7 +177,7 @@ fun overviewBitmapFlow(
             streaming?.dataPoint?.values?.get(DataType.Field.ON_ROUTE)?.let { it >= 0.5 } ?: true
         val positionM =
             when {
-                isPreview -> routeLengthM * 0.45f
+                isPreview -> routeLengthM * sweep
                 distToDest != null -> (routeLengthM - distToDest).coerceIn(0f, routeLengthM)
                 else -> 0f
             }
