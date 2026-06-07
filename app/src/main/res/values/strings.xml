@@ -49,7 +49,7 @@
     <string name="max_power_description">Maximum power reached this ride, with zone coloring</string>
     <string name="grade_name">Grade</string>
     <string name="grade_description">Current road gradient with gradient palette coloring</string>
-    <string name="elevation_sparkline_name">Elevation Sparkline</string>
+    <string name="elevation_sparkline_name">Sparkline</string>
     <string name="elevation_sparkline_description">Route elevation sparkline with gradient coloring and position marker</string>
     <string name="avg_hr_name">Avg Heart Rate</string>
     <string name="avg_hr_description">Average heart rate with zone coloring</string>
