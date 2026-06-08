@@ -527,6 +527,25 @@ class MainActivity : ComponentActivity() {
                     }
 
                     FieldCard(
+                        title = "NP",
+                        description = "Normalized power with zone coloring.",
+                        previewFields = npPreviewStates,
+                        colorMode = npFieldConfig.colorMode,
+                        selected = selectedDataField == "NP",
+                        onSelect = {
+                            selectedDataField = if (selectedDataField == "NP") null else "NP"
+                        },
+                    ) {
+                        ZoneColorSlider(
+                            selected = npFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
+                            },
+                        )
+                    }
+
+                    FieldCard(
                         title = "LAP AVG POWER",
                         description = "Average power this lap with zone coloring.",
                         previewFields = lapPowerPreviewStates,
@@ -571,25 +590,6 @@ class MainActivity : ComponentActivity() {
                                         lastLapPowerFieldConfig
                                     )
                                 }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "NP",
-                        description = "Normalized power with zone coloring.",
-                        previewFields = npPreviewStates,
-                        colorMode = npFieldConfig.colorMode,
-                        selected = selectedDataField == "NP",
-                        onSelect = {
-                            selectedDataField = if (selectedDataField == "NP") null else "NP"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = npFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
                             },
                         )
                     }
@@ -644,168 +644,6 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch {
                                     saveMaxPowerFieldConfig(maxPowerFieldConfig)
                                 }
-                            },
-                        )
-                    }
-
-                    ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "SPEED",
-                        description = "Current speed",
-                        previewFields = speedPreviewStates,
-                        colorMode = speedFieldConfig.colorMode,
-                        selected = selectedDataField == "SPEED",
-                        onSelect = {
-                            selectedDataField = if (selectedDataField == "SPEED") null else "SPEED"
-                        },
-                    ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = SpeedSmoothingStream.entries,
-                            selected = speedFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_col_speed,
-                            onSelected = { stream ->
-                                speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
-                            },
-                        )
-                        ZoneColorSlider(
-                            selected = speedFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                speedFieldConfig = speedFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
-                            },
-                        )
-                        SpeedThresholdControls(
-                            config = speedFieldConfig,
-                            profile = userProfile,
-                            onConfigChange = { cfg ->
-                                speedFieldConfig = cfg
-                                lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
-                            },
-                        )
-                    }
-
-                    val avgTotalPreviewStates =
-                        remember(avgTotalConfig, userProfile) {
-                            AvgSpeedField.previewStates(
-                                avgTotalConfig,
-                                userProfile,
-                                includePaused = true
-                            )
-                        }
-
-                    FieldCard(
-                        title = "AVG SPEED (TOTAL)",
-                        description = "Average speed including paused time.",
-                        previewFields = avgTotalPreviewStates,
-                        colorMode = avgTotalConfig.colorMode,
-                        selected = selectedDataField == "AVG SPEED (TOTAL)",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG SPEED (TOTAL)") null
-                                else "AVG SPEED (TOTAL)"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = avgTotalConfig.colorMode,
-                            onSelected = { mode ->
-                                avgTotalConfig = avgTotalConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
-                                }
-                            },
-                        )
-                        AvgSpeedThresholdControls(
-                            config = avgTotalConfig,
-                            profile = userProfile,
-                            onConfigChange = { cfg ->
-                                avgTotalConfig = cfg
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = true, cfg)
-                                }
-                            },
-                        )
-                    }
-
-                    val avgMovingPreviewStates =
-                        remember(avgMovingConfig, userProfile) {
-                            AvgSpeedField.previewStates(
-                                avgMovingConfig,
-                                userProfile,
-                                includePaused = false
-                            )
-                        }
-
-                    FieldCard(
-                        title = "AVG SPEED (MOVING)",
-                        description = "Average speed excluding paused time.",
-                        previewFields = avgMovingPreviewStates,
-                        colorMode = avgMovingConfig.colorMode,
-                        selected = selectedDataField == "AVG SPEED (MOVING)",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG SPEED (MOVING)") null
-                                else "AVG SPEED (MOVING)"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = avgMovingConfig.colorMode,
-                            onSelected = { mode ->
-                                avgMovingConfig = avgMovingConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
-                                }
-                            },
-                        )
-                        AvgSpeedThresholdControls(
-                            config = avgMovingConfig,
-                            profile = userProfile,
-                            onConfigChange = { cfg ->
-                                avgMovingConfig = cfg
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = false, cfg)
-                                }
-                            },
-                        )
-                    }
-
-                    ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "CADENCE",
-                        description = "Current cadence with threshold coloring.",
-                        previewFields = cadencePreviewStates,
-                        colorMode = cadenceFieldConfig.colorMode,
-                        selected = selectedDataField == "CADENCE",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "CADENCE") null else "CADENCE"
-                        },
-                    ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = CadenceSmoothingStream.entries,
-                            selected = cadenceFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_cadence,
-                            onSelected = { stream ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                        ZoneColorSlider(
-                            selected = cadenceFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                        CadenceThresholdControls(
-                            config = cadenceFieldConfig.threshold,
-                            onConfigChange = { cfg ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
                             },
                         )
                     }
@@ -974,6 +812,168 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
+                    FieldCard(
+                        title = "SPEED",
+                        description = "Current speed",
+                        previewFields = speedPreviewStates,
+                        colorMode = speedFieldConfig.colorMode,
+                        selected = selectedDataField == "SPEED",
+                        onSelect = {
+                            selectedDataField = if (selectedDataField == "SPEED") null else "SPEED"
+                        },
+                    ) {
+                        ControlLabel("SMOOTHING")
+                        SmoothingSlider(
+                            options = SpeedSmoothingStream.entries,
+                            selected = speedFieldConfig.smoothing,
+                            label = { it.label },
+                            thumbIcon = R.drawable.ic_col_speed,
+                            onSelected = { stream ->
+                                speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
+                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                            },
+                        )
+                        ZoneColorSlider(
+                            selected = speedFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                speedFieldConfig = speedFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                            },
+                        )
+                        SpeedThresholdControls(
+                            config = speedFieldConfig,
+                            profile = userProfile,
+                            onConfigChange = { cfg ->
+                                speedFieldConfig = cfg
+                                lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
+                            },
+                        )
+                    }
+
+                    val avgTotalPreviewStates =
+                        remember(avgTotalConfig, userProfile) {
+                            AvgSpeedField.previewStates(
+                                avgTotalConfig,
+                                userProfile,
+                                includePaused = true
+                            )
+                        }
+
+                    FieldCard(
+                        title = "AVG SPEED (TOTAL)",
+                        description = "Average speed including paused time.",
+                        previewFields = avgTotalPreviewStates,
+                        colorMode = avgTotalConfig.colorMode,
+                        selected = selectedDataField == "AVG SPEED (TOTAL)",
+                        onSelect = {
+                            selectedDataField =
+                                if (selectedDataField == "AVG SPEED (TOTAL)") null
+                                else "AVG SPEED (TOTAL)"
+                        },
+                    ) {
+                        ZoneColorSlider(
+                            selected = avgTotalConfig.colorMode,
+                            onSelected = { mode ->
+                                avgTotalConfig = avgTotalConfig.copy(colorMode = mode)
+                                lifecycleScope.launch {
+                                    saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                                }
+                            },
+                        )
+                        AvgSpeedThresholdControls(
+                            config = avgTotalConfig,
+                            profile = userProfile,
+                            onConfigChange = { cfg ->
+                                avgTotalConfig = cfg
+                                lifecycleScope.launch {
+                                    saveAvgSpeedConfig(includePaused = true, cfg)
+                                }
+                            },
+                        )
+                    }
+
+                    val avgMovingPreviewStates =
+                        remember(avgMovingConfig, userProfile) {
+                            AvgSpeedField.previewStates(
+                                avgMovingConfig,
+                                userProfile,
+                                includePaused = false
+                            )
+                        }
+
+                    FieldCard(
+                        title = "AVG SPEED (MOVING)",
+                        description = "Average speed excluding paused time.",
+                        previewFields = avgMovingPreviewStates,
+                        colorMode = avgMovingConfig.colorMode,
+                        selected = selectedDataField == "AVG SPEED (MOVING)",
+                        onSelect = {
+                            selectedDataField =
+                                if (selectedDataField == "AVG SPEED (MOVING)") null
+                                else "AVG SPEED (MOVING)"
+                        },
+                    ) {
+                        ZoneColorSlider(
+                            selected = avgMovingConfig.colorMode,
+                            onSelected = { mode ->
+                                avgMovingConfig = avgMovingConfig.copy(colorMode = mode)
+                                lifecycleScope.launch {
+                                    saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                                }
+                            },
+                        )
+                        AvgSpeedThresholdControls(
+                            config = avgMovingConfig,
+                            profile = userProfile,
+                            onConfigChange = { cfg ->
+                                avgMovingConfig = cfg
+                                lifecycleScope.launch {
+                                    saveAvgSpeedConfig(includePaused = false, cfg)
+                                }
+                            },
+                        )
+                    }
+
+                    ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
+                    FieldCard(
+                        title = "CADENCE",
+                        description = "Current cadence with threshold coloring.",
+                        previewFields = cadencePreviewStates,
+                        colorMode = cadenceFieldConfig.colorMode,
+                        selected = selectedDataField == "CADENCE",
+                        onSelect = {
+                            selectedDataField =
+                                if (selectedDataField == "CADENCE") null else "CADENCE"
+                        },
+                    ) {
+                        ControlLabel("SMOOTHING")
+                        SmoothingSlider(
+                            options = CadenceSmoothingStream.entries,
+                            selected = cadenceFieldConfig.smoothing,
+                            label = { it.label },
+                            thumbIcon = R.drawable.ic_cadence,
+                            onSelected = { stream ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                        ZoneColorSlider(
+                            selected = cadenceFieldConfig.colorMode,
+                            onSelected = { mode ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(colorMode = mode)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                        CadenceThresholdControls(
+                            config = cadenceFieldConfig.threshold,
+                            onConfigChange = { cfg ->
+                                cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
+                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                            },
+                        )
+                    }
+
                     ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
                     FieldCard(
                         title = "GRADE",
@@ -995,20 +995,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                     ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
-                    RouteRemainingCard(
-                        config = routeRemainingConfig,
-                        selected = selectedDataField == "OVERVIEW",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "OVERVIEW") null
-                                else "OVERVIEW"
-                        },
-                        onUpdate = { updated ->
-                            routeRemainingConfig = updated
-                            lifecycleScope.launch { saveRouteRemainingConfig(updated) }
-                        },
-                    )
-
                     FieldCard(
                         title = "RIDE REMAINING",
                         description = "Distance and ascent remaining, stacked.",
@@ -1031,6 +1017,20 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     }
+
+                    RouteRemainingCard(
+                        config = routeRemainingConfig,
+                        selected = selectedDataField == "OVERVIEW",
+                        onSelect = {
+                            selectedDataField =
+                                if (selectedDataField == "OVERVIEW") null
+                                else "OVERVIEW"
+                        },
+                        onUpdate = { updated ->
+                            routeRemainingConfig = updated
+                            lifecycleScope.launch { saveRouteRemainingConfig(updated) }
+                        },
+                    )
                 } // end Fields
 
                 CollapsibleSection(
