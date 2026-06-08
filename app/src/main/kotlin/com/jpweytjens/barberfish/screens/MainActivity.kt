@@ -1035,7 +1035,7 @@ class MainActivity : ComponentActivity() {
 
                 CollapsibleSection(
                     title = "Climbing",
-                    description = "Configure the elevation sparkline",
+                    description = "Configure the elevation profile",
                     icon = R.drawable.ic_grade,
                     expanded = climberExpanded,
                     onToggle = { climberExpanded = !climberExpanded },
@@ -1207,7 +1207,7 @@ private fun ClimberMapCard(
             )
 
             if (config.syncWithSparkline) {
-                HelperText("Following the sparkline's emphasis and simplification.")
+                HelperText("Following the elevation profile's emphasis and simplification.")
             } else {
                 val posMin = gradeFillRange(gradePalette, skipBandsClimb = config.skipBands).posMin
                 val emphasisReadout =

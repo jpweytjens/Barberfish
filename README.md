@@ -5,15 +5,15 @@
 [Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keep Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.
 Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
 
-Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline, and configurable smoothing, color modes, color palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
+Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, an elevation profile drawn as a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired sparkline, and configurable smoothing, color modes, color palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
 
 <table>
   <tr>
-    <td align="center">Elevation sparkline below a 3-column HUD on the map view</td>
+    <td align="center">Elevation profile below a 3-column HUD on the map view</td>
     <td align="center">Karoo native fields beside their Barberfish counterparts</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/hud_sparkline.jpg" alt="3-column HUD with elevation sparkline over the map view"></td>
+    <td align="center"><img src="docs/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
     <td align="center"><img src="docs/karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
   </tr>
 </table>
@@ -60,7 +60,7 @@ Average speed comes in two variants: Total and Moving. Total includes paused tim
 
 ### Layout
 
-A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired elevation sparkline sits below the HUD in one of two modes. On shows the whole route's upcoming terrain with non-linear zoom around your current position; tap to cycle 5/10/20 km lookahead. Climbs is a Barberfish take on Hammerhead's Climber: it stays hidden until a climb nears, shows a `Climb 2/5` heads-up, then frames the climb foot to summit as you ride up and clears at the top, revealing earlier for harder climbs.
+A 3- or 4-column HUD groups any combination of fields side by side with per-slot zone coloring. When a route is loaded, an optional elevation profile, drawn as a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired sparkline, sits below the HUD in one of two modes. On shows the whole route's upcoming terrain with non-linear zoom around your current position; tap to cycle 5/10/20 km lookahead. Climbs is a Barberfish take on Hammerhead's Climber: it stays hidden until a climb nears, shows a `Climb 2/5` heads-up, then frames the climb foot to summit as you ride up and clears at the top, revealing earlier for harder climbs.
 
 ## Examples
 
@@ -79,7 +79,7 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
   </tr>
   <tr>
     <td align="center"><img src="docs/climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
-    <td align="center"><img src="docs/climbs_profile.jpg" alt="Climbs mode sparkline framing a climb foot to summit with the position dot partway up"></td>
+    <td align="center"><img src="docs/climbs_profile.jpg" alt="Climbs mode profile framing a climb foot to summit with the position dot partway up"></td>
   </tr>
   <tr>
     <td align="center">Average speed with target-mode threshold, text coloring above target</td>

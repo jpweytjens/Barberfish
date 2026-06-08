@@ -138,7 +138,7 @@ internal fun HUDConfigSection(
     )
     HelperText(
         if (sparklineConfig.hudMode != SparklineMode.OFF)
-            "Tap a column or the sparkline to configure it."
+            "Tap a column or the elevation profile to configure it."
         else "Tap a column to configure it.",
     )
     HUDPreview(
@@ -517,7 +517,7 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
 
 @Composable
 private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -> Unit) {
-    ControlLabel("SPARKLINE")
+    ControlLabel("ELEVATION PROFILE")
     SegmentedRow(
         options =
             listOf(
@@ -881,7 +881,7 @@ internal fun SparklineOptionsControls(
         selected = config.showClimbs,
         onSelect = { onUpdate(config.copy(showClimbs = it)) },
     )
-    LabeledHelper("POIs") { HelperText("Mark points of interest (POIs) along the sparkline.") }
+    LabeledHelper("POIs") { HelperText("Mark points of interest (POIs) along the elevation profile.") }
     SegmentedRow(
         options = listOf(false to "Off", true to "On"),
         selected = config.showPois,
@@ -899,7 +899,7 @@ internal fun SparklineCard(
     onUpdate: (SparklineConfig) -> Unit,
 ) {
     ExpandableCard(
-        title = "SPARKLINE",
+        title = "PROFILE",
         selected = selected,
         onSelect = onSelect,
         headerExtra = {
