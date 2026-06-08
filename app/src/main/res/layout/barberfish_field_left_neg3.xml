@@ -44,20 +44,13 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <TextView
+        <ImageView
             android:id="@+id/field_label"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:layout_marginStart="1dp"
-            android:maxLines="2"
-            android:gravity="center_vertical|start"
-            android:ellipsize="end"
-            android:textAllCaps="true"
-            android:fontFamily="ibm-plex-sans-condensed"
-            android:includeFontPadding="false"
-            android:lineSpacingMultiplier="0.6"
-            android:breakStrategy="simple" />
+            android:scaleType="center" />
 
         <ImageView
             android:id="@+id/field_icon"
