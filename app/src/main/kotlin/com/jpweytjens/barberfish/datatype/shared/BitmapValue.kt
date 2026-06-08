@@ -5,6 +5,10 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import io.hammerhead.karooext.models.ViewConfig
 
 private const val MIN_BITMAP_HEIGHT_PX = 30
@@ -70,5 +74,65 @@ fun renderValueBitmap(
         ViewConfig.Alignment.RIGHT -> width.toFloat()
     }
     canvas.drawText(text, xPos, baselineY, paint)
+    return bitmap
+}
+
+// Native dataHeaderTextStyle sets no letterSpacing and lineSpacingMultiplier=0.7.
+private const val HEADER_LINE_SPACING_MULT = 0.7f
+// Vertical draw offset (px) inside the header bitmap. Measurement-tuning knob;
+// keep 0 unless on-device parity needs a uniform residual trimmed.
+private const val HEADER_DRAW_OFFSET_PX = 0
+
+/**
+ * Render an all-caps header [text] into an `ARGB_8888` bitmap whose height reserves
+ * [maxLines] lines (native `dataHeaderTextStyle` uses `lines=2`), matching native's
+ * `headerTextView` content box. Text wraps/ellipsizes to [availableWidthPx] and is
+ * drawn with [alignment]; a 1-line label in a 2-line reservation sits on the top
+ * line, as native does. `density = DENSITY_NONE` so RemoteViews renders 1:1.
+ */
+fun renderHeaderBitmap(
+    text: String,
+    fontSizePx: Float,
+    maxLines: Int,
+    availableWidthPx: Int,
+    color: Int,
+    alignment: ViewConfig.Alignment,
+): Bitmap {
+    val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+        textSize = fontSizePx
+        this.color = color
+    }
+    val width = availableWidthPx.coerceAtLeast(1)
+    val upper = text.uppercase()
+    val align = when (alignment) {
+        ViewConfig.Alignment.LEFT -> Layout.Alignment.ALIGN_NORMAL
+        ViewConfig.Alignment.CENTER -> Layout.Alignment.ALIGN_CENTER
+        ViewConfig.Alignment.RIGHT -> Layout.Alignment.ALIGN_OPPOSITE
+    }
+
+    val layout = StaticLayout.Builder.obtain(upper, 0, upper.length, paint, width)
+        .setAlignment(align)
+        .setLineSpacing(0f, HEADER_LINE_SPACING_MULT)
+        .setIncludePad(false)
+        .setMaxLines(maxLines)
+        .setEllipsize(TextUtils.TruncateAt.END)
+        .build()
+
+    // Reserve the full maxLines block height regardless of actual line count, so
+    // headers across a page share a height (native lines=2). Use a forced-N-line
+    // reference layout with the same paint/spacing for an exact reservation.
+    val refText = (0 until maxLines).joinToString("\n") { "M" }
+    val refLayout = StaticLayout.Builder.obtain(refText, 0, refText.length, paint, width)
+        .setLineSpacing(0f, HEADER_LINE_SPACING_MULT)
+        .setIncludePad(false)
+        .build()
+    val reservedHeight = maxOf(refLayout.height, layout.height).coerceAtLeast(1)
+
+    val bitmap = Bitmap.createBitmap(width, reservedHeight, Bitmap.Config.ARGB_8888)
+    bitmap.density = Bitmap.DENSITY_NONE
+    val canvas = Canvas(bitmap)
+    canvas.translate(0f, HEADER_DRAW_OFFSET_PX.toFloat())
+    layout.draw(canvas)
     return bitmap
 }
