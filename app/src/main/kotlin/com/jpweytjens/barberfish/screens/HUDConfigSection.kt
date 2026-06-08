@@ -685,19 +685,25 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                     "Speed" to
                         listOf(
                             "Speed" to HUDSlotField.Speed,
-                            "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
                             "Avg Speed (Total)" to HUDSlotField.AvgSpeed(includePaused = true),
+                            "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
                         ),
-                    "Other" to
+                    "Cadence" to
                         listOf(
                             "Cadence" to HUDSlotField.Cadence,
+                        ),
+                    "Climbing" to
+                        listOf(
                             "Grade" to HUDSlotField.Grade,
+                        ),
+                    "Navigation" to
+                        listOf(
                             "Distance" to HUDSlotField.Distance,
                             "Distance remaining" to HUDSlotField.DistanceRemaining,
                             "Ascent remaining" to HUDSlotField.ElevationRemaining,
                             "Descent remaining" to HUDSlotField.DescentRemaining,
                         ),
-                    "Duration" to
+                    "Time" to
                         listOf(
                             "Elapsed time" to HUDSlotField.Time(TimeKind.TOTAL),
                             "Moving time" to HUDSlotField.Time(TimeKind.RIDING),
@@ -705,7 +711,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                             "Lap time" to HUDSlotField.Time(TimeKind.LAP),
                             "Last lap time" to HUDSlotField.Time(TimeKind.LAST_LAP),
                         ),
-                    "Navigation" to
+                    "ETA" to
                         listOf(
                             "Remaining ride time" to HUDSlotField.ETA(ETAKind.REMAINING_RIDE_TIME),
                             "To destination" to HUDSlotField.ETA(ETAKind.TIME_TO_DESTINATION),
