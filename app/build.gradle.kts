@@ -71,7 +71,8 @@ tasks.register("generateManifest") {
             "latestVersionCode" to android.defaultConfig.versionCode,
             "developer" to "github.com/jpweytjens",
             "description" to "Barberfish keeps Hammerheads sharp, on your handlebars and in the ocean. Native-feeling data field enhancements for the Hammerhead Karoo.",
-            "releaseNotes" to (System.getenv("RELEASE_NOTES") ?: "")
+            "releaseNotes" to (System.getenv("RELEASE_NOTES") ?: ""),
+            "tags" to listOf("performance")
         )
 
         val gson = groovy.json.JsonBuilder(manifest).toPrettyString()
