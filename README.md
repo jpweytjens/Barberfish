@@ -141,9 +141,9 @@ Complete list of data fields provided by Barberfish, grouped by category.
     <tr><th colspan="5" align="center">Power</th></tr>
     <tr><td>Power</td><td>Zone</td><td></td><td></td><td>Instant / 3s / 5s / 10s / 30s / 20m / 1h</td></tr>
     <tr><td>Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>NP</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Lap Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Last Lap Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
-    <tr><td>NP</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><td>Power Zone</td><td>Zone</td><td></td><td>int / float</td><td></td></tr>
     <tr><td>Max Power</td><td>Zone</td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Heart Rate</th></tr>
@@ -177,8 +177,8 @@ Complete list of data fields provided by Barberfish, grouped by category.
     <tr><td>Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Last Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><th colspan="5" align="center">ETA</th></tr>
-    <tr><td>Time to destination</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Remaining ride time</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to destination</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
     <tr><td>Time of arrival</td><td></td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Daylight</th></tr>
     <tr><td>Time to sunrise</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
