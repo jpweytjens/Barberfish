@@ -3,10 +3,10 @@ description: Suggest a new field or an improvement to an existing one
 labels: [enhancement]
 body:
   - type: textarea
-    id: summary
+    id: request
     attributes:
-      label: What would you like?
-      description: A new field, or a change to an existing one?
+      label: What would you like, and why?
+      description: A new field or a change to an existing one. What's missing today, and when does it matter on the bike?
     validations:
       required: true
 
@@ -16,14 +16,6 @@ body:
       label: Hammerhead equivalent (if any)
       description: "Link to the matching entry in the [Karoo Data Fields Legend](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend), or leave blank if there is none."
       placeholder: "e.g. Power - 10s"
-
-  - type: textarea
-    id: improvement
-    attributes:
-      label: How would Barberfish improve it?
-      description: What's missing in the native field, or what would you change? When does it matter on the bike?
-    validations:
-      required: true
 
   - type: textarea
     id: mockup
