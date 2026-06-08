@@ -527,7 +527,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     FieldCard(
-                        title = "NP",
+                        title = "NORMALIZED POWER",
                         description = "Normalized power with zone coloring.",
                         previewFields = npPreviewStates,
                         colorMode = npFieldConfig.colorMode,
