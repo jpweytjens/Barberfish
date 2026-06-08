@@ -625,7 +625,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
         when (val f = slot.field) {
             HUDSlotField.Power -> "Power"
             HUDSlotField.AvgPower -> "Avg Power"
-            HUDSlotField.NP -> "NP"
+            HUDSlotField.NP -> "Normalized Power"
             HUDSlotField.LapPower -> "Lap Power"
             HUDSlotField.LastLapPower -> "Last Lap Power"
             HUDSlotField.PowerZone -> "Power Zone"
@@ -666,7 +666,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                         listOf(
                             "Power" to HUDSlotField.Power,
                             "Avg Power" to HUDSlotField.AvgPower,
-                            "NP" to HUDSlotField.NP,
+                            "Normalized Power" to HUDSlotField.NP,
                             "Lap Power" to HUDSlotField.LapPower,
                             "Last Lap Power" to HUDSlotField.LastLapPower,
                             "Power Zone" to HUDSlotField.PowerZone,
