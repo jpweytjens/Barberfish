@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.screens
 
+import android.widget.RemoteViews
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -51,7 +52,9 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
+import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -905,17 +908,50 @@ internal fun SparklineCard(
         headerExtra = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 HelperText("Elevation profile shown ahead when a route is loaded.")
-                Box(
+                val context = LocalContext.current
+                val density = LocalDensity.current.density
+                val isNight = isSystemInDarkTheme()
+                BoxWithConstraints(
                     modifier =
                         Modifier.fillMaxWidth()
-                            .height(60.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+                            .background(if (isNight) Color.Black else Color.White),
                 ) {
-                    SparklinePreview(
-                        sparklineConfig = config,
-                        zoneConfig = zoneConfig,
-                    )
+                    val widthPx = (maxWidth.value * density).toInt().coerceAtLeast(1)
+                    val sizeConfig =
+                        ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat())
+                    val headerPx = sparklineHeaderPx(sizeConfig, density)
+                    // Header drawn by the same chrome the live cell uses, so the preview's icon
+                    // and label match the data field exactly; the body below stays the animated
+                    // Compose sparkline.
+                    val headerBitmap =
+                        remember(widthPx, headerPx, isNight) {
+                            val rv =
+                                RemoteViews(context.packageName, R.layout.barberfish_sparkline)
+                            applySparklineHeaderChrome(
+                                rv,
+                                context.getString(R.string.elevation_sparkline_name),
+                                R.drawable.ic_grade,
+                                sizeConfig,
+                                ViewConfig.Alignment.RIGHT,
+                                context,
+                            )
+                            remoteViewsToBitmap(rv, widthPx, headerPx, context)
+                        }
+                    Column {
+                        Image(
+                            bitmap = headerBitmap.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxWidth().height((headerPx / density).dp),
+                            contentScale = ContentScale.FillBounds,
+                        )
+                        Box(modifier = Modifier.fillMaxWidth().height(40.dp)) {
+                            SparklinePreview(
+                                sparklineConfig = config,
+                                zoneConfig = zoneConfig,
+                            )
+                        }
+                    }
                 }
             }
         },
