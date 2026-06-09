@@ -92,7 +92,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                     cfg,
                     zones.gradePalette,
                 )
-            }
+            } + toGradeFieldState(GradeReading.Stale(6.2f), cfg, zones.gradePalette)
 
         fun toGradeFieldState(
             reading: GradeReading,
