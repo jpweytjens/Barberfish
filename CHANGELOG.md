@@ -14,6 +14,10 @@ New data fields:
 
 Navigation fields take their names and icons from the Karoo, so they sit naturally beside the native ones: a finish flag for Distance Remaining, up and down arrows for Ascent and Descent Remaining, the route line for Distance.
 
+Fixes:
+- Grade keeps its fill while holding a stale value in fill mode, instead of dropping to grey text
+- The held-grey grade reading is now readable in light mode, not only dark
+
 ## 3.3
 
 New data fields:
