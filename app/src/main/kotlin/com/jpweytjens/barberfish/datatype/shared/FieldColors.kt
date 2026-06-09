@@ -12,6 +12,12 @@ internal val Grey200 = Color(0xFFDDDDDD)
 internal val Grey400 = Color(0xFF979797)
 internal val Grey500 = Color(0xFF7D7D7D)
 
+// FieldColor.Muted greys, APCA-tuned against the datafield background (#000000 night,
+// #FFFFFF day). MutedTextGrey is one value for both modes: |Lc| ~51 on each. MutedFillGrey
+// is the BACKGROUND-mode fill; bestTextOnBackground picks white on it at ~81 Lc.
+internal val MutedTextGrey = Color(0xFFA0A0A0)
+internal val MutedFillGrey = Color(0xFF6E6E6E)
+
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
 internal val ICON_TINT_TEAL = Color(0xFF31E09A)
@@ -374,16 +380,17 @@ data class ColorConfig(
     val background: Color?, // null = transparent cell
 )
 
-// Error and Muted never fill the cell background — colored text is enough.
+// Error never fills the cell — colored text is enough. Muted fills MutedFillGrey in
+// BACKGROUND mode (only reached when colorMode == BACKGROUND, see toColorConfig).
 // FieldColor.Threshold is handled separately in toColorConfig (mode-aware neutral).
 // Fills use the brand palette; the APCA picker in toColorConfig handles text contrast.
 internal fun FieldColor.toBackgroundColor(): Color? =
     when (this) {
         is FieldColor.Default,
         is FieldColor.Error,
-        is FieldColor.Muted,
         is FieldColor.StreamState,
         is FieldColor.Threshold -> null
+        is FieldColor.Muted -> MutedFillGrey
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
         is FieldColor.Zone ->
             if (isHr) hrZoneColor(zone, palette, readable = false)
@@ -398,7 +405,7 @@ internal fun FieldColor.toColor(isNightMode: Boolean = true): Color? =
     when (this) {
         is FieldColor.Default -> null
         is FieldColor.Error -> ERROR_RED
-        is FieldColor.Muted -> Grey500
+        is FieldColor.Muted -> MutedTextGrey
         is FieldColor.StreamState -> null
         is FieldColor.Threshold -> null
         is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
@@ -417,10 +424,12 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boo
     val onBgText: Color? = bg?.let { bestTextOnBackground(it) }
     val valueColor: Color =
         when {
-            // Error/Muted always use their own text color regardless of colorMode.
+            // Error always uses its own text color regardless of colorMode.
+            // Muted uses grey text in TEXT/NONE, but in BACKGROUND it fills the cell
+            // (bg != null) so it falls through to the APCA-picked onBgText below.
             // StreamState goes to stream_state_tv; valueText set to theme default.
-            this is FieldColor.Error || this is FieldColor.Muted ->
-                toColor(isNightMode) ?: defaultText
+            this is FieldColor.Error -> toColor(isNightMode) ?: defaultText
+            this is FieldColor.Muted && bg == null -> toColor(isNightMode) ?: defaultText
             this is FieldColor.StreamState -> defaultText
             colorMode == ZoneColorMode.TEXT -> toColor(isNightMode) ?: defaultText
             onBgText != null -> onBgText
