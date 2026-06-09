@@ -107,6 +107,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                         label = "Grade",
                         color = FieldColor.Muted,
                         iconRes = R.drawable.ic_grade,
+                        colorMode = cfg.colorMode,
                     )
                 is GradeReading.Fresh -> {
                     val color =
