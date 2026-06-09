@@ -89,6 +89,14 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
     <td align="center"><img src="docs/threshold.jpg" alt="Avg Speed threshold config with text-mode green above-target coloring"></td>
     <td align="center"><img src="docs/config.jpg" alt="Main Barberfish config screen with HUD and Data Fields sections"></td>
   </tr>
+  <tr>
+    <td align="center">Grade fill colored by the gradient palette</td>
+    <td align="center">Grade greys out when the estimate is not reliable</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/grade_color.jpg" alt="Grade data field in fill mode, orange cell at 13 percent"></td>
+    <td align="center"><img src="docs/grade_stale.jpg" alt="Grade data field in fill mode showing the grey stale state when no reliable estimate is available"></td>
+  </tr>
 </table>
 
 ## Color palettes
