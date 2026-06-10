@@ -1,12 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Graphical (sparkline) field: Barberfish header (icon + label) on top, full-bleed image below.
+     Shares header view ids with barberfish_field.xml so applyHeaderChrome() works on both. -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/sparkline_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipChildren="false">
+
+    <!-- Invisible probe whose height mirrors field_header; anchors the image top. -->
+    <TextView
+        android:id="@+id/header_ref"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="1dp"
+        android:lines="1"
+        android:textAllCaps="true"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="0.6"
+        android:text="M"
+        android:visibility="invisible" />
+
+    <LinearLayout
+        android:id="@+id/field_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:minHeight="22dp"
+        android:clipToPadding="false"
+        android:paddingStart="1dp"
+        android:paddingEnd="1dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/field_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/field_icon_secondary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/field_label"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="1dp"
+            android:maxLines="2"
+            android:gravity="center_vertical|end"
+            android:ellipsize="end"
+            android:textAllCaps="true"
+            android:fontFamily="ibm-plex-sans-condensed"
+            android:includeFontPadding="false"
+            android:lineSpacingMultiplier="0.6"
+            android:breakStrategy="simple" />
+
+    </LinearLayout>
 
     <ImageView
         android:id="@+id/sparkline_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/field_header"
+        android:layout_alignParentBottom="true"
         android:scaleType="fitXY" />
-</FrameLayout>
+
+</RelativeLayout>

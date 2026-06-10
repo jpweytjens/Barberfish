@@ -3,8 +3,8 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
@@ -27,8 +27,7 @@ internal fun cadenceFieldColor(rpm: Double, cfg: CadenceThresholdConfig): FieldC
                 FieldColor.Default
             } else {
                 val rangePercent =
-                    if (rpm >= cfg.thresholdRpm) cfg.rangePercentAbove
-                    else cfg.rangePercentBelow
+                    if (rpm >= cfg.thresholdRpm) cfg.rangePercentAbove else cfg.rangePercentBelow
                 val factor =
                     ((rpm - cfg.thresholdRpm) / cfg.thresholdRpm * 100.0 / rangePercent)
                         .coerceIn(-1.0, 1.0)
@@ -47,27 +46,21 @@ internal fun cadenceFieldColor(rpm: Double, cfg: CadenceThresholdConfig): FieldC
                 val hasSafeZone = min != null && max != null
                 when {
                     min != null && rpm < min -> {
-                        val outsideFactor =
-                            ((min - rpm) / bandBelow).coerceIn(0.0, 1.0).toFloat()
+                        val outsideFactor = ((min - rpm) / bandBelow).coerceIn(0.0, 1.0).toFloat()
                         FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
                     }
                     max != null && rpm > max -> {
-                        val outsideFactor =
-                            ((rpm - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
+                        val outsideFactor = ((rpm - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
                         FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
                     }
                     else -> {
                         val nearMin =
                             if (min != null && bandBelow > 0.0)
-                                (1.0 - (rpm - min) / bandBelow)
-                                    .coerceIn(0.0, 1.0)
-                                    .toFloat()
+                                (1.0 - (rpm - min) / bandBelow).coerceIn(0.0, 1.0).toFloat()
                             else 0f
                         val nearMax =
                             if (max != null && bandAbove > 0.0)
-                                (1.0 - (max - rpm) / bandAbove)
-                                    .coerceIn(0.0, 1.0)
-                                    .toFloat()
+                                (1.0 - (max - rpm) / bandAbove).coerceIn(0.0, 1.0).toFloat()
                             else 0f
                         FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
                     }
@@ -88,9 +81,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
         }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
-        context.streamCadenceFieldConfig().flatMapLatest { cfg ->
-            cyclePreview(previewStates(cfg))
-        }
+        context.streamCadenceFieldConfig().flatMapLatest { cfg -> cyclePreview(previewStates(cfg)) }
 
     companion object {
         fun cadenceLabel(smoothing: CadenceSmoothingStream) =
@@ -103,7 +94,9 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode = ZoneColorMode.TEXT,
         ): FieldState {
             val label = cadenceLabel(smoothing)
-            state.toErrorFieldState(label, R.drawable.ic_cadence)?.let { return it }
+            state.toErrorFieldState(label, R.drawable.ic_cadence)?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
                     ?: return FieldState.notAvailable(label, R.drawable.ic_cadence)
@@ -135,19 +128,20 @@ class CadenceField(private val karooSystem: KarooSystemService) :
                     )
                 }
             }
-            val centerRpm = when (cfg.threshold.mode) {
-                ThresholdMode.TARGET -> cfg.threshold.thresholdRpm
-                ThresholdMode.MIN_MAX -> {
-                    val min = cfg.threshold.minRpm
-                    val max = cfg.threshold.maxRpm
-                    when {
-                        min != null && max != null -> (min + max) / 2.0
-                        min != null -> min
-                        max != null -> max
-                        else -> 90.0
+            val centerRpm =
+                when (cfg.threshold.mode) {
+                    ThresholdMode.TARGET -> cfg.threshold.thresholdRpm
+                    ThresholdMode.MIN_MAX -> {
+                        val min = cfg.threshold.minRpm
+                        val max = cfg.threshold.maxRpm
+                        when {
+                            min != null && max != null -> (min + max) / 2.0
+                            min != null -> min
+                            max != null -> max
+                            else -> 90.0
+                        }
                     }
                 }
-            }
             val offsets = listOf(-0.15, -0.08, -0.03, 0.03, 0.08, 0.15)
             return offsets.map { pct ->
                 val rpm = centerRpm * (1.0 + pct)

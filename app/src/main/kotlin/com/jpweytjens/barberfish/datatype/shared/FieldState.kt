@@ -11,6 +11,8 @@ data class FieldState(
     val color: FieldColor,
     val iconRes: Int? = null,
     val secondaryIconRes: Int? = null,
+    // Optional second value row, rendered stacked below `primary` (Remaining effort).
+    val secondary: String? = null,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 ) {
     companion object {
@@ -60,7 +62,8 @@ sealed interface FieldColor {
 
     data object Muted : FieldColor // reserved — #7D7D7D grey
 
-    data object StreamState : FieldColor // SDK non-Streaming state — white ibm-plex-sans-condensed in stream_state_tv
+    data object StreamState :
+        FieldColor // SDK non-Streaming state — white ibm-plex-sans-condensed in stream_state_tv
 
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
     data class Grade(val percent: Double, val palette: GradePalette) : FieldColor
@@ -74,9 +77,10 @@ fun zoneFieldColor(
     isHr: Boolean,
 ): FieldColor =
     if (colorMode == ZoneColorMode.NONE) FieldColor.Default
-    else FieldColor.Zone(
-        zone,
-        (if (isHr) profile.heartRateZones else profile.powerZones).size.coerceAtLeast(1),
-        if (isHr) zones.hrPalette else zones.powerPalette,
-        isHr = isHr,
-    )
+    else
+        FieldColor.Zone(
+            zone,
+            (if (isHr) profile.heartRateZones else profile.powerZones).size.coerceAtLeast(1),
+            if (isHr) zones.hrPalette else zones.powerPalette,
+            isHr = isHr,
+        )

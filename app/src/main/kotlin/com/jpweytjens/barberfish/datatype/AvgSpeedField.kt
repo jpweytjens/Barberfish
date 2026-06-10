@@ -4,8 +4,8 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
@@ -98,7 +98,9 @@ class AvgSpeedField(
                 profile ->
                 cfg to profile
             }
-            .flatMapLatest { (cfg, profile) -> streamFlow(karooSystem, cfg, profile, includePaused) }
+            .flatMapLatest { (cfg, profile) ->
+                streamFlow(karooSystem, cfg, profile, includePaused)
+            }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamAvgSpeedConfig(includePaused), karooSystem.streamUserProfile()) {
@@ -119,8 +121,10 @@ class AvgSpeedField(
             karooSystem: KarooSystemService,
             includePaused: Boolean,
         ): Flow<Double> {
-            val timeType = if (includePaused) DataType.Type.RIDE_TIME else DataType.Type.ELAPSED_TIME
-            val timeField = if (includePaused) DataType.Field.RIDE_TIME else DataType.Field.ELAPSED_TIME
+            val timeType =
+                if (includePaused) DataType.Type.RIDE_TIME else DataType.Type.ELAPSED_TIME
+            val timeField =
+                if (includePaused) DataType.Field.RIDE_TIME else DataType.Field.ELAPSED_TIME
             val distanceFlow =
                 karooSystem.streamDataFlow(DataType.Type.DISTANCE).map { state ->
                     (state as? StreamState.Streaming)
@@ -130,10 +134,7 @@ class AvgSpeedField(
                 }
             val timeFlow =
                 karooSystem.streamDataFlow(timeType).map { state ->
-                    (state as? StreamState.Streaming)
-                        ?.dataPoint
-                        ?.values
-                        ?.get(timeField) ?: 0.0
+                    (state as? StreamState.Streaming)?.dataPoint?.values?.get(timeField) ?: 0.0
                 }
             return combine(distanceFlow, timeFlow) { distanceM: Double, timeMs: Double ->
                 val seconds = ConvertType.TIME.apply(timeMs)
@@ -150,6 +151,7 @@ class AvgSpeedField(
             avgSpeedRawMsFlow(karooSystem, includePaused).map { rawMs ->
                 avgSpeedFieldState(rawMs, cfg, profile, includePaused)
             }
+
         fun previewStates(
             cfg: AvgSpeedConfig,
             profile: UserProfile,
@@ -157,20 +159,20 @@ class AvgSpeedField(
         ): List<FieldState> {
             // Generate values around the configured threshold so color transitions are visible.
             // Offsets are percentages of the threshold; the range params are typically 10%.
-            val centerKph = when (cfg.mode) {
-                ThresholdMode.TARGET ->
-                    if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
-                ThresholdMode.MIN_MAX -> {
-                    val min = cfg.minKph
-                    val max = cfg.maxKph
-                    when {
-                        min != null && max != null -> (min + max) / 2.0
-                        min != null -> min
-                        max != null -> max
-                        else -> 25.0
+            val centerKph =
+                when (cfg.mode) {
+                    ThresholdMode.TARGET -> if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
+                    ThresholdMode.MIN_MAX -> {
+                        val min = cfg.minKph
+                        val max = cfg.maxKph
+                        when {
+                            min != null && max != null -> (min + max) / 2.0
+                            min != null -> min
+                            max != null -> max
+                            else -> 25.0
+                        }
                     }
                 }
-            }
             val offsets = listOf(-0.15, -0.08, -0.03, 0.03, 0.08, 0.15)
             val rawValues = offsets.map { pct -> centerKph * (1.0 + pct) / 3.6 }
             return rawValues.map { rawMs -> avgSpeedFieldState(rawMs, cfg, profile, includePaused) }

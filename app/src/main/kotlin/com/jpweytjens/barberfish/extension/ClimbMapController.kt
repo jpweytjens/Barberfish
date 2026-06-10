@@ -7,15 +7,15 @@ import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.ShowPolyline
 
 /**
- * Tracks previously-emitted extension polyline IDs so each call to [emit] only sends
- * `HidePolyline` for IDs that are no longer wanted and `ShowPolyline` for the new set.
+ * Tracks previously-emitted extension polyline IDs so each call to [emit] only sends `HidePolyline`
+ * for IDs that are no longer wanted and `ShowPolyline` for the new set.
  *
- * We intentionally do not emit a separate black outline polyline under each coloured fill.
- * The Karoo rideapp's PolylineManager processes `ShowPolyline` events asynchronously and
- * sometimes reorders them across IPC, so an outline emitted before its fill can still land
- * after it and — since the rideapp paints extension polylines in addition order within the
- * layer — end up hiding the fill as a solid black band. The native `ROUTE_LINE` / `CLIMB_LINE`
- * underneath already provides enough contrast.
+ * We intentionally do not emit a separate black outline polyline under each coloured fill. The
+ * Karoo rideapp's PolylineManager processes `ShowPolyline` events asynchronously and sometimes
+ * reorders them across IPC, so an outline emitted before its fill can still land after it and —
+ * since the rideapp paints extension polylines in addition order within the layer — end up hiding
+ * the fill as a solid black band. The native `ROUTE_LINE` / `CLIMB_LINE` underneath already
+ * provides enough contrast.
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not thread-safe.
  */

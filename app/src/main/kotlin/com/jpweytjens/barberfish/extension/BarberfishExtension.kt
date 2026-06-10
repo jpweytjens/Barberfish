@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
+import com.jpweytjens.barberfish.datatype.EffortField
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
@@ -21,9 +22,12 @@ import com.jpweytjens.barberfish.datatype.MaxPowerField
 import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.PowerZoneField
+import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.datatype.ValueField
+import com.jpweytjens.barberfish.datatype.ValueKind
 import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
 import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
@@ -95,6 +99,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             CadenceField(karooSystem),
             GradeField(karooSystem),
             ElevationSparklineField(karooSystem),
+            // Distance & route-remaining
+            ValueField(karooSystem, ValueKind.DISTANCE),
+            ValueField(karooSystem, ValueKind.DISTANCE_REMAINING),
+            ValueField(karooSystem, ValueKind.ELEVATION_REMAINING),
+            ValueField(karooSystem, ValueKind.DESCENT_REMAINING),
+            EffortField(karooSystem),
+            RouteRemainingField(karooSystem),
             // Time
             TimeField(karooSystem, TimeKind.TOTAL),
             TimeField(karooSystem, TimeKind.RIDING),

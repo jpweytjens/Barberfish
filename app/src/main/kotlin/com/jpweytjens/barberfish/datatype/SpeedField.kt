@@ -4,8 +4,8 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
@@ -39,19 +39,29 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
                 cfg to profile
             }
-            .flatMapLatest { (cfg, profile) ->
-                cyclePreview(previewStates(cfg, profile))
-            }
+            .flatMapLatest { (cfg, profile) -> cyclePreview(previewStates(cfg, profile)) }
 
     private fun coloredFlow(cfg: SpeedFieldConfig, profile: UserProfile): Flow<FieldState> {
         val liveFlow = karooSystem.streamDataFlow(cfg.smoothing.typeId)
         return when (cfg.source) {
             SpeedThresholdSource.FIXED -> {
                 val threshDisplay = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile)
-                liveFlow.map { state -> toFieldState(state, profile, cfg.smoothing, threshDisplay, cfg.rangePercentBelow, cfg.rangePercentAbove, cfg.colorMode) }
+                liveFlow.map { state ->
+                    toFieldState(
+                        state,
+                        profile,
+                        cfg.smoothing,
+                        threshDisplay,
+                        cfg.rangePercentBelow,
+                        cfg.rangePercentAbove,
+                        cfg.colorMode
+                    )
+                }
             }
-            SpeedThresholdSource.AVG_TOTAL -> avgColoredFlow(liveFlow, cfg, profile, includePaused = true)
-            SpeedThresholdSource.AVG_MOVING -> avgColoredFlow(liveFlow, cfg, profile, includePaused = false)
+            SpeedThresholdSource.AVG_TOTAL ->
+                avgColoredFlow(liveFlow, cfg, profile, includePaused = true)
+            SpeedThresholdSource.AVG_MOVING ->
+                avgColoredFlow(liveFlow, cfg, profile, includePaused = false)
         }
     }
 
@@ -68,12 +78,23 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         // whether the source is total or moving avg.
         val elapsedFlow =
             karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
-                (state as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
+                (state as? StreamState.Streaming)
+                    ?.dataPoint
+                    ?.values
+                    ?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
             }
         return combine(liveFlow, avgFlow, elapsedFlow) { state, avgRawMs, elapsedMs ->
             val threshDisplay =
                 if (elapsedMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
-            toFieldState(state, profile, cfg.smoothing, threshDisplay, cfg.rangePercentBelow, cfg.rangePercentAbove, cfg.colorMode)
+            toFieldState(
+                state,
+                profile,
+                cfg.smoothing,
+                threshDisplay,
+                cfg.rangePercentBelow,
+                cfg.rangePercentAbove,
+                cfg.colorMode
+            )
         }
     }
 
@@ -90,19 +111,21 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode = ZoneColorMode.TEXT,
         ): FieldState {
             val label =
-                if (smoothing == SpeedSmoothingStream.S0) "Speed"
-                else "${smoothing.label} Speed"
-            state.toErrorFieldState(label, R.drawable.ic_col_speed)?.let { return it }
+                if (smoothing == SpeedSmoothingStream.S0) "Speed" else "${smoothing.label} Speed"
+            state.toErrorFieldState(label, R.drawable.ic_col_speed)?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
                     ?: return FieldState.notAvailable(label, R.drawable.ic_col_speed)
             val converted = ConvertType.SPEED.apply(raw, profile)
-            val color = targetThresholdColor(
-                converted = converted,
-                threshDisplay = threshDisplay,
-                rangePercentBelow = rangePercentBelow,
-                rangePercentAbove = rangePercentAbove,
-            )
+            val color =
+                targetThresholdColor(
+                    converted = converted,
+                    threshDisplay = threshDisplay,
+                    rangePercentBelow = rangePercentBelow,
+                    rangePercentAbove = rangePercentAbove,
+                )
             return FieldState(
                 "%.1f".format(converted),
                 label = label,
@@ -120,11 +143,13 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             // when source != FIXED) so red→green transitions are visible in the config
             // preview. The warmup gate is intentionally NOT applied here — it would
             // suppress all coloring and defeat the point of the preview.
-            val centerKph = when (cfg.source) {
-                SpeedThresholdSource.FIXED ->
-                    if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
-                SpeedThresholdSource.AVG_TOTAL, SpeedThresholdSource.AVG_MOVING -> 25.0
-            }
+            val centerKph =
+                when (cfg.source) {
+                    SpeedThresholdSource.FIXED ->
+                        if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
+                    SpeedThresholdSource.AVG_TOTAL,
+                    SpeedThresholdSource.AVG_MOVING -> 25.0
+                }
             val threshDisplay = ConvertType.SPEED.toDisplay(centerKph, profile)
             val offsets = listOf(-0.15, -0.08, -0.03, 0.03, 0.08, 0.15)
             return offsets.map { pct ->

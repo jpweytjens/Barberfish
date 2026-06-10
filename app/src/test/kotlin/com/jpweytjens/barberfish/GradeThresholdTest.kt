@@ -8,25 +8,29 @@ import org.junit.Test
 
 class GradeThresholdTest {
 
-    @Test fun wahoo_climb_threshold_is_4() {
+    @Test
+    fun wahoo_climb_threshold_is_4() {
         val range = gradeFillRange(GradePalette.WAHOO)
         assertEquals(4.0, range.posMin!!, 0.001)
         assertNull(range.negMax)
     }
 
-    @Test fun garmin_climb_threshold_is_3() {
+    @Test
+    fun garmin_climb_threshold_is_3() {
         val range = gradeFillRange(GradePalette.GARMIN)
         assertEquals(3.0, range.posMin!!, 0.001)
         assertNull(range.negMax)
     }
 
-    @Test fun hsluv_climb_threshold_is_3() {
+    @Test
+    fun hsluv_climb_threshold_is_3() {
         val range = gradeFillRange(GradePalette.HSLUV)
         assertEquals(3.0, range.posMin!!, 0.001)
         assertNull(range.negMax)
     }
 
-    @Test fun karoo_climb_threshold_is_2() {
+    @Test
+    fun karoo_climb_threshold_is_2() {
         val range = gradeFillRange(GradePalette.KAROO)
         assertEquals(2.0, range.posMin!!, 0.001)
         assertNull(range.negMax)

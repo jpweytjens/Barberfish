@@ -2,7 +2,6 @@ package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.AvgSpeedPrior
 import com.jpweytjens.barberfish.datatype.shared.ETAInput
-import com.jpweytjens.barberfish.datatype.shared.ETAState
 import com.jpweytjens.barberfish.datatype.shared.blendedSpeed
 import com.jpweytjens.barberfish.datatype.shared.computeRidingETA
 import com.jpweytjens.barberfish.datatype.shared.initETAState
@@ -53,10 +52,11 @@ class ETATest {
     fun update_withMovement_ewmasShift() {
         val state = initETAState(defaultPrior)
         // Simulate: 100m in 10s = 10 m/s (36 km/h), faster than 25 km/h prior
-        val updated = updateETAState(
-            input(distanceRiddenM = 100.0, elapsedTimeMs = 10_000.0),
-            state,
-        )
+        val updated =
+            updateETAState(
+                input(distanceRiddenM = 100.0, elapsedTimeMs = 10_000.0),
+                state,
+            )
         // Both EWMAs should shift toward 10 m/s (above prior of 6.944 m/s)
         assertTrue(updated.ewmaFastMs > state.ewmaFastMs)
         assertTrue(updated.ewmaSlowMs > state.ewmaSlowMs)
@@ -67,18 +67,20 @@ class ETATest {
     @Test
     fun update_tracksDeltas() {
         val state = initETAState(defaultPrior)
-        val s1 = updateETAState(
-            input(distanceRiddenM = 100.0, elapsedTimeMs = 10_000.0),
-            state,
-        )
+        val s1 =
+            updateETAState(
+                input(distanceRiddenM = 100.0, elapsedTimeMs = 10_000.0),
+                state,
+            )
         assertEquals(10_000.0, s1.prevElapsedTimeMs, 0.001)
         assertEquals(100.0, s1.prevDistanceRiddenM, 0.001)
 
         // Second update: another 100m in another 10s
-        val s2 = updateETAState(
-            input(distanceRiddenM = 200.0, elapsedTimeMs = 20_000.0),
-            s1,
-        )
+        val s2 =
+            updateETAState(
+                input(distanceRiddenM = 200.0, elapsedTimeMs = 20_000.0),
+                s1,
+            )
         assertEquals(20_000.0, s2.prevElapsedTimeMs, 0.001)
         assertEquals(200.0, s2.prevDistanceRiddenM, 0.001)
     }
@@ -86,15 +88,17 @@ class ETATest {
     @Test
     fun update_paused_noChange() {
         val state = initETAState(defaultPrior)
-        val s1 = updateETAState(
-            input(distanceRiddenM = 1000.0, elapsedTimeMs = 120_000.0),
-            state,
-        )
+        val s1 =
+            updateETAState(
+                input(distanceRiddenM = 1000.0, elapsedTimeMs = 120_000.0),
+                state,
+            )
         // Paused: elapsed time doesn't advance (ELAPSED_TIME excludes pauses), distance same
-        val s2 = updateETAState(
-            input(distanceRiddenM = 1000.0, elapsedTimeMs = 120_000.0),
-            s1,
-        )
+        val s2 =
+            updateETAState(
+                input(distanceRiddenM = 1000.0, elapsedTimeMs = 120_000.0),
+                s1,
+            )
         assertEquals(s1.ewmaFastMs, s2.ewmaFastMs, 0.0001)
         assertEquals(s1.ewmaSlowMs, s2.ewmaSlowMs, 0.0001)
     }
@@ -132,14 +136,15 @@ class ETATest {
         var state = initETAState(defaultPrior)
         // Ride at 30 km/h (8.333 m/s) for 10 minutes in 1-second steps
         for (i in 1..600) {
-            state = updateETAState(
-                input(
-                    distanceRiddenM = 8.333 * i,
-                    elapsedTimeMs = i * 1000.0,
-                    distanceToDestM = 50_000.0,
-                ),
-                state,
-            )
+            state =
+                updateETAState(
+                    input(
+                        distanceRiddenM = 8.333 * i,
+                        elapsedTimeMs = i * 1000.0,
+                        distanceToDestM = 50_000.0,
+                    ),
+                    state,
+                )
         }
         val speed = blendedSpeed(state)
         // Blended speed should be between prior (6.944) and actual (8.333)
@@ -153,10 +158,11 @@ class ETATest {
     fun eta_pausedTimeDoesNotAffectRidingETA() {
         val state = initETAState(defaultPrior)
         val withoutPause = computeRidingETA(input(distanceToDestM = 50_000.0), state)
-        val withPause = computeRidingETA(
-            input(distanceToDestM = 50_000.0, pausedTimeMs = 30.0 * 60 * 1000),
-            state,
-        )
+        val withPause =
+            computeRidingETA(
+                input(distanceToDestM = 50_000.0, pausedTimeMs = 30.0 * 60 * 1000),
+                state,
+            )
         assertEquals(withoutPause, withPause)
     }
 }

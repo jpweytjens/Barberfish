@@ -30,7 +30,9 @@ class NPField(private val karooSystem: KarooSystemService) :
             zones = context.streamZoneConfig(),
             sdkType = DataType.Type.NORMALIZED_POWER,
             karooSystem = karooSystem,
-        ) { state, profile, zones, cfg -> toFieldState(state, profile, zones, cfg.colorMode) }
+        ) { state, profile, zones, cfg ->
+            toFieldState(state, profile, zones, cfg.colorMode)
+        }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         zoneFieldPreviewFlow(
@@ -47,7 +49,9 @@ class NPField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState("NP", R.drawable.ic_col_power)?.let { return it }
+            state.toErrorFieldState("NP", R.drawable.ic_col_power)?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
                     ?: return FieldState.notAvailable("NP", R.drawable.ic_col_power)

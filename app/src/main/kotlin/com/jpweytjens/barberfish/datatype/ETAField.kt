@@ -4,11 +4,10 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.AvgSpeedPrior
 import com.jpweytjens.barberfish.datatype.shared.ETAInput
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
-import com.jpweytjens.barberfish.datatype.shared.ETAState
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.computeRidingETA
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.initETAState
 import com.jpweytjens.barberfish.datatype.shared.updateETAState
 import com.jpweytjens.barberfish.extension.ETAConfig
@@ -19,13 +18,13 @@ import com.jpweytjens.barberfish.extension.streamTimeConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
+import java.util.Calendar
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
-import java.util.Calendar
 
 enum class ETAKind(val typeId: String, val label: String, val iconRes: Int) {
     REMAINING_RIDE_TIME("remaining-ride-time", "Ride\nTime", R.drawable.ic_time_to_dest),
@@ -48,21 +47,23 @@ class ETAField(
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         combine(
-            context.streamETAConfig(),
-            context.streamTimeConfig(),
-        ) { etaCfg, timeCfg -> etaCfg to timeCfg }
+                context.streamETAConfig(),
+                context.streamTimeConfig(),
+            ) { etaCfg, timeCfg ->
+                etaCfg to timeCfg
+            }
             .flatMapLatest { (etaCfg, timeCfg) ->
                 streamFlow(karooSystem, kind, etaCfg, timeCfg.format)
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(
-            context.streamETAConfig(),
-            context.streamTimeConfig(),
-        ) { etaCfg, timeCfg -> etaCfg to timeCfg }
-            .flatMapLatest { (_, timeCfg) ->
-                cyclePreview(previewStates(kind, timeCfg.format))
+                context.streamETAConfig(),
+                context.streamTimeConfig(),
+            ) { etaCfg, timeCfg ->
+                etaCfg to timeCfg
             }
+            .flatMapLatest { (_, timeCfg) -> cyclePreview(previewStates(kind, timeCfg.format)) }
 
     companion object {
         fun streamFlow(
@@ -73,30 +74,36 @@ class ETAField(
         ): Flow<FieldState> {
             val prior = AvgSpeedPrior(speedKph = etaCfg.priorSpeedKph)
 
-            val rawFlow = combine(
-                karooSystem.streamDataFlow(DataType.Type.DISTANCE)
-                    .map { extractRawDouble(it, DataType.Field.DISTANCE) },
-                karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME)
-                    .map { extractRawDouble(it, DataType.Field.ELAPSED_TIME) },
-                karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION)
-                    .map { extractDistToDest(it) },
-                karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME)
-                    .map { extractRawDouble(it, DataType.Field.PAUSED_TIME) },
-            ) { distM, elapsedMs, distToDest, pausedMs ->
-                RawETA(distM, elapsedMs, distToDest, pausedMs)
-            }
+            val rawFlow =
+                combine(
+                    karooSystem.streamDataFlow(DataType.Type.DISTANCE).map {
+                        extractRawDouble(it, DataType.Field.DISTANCE)
+                    },
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map {
+                        extractRawDouble(it, DataType.Field.ELAPSED_TIME)
+                    },
+                    karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).map {
+                        extractDistToDest(it)
+                    },
+                    karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME).map {
+                        extractRawDouble(it, DataType.Field.PAUSED_TIME)
+                    },
+                ) { distM, elapsedMs, distToDest, pausedMs ->
+                    RawETA(distM, elapsedMs, distToDest, pausedMs)
+                }
 
             return rawFlow
-                .runningFold(
-                    Triple(initETAState(prior), null as ETAInput?, null as RawETA?)
-                ) { (state, _, _), raw ->
-                    val input = ETAInput(
-                        distanceRiddenM = raw.distRiddenM,
-                        elapsedTimeMs = raw.elapsedMs,
-                        distanceToDestM = raw.distToDestM ?: 0.0,
-                        pausedTimeMs = raw.pausedMs,
-                        prior = prior,
-                    )
+                .runningFold(Triple(initETAState(prior), null as ETAInput?, null as RawETA?)) {
+                    (state, _, _),
+                    raw ->
+                    val input =
+                        ETAInput(
+                            distanceRiddenM = raw.distRiddenM,
+                            elapsedTimeMs = raw.elapsedMs,
+                            distanceToDestM = raw.distToDestM ?: 0.0,
+                            pausedTimeMs = raw.pausedMs,
+                            prior = prior,
+                        )
                     Triple(updateETAState(input, state), input, raw)
                 }
                 .map { (state, input, raw) ->
@@ -116,14 +123,13 @@ class ETAField(
 
                     val pausedSec = (raw.pausedMs / 1000.0).toLong()
 
-                    val displayValue = when (kind) {
-                        ETAKind.REMAINING_RIDE_TIME ->
-                            formatTime(ridingEtaSec, format)
-                        ETAKind.TIME_TO_DESTINATION ->
-                            formatTime(ridingEtaSec + pausedSec, format)
-                        ETAKind.TIME_OF_ARRIVAL ->
-                            formatClockTime(ridingEtaSec + pausedSec)
-                    }
+                    val displayValue =
+                        when (kind) {
+                            ETAKind.REMAINING_RIDE_TIME -> formatTime(ridingEtaSec, format)
+                            ETAKind.TIME_TO_DESTINATION ->
+                                formatTime(ridingEtaSec + pausedSec, format)
+                            ETAKind.TIME_OF_ARRIVAL -> formatClockTime(ridingEtaSec + pausedSec)
+                        }
 
                     FieldState(
                         primary = displayValue,
@@ -137,11 +143,12 @@ class ETAField(
         fun previewStates(kind: ETAKind, format: TimeFormat): List<FieldState> {
             val durations = listOf(1665L, 5025L, 37425L)
             return durations.map { sec ->
-                val displayValue = when (kind) {
-                    ETAKind.REMAINING_RIDE_TIME -> formatTime(sec, format)
-                    ETAKind.TIME_TO_DESTINATION -> formatTime(sec, format)
-                    ETAKind.TIME_OF_ARRIVAL -> formatClockTime(sec)
-                }
+                val displayValue =
+                    when (kind) {
+                        ETAKind.REMAINING_RIDE_TIME -> formatTime(sec, format)
+                        ETAKind.TIME_TO_DESTINATION -> formatTime(sec, format)
+                        ETAKind.TIME_OF_ARRIVAL -> formatClockTime(sec)
+                    }
                 FieldState(
                     primary = displayValue,
                     label = kind.label,
@@ -162,9 +169,7 @@ class ETAField(
         }
 
         private fun formatClockTime(secondsFromNow: Long): String {
-            val cal = Calendar.getInstance().apply {
-                timeInMillis += secondsFromNow * 1000
-            }
+            val cal = Calendar.getInstance().apply { timeInMillis += secondsFromNow * 1000 }
             return "%d:%02d".format(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
         }
     }

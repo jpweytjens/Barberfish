@@ -1,0 +1,13 @@
+<!-- Material Symbols "road". Source viewBox "0 -960 960 960"; the group shifts it into a 0..960
+     viewport. Used for Ride Remaining (distance + ascent remaining on the route). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M160-160v-640h80v640h-80Zm280 0v-160h80v160h-80Zm280 0v-640h80v640h-80ZM440-400v-160h80v160h-80Zm0-240v-160h80v160h-80Z" />
+    </group>
+</vector>

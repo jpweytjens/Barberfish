@@ -2,7 +2,23 @@
 
 ## 4.0
 
+New data fields:
+- Distance, the ride odometer
+- Distance Remaining to the destination
+- Ascent Remaining, the climbing left to the destination
+- Descent Remaining to the destination
+- Ride Remaining, the distance and climbing left stacked in one field
+- Overview, a plain elevation profile of the whole route with a dot for where you are
+- Distance and the remaining fields also selectable as HUD slots
+- The standalone elevation sparkline is now called Profile
+
+Navigation fields take their names and icons from the Karoo, so they sit naturally beside the native ones: a finish flag for Distance Remaining, up and down arrows for Ascent and Descent Remaining, the route line for Distance.
+
 - Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
+
+Fixes:
+- Grade keeps its fill while holding a stale value in fill mode, instead of dropping to grey text
+- The held-grey grade reading is now readable in light mode, not only dark
 
 ## 3.3
 

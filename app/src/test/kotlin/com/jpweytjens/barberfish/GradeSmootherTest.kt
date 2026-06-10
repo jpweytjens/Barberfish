@@ -1,6 +1,5 @@
 package com.jpweytjens.barberfish
 
-import com.jpweytjens.barberfish.datatype.shared.GRADE_BASELINE_M
 import com.jpweytjens.barberfish.datatype.shared.GradeSmoother
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -26,9 +25,10 @@ class GradeSmootherTest {
     @Test
     fun returnsNull_whileBelowBaseline() {
         // 10 moving samples spanning 9 m of road (well under the 30 m baseline) → all null.
-        val samples = (0..9).map { i ->
-            Triple(100.0f, i.toFloat(), 5.0f) // flat, advancing 1 m per tick at 5 m/s
-        }
+        val samples =
+            (0..9).map { i ->
+                Triple(100.0f, i.toFloat(), 5.0f) // flat, advancing 1 m per tick at 5 m/s
+            }
         val out = run(samples)
         assertEquals(10, out.size)
         out.forEach { assertNull(it) }
@@ -49,9 +49,7 @@ class GradeSmootherTest {
     @Test
     fun fivePercentClimb_returnsFivePercent() {
         // 60 m of 5% climb at 5 m/s: dist = 0,1,...,59, elev = 100 + 0.05 * dist.
-        val samples = (0..59).map { i ->
-            Triple(100.0f + 0.05f * i, i.toFloat(), 5.0f)
-        }
+        val samples = (0..59).map { i -> Triple(100.0f + 0.05f * i, i.toFloat(), 5.0f) }
         val out = run(samples)
         val finalGrade = out.last()
         assertNotNull(finalGrade)
@@ -60,9 +58,7 @@ class GradeSmootherTest {
 
     @Test
     fun negativeFivePercentDescent_returnsNegativeFivePercent() {
-        val samples = (0..59).map { i ->
-            Triple(100.0f - 0.05f * i, i.toFloat(), 5.0f)
-        }
+        val samples = (0..59).map { i -> Triple(100.0f - 0.05f * i, i.toFloat(), 5.0f) }
         val out = run(samples)
         val finalGrade = out.last()
         assertNotNull(finalGrade)
@@ -75,9 +71,7 @@ class GradeSmootherTest {
     fun slopeTracksLeadingEdge_whenWindowSlidesPastOldRoad() {
         // 60 m of flat road, then 60 m of 10% climb.
         val flat = (0..59).map { i -> Triple(100.0f, i.toFloat(), 5.0f) }
-        val climb = (1..60).map { i ->
-            Triple(100.0f + 0.10f * i, 59.0f + i.toFloat(), 5.0f)
-        }
+        val climb = (1..60).map { i -> Triple(100.0f + 0.10f * i, 59.0f + i.toFloat(), 5.0f) }
         val samples = flat + climb
         val out = run(samples)
         // Final 30 m of road are pure 10% climb → output should equal 10% within tolerance.
@@ -102,15 +96,16 @@ class GradeSmootherTest {
     fun pausedSamples_returnNullAndDoNotPollute() {
         // 60 m of flat road, then 30 stopped ticks at the same coordinates, then resume.
         val moving = (0..59).map { i -> Triple(100.0f, i.toFloat(), 5.0f) }
-        val stopped = (1..30).map { Triple(100.0f, 59.0f, 0.0f) }       // speed 0 → not moving
-        val resume  = (1..10).map { i -> Triple(100.0f, 59.0f + i.toFloat(), 5.0f) }
+        val stopped = (1..30).map { Triple(100.0f, 59.0f, 0.0f) } // speed 0 → not moving
+        val resume = (1..10).map { i -> Triple(100.0f, 59.0f + i.toFloat(), 5.0f) }
         val out = run(moving + stopped + resume)
 
         val pausedSlice = out.subList(moving.size, moving.size + stopped.size)
         pausedSlice.forEach { assertNull(it) }
 
         // After resume, since elevation didn't change during the pause, no barrier should fire.
-        // The buffer still holds 30 m of pre-pause road, so the smoother should return ~0% promptly.
+        // The buffer still holds 30 m of pre-pause road, so the smoother should return ~0%
+        // promptly.
         val firstAfterResume = out[moving.size + stopped.size]
         assertNotNull(firstAfterResume)
         assertEquals(0.0f, firstAfterResume!!, 0.01f)
@@ -137,15 +132,18 @@ class GradeSmootherTest {
         // Pause: speed drops to 0, and during the pause the elevation drifts to 105.
         // The transition-into-pause uses elev[i-1] (= 100) as the snapshot. During the pause
         // we report elev = 105; that doesn't matter — it's the elev on RESUME that's compared.
-        val stopped = listOf(
-            Triple(100.0f, 59.0f, 0.0f),  // first not-moving sample; snapshot = 100 (last moving)
-            Triple(102.0f, 59.0f, 0.0f),
-            Triple(105.0f, 59.0f, 0.0f),
-        )
+        val stopped =
+            listOf(
+                Triple(
+                    100.0f,
+                    59.0f,
+                    0.0f
+                ), // first not-moving sample; snapshot = 100 (last moving)
+                Triple(102.0f, 59.0f, 0.0f),
+                Triple(105.0f, 59.0f, 0.0f),
+            )
         // Resume with elev 105 — differs from snapshot 100 → barrier at dist = 59.
-        val resume = (1..40).map { i ->
-            Triple(105.0f, 59.0f + i.toFloat(), 5.0f)
-        }
+        val resume = (1..40).map { i -> Triple(105.0f, 59.0f + i.toFloat(), 5.0f) }
         val out = run(moving + stopped + resume)
 
         // First post-resume sample: barrier triggers, all pre-barrier samples evicted.
@@ -153,7 +151,8 @@ class GradeSmootherTest {
         val firstAfterResume = out[moving.size + stopped.size]
         assertNull(firstAfterResume)
 
-        // After 30 more moving samples (covering 30 m at 1 m / sample), we should have a value again.
+        // After 30 more moving samples (covering 30 m at 1 m / sample), we should have a value
+        // again.
         val afterWarmup = out[moving.size + stopped.size + 30]
         assertNotNull(afterWarmup)
         assertEquals(0.0f, afterWarmup!!, 0.01f)
@@ -166,9 +165,10 @@ class GradeSmootherTest {
         // sample already reflects the new altitude — but lastMovingElev should still be 100.
         val moving = (0..59).map { i -> Triple(100.0f, i.toFloat(), 5.0f) }
         // Transition: first not-moving sample is already at 110 (post-gap elevation).
-        val stopped = listOf(
-            Triple(110.0f, 59.0f, 0.0f), // snapshot must be 100 (lastMovingElev), NOT 110.
-        )
+        val stopped =
+            listOf(
+                Triple(110.0f, 59.0f, 0.0f), // snapshot must be 100 (lastMovingElev), NOT 110.
+            )
         // Resume with elev 110 — differs from correct snapshot 100 → barrier at dist 59.
         val resume = (1..40).map { i -> Triple(110.0f, 59.0f + i.toFloat(), 5.0f) }
         val out = run(moving + stopped + resume)

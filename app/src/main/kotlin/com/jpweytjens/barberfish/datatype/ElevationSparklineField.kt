@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
-import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
@@ -16,47 +15,53 @@ import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-// Standalone sparkline cell height as a fraction of screen height. Approximates a
-// typical 3-row data cell; the SDK doesn't surface the actual cell height through
-// this code path, so this is a best-guess default rather than a precise fit.
-private const val STANDALONE_HEIGHT_FRACTION = 0.25f
-
 class ElevationSparklineField(private val karooSystem: KarooSystemService) :
     BarberfishBase<Bitmap?>("barberfish", "elevation-sparkline") {
 
-    private fun bitmapFlow(context: Context, isPreview: Boolean): Flow<Bitmap?> {
-        val dm = context.resources.displayMetrics
-        val widthPx = dm.widthPixels
-        val heightPx = (dm.heightPixels * STANDALONE_HEIGHT_FRACTION).toInt()
+    private fun bitmapFlow(context: Context, config: ViewConfig, isPreview: Boolean): Flow<Bitmap?> {
+        val (widthPx, heightPx) = sparklineImageSize(config, context)
         return sparklineBitmapFlow(
-            karooSystem,
-            context,
-            configFlow = context.streamFieldSparklineConfig(),
-            widthPx = widthPx,
-            heightPx = heightPx,
-            isPreview = isPreview,
-        ).map { it.bitmap }
+                karooSystem,
+                context,
+                configFlow = context.streamFieldSparklineConfig(),
+                widthPx = widthPx,
+                heightPx = heightPx,
+                isPreview = isPreview,
+            )
+            .map { it.bitmap }
     }
 
-    override fun liveFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = false)
-    override fun previewFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = true)
+    override fun liveFlow(context: Context, config: ViewConfig): Flow<Bitmap?> =
+        bitmapFlow(context, config, isPreview = false)
+
+    override fun previewFlow(context: Context, config: ViewConfig): Flow<Bitmap?> =
+        bitmapFlow(context, config, isPreview = true)
 
     override fun renderState(state: Bitmap?, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
+        applySparklineHeaderChrome(
+            rv,
+            context.getString(R.string.elevation_sparkline_name),
+            R.drawable.ic_grade,
+            config,
+            context,
+        )
         if (state != null) {
             rv.setImageViewBitmap(R.id.sparkline_image, state)
         }
         if (!config.preview) {
-            val intent = Intent(context, SparklineTapReceiver::class.java).apply {
-                action = SparklineTapReceiver.ACTION
-                putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_FIELD)
-            }
-            val pi = PendingIntent.getBroadcast(
-                context,
-                R.layout.barberfish_sparkline,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            val intent =
+                Intent(context, SparklineTapReceiver::class.java).apply {
+                    action = SparklineTapReceiver.ACTION
+                    putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_FIELD)
+                }
+            val pi =
+                PendingIntent.getBroadcast(
+                    context,
+                    R.layout.barberfish_sparkline,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
             rv.setOnClickPendingIntent(R.id.sparkline_root, pi)
         }
         return rv

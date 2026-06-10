@@ -3,10 +3,10 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.GradeSmoother
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.gradeReadingReducer
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -34,54 +34,51 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 cfg to zones
             }
             .flatMapLatest { (cfg, zones) ->
-                gradeOlsFlow(karooSystem)
-                    .map { reading ->
-                        toGradeFieldState(
-                            reading,
-                            cfg,
-                            zones.gradePalette,
-                        )
-                    }
+                gradeOlsFlow(karooSystem).map { reading ->
+                    toGradeFieldState(
+                        reading,
+                        cfg,
+                        zones.gradePalette,
+                    )
+                }
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamGradeFieldConfig(), context.streamZoneConfig()) { cfg, zones ->
                 cfg to zones
             }
-            .flatMapLatest { (cfg, zones) ->
-                cyclePreview(previewStates(cfg, zones))
-            }
+            .flatMapLatest { (cfg, zones) -> cyclePreview(previewStates(cfg, zones)) }
 
     companion object {
         fun gradeOlsFlow(karooSystem: KarooSystemService): Flow<GradeReading> {
             val elevFlow =
-                karooSystem
-                    .streamDataFlow(DataType.Type.PRESSURE_ELEVATION_CORRECTION)
-                    .map { state ->
-                        (state as? StreamState.Streaming)
-                            ?.dataPoint?.values?.get(DataType.Field.PRESSURE_ELEVATION)
-                            ?.toFloat()
-                    }
+                karooSystem.streamDataFlow(DataType.Type.PRESSURE_ELEVATION_CORRECTION).map { state
+                    ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint
+                        ?.values
+                        ?.get(DataType.Field.PRESSURE_ELEVATION)
+                        ?.toFloat()
+                }
             val distFlow =
-                karooSystem
-                    .streamDataFlow(DataType.Type.DISTANCE)
-                    .map { state ->
-                        (state as? StreamState.Streaming)
-                            ?.dataPoint?.values?.get(DataType.Field.DISTANCE)
-                            ?.toFloat()
-                    }
+                karooSystem.streamDataFlow(DataType.Type.DISTANCE).map { state ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint
+                        ?.values
+                        ?.get(DataType.Field.DISTANCE)
+                        ?.toFloat()
+                }
             val speedFlow =
-                karooSystem
-                    .streamDataFlow(DataType.Type.SPEED)
-                    .map { state ->
-                        (state as? StreamState.Streaming)
-                            ?.dataPoint?.values?.get(DataType.Field.SPEED)
-                            ?.toFloat()
-                    }
+                karooSystem.streamDataFlow(DataType.Type.SPEED).map { state ->
+                    (state as? StreamState.Streaming)
+                        ?.dataPoint
+                        ?.values
+                        ?.get(DataType.Field.SPEED)
+                        ?.toFloat()
+                }
             val smoother = GradeSmoother()
             return combine(elevFlow, distFlow, speedFlow) { e, d, v ->
-                    if (e == null || d == null || v == null) null
-                    else smoother.update(e, d, v)
+                    if (e == null || d == null || v == null) null else smoother.update(e, d, v)
                 }
                 .scan<Float?, GradeReading>(GradeReading.Unavailable) { acc, fresh ->
                     gradeReadingReducer(acc, fresh)
@@ -95,7 +92,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                     cfg,
                     zones.gradePalette,
                 )
-            }
+            } + toGradeFieldState(GradeReading.Stale(6.2f), cfg, zones.gradePalette)
 
         fun toGradeFieldState(
             reading: GradeReading,
@@ -103,14 +100,14 @@ class GradeField(private val karooSystem: KarooSystemService) :
             palette: GradePalette,
         ): FieldState =
             when (reading) {
-                is GradeReading.Unavailable ->
-                    FieldState.notAvailable("Grade", R.drawable.ic_grade)
+                is GradeReading.Unavailable -> FieldState.notAvailable("Grade", R.drawable.ic_grade)
                 is GradeReading.Stale ->
                     FieldState(
                         primary = "%.1f%%".format(reading.percent.toDouble()),
                         label = "Grade",
                         color = FieldColor.Muted,
                         iconRes = R.drawable.ic_grade,
+                        colorMode = cfg.colorMode,
                     )
                 is GradeReading.Fresh -> {
                     val color =

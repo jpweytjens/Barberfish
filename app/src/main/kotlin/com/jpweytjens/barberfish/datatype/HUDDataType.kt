@@ -9,9 +9,21 @@ import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import io.hammerhead.karooext.models.ViewConfig
+import kotlinx.coroutines.flow.Flow
 
 abstract class HUDDataType(extensionId: String, typeId: String) :
     BarberfishBase<HUDState>(extensionId, typeId) {
+
+    // The HUD strip sizes itself from its own layout; it doesn't need the cell size in the flow.
+    abstract fun liveFlow(context: Context): Flow<HUDState>
+
+    abstract fun previewFlow(context: Context): Flow<HUDState>
+
+    final override fun liveFlow(context: Context, config: ViewConfig): Flow<HUDState> =
+        liveFlow(context)
+
+    final override fun previewFlow(context: Context, config: ViewConfig): Flow<HUDState> =
+        previewFlow(context)
 
     override fun renderState(state: HUDState, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews =
         buildHudRemoteViews(state, design, config, context)
@@ -45,26 +57,26 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
             rv.setBoolean(R.id.hud_root, "setClipToOutline", true)
         }
         buildList {
-            add(Triple(R.id.hud_slot_left,   state.left.field,   state.left.colorMode))
-            add(Triple(R.id.hud_slot_middle, state.middle.field, state.middle.colorMode))
-            add(Triple(R.id.hud_slot_right,  state.right.field,  state.right.colorMode))
-            if (state.columns == 4)
-                add(Triple(R.id.hud_slot_fourth, state.fourth.field, state.fourth.colorMode))
-        }.forEach { (slotId, field, colorMode) ->
-            rv.removeAllViews(slotId)
-            rv.addView(
-                slotId,
-                barberfishFieldRemoteViews(
-                    field      = field,
-                    alignment  = config.alignment,
-                    colorMode  = colorMode,
-                    sizeConfig = sizeConfig,
-                    preview    = false,
-                    context    = context,
-                ),
-            )
-        }
+                add(Triple(R.id.hud_slot_left, state.left.field, state.left.colorMode))
+                add(Triple(R.id.hud_slot_middle, state.middle.field, state.middle.colorMode))
+                add(Triple(R.id.hud_slot_right, state.right.field, state.right.colorMode))
+                if (state.columns == 4)
+                    add(Triple(R.id.hud_slot_fourth, state.fourth.field, state.fourth.colorMode))
+            }
+            .forEach { (slotId, field, colorMode) ->
+                rv.removeAllViews(slotId)
+                rv.addView(
+                    slotId,
+                    barberfishFieldRemoteViews(
+                        field = field,
+                        alignment = config.alignment,
+                        colorMode = colorMode,
+                        sizeConfig = sizeConfig,
+                        preview = false,
+                        context = context,
+                    ),
+                )
+            }
         return rv
     }
-
 }

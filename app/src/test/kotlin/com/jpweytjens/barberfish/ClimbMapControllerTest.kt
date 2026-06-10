@@ -14,10 +14,17 @@ class ClimbMapControllerTest {
 
     private class FakeEmitter : Emitter<MapEffect> {
         val events = mutableListOf<MapEffect>()
-        override fun onNext(t: MapEffect) { events += t }
+
+        override fun onNext(t: MapEffect) {
+            events += t
+        }
+
         override fun onError(t: Throwable) {}
+
         override fun onComplete() {}
+
         override fun setCancellable(cancellable: () -> Unit) {}
+
         override fun cancel() {}
     }
 
@@ -25,7 +32,8 @@ class ClimbMapControllerTest {
     private val green = 0xFF00FF00.toInt()
     private val fillW = 8
 
-    @Test fun emit_single_spec_outputs_one_show_polyline() {
+    @Test
+    fun emit_single_spec_outputs_one_show_polyline() {
         val controller = ClimbMapController()
         val fake = FakeEmitter()
         controller.emit(
@@ -41,39 +49,44 @@ class ClimbMapControllerTest {
         assertEquals(fillW, fill.width)
     }
 
-    @Test fun emit_two_specs_outputs_in_order() {
+    @Test
+    fun emit_two_specs_outputs_in_order() {
         val controller = ClimbMapController()
         val fake = FakeEmitter()
         controller.emit(
             emitter = fake,
-            specs = listOf(
-                ClimbPolylineSpec("a", "xyz", red),
-                ClimbPolylineSpec("b", "pqr", green),
-            ),
+            specs =
+                listOf(
+                    ClimbPolylineSpec("a", "xyz", red),
+                    ClimbPolylineSpec("b", "pqr", green),
+                ),
             fillWidth = fillW,
         )
         val ids = fake.events.map { (it as ShowPolyline).id }
         assertEquals(listOf("a", "b"), ids)
     }
 
-    @Test fun second_emit_hides_removed_specs() {
+    @Test
+    fun second_emit_hides_removed_specs() {
         val controller = ClimbMapController()
         val fake = FakeEmitter()
         controller.emit(
             emitter = fake,
-            specs = listOf(
-                ClimbPolylineSpec("a", "xyz", red),
-                ClimbPolylineSpec("b", "pqr", green),
-            ),
+            specs =
+                listOf(
+                    ClimbPolylineSpec("a", "xyz", red),
+                    ClimbPolylineSpec("b", "pqr", green),
+                ),
             fillWidth = fillW,
         )
         fake.events.clear()
         controller.emit(
             emitter = fake,
-            specs = listOf(
-                ClimbPolylineSpec("a", "xyz", red),
-                ClimbPolylineSpec("c", "stu", red),
-            ),
+            specs =
+                listOf(
+                    ClimbPolylineSpec("a", "xyz", red),
+                    ClimbPolylineSpec("c", "stu", red),
+                ),
             fillWidth = fillW,
         )
         val hides = fake.events.filterIsInstance<HidePolyline>().map { it.id }
@@ -82,15 +95,17 @@ class ClimbMapControllerTest {
         assertTrue(shows.containsAll(listOf("a", "c")))
     }
 
-    @Test fun clearAll_hides_all_previous_ids_then_empty_emit_is_noop() {
+    @Test
+    fun clearAll_hides_all_previous_ids_then_empty_emit_is_noop() {
         val controller = ClimbMapController()
         val fake = FakeEmitter()
         controller.emit(
             emitter = fake,
-            specs = listOf(
-                ClimbPolylineSpec("a", "xyz", red),
-                ClimbPolylineSpec("b", "pqr", green),
-            ),
+            specs =
+                listOf(
+                    ClimbPolylineSpec("a", "xyz", red),
+                    ClimbPolylineSpec("b", "pqr", green),
+                ),
             fillWidth = fillW,
         )
         fake.events.clear()

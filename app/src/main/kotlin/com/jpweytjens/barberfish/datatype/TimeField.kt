@@ -4,8 +4,8 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.lapNumberFrom
@@ -37,7 +37,12 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
     }
 }
 
-enum class TimeKind(val typeId: String, val label: String, val iconRes: Int, val secondaryIconRes: Int? = null) {
+enum class TimeKind(
+    val typeId: String,
+    val label: String,
+    val iconRes: Int,
+    val secondaryIconRes: Int? = null
+) {
     TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
     RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),
     PAUSED("time-paused", "Paused\ntime", R.drawable.ic_stopwatch),
@@ -57,8 +62,9 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
         private val previewDurationSeconds = listOf(1665L, 5025L, 37425L)
 
         fun extractSeconds(state: StreamState, fieldKey: String): Long =
-            (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
-                ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
+            (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)?.let {
+                ConvertType.TIME.apply(it).toLong()
+            } ?: 0L
 
         fun toFieldState(seconds: Long, kind: TimeKind, format: TimeFormat): FieldState =
             FieldState(
@@ -72,32 +78,41 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
         fun secondsFlow(karooSystem: KarooSystemService, kind: TimeKind): Flow<Long> =
             when (kind) {
                 TimeKind.TOTAL ->
-                    karooSystem.streamDataFlow(DataType.Type.RIDE_TIME)
-                        .map { extractSeconds(it, DataType.Field.RIDE_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.RIDE_TIME).map {
+                        extractSeconds(it, DataType.Field.RIDE_TIME)
+                    }
                 TimeKind.PAUSED ->
-                    karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME)
-                        .map { extractSeconds(it, DataType.Field.PAUSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME).map {
+                        extractSeconds(it, DataType.Field.PAUSED_TIME)
+                    }
                 TimeKind.RIDING ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME)
-                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map {
+                        extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                    }
                 TimeKind.TIME_TO_SUNRISE ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_SUNRISE) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_SUNRISE)
+                    }
                 TimeKind.TIME_TO_SUNSET ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNSET)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_SUNSET) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNSET).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_SUNSET)
+                    }
                 TimeKind.TIME_TO_CIVIL_DAWN ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DAWN)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DAWN) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DAWN).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DAWN)
+                    }
                 TimeKind.TIME_TO_CIVIL_DUSK ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DUSK)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DUSK) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DUSK).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DUSK)
+                    }
                 TimeKind.LAP ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAP)
-                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAP).map {
+                        extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                    }
                 TimeKind.LAST_LAP ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAST_LAP)
-                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAST_LAP).map {
+                        extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                    }
             }
 
         fun previewStates(cfg: TimeConfig, kind: TimeKind): List<FieldState> =
@@ -107,9 +122,12 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
     override fun liveFlow(context: Context): Flow<FieldState> {
         val secondsFlow = secondsFlow(karooSystem, kind)
         if (kind == TimeKind.LAST_LAP) {
-            val lapNumberFlow = karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER)
-                .map { lapNumberFrom(it) }
-            return combine(secondsFlow, lapNumberFlow, context.streamTimeConfig()) { seconds, lapNumber, cfg ->
+            val lapNumberFlow =
+                karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER).map { lapNumberFrom(it) }
+            return combine(secondsFlow, lapNumberFlow, context.streamTimeConfig()) {
+                seconds,
+                lapNumber,
+                cfg ->
                 if (lapNumber <= 1) FieldState.noLapsYet(kind.label, kind.iconRes)
                 else toFieldState(seconds, kind, cfg.format)
             }
@@ -120,8 +138,5 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
     }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
-        context.streamTimeConfig().flatMapLatest { cfg ->
-            cyclePreview(previewStates(cfg, kind))
-        }
-
+        context.streamTimeConfig().flatMapLatest { cfg -> cyclePreview(previewStates(cfg, kind)) }
 }

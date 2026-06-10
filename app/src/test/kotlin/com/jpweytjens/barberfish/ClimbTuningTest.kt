@@ -11,15 +11,17 @@ class ClimbTuningTest {
 
     @Test
     fun `synced reads from sparkline, ignoring overlay values`() {
-        val map = ClimberMapConfig(
-            syncWithSparkline = true,
-            skipBands = 3,
-            simplification = ElevationSimplification.NONE,
-        )
-        val sparkline = SparklineConfig(
-            skipBands = 1,
-            simplification = ElevationSimplification.HEAVY,
-        )
+        val map =
+            ClimberMapConfig(
+                syncWithSparkline = true,
+                skipBands = 3,
+                simplification = ElevationSimplification.NONE,
+            )
+        val sparkline =
+            SparklineConfig(
+                skipBands = 1,
+                simplification = ElevationSimplification.HEAVY,
+            )
 
         val tuning = resolveClimbTuning(map, sparkline)
 
@@ -29,15 +31,17 @@ class ClimbTuningTest {
 
     @Test
     fun `independent reads from overlay, ignoring sparkline values`() {
-        val map = ClimberMapConfig(
-            syncWithSparkline = false,
-            skipBands = 3,
-            simplification = ElevationSimplification.NONE,
-        )
-        val sparkline = SparklineConfig(
-            skipBands = 1,
-            simplification = ElevationSimplification.HEAVY,
-        )
+        val map =
+            ClimberMapConfig(
+                syncWithSparkline = false,
+                skipBands = 3,
+                simplification = ElevationSimplification.NONE,
+            )
+        val sparkline =
+            SparklineConfig(
+                skipBands = 1,
+                simplification = ElevationSimplification.HEAVY,
+            )
 
         val tuning = resolveClimbTuning(map, sparkline)
 

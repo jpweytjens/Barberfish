@@ -46,6 +46,5 @@ fun StreamState.toErrorFieldState(label: String = "", iconRes: Int? = null): Fie
 
 /** Current lap number from a LAP_NUMBER stream state; 0 if not streaming or missing. */
 fun lapNumberFrom(state: StreamState): Int =
-    (state as? StreamState.Streaming)
-        ?.dataPoint?.values?.get(DataType.Field.LAP_NUMBER)
-        ?.toInt() ?: 0
+    (state as? StreamState.Streaming)?.dataPoint?.values?.get(DataType.Field.LAP_NUMBER)?.toInt()
+        ?: 0

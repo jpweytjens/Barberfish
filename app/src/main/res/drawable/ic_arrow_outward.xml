@@ -1,0 +1,14 @@
+<!-- Material Symbols "arrow_outward" (↗). Source viewBox is "0 -960 960 960" (negative Y);
+     the group shifts the path down by 960 into a 0..960 viewport. Used for Climb Remaining and
+     mirrored for Descent Remaining, matching the ↗ climb marker in the Effort field. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="38dp"
+    android:height="38dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="m256-240-56-56 384-384H240v-80h480v480h-80v-344L256-240Z" />
+    </group>
+</vector>

@@ -30,7 +30,9 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             zones = context.streamZoneConfig(),
             sdkType = DataType.Type.AVERAGE_POWER,
             karooSystem = karooSystem,
-        ) { state, profile, zones, cfg -> toFieldState(state, profile, zones, cfg.colorMode) }
+        ) { state, profile, zones, cfg ->
+            toFieldState(state, profile, zones, cfg.colorMode)
+        }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         zoneFieldPreviewFlow(
@@ -47,7 +49,9 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState("Avg Power", R.drawable.ic_avg_power)?.let { return it }
+            state.toErrorFieldState("Avg Power", R.drawable.ic_avg_power)?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
                     ?: return FieldState.notAvailable("Avg Power", R.drawable.ic_avg_power)

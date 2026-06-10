@@ -9,7 +9,10 @@ import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.shared.ASCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -17,8 +20,10 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
+import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
+import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 
@@ -40,7 +45,9 @@ fun barberfishFieldRemoteViews(
     val dm = context.resources.displayMetrics
     val paddingHPx = (sizeConfig.paddingH.value * dm.density).toInt()
     val displayLabel = field.label.replace("\n", " ")
-    val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    val isNightMode =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
     val colors = field.color.toColorConfig(colorMode, isNightMode)
     val rv =
         makeFieldRemoteViews(
@@ -69,6 +76,88 @@ fun barberfishFieldRemoteViews(
     return rv
 }
 
+/**
+ * Applies the Barberfish field header (icon + label) to a graphical (sparkline) field's [rv], which
+ * shares the header view ids with the numeric layout. The field draws its own header (the native
+ * header is disabled via UpdateGraphicConfig), matching the numeric fields. [label] and [iconRes]
+ * should be the field's registered name and icon so the header matches the picker.
+ */
+fun applySparklineHeaderChrome(
+    rv: RemoteViews,
+    label: String,
+    iconRes: Int,
+    config: ViewConfig,
+    context: Context,
+) = applySparklineHeaderChrome(
+    rv,
+    label,
+    iconRes,
+    config.toViewSizeConfig(),
+    config.alignment,
+    context,
+)
+
+/** Overload taking a [ViewSizeConfig] directly, for config-screen previews with no live ViewConfig. */
+fun applySparklineHeaderChrome(
+    rv: RemoteViews,
+    label: String,
+    iconRes: Int,
+    sizeConfig: ViewSizeConfig,
+    alignment: ViewConfig.Alignment,
+    context: Context,
+) {
+    val dm = context.resources.displayMetrics
+    val density = dm.density
+    val isNightMode =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+    val colors = FieldColor.Default.toColorConfig(ZoneColorMode.NONE, isNightMode)
+    val paddingHPx = (sizeConfig.paddingH.value * density).toInt()
+    val cellWidthPx =
+        sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
+            ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
+    // Numeric fields inset field_root by paddingHPx (makeFieldRemoteViews); the graphical image
+    // stays full-bleed, so inset only the header to align the icon/label with the numeric fields.
+    // The +1dp mirrors the header's XML paddingStart/End that the numeric path keeps on top of the
+    // root padding.
+    val onePx = density.toInt().coerceAtLeast(1)
+    rv.setViewPadding(R.id.field_header, paddingHPx + onePx, 0, paddingHPx + onePx, 0)
+    val field =
+        FieldState(primary = "", label = label, color = FieldColor.Default, iconRes = iconRes)
+    applyHeaderChrome(
+        rv,
+        field,
+        label.replace("\n", " "),
+        alignment,
+        colors,
+        sizeConfig,
+        density,
+        cellWidthPx,
+    )
+}
+
+/** Height in px the sparkline field reserves for its header (max of min-height and content). */
+fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int {
+    val headerMinPx = (sizeConfig.headerMinHeightDp * density).toInt()
+    val headerContentPx =
+        headerHeightPx(sizeConfig.headerFontSize.value, sizeConfig.labelMaxLines, density)
+    return maxOf(headerMinPx, headerContentPx)
+}
+
+/**
+ * Pixel size of a graphical field's image region: the full cell width, and the cell height minus
+ * the header the field draws. Rendering the sparkline bitmap at exactly this size makes the
+ * ImageView's fitXY an identity (no aspect distortion) in any layout. Sized from [config].viewSize
+ * — the freshest cell size the field has; clamped so a degenerate viewSize can't yield 0.
+ */
+fun sparklineImageSize(config: ViewConfig, context: Context): Pair<Int, Int> {
+    val density = context.resources.displayMetrics.density
+    val headerPx = sparklineHeaderPx(config.toViewSizeConfig(), density)
+    val widthPx = config.viewSize.first.coerceAtLeast(1)
+    val heightPx = (config.viewSize.second - headerPx).coerceAtLeast(1)
+    return widthPx to heightPx
+}
+
 private fun makeFieldRemoteViews(
     field: FieldState,
     displayLabel: String,
@@ -82,19 +171,17 @@ private fun makeFieldRemoteViews(
     val density = dm.density
     val labelArgb = colors.headerText.toArgb()
     val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
-    val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
-        ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
-    val numIcons =
-        if (!sizeConfig.showIcons) 0
-        else (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
-    val iconWidthPx = if (numIcons > 0)
-        (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
-    else 0f
-    val labelAvailableWidthPx = cellWidthPx - iconWidthPx
-    val (fontSp, maxLines) = fontSizeForCell(
-        field.primary, sizeConfig.valueFontSizeBase, cellWidthPx, density,
-        wrapThresholdSp = sizeConfig.wrapThresholdSp,
-    )
+    val cellWidthPx =
+        sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
+            ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
+    val (fontSp, maxLines) =
+        fontSizeForCell(
+            field.primary,
+            sizeConfig.valueFontSizeBase,
+            cellWidthPx,
+            density,
+            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+        )
 
     if (DEBUG_LAYOUT) {
         Log.d(
@@ -110,15 +197,123 @@ private fun makeFieldRemoteViews(
     val rv = RemoteViews(context.packageName, layoutRes)
 
     if (DEBUG_LAYOUT) {
-        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt())  // red: header
-        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt())   // green: value
+        rv.setInt(R.id.field_header, "setBackgroundColor", 0x55FF0000.toInt()) // red: header
+        rv.setInt(R.id.field_value, "setBackgroundColor", 0x5500FF00.toInt()) // green: value
     }
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
 
-    // header_ref anchors the value baseline (baseline_box layout_below header_ref);
-    // keep it at the verified value-anchor height. field_header's band is set from
-    // the rendered header bitmap below so the label centers like native.
+    val labelLines =
+        applyHeaderChrome(
+            rv,
+            field,
+            displayLabel,
+            alignment,
+            colors,
+            sizeConfig,
+            density,
+            cellWidthPx
+        )
+
+    val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
+    val valueBitmap =
+        if (field.secondary != null) {
+            // Two stacked rows share the single-row value height (same footprint as the numeric
+            // fields); the renderer splits it into two equal bands and sizes the font to fit. Each
+            // row gets an inline icon tinted to the value color: the route glyph before the distance
+            // and the ascent arrow before the climb (the row carrying the ASCENT_MARKER prefix).
+            val tint = colors.valueText.toArgb()
+            fun glyph(res: Int) =
+                ContextCompat.getDrawable(context, res)
+                    ?.mutate()
+                    ?.apply { setTint(tint) }
+                    ?.toBitmap(bitmapHeightPx, bitmapHeightPx)
+            val arrowGlyph = glyph(R.drawable.ic_arrow_outward)
+            val routeGlyph = glyph(R.drawable.ic_route)
+            val primaryIsClimb = field.primary.startsWith(ASCENT_MARKER)
+            renderTwoRowValueBitmap(
+                row1 = field.primary,
+                row2 = field.secondary,
+                bitmapHeightPx = bitmapHeightPx,
+                cellWidthPx = cellWidthPx,
+                color = tint,
+                alignment = alignment,
+                row1Icon = if (primaryIsClimb) arrowGlyph else routeGlyph,
+                row2Icon = if (primaryIsClimb) routeGlyph else arrowGlyph,
+            )
+        } else {
+            renderValueBitmap(
+                text = field.primary,
+                fontSizePx = fontSp * density,
+                bitmapHeightPx = bitmapHeightPx,
+                cellWidthPx = cellWidthPx,
+                color = colors.valueText.toArgb(),
+                alignment = alignment,
+            )
+        }
+    rv.setImageViewBitmap(R.id.field_value, valueBitmap)
+
+    // Stream state overlay (Searching / NotAvailable / Idle) replaces
+    // field_value. Sized from "Searching..." — widest single-line state.
+    if (field.color is FieldColor.StreamState) {
+        val (stateFont, stateMaxLines) =
+            fontSizeForCell(
+                "Searching...",
+                sizeConfig.valueFontSizeBase,
+                cellWidthPx,
+                density,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+            )
+        rv.setViewVisibility(R.id.field_value, View.GONE)
+        rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
+        rv.setTextViewText(R.id.stream_state_tv, field.primary)
+        rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
+        rv.setTextViewTextSize(
+            R.id.stream_state_tv,
+            TypedValue.COMPLEX_UNIT_SP,
+            stateFont.coerceAtMost(19).toFloat()
+        )
+        val actualHeaderPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
+        rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, 0)
+        if (stateMaxLines == 2) {
+            rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
+        }
+    } else {
+        rv.setViewVisibility(R.id.field_value, View.VISIBLE)
+        rv.setViewVisibility(R.id.stream_state_tv, View.GONE)
+    }
+
+    return rv
+}
+
+/**
+ * Applies the Barberfish field header (icon[s] + label) to [rv], sized from [sizeConfig]. Shared by
+ * the numeric field layout and the graphical (sparkline) field layout, which use the same header
+ * view ids. Returns the label line count, needed to position the stream-state overlay.
+ */
+private fun applyHeaderChrome(
+    rv: RemoteViews,
+    field: FieldState,
+    displayLabel: String,
+    alignment: ViewConfig.Alignment,
+    colors: ColorConfig,
+    sizeConfig: ViewSizeConfig,
+    density: Float,
+    cellWidthPx: Float,
+): Int {
+    val labelArgb = colors.headerText.toArgb()
+    val numIcons =
+        if (!sizeConfig.showIcons) 0
+        else (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+    val iconWidthPx =
+        if (numIcons > 0)
+            (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) *
+                density
+        else 0f
+    val labelAvailableWidthPx = cellWidthPx - iconWidthPx
+
+    // header_ref anchors baseline_box's top via layout_below; its minHeight
+    // must match the visible header so the centering region mirrors native's.
     val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
     rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
 
@@ -132,16 +327,17 @@ private fun makeFieldRemoteViews(
     val labelFontSp: Float
     val labelLines: Int
     if (sizeConfig.colSpan < 30) {
-        val (sp, _) = fontSizeForCell(
-            displayLabel,
-            sizeConfig.headerFontSize.value.toInt(),
-            labelAvailableWidthPx,
-            density,
-            wrapThresholdSp = sizeConfig.wrapThresholdSp,
-            typeface = Typeface.DEFAULT,
-        )
+        val (sp, _) =
+            fontSizeForCell(
+                displayLabel,
+                sizeConfig.headerFontSize.value.toInt(),
+                labelAvailableWidthPx,
+                density,
+                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                typeface = Typeface.DEFAULT,
+            )
         labelFontSp = sp.toFloat()
-        labelLines = 2  // all HUD slots always reserve 2-line height for consistent alignment
+        labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
     } else {
         labelFontSp = sizeConfig.headerFontSize.value
         labelLines = sizeConfig.labelMaxLines
@@ -191,41 +387,7 @@ private fun makeFieldRemoteViews(
     } else {
         rv.setViewPadding(R.id.field_label, 0, 0, 0, 0)
     }
-
-    val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
-    val valueBitmap = renderValueBitmap(
-        text = field.primary,
-        fontSizePx = fontSp * density,
-        bitmapHeightPx = bitmapHeightPx,
-        cellWidthPx = cellWidthPx,
-        color = colors.valueText.toArgb(),
-        alignment = alignment,
-    )
-    rv.setImageViewBitmap(R.id.field_value, valueBitmap)
-
-    // Stream state overlay (Searching / NotAvailable / Idle) replaces
-    // field_value. Sized from "Searching..." — widest single-line state.
-    if (field.color is FieldColor.StreamState) {
-        val (stateFont, stateMaxLines) = fontSizeForCell(
-            "Searching...", sizeConfig.valueFontSizeBase, cellWidthPx, density,
-            wrapThresholdSp = sizeConfig.wrapThresholdSp,
-        )
-        rv.setViewVisibility(R.id.field_value, View.GONE)
-        rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
-        rv.setTextViewText(R.id.stream_state_tv, field.primary)
-        rv.setTextColor(R.id.stream_state_tv, colors.valueText.toArgb())
-        rv.setTextViewTextSize(R.id.stream_state_tv, TypedValue.COMPLEX_UNIT_SP, stateFont.coerceAtMost(19).toFloat())
-        val actualHeaderPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
-        rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, 0)
-        if (stateMaxLines == 2) {
-            rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
-        }
-    } else {
-        rv.setViewVisibility(R.id.field_value, View.VISIBLE)
-        rv.setViewVisibility(R.id.stream_state_tv, View.GONE)
-    }
-
-    return rv
+    return labelLines
 }
 
 // translationY is baked into the *_neg3 XML variants because
@@ -233,15 +395,14 @@ private fun makeFieldRemoteViews(
 private fun layoutRes(
     alignment: ViewConfig.Alignment,
     translationDp: Int,
-): Int = when (alignment) {
-    ViewConfig.Alignment.RIGHT ->
-        if (translationDp == -3) R.layout.barberfish_field_neg3
-        else R.layout.barberfish_field
-    ViewConfig.Alignment.LEFT ->
-        if (translationDp == -3) R.layout.barberfish_field_left_neg3
-        else R.layout.barberfish_field_left
-    ViewConfig.Alignment.CENTER ->
-        if (translationDp == -3) R.layout.barberfish_field_center_neg3
-        else R.layout.barberfish_field_center
-}
-
+): Int =
+    when (alignment) {
+        ViewConfig.Alignment.RIGHT ->
+            if (translationDp == -3) R.layout.barberfish_field_neg3 else R.layout.barberfish_field
+        ViewConfig.Alignment.LEFT ->
+            if (translationDp == -3) R.layout.barberfish_field_left_neg3
+            else R.layout.barberfish_field_left
+        ViewConfig.Alignment.CENTER ->
+            if (translationDp == -3) R.layout.barberfish_field_center_neg3
+            else R.layout.barberfish_field_center
+    }
