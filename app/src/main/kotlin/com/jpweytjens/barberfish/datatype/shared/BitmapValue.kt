@@ -196,8 +196,13 @@ fun renderValueBitmap(
     return bitmap
 }
 
-// Native dataHeaderTextStyle sets no letterSpacing and lineSpacingMultiplier=0.7.
-private const val HEADER_LINE_SPACING_MULT = 0.7f
+// Native 2-line header pitch measured on-device: 26 px at the 29 px 2-col label,
+// i.e. 0.6 × line height — matching the lineSpacingMultiplier=0.6 the pre-bitmap
+// TextViews used. (dataHeaderTextStyle's 0.7 does not match the rendered pitch.)
+private const val HEADER_LINE_SPACING_MULT = 0.6f
+// Band used only to center short labels vertically. Calibrated against native via
+// measure_alignment.py (5x2 page): 0.7 lands 1-line labels at +1 px vs native.
+private const val HEADER_CENTER_BAND_MULT = 0.7f
 // Vertical draw offset (px) inside the header bitmap. Measurement-tuning knob;
 // keep 0 unless on-device parity needs a uniform residual trimmed.
 private const val HEADER_DRAW_OFFSET_PX = 0
@@ -259,7 +264,7 @@ fun renderHeaderBitmap(
     // 1-line labels 5 px below native (measure_alignment.py, 5x2 page).
     val singleLineHeight =
         refLayout.height / (1f + HEADER_LINE_SPACING_MULT * (maxLines - 1))
-    val textViewBandHeight = maxLines * HEADER_LINE_SPACING_MULT * singleLineHeight
+    val textViewBandHeight = maxLines * HEADER_CENTER_BAND_MULT * singleLineHeight
     val drawOffset = ((textViewBandHeight - layout.height) / 2f).coerceAtLeast(0f)
     canvas.translate(0f, drawOffset + HEADER_DRAW_OFFSET_PX)
     layout.draw(canvas)
