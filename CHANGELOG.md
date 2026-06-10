@@ -2,12 +2,7 @@
 
 ## 4.0
 
-Data field design:
-- Barberfish fields can now match Karoo's Data Field Design settings. Karoo doesn't share the Data Icons and Label Size choices with extensions, so set them once in the new Data Field Design config section and Barberfish fields render like the native fields next to them.
-- Icons Off hides the icon in each field header
-- Label Size Large enlarges header labels on two-column fields, the same way native fields do
-- Header labels match native size and placement, instead of running slightly small
-- Config previews follow both settings
+- Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
 
 ## 3.3
 
