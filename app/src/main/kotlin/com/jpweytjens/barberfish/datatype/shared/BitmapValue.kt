@@ -222,6 +222,7 @@ fun renderHeaderBitmap(
     availableWidthPx: Int,
     color: Int,
     alignment: ViewConfig.Alignment,
+    topInsetPx: Int = 0,
 ): Bitmap {
     val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
@@ -252,7 +253,8 @@ fun renderHeaderBitmap(
         .setLineSpacing(0f, HEADER_LINE_SPACING_MULT)
         .setIncludePad(false)
         .build()
-    val reservedHeight = maxOf(refLayout.height, layout.height).coerceAtLeast(1)
+    val reservedHeight =
+        maxOf(refLayout.height, layout.height).coerceAtLeast(1) + topInsetPx
 
     val bitmap = Bitmap.createBitmap(width, reservedHeight, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
@@ -266,7 +268,7 @@ fun renderHeaderBitmap(
         refLayout.height / (1f + HEADER_LINE_SPACING_MULT * (maxLines - 1))
     val textViewBandHeight = maxLines * HEADER_CENTER_BAND_MULT * singleLineHeight
     val drawOffset = ((textViewBandHeight - layout.height) / 2f).coerceAtLeast(0f)
-    canvas.translate(0f, drawOffset + HEADER_DRAW_OFFSET_PX)
+    canvas.translate(0f, topInsetPx + drawOffset + HEADER_DRAW_OFFSET_PX)
     layout.draw(canvas)
     return bitmap
 }

@@ -63,6 +63,9 @@ fun ViewConfig.toViewSizeConfig(
             labelSp * 1.2f * (1f + (labelMaxLines - 1) * 0.6f)
         }
     val headerMinHeightDp = maxOf(26, labelBandDp.toInt())
+    // Native sits the header band ~8 px lower in cells taller than the 5-row
+    // layout (rowSpan > 12); measured via measure_alignment.py (5x2 vs 3x2).
+    val headerTopInsetDp = if (colSpan == TWO_COLS && rowSpan > FIVE_ROWS) 3 else 0
     val valueFontBase = textSizeEff.coerceAtLeast(20)
     val valueBitmapHeightDp = (VALUE_BITMAP_HEIGHT_RATIO * valueFontBase).toInt().coerceAtLeast(16)
     // Matches the small upward translation observed in native narrow-cell
@@ -84,6 +87,7 @@ fun ViewConfig.toViewSizeConfig(
         headerIconSize = labelSp.dp,
         headerIconLabelGap = gapDp.dp,
         headerMinHeightDp = headerMinHeightDp,
+        headerTopInsetDp = headerTopInsetDp,
         labelMaxLines = labelMaxLines,
         wrapThresholdSp = wrapThresholdSp,
         showIcons = design.showIcons,
@@ -116,6 +120,7 @@ data class ViewSizeConfig(
     val headerIconLabelGap: Dp,
     val headerFontSize: TextUnit,
     val headerMinHeightDp: Int = 26,
+    val headerTopInsetDp: Int = 0,
     val labelMaxLines: Int,
     val wrapThresholdSp: Int,
     val valueFontSizeBase: Int,

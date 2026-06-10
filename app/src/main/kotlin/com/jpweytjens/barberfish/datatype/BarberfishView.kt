@@ -360,6 +360,7 @@ private fun applyHeaderChrome(
         availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
         color = labelArgb,
         alignment = alignment,
+        topInsetPx = (sizeConfig.headerTopInsetDp * density).toInt(),
     )
     rv.setImageViewBitmap(R.id.field_label, headerBitmap)
     // Native header band = max(22dp, text block); centering field_label inside it
