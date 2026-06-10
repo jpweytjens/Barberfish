@@ -155,30 +155,80 @@ algorithm at precision = 1 (verified by decoding and overlaying onto the map).
 
 ---
 
-## Native label font sizes
+## Native header and value sizing
 
-Device: Karoo 3, density = 1.875 (300 dpi / 160).
+Device: Karoo 3, density = 1.875 (300 dpi / 160). Established by on-device
+screencap sweeps (`scripts/walk_layouts.sh` + `scripts/measure_alignment.py`)
+across both Label Size settings, plus behavioral analysis of the rideapp
+(notes local-only in `docs/native-header-internals.md`).
 
-The native field header label uses a different pixel size for each `(colSpan, rowSpan)`
-in the SDK's 60-unit grid. Measured from screencaps + `adb shell dumpsys activity
-top` view-bounds for every layout 1×1 through 5×2:
+The rideapp sizes each data cell per `(colSpan, rowSpan)` in the 60-unit grid
+and per the rider's Label Size setting (Small or Large). All sizes below are
+raw px on the 1.875-density screen; translations are raw px too.
 
-| colSpan | rowSpan | labelSize (px) | labelSize (sp) | example layout    | textSize (sp) |
-| ------- | ------- | -------------- | -------------- | ----------------- | ------------- |
-| 60      | ≥ 15    | 36 px          | 19.2 sp        | 1-col 3- or 4-row | 69 – 96       |
-| 60      | ≥ 12    | 33 px          | 17.6 sp        | 1-col 5-row       | 55            |
-| 30      | ≥ 15    | 33 px          | 17.6 sp        | 2-col 4-row       | 50            |
-| 30      | ≥ 12    | 29 px          | 15.5 sp        | 2-col 5-row       | 47            |
+Karoo 3, first matching row wins:
 
-The right-most column is the SDK-supplied `ViewConfig.textSize` (sp) for that layout.
-It appears to be `(int)(dataSize_px / density)` and corresponds to the recommended
-value font size.
+| condition                       | example     | value px | valueTransY | label px | line spacing | labelTransY |
+| ------------------------------- | ----------- | -------- | ----------- | -------- | ------------ | ----------- |
+| rowSpan > 20, colSpan 60        | 1×1, 2×1    | 180      | −14         | 36       | 0.7          | 0           |
+| rowSpan = 20, colSpan 60        | 3×1         | 170      | −14         | 36       | 0.7          | 0           |
+| rowSpan ≥ 18, colSpan 60        |             | 145      | −12         | 36       | 0.7          | 0           |
+| rowSpan ≥ 15, colSpan 60        | 4×1         | 130      | −12         | 36       | 0.7          | 0           |
+| rowSpan ≥ 15, colSpan 30        | 2×2,3×2,4×2 | 94       | −10         | 33       | 0.7          | 0           |
+| rowSpan ≥ 12, colSpan 60        | 5×1         | 104      | −10         | 33       | 0.7          | 0           |
+| rowSpan ≥ 12, colSpan 30, Large | 5×2 Large   | 78       | −9          | 33       | 0.6          | −3          |
+| else (5×2 Small)                | 5×2 Small   | 88       | −9          | 29       | 0.6          | 0           |
 
-Icon size equals `labelSize` in both dimensions (`width = height = labelSize px`).
+The Label Size setting affects ONLY 2-col 5-row cells (rowSpan 12–14,
+colSpan 30). Every other layout, including all 1-col layouts and 2-col
+2/3/4-row, renders the same label size at both settings. This resolves a
+long-standing ambiguity in this file (rowSpan-driven vs setting-driven
+29/33 px): the old table here was measured at Small; a later sweep at Large
+saw 33 px in 5-row cells and mistook it for a global setting effect.
 
-For narrow cells (`colSpan = 30`, `rowSpan ≥ 12`), the native label wraps to two
-lines with a compressed inter-line gap (line-spacing multiplier ≈ 0.6) and a small
-upward translation (~-3 px) to keep the value baseline stable.
+`ViewConfig.textSize` for extension cells is `(int)(value px / density)`, so
+it tracks the Label Size setting: 5×2 delivers 46–47 sp at Small and 41 sp at
+Large; all other layouts are setting-independent.
+
+### Header band geometry
+
+- The header container sits at the cell top with no inset; min height 22 dp,
+  otherwise wrap_content, horizontal padding 1 dp.
+- The label renders in `ibm-plex-sans-condensed`, allCaps, font padding off,
+  ellipsize end, simple line-break strategy, gravity END|CENTER_VERTICAL,
+  3 dp start/end margins.
+- The label TextView reserves 2 lines in 2-col cells and 1 line in 1-col
+  cells. The line-spacing multiplier is 0.6 only in 5-row 2-col cells and 0.7
+  everywhere else (see table).
+- The vertical position of a 1-line label emerges from TextView centering
+  inside the 2-line reservation: reservation height
+  `H = lineH + round(lineH × mult)` (`lineH` = `Paint.getFontMetricsInt`
+  descent − ascent), 1-line text centered in `H`, then shifted by labelTransY
+  (−3 px at 5×2 Large). This reproduces the observed header tops (~22 px below
+  cell top at 5×2 Large, ~30 px in 2/3/4-row 2-col cells) without a separate
+  per-layout inset constant.
+
+### Icon geometry
+
+- Icon size equals the label size: `width = height = label px`.
+- Icons have 3 dp top/bottom margins and are centered in the header band; the
+  icon-to-label gap is 3 dp.
+- The key-icon toggle removes the icon views entirely (GONE), so the label
+  regains the full width when icons are off.
+
+### Verification status
+
+Measured on-device:
+
+- Label px at Small for the four 2-col/1-col rows of the original table.
+- Label px at Large: 33 px bands in 2-col cells of every rowSpan, including
+  5×2; native 5×2 value font ≈ 42 sp (= 78 px) and 2/3/4-row ≈ 50 sp (= 94 px)
+  in the same sweep, independently confirming the Large column.
+- 2-line pitch 0.6 at 5×2; `ViewConfig.textSize` per layout at one setting.
+
+Inferred, not yet re-measured: the 0.7 multiplier actually rendering in 2-col
+2/3/4-row 2-line headers, the −3 px label translation at 5×2 Large in
+isolation, and icon px and gap with icons enabled.
 
 ---
 
