@@ -47,6 +47,14 @@ Alignment determines the layout file: `barberfish_field.xml` (right), `barberfis
 
 Config-screen previews use the same rendering engine: `remoteViewsToBitmap()` in `RemoteViewsBitmap.kt` renders the `RemoteViews` to a `Bitmap` (via `apply/measure/layout/draw`), displayed in Compose via `Image(bitmap.asImageBitmap())`. `ViewSizeConfig.cellWidthPxOverride` allows preview callers to specify the exact cell width in pixels, bypassing the `dm.widthPixels * colSpan / 60` formula used for on-device rendering.
 
+### Decimal separator chokepoint
+
+Fields format values with `"%.1f".format(...)`, which uses `Locale.getDefault()`. In comma-decimal locales (es, de, fr, ...) that produces `9,2%` instead of `9.2%`. The native Karoo fields always render a dot regardless of locale, and the comma is a descender that clips against the digit-tuned value bitmap (issue #6).
+
+So `makeFieldRemoteViews` normalizes the value with `field.primary.replace(',', '.')` into a local `valueText`, used for both `fontSizeForCell` and `renderValueBitmap`. This is the single point every value flows through, so it covers standalone fields, HUD slots, and previews without per-field changes.
+
+This is safe only because value strings carry no grouping separator (Karoo and Barberfish render `1234 W`, never `1,234`), so the only comma a locale can introduce is the decimal separator. If a field ever adopts grouped formatting, replace this with locale-fixed formatting (`String.format(Locale.US, ...)`) at the source instead. Adding a new value formatter? It inherits the dot automatically; nothing to do.
+
 ---
 
 ## HUD three-column layout

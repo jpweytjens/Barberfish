@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a new field or an improvement to an existing one
+labels: [enhancement]
+body:
+  - type: textarea
+    id: request
+    attributes:
+      label: What would you like, and why?
+      description: A new field or a change to an existing one. What's missing today, and when does it matter on the bike?
+    validations:
+      required: true
+
+  - type: input
+    id: native
+    attributes:
+      label: Hammerhead equivalent (if any)
+      description: "Link to the matching entry in the [Karoo Data Fields Legend](https://support.hammerhead.io/hc/en-us/articles/35533240795419-Data-Fields-Legend), or leave blank if there is none."
+      placeholder: "e.g. Power - 10s"
+
+  - type: textarea
+    id: mockup
+    attributes:
+      label: Mockup or sketch (optional)
+      description: Drop in a screenshot, render, or rough sketch of the desired layout. Paste images directly into this field.

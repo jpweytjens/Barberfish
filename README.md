@@ -1,5 +1,10 @@
 # Barberfish
 
+[![Release](https://img.shields.io/github/v/release/jpweytjens/barberfish)](https://github.com/jpweytjens/barberfish/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/jpweytjens/barberfish/ci.yml?branch=master)](https://github.com/jpweytjens/barberfish/actions/workflows/ci.yml)
+[![Downloads](https://img.shields.io/github/downloads/jpweytjens/barberfish/barberfish.apk)](https://github.com/jpweytjens/barberfish/releases)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
+
 <img src="app/src/main/res/drawable/ic_extension.png" align="left" width="120" alt="Barberfish">
 
 [Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keep Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.

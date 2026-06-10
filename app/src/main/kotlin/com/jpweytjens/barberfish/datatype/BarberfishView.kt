@@ -174,9 +174,14 @@ private fun makeFieldRemoteViews(
     val cellWidthPx =
         sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
             ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
+    // Match the native Karoo fields, which always show a dot decimal regardless of locale.
+    // Value strings are numeric/time only (no grouping separators), so the only comma a
+    // locale can introduce is the decimal separator — safe to normalize to a dot here, the
+    // single point every field value (standalone, HUD slot, preview) flows through.
+    val valueText = field.primary.replace(',', '.')
     val (fontSp, maxLines) =
         fontSizeForCell(
-            field.primary,
+            valueText,
             sizeConfig.valueFontSizeBase,
             cellWidthPx,
             density,
@@ -232,8 +237,8 @@ private fun makeFieldRemoteViews(
             val routeGlyph = glyph(R.drawable.ic_route)
             val primaryIsClimb = field.primary.startsWith(ASCENT_MARKER)
             renderTwoRowValueBitmap(
-                row1 = field.primary,
-                row2 = field.secondary,
+                row1 = valueText,
+                row2 = field.secondary.replace(',', '.'),
                 bitmapHeightPx = bitmapHeightPx,
                 cellWidthPx = cellWidthPx,
                 color = tint,
@@ -243,7 +248,7 @@ private fun makeFieldRemoteViews(
             )
         } else {
             renderValueBitmap(
-                text = field.primary,
+                text = valueText,
                 fontSizePx = fontSp * density,
                 bitmapHeightPx = bitmapHeightPx,
                 cellWidthPx = cellWidthPx,

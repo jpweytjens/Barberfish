@@ -1,0 +1,30 @@
+name: Bug report
+description: Report a problem with Barberfish
+labels: [bug]
+body:
+  - type: dropdown
+    id: karoo
+    attributes:
+      label: Karoo model
+      options:
+        - Karoo 2
+        - Karoo 3
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Barberfish version
+      description: Karoo home → Extensions → tap Barberfish (on the left) → scroll down to Version.
+      placeholder: "e.g. 3.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead? Steps to reproduce help a lot.
+    validations:
+      required: true
