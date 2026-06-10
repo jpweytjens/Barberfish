@@ -11,6 +11,7 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import io.hammerhead.karooext.models.ViewConfig
+import kotlin.math.roundToInt
 
 private const val MIN_BITMAP_HEIGHT_PX = 30
 private const val LETTER_SPACING = -0.04f
@@ -196,24 +197,15 @@ fun renderValueBitmap(
     return bitmap
 }
 
-// Native 2-line header pitch measured on-device: 26 px at the 29 px 2-col label,
-// i.e. 0.6 × line height — matching the lineSpacingMultiplier=0.6 the pre-bitmap
-// TextViews used. (dataHeaderTextStyle's 0.7 does not match the rendered pitch.)
-private const val HEADER_LINE_SPACING_MULT = 0.6f
-// Band used only to center short labels vertically. Calibrated against native via
-// measure_alignment.py (5x2 page): 0.7 lands 1-line labels at +1 px vs native.
-private const val HEADER_CENTER_BAND_MULT = 0.7f
-// Vertical draw offset (px) inside the header bitmap. Measurement-tuning knob;
-// keep 0 unless on-device parity needs a uniform residual trimmed.
-private const val HEADER_DRAW_OFFSET_PX = 0
-
 /**
- * Render an all-caps header [text] into an `ARGB_8888` bitmap whose height reserves
- * [maxLines] lines (native `dataHeaderTextStyle` uses `lines=2`), matching native's
- * `headerTextView` content box. Text wraps/ellipsizes to [availableWidthPx] and is
- * drawn with [alignment]; a 1-line label in a 2-line reservation is centered
- * vertically, as native does (and as the gravity=center_vertical TextView this
- * replaced did). `density = DENSITY_NONE` so RemoteViews renders 1:1.
+ * Render an all-caps header [text] into an `ARGB_8888` bitmap that reproduces the
+ * native header TextView: `lines=[maxLines]`, font padding off, per-layout
+ * [lineSpacingMult] (0.6 in 2-col 5-row cells, 0.7 elsewhere). The reservation is
+ * the TextView height `lineH + (maxLines − 1) × round(lineH × mult)` with `lineH`
+ * from `Paint.getFontMetricsInt`; shorter text centers in it (gravity
+ * center_vertical) and [translationYPx] shifts the block (−3 px at 5-row Large).
+ * See docs/sdk-findings.md § "Native header and value sizing".
+ * `density = DENSITY_NONE` so RemoteViews renders 1:1.
  */
 fun renderHeaderBitmap(
     text: String,
@@ -222,7 +214,8 @@ fun renderHeaderBitmap(
     availableWidthPx: Int,
     color: Int,
     alignment: ViewConfig.Alignment,
-    topInsetPx: Int = 0,
+    lineSpacingMult: Float,
+    translationYPx: Int = 0,
 ): Bitmap {
     val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
@@ -239,36 +232,25 @@ fun renderHeaderBitmap(
 
     val layout = StaticLayout.Builder.obtain(upper, 0, upper.length, paint, width)
         .setAlignment(align)
-        .setLineSpacing(0f, HEADER_LINE_SPACING_MULT)
+        .setLineSpacing(0f, lineSpacingMult)
         .setIncludePad(false)
         .setMaxLines(maxLines)
         .setEllipsize(TextUtils.TruncateAt.END)
         .build()
 
-    // Reserve the full maxLines block height regardless of actual line count, so
-    // headers across a page share a height (native lines=2). Use a forced-N-line
-    // reference layout with the same paint/spacing for an exact reservation.
-    val refText = (0 until maxLines).joinToString("\n") { "M" }
-    val refLayout = StaticLayout.Builder.obtain(refText, 0, refText.length, paint, width)
-        .setLineSpacing(0f, HEADER_LINE_SPACING_MULT)
-        .setIncludePad(false)
-        .build()
+    val fm = paint.fontMetricsInt
+    val lineHeight = fm.descent - fm.ascent
     val reservedHeight =
-        maxOf(refLayout.height, layout.height).coerceAtLeast(1) + topInsetPx
+        lineHeight + (maxLines - 1) * (lineHeight * lineSpacingMult).roundToInt()
+    val bitmapHeight = maxOf(reservedHeight, layout.height).coerceAtLeast(1)
 
-    val bitmap = Bitmap.createBitmap(width, reservedHeight, Bitmap.Config.ARGB_8888)
+    val bitmap = Bitmap.createBitmap(width, bitmapHeight, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
-    // Center the text block the way native's TextView does (lines=maxLines,
-    // lineSpacingMultiplier, gravity=center_vertical): its band is
-    // maxLines * mult * lineHeight — shorter than the StaticLayout reservation,
-    // whose last line gets no spacing extra. Centering in the reservation put
-    // 1-line labels 5 px below native (measure_alignment.py, 5x2 page).
-    val singleLineHeight =
-        refLayout.height / (1f + HEADER_LINE_SPACING_MULT * (maxLines - 1))
-    val textViewBandHeight = maxLines * HEADER_CENTER_BAND_MULT * singleLineHeight
-    val drawOffset = ((textViewBandHeight - layout.height) / 2f).coerceAtLeast(0f)
-    canvas.translate(0f, topInsetPx + drawOffset + HEADER_DRAW_OFFSET_PX)
+    // A negative translation may clip the top of the first line's ascent area;
+    // native clips identically at the cell edge and cap tops sit well below it.
+    val centerOffset = ((reservedHeight - layout.height) / 2f).coerceAtLeast(0f)
+    canvas.translate(0f, centerOffset + translationYPx)
     layout.draw(canvas)
     return bitmap
 }
