@@ -206,8 +206,9 @@ private const val HEADER_DRAW_OFFSET_PX = 0
  * Render an all-caps header [text] into an `ARGB_8888` bitmap whose height reserves
  * [maxLines] lines (native `dataHeaderTextStyle` uses `lines=2`), matching native's
  * `headerTextView` content box. Text wraps/ellipsizes to [availableWidthPx] and is
- * drawn with [alignment]; a 1-line label in a 2-line reservation sits on the top
- * line, as native does. `density = DENSITY_NONE` so RemoteViews renders 1:1.
+ * drawn with [alignment]; a 1-line label in a 2-line reservation is centered
+ * vertically, as native does (and as the gravity=center_vertical TextView this
+ * replaced did). `density = DENSITY_NONE` so RemoteViews renders 1:1.
  */
 fun renderHeaderBitmap(
     text: String,
@@ -251,7 +252,9 @@ fun renderHeaderBitmap(
     val bitmap = Bitmap.createBitmap(width, reservedHeight, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
-    canvas.translate(0f, HEADER_DRAW_OFFSET_PX.toFloat())
+    // Center the text block in the reservation, mirroring the replaced TextView's
+    // gravity=center_vertical: a 1-line label sits mid-band, not on the top line.
+    canvas.translate(0f, (reservedHeight - layout.height) / 2f + HEADER_DRAW_OFFSET_PX)
     layout.draw(canvas)
     return bitmap
 }
