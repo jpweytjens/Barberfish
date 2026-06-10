@@ -34,6 +34,12 @@ private const val DEBUG_LAYOUT = false
 private const val LAYOUT_PROBE_MODE = false
 private const val PROBE_MARKER_COLOR = 0xFFFF00FF.toInt()
 
+// Horizontal chrome between cellWidthPx and the field_label ImageView that the label
+// bitmap must not span: field_header paddingStart/End (1dp each) + field_label
+// marginStart (1dp). Rendering the bitmap wider than the view makes scaleType=center
+// crop it, clipping right-aligned labels on the right.
+private const val HEADER_LABEL_CHROME_DP = 3f
+
 fun barberfishFieldRemoteViews(
     field: FieldState,
     alignment: ViewConfig.Alignment,
@@ -315,7 +321,7 @@ private fun applyHeaderChrome(
             (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) *
                 density
         else 0f
-    val labelAvailableWidthPx = cellWidthPx - iconWidthPx
+    val labelAvailableWidthPx = cellWidthPx - iconWidthPx - HEADER_LABEL_CHROME_DP * density
 
     // header_ref anchors baseline_box's top via layout_below; its minHeight
     // must match the visible header so the centering region mirrors native's.
