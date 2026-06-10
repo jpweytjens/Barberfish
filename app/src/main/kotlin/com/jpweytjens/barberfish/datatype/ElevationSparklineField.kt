@@ -9,6 +9,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
+import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
@@ -40,7 +41,7 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
     override fun liveFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = false)
     override fun previewFlow(context: Context): Flow<Bitmap?> = bitmapFlow(context, isPreview = true)
 
-    override fun renderState(state: Bitmap?, config: ViewConfig, context: Context): RemoteViews {
+    override fun renderState(state: Bitmap?, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
         if (state != null) {
             rv.setImageViewBitmap(R.id.sparkline_image, state)

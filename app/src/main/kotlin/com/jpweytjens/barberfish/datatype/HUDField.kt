@@ -31,10 +31,12 @@ import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
+import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.lapNumberFrom
+import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
@@ -104,12 +106,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 combine(
                     hudStateFlow.sample(HUD_UPDATE_INTERVAL_MS),
                     sparklineFlow,
-                ) { hudState, frame ->
+                    context.streamDataFieldDesignConfig(),
+                ) { hudState, frame, design ->
                     val isNightMode = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
                     val showSparklineArea = frame.hudEnabled &&
                         (frame.bitmap != null || transitionKm != null || frame.counterText != null)
                     val rv = buildHudRemoteViews(
                         hudState,
+                        design,
                         config,
                         context,
                         sparklineHeightPx = if (showSparklineArea) sparklineHeightPx else 0,

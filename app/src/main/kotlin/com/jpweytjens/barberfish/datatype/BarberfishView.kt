@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
+import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -83,7 +84,9 @@ private fun makeFieldRemoteViews(
     val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
     val cellWidthPx = sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
         ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
-    val numIcons = (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
+    val numIcons =
+        if (!sizeConfig.showIcons) 0
+        else (if (field.iconRes != null) 1 else 0) + (if (field.secondaryIconRes != null) 1 else 0)
     val iconWidthPx = if (numIcons > 0)
         (numIcons * sizeConfig.headerIconSize.value + sizeConfig.headerIconLabelGap.value) * density
     else 0f
@@ -113,10 +116,10 @@ private fun makeFieldRemoteViews(
 
     rv.setViewPadding(R.id.field_root, paddingHPx, 0, paddingHPx, 0)
 
-    // header_ref anchors baseline_box's top via layout_below; its minHeight
-    // must match the visible header so the centering region mirrors native's.
+    // header_ref anchors the value baseline (baseline_box layout_below header_ref);
+    // keep it at the verified value-anchor height. field_header's band is set from
+    // the rendered header bitmap below so the label centers like native.
     val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
-    rv.setInt(R.id.field_header, "setMinimumHeight", headerMinHeightPx)
     rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
 
     if (LAYOUT_PROBE_MODE) {
@@ -143,20 +146,24 @@ private fun makeFieldRemoteViews(
         labelFontSp = sizeConfig.headerFontSize.value
         labelLines = sizeConfig.labelMaxLines
     }
-    rv.setTextViewText(R.id.field_label, displayLabel)
-    rv.setTextColor(R.id.field_label, labelArgb)
-    rv.setTextViewTextSize(R.id.field_label, TypedValue.COMPLEX_UNIT_SP, labelFontSp)
-    // setLines(2) forces a 2-line reservation; without it short 2-col labels
-    // collapse to 1-line height and the header sits ~12 px above native.
-    when {
-        labelLines == 1 -> rv.setInt(R.id.field_label, "setMaxLines", 1)
-        labelLines == 2 -> rv.setInt(R.id.field_label, "setLines", 2)
-    }
+    val headerBitmap = renderHeaderBitmap(
+        text = displayLabel,
+        fontSizePx = labelFontSp * density,
+        maxLines = labelLines,
+        availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
+        color = labelArgb,
+        alignment = alignment,
+    )
+    rv.setImageViewBitmap(R.id.field_label, headerBitmap)
+    // Native header band = max(22dp, text block); centering field_label inside it
+    // (field_header gravity=center_vertical) reproduces native's centered header.
+    val headerBandPx = maxOf((22f * density).toInt(), headerBitmap.height)
+    rv.setInt(R.id.field_header, "setMinimumHeight", headerBandPx)
 
     // Icons
     val gapPx = (sizeConfig.headerIconLabelGap.value * density).toInt()
     val iconSizePx = (sizeConfig.headerIconSize.value * density).toInt()
-    if (field.iconRes != null) {
+    if (sizeConfig.showIcons && field.iconRes != null) {
         rv.setViewVisibility(R.id.field_icon, View.VISIBLE)
         rv.setImageViewResource(R.id.field_icon, field.iconRes)
         rv.setInt(R.id.field_icon, "setColorFilter", colors.iconTint.toArgb())
@@ -165,7 +172,7 @@ private fun makeFieldRemoteViews(
     } else {
         rv.setViewVisibility(R.id.field_icon, View.GONE)
     }
-    if (field.secondaryIconRes != null) {
+    if (sizeConfig.showIcons && field.secondaryIconRes != null) {
         rv.setViewVisibility(R.id.field_icon_secondary, View.VISIBLE)
         rv.setImageViewResource(R.id.field_icon_secondary, field.secondaryIconRes)
         rv.setInt(R.id.field_icon_secondary, "setColorFilter", colors.iconTint.toArgb())

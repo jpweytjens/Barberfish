@@ -49,12 +49,14 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -104,6 +106,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.withDesign
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
@@ -132,6 +135,7 @@ import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -139,6 +143,7 @@ import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
+import com.jpweytjens.barberfish.extension.LabelSize
 import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
@@ -185,9 +190,11 @@ import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.saveClimberMapConfig
+import com.jpweytjens.barberfish.extension.saveDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.saveHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamClimberMapConfig
+import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
@@ -263,6 +270,7 @@ class MainActivity : ComponentActivity() {
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
+        var dataFieldDesignConfig by remember { mutableStateOf(DataFieldDesignConfig()) }
         var userProfile by remember {
             mutableStateOf(
                 UserProfile(
@@ -288,6 +296,7 @@ class MainActivity : ComponentActivity() {
         var climberExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
+        var designExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             launch { streamHUDConfig().collect { hudConfig = it } }
@@ -316,9 +325,11 @@ class MainActivity : ComponentActivity() {
             launch { streamTimeConfig().collect { timeConfig = it } }
             launch { streamETAConfig().collect { etaConfig = it } }
             launch { streamZoneConfig().collect { zoneConfig = it } }
+            launch { streamDataFieldDesignConfig().collect { dataFieldDesignConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 
+        CompositionLocalProvider(LocalDataFieldDesign provides dataFieldDesignConfig) {
         Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
             Column(
                 modifier =
@@ -944,6 +955,37 @@ class MainActivity : ComponentActivity() {
                     GradePalettePreview(palette = zoneConfig.gradePalette)
 
                 } // end Global
+                CollapsibleSection(
+                    title = "Data Field Design",
+                    description = "Match Karoo's icon and label-size settings for Barberfish fields",
+                    icon = R.drawable.ic_section_grid,
+                    expanded = designExpanded,
+                    onToggle = { designExpanded = !designExpanded },
+                ) {
+                    ControlLabel("ICONS")
+                    HelperText("Show the icon in each field header.")
+                    SegmentedRow(
+                        options = listOf(false to "Off", true to "On"),
+                        selected = dataFieldDesignConfig.showIcons,
+                        onSelect = { on ->
+                            dataFieldDesignConfig = dataFieldDesignConfig.copy(showIcons = on)
+                            lifecycleScope.launch { saveDataFieldDesignConfig(dataFieldDesignConfig) }
+                        },
+                        trackColor = Grey100,
+                    )
+
+                    ControlLabel("LABEL SIZE")
+                    HelperText("Header label size on dense (2-column) pages.")
+                    SegmentedRow(
+                        options = LabelSize.entries.map { it to it.label },
+                        selected = dataFieldDesignConfig.labelSize,
+                        onSelect = { size ->
+                            dataFieldDesignConfig = dataFieldDesignConfig.copy(labelSize = size)
+                            lifecycleScope.launch { saveDataFieldDesignConfig(dataFieldDesignConfig) }
+                        },
+                        trackColor = Grey100,
+                    )
+                } // end Data Field Design
                 Spacer(modifier = Modifier.height(72.dp))
             }
             Box(
@@ -965,6 +1007,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
         } // end Box
+        }
     }
 }
 
@@ -1262,6 +1305,8 @@ private fun CollapsibleSection(
     }
 }
 
+internal val LocalDataFieldDesign = staticCompositionLocalOf { DataFieldDesignConfig() }
+
 private val FIELD_PREVIEW_WIDTH = 120.dp
 private val FIELD_PREVIEW_HEIGHT = 80.dp
 
@@ -1271,10 +1316,11 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     val densityValue = LocalDensity.current.density
     val widthPx = (FIELD_PREVIEW_WIDTH.value * densityValue).toInt()
     val heightPx = (FIELD_PREVIEW_HEIGHT.value * densityValue).toInt()
-    val sizeConfig = remember(widthPx) {
+    val design = LocalDataFieldDesign.current
+    val sizeConfig = remember(widthPx, design) {
         ViewSizeConfig.STANDARD.copy(
             cellWidthPxOverride = widthPx.toFloat(),
-        )
+        ).withDesign(design)
     }
     var index by remember { mutableIntStateOf(0) }
     LaunchedEffect(previewFields) {

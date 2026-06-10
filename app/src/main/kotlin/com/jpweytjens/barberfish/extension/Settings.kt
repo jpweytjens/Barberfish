@@ -580,3 +580,27 @@ fun Context.streamTimeConfig(): Flow<TimeConfig> =
 
 suspend fun Context.saveTimeConfig(config: TimeConfig) =
     saveConfig(timeConfigKey, config)
+
+// --- DataFieldDesignConfig ---
+// Mirrors Karoo OS "Data Field Design" options the SDK does not expose to extensions
+// (Show Icons, Label Size). See docs/superpowers/specs/2026-06-07-data-field-design-design.md.
+
+@Serializable
+enum class LabelSize(val label: String) {
+    SMALL("Small"),
+    LARGE("Large"),
+}
+
+@Serializable
+data class DataFieldDesignConfig(
+    val showIcons: Boolean = true,
+    val labelSize: LabelSize = LabelSize.SMALL,
+)
+
+private val dataFieldDesignConfigKey = stringPreferencesKey("data_field_design_config")
+
+fun Context.streamDataFieldDesignConfig(): Flow<DataFieldDesignConfig> =
+    streamConfig(dataFieldDesignConfigKey, DataFieldDesignConfig())
+
+suspend fun Context.saveDataFieldDesignConfig(config: DataFieldDesignConfig) =
+    saveConfig(dataFieldDesignConfigKey, config)

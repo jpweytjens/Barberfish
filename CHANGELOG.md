@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.0
+
+- Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
+
 ## 3.3
 
 New data fields:
