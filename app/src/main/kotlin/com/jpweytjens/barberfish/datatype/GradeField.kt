@@ -100,7 +100,11 @@ class GradeField(private val karooSystem: KarooSystemService) :
             palette: GradePalette,
         ): FieldState =
             when (reading) {
-                is GradeReading.Unavailable -> FieldState.notAvailable("Grade", R.drawable.ic_grade)
+                is GradeReading.Unavailable ->
+                    // Warm-up (the first ~30 m, before a trusted reading) shows "Searching…"
+                    // rather than "Not available", matching Cadence. Grade never returns here
+                    // once it has had a value; it greys (Stale) instead.
+                    FieldState.searching("Grade", R.drawable.ic_grade)
                 is GradeReading.Stale ->
                     FieldState(
                         primary = "%.1f%%".format(reading.percent.toDouble()),

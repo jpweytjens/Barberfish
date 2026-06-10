@@ -32,7 +32,7 @@ New data fields:
 
 Grade:
 - Steadier reading, follows the road instead of lagging or jittering
-- Holds the last value in grey during warm-up and across stops, instead of jumping or going blank
+- Shows "Searching…" while it warms up, then holds the last value in grey across stops, instead of going blank
 - No more drift after pauses
 - Grade bands aligned with Karoo build 1.634.2440
 
