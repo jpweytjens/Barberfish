@@ -252,9 +252,16 @@ fun renderHeaderBitmap(
     val bitmap = Bitmap.createBitmap(width, reservedHeight, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
-    // Center the text block in the reservation, mirroring the replaced TextView's
-    // gravity=center_vertical: a 1-line label sits mid-band, not on the top line.
-    canvas.translate(0f, (reservedHeight - layout.height) / 2f + HEADER_DRAW_OFFSET_PX)
+    // Center the text block the way native's TextView does (lines=maxLines,
+    // lineSpacingMultiplier, gravity=center_vertical): its band is
+    // maxLines * mult * lineHeight — shorter than the StaticLayout reservation,
+    // whose last line gets no spacing extra. Centering in the reservation put
+    // 1-line labels 5 px below native (measure_alignment.py, 5x2 page).
+    val singleLineHeight =
+        refLayout.height / (1f + HEADER_LINE_SPACING_MULT * (maxLines - 1))
+    val textViewBandHeight = maxLines * HEADER_LINE_SPACING_MULT * singleLineHeight
+    val drawOffset = ((textViewBandHeight - layout.height) / 2f).coerceAtLeast(0f)
+    canvas.translate(0f, drawOffset + HEADER_DRAW_OFFSET_PX)
     layout.draw(canvas)
     return bitmap
 }
