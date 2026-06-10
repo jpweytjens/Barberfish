@@ -43,11 +43,19 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         // layout_alignParentBottom, so its centering region shrinks with the slot and
         // keeps the bitmap value above the sparkline.
         val baseSize = if (state.columns == 4) ViewSizeConfig.HUD_FOUR else ViewSizeConfig.HUD_THREE
-        val sizeConfig = baseSize.copy(showIcons = design.showIcons)
+        val paddingHPx = (4f * density).toInt()
+        // hud_root insets the slot row by paddingHPx per side and the HUD cell is narrower
+        // than the screen, so the colSpan-based fallback width overshoots and the label
+        // bitmap gets cropped (scaleType=center). Pass the real slot width instead.
+        val slotWidthPx = (config.viewSize.first - 2f * paddingHPx) / state.columns
+        val sizeConfig =
+            baseSize.copy(
+                showIcons = design.showIcons,
+                cellWidthPxOverride = slotWidthPx.takeIf { it > 0f },
+            )
         val layoutRes =
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
         val rv = RemoteViews(context.packageName, layoutRes)
-        val paddingHPx = (4f * density).toInt()
         rv.setViewPadding(R.id.hud_root, paddingHPx, paddingPx, paddingHPx, paddingPx)
         // Clip slot row above the sparkline so colored backgrounds don't bleed through
         rv.setViewPadding(R.id.hud_slot_row, 0, 0, 0, sparklineHeightPx)
