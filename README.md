@@ -192,6 +192,8 @@ Barberfish is expected to keep working on newer Karoo firmware unless Hammerhead
 
 Light mode and dark mode are both supported, as are metric and imperial units.
 
+Karoo's Data Field Design settings (Data Icons and Label Size) are not visible to extensions, so Barberfish cannot follow them automatically. Mirror your choices in the Data Field Design section of the Barberfish config and its fields will render like the native fields beside them.
+
 ## Installation
 
 1. Find the APK link on the [latest release page](https://github.com/jpweytjens/barberfish/releases/latest).
