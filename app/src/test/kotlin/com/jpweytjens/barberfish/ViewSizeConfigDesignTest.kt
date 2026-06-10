@@ -24,16 +24,20 @@ class ViewSizeConfigDesignTest {
         )
 
     @Test
-    fun `2-col header is 15_5sp under Small for both 4-row and 5-row`() {
+    fun `2-col 4-row header is 17_6sp at both settings`() {
         val small = DataFieldDesignConfig(labelSize = LabelSize.SMALL)
-        assertEquals(15.5f, viewConfig(30, 15).toViewSizeConfig(design = small).headerFontSize.value)
-        assertEquals(15.5f, viewConfig(30, 12).toViewSizeConfig(design = small).headerFontSize.value)
+        val large = DataFieldDesignConfig(labelSize = LabelSize.LARGE)
+        assertEquals(17.6f, viewConfig(30, 15).toViewSizeConfig(design = small).headerFontSize.value)
+        assertEquals(17.6f, viewConfig(30, 15).toViewSizeConfig(design = large).headerFontSize.value)
+        assertEquals(17.6f, viewConfig(30, 20).toViewSizeConfig(design = small).headerFontSize.value)
+        assertEquals(17.6f, viewConfig(30, 30).toViewSizeConfig(design = small).headerFontSize.value)
     }
 
     @Test
-    fun `2-col header is 17_6sp under Large for both 4-row and 5-row`() {
+    fun `2-col 5-row header follows the label size setting`() {
+        val small = DataFieldDesignConfig(labelSize = LabelSize.SMALL)
         val large = DataFieldDesignConfig(labelSize = LabelSize.LARGE)
-        assertEquals(17.6f, viewConfig(30, 15).toViewSizeConfig(design = large).headerFontSize.value)
+        assertEquals(15.5f, viewConfig(30, 12).toViewSizeConfig(design = small).headerFontSize.value)
         assertEquals(17.6f, viewConfig(30, 12).toViewSizeConfig(design = large).headerFontSize.value)
     }
 

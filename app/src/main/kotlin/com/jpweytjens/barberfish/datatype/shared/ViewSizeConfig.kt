@@ -18,9 +18,11 @@ private const val THREE_ROWS = 20
 private const val FOUR_ROWS = 15
 private const val FIVE_ROWS = 12
 
-// Native 2-col (colSpan=30) sizes, selected by the rider's Label Size setting.
-// Measured on-device (Karoo 3, density 1.875): Small = 29 px label / ~88 px value,
-// Large = 33 px label / 78 px value. See docs/sdk-findings.md and the 2026-06-07 spec.
+// Native 2-col 5-row (colSpan=30, rowSpan<15) sizes, the only layout where the
+// rider's Label Size setting matters: Small = 29 px label / 88 px value,
+// Large = 33 px label / 78 px value (Karoo 3, density 1.875). All other 2-col
+// layouts are 33 px label at both settings. See docs/sdk-findings.md
+// § "Native header and value sizing".
 internal fun twoColLabelSp(large: Boolean): Float = if (large) 17.6f else 15.5f
 internal fun twoColValueBase(large: Boolean): Int = if (large) 41 else 47
 
@@ -38,8 +40,9 @@ fun ViewConfig.toViewSizeConfig(
         when {
             colSpan == ONE_COL && rowSpan >= FOUR_ROWS -> 19.2f // 36 px
             colSpan == ONE_COL && rowSpan >= FIVE_ROWS -> 17.6f // 33 px
+            colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 17.6f // 33 px, both settings
             colSpan == TWO_COLS ->
-                twoColLabelSp(design.labelSize == LabelSize.LARGE)
+                twoColLabelSp(design.labelSize == LabelSize.LARGE) // 5-row: setting-driven
             colSpan == THREE_COLS && rowSpan >= FIVE_ROWS -> 12.0f // HUD slot (1/3)
             colSpan == FOUR_COLS && rowSpan >= FIVE_ROWS -> 11.0f // 4-col HUD slot (1/4)
             else -> 15.5f
