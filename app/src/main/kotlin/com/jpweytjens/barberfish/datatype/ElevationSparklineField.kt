@@ -57,6 +57,7 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
                 config,
                 context,
             )
+            rv.setViewVisibility(R.id.field_header, View.VISIBLE)
         } else {
             rv.setViewVisibility(R.id.field_header, View.GONE)
         }
