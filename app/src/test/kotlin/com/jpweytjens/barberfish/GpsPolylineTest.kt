@@ -5,8 +5,11 @@ import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.extractSubPolyline
+import com.jpweytjens.barberfish.datatype.shared.projectPoiAlongRoute
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -107,5 +110,42 @@ class GpsPolylineTest {
         // 300.
         assertEquals(0.001, sub.first().lat, 1e-12)
         assertEquals(0.003, sub.last().lat, 1e-12)
+    }
+
+    // A due-east segment on the equator from (0,0) to (0,0.01). A POI 0.001° north of the
+    // segment midpoint projects to (0,0.005): ~111 m off-route, ~556 m along-route.
+    @Test
+    fun projectPoiAlongRoute_returns_along_distance_within_corridor() {
+        val route = listOf(LatLng(0.0, 0.0), LatLng(0.0, 0.01))
+        val cum = cumulativeDistancesM(route)
+        val along = projectPoiAlongRoute(LatLng(0.001, 0.005), route, cum, 150.0)
+        assertNotNull(along)
+        assertEquals(556.0, along ?: Double.NaN, 5.0)
+    }
+
+    @Test
+    fun projectPoiAlongRoute_returns_null_beyond_corridor() {
+        val route = listOf(LatLng(0.0, 0.0), LatLng(0.0, 0.01))
+        val cum = cumulativeDistancesM(route)
+        // ~111 m off-route; a 100 m corridor excludes it.
+        val along = projectPoiAlongRoute(LatLng(0.001, 0.005), route, cum, 100.0)
+        assertNull(along)
+    }
+
+    @Test
+    fun projectPoiAlongRoute_clamps_past_segment_end_to_endpoint() {
+        // POI beyond the segment end projects to the endpoint (t clamped to 1).
+        val route = listOf(LatLng(0.0, 0.0), LatLng(0.0, 0.01))
+        val cum = cumulativeDistancesM(route)
+        val along = projectPoiAlongRoute(LatLng(0.0, 0.02), route, cum, 2000.0)
+        assertNotNull(along)
+        assertEquals(cum.last(), along ?: Double.NaN, 1.0)
+    }
+
+    @Test
+    fun projectPoiAlongRoute_degenerate_route_returns_null() {
+        val along =
+            projectPoiAlongRoute(LatLng(0.0, 0.0), listOf(LatLng(0.0, 0.0)), doubleArrayOf(0.0), 500.0)
+        assertNull(along)
     }
 }

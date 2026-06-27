@@ -252,3 +252,42 @@ internal fun interpolateAt(points: List<LatLng>, cumDist: DoubleArray, distanceM
     val b = points[i]
     return LatLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t)
 }
+
+/**
+ * Projects [poi] onto the polyline [points] and returns its distance along the route in metres, or
+ * null when the nearest point on the route lies farther than [maxCrossTrackM] (the POI is not close
+ * enough to the route to be shown). Uses nearest-point-on-segment projection, evaluated in a local
+ * equirectangular metric space (longitude scaled by cos(meanLat)) so the segment parameter is
+ * metrically correct at any latitude. [cumDist] must be `cumulativeDistancesM(points)`. Returns the
+ * single closest projection; a route that passes a POI more than once yields only the nearest pass.
+ */
+internal fun projectPoiAlongRoute(
+    poi: LatLng,
+    points: List<LatLng>,
+    cumDist: DoubleArray,
+    maxCrossTrackM: Double,
+): Double? {
+    if (points.size < 2) return null
+    var bestCrossM = Double.MAX_VALUE
+    var bestAlongM = 0.0
+    for (i in 0 until points.size - 1) {
+        val a = points[i]
+        val b = points[i + 1]
+        val kx = cos((a.lat + b.lat) * 0.5 * (PI / 180.0))
+        val ax = a.lng * kx
+        val ay = a.lat
+        val dx = b.lng * kx - ax
+        val dy = b.lat - ay
+        val segSq = dx * dx + dy * dy
+        val t =
+            if (segSq == 0.0) 0.0
+            else (((poi.lng * kx - ax) * dx + (poi.lat - ay) * dy) / segSq).coerceIn(0.0, 1.0)
+        val near = LatLng(a.lat + (b.lat - a.lat) * t, a.lng + (b.lng - a.lng) * t)
+        val crossM = latLngDistanceM(poi, near)
+        if (crossM < bestCrossM) {
+            bestCrossM = crossM
+            bestAlongM = cumDist[i] + latLngDistanceM(a, near)
+        }
+    }
+    return if (bestCrossM <= maxCrossTrackM) bestAlongM else null
+}
