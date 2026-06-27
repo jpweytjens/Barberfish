@@ -884,6 +884,12 @@ internal fun SparklineOptionsControls(
         onChange = { onUpdate(config.copy(showPois = it)) },
         help = "Mark points of interest (POIs) along the elevation profile.",
     )
+    BoolToggleRow(
+        label = "HEADER",
+        value = config.showHeader,
+        onChange = { onUpdate(config.copy(showHeader = it)) },
+        help = "Show the field name and icon above the profile.",
+    )
 }
 
 @Composable
@@ -933,12 +939,14 @@ internal fun SparklineCard(
                             remoteViewsToBitmap(rv, widthPx, headerPx, context)
                         }
                     Column {
-                        Image(
-                            bitmap = headerBitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxWidth().height((headerPx / density).dp),
-                            contentScale = ContentScale.FillBounds,
-                        )
+                        if (config.showHeader) {
+                            Image(
+                                bitmap = headerBitmap.asImageBitmap(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxWidth().height((headerPx / density).dp),
+                                contentScale = ContentScale.FillBounds,
+                            )
+                        }
                         Box(modifier = Modifier.fillMaxWidth().height(40.dp)) {
                             SparklinePreview(
                                 sparklineConfig = config,

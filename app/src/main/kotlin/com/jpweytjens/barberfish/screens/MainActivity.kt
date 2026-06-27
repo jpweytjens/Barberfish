@@ -1614,7 +1614,7 @@ private const val OVERVIEW_PREVIEW_SWEEP_MS = 6000
 private const val OVERVIEW_PREVIEW_STEPS = 60
 
 @Composable
-private fun OverviewPreviewBox(targetCount: Int) {
+private fun OverviewPreviewBox(targetCount: Int, showHeader: Boolean) {
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val isNight = isSystemInDarkTheme()
@@ -1639,21 +1639,26 @@ private fun OverviewPreviewBox(targetCount: Int) {
     // Rasterize the same field RemoteViews the live cell uses (header + full-bleed profile), at
     // the standard preview size, so the preview matches the live field and the other previews.
     val bitmap =
-        remember(widthPx, heightPx, isNight, targetCount, step) {
+        remember(widthPx, heightPx, isNight, targetCount, step, showHeader) {
             val positionFraction = step / OVERVIEW_PREVIEW_STEPS.toFloat()
             val sizeConfig = ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat())
-            val imgH = (heightPx - sparklineHeaderPx(sizeConfig, density)).coerceAtLeast(1)
+            val headerPx = if (showHeader) sparklineHeaderPx(sizeConfig, density) else 0
+            val imgH = (heightPx - headerPx).coerceAtLeast(1)
             val spark =
                 overviewPreviewBitmap(widthPx, imgH, isNight, targetCount, positionFraction)
             val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
-            applySparklineHeaderChrome(
-                rv,
-                context.getString(R.string.route_remaining_name),
-                R.drawable.ic_landscape,
-                sizeConfig,
-                ViewConfig.Alignment.RIGHT,
-                context,
-            )
+            if (showHeader) {
+                applySparklineHeaderChrome(
+                    rv,
+                    context.getString(R.string.route_remaining_name),
+                    R.drawable.ic_landscape,
+                    sizeConfig,
+                    ViewConfig.Alignment.RIGHT,
+                    context,
+                )
+            } else {
+                rv.setViewVisibility(R.id.field_header, android.view.View.GONE)
+            }
             if (spark != null) rv.setImageViewBitmap(R.id.sparkline_image, spark)
             remoteViewsToBitmap(rv, widthPx, heightPx, context)
         }
@@ -1689,7 +1694,7 @@ private fun RouteRemainingCard(
                     "Whole-route elevation profile with your position.",
                     modifier = Modifier.weight(1f),
                 )
-                OverviewPreviewBox(config.simplification.targetCount)
+                OverviewPreviewBox(config.simplification.targetCount, config.showHeader)
             }
         },
     ) {
@@ -1699,6 +1704,12 @@ private fun RouteRemainingCard(
             selected = config.simplification,
             onSelect = { onUpdate(config.copy(simplification = it)) },
             help = "Smooths the whole-route profile into broader strokes.",
+        )
+        BoolToggleRow(
+            label = "HEADER",
+            value = config.showHeader,
+            onChange = { onUpdate(config.copy(showHeader = it)) },
+            help = "Show the field name and icon above the profile.",
         )
     }
 }
