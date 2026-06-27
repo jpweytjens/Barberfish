@@ -1005,6 +1005,27 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
                             },
                         )
+                        ChoiceRow(
+                            label = "DECIMALS",
+                            options =
+                                listOf(
+                                    ZoneDisplayMode.INTEGER to "Integer",
+                                    ZoneDisplayMode.FLOAT to "Decimal",
+                                ),
+                            selected = gradeFieldConfig.precision,
+                            onSelect = { mode ->
+                                gradeFieldConfig = gradeFieldConfig.copy(precision = mode)
+                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                            },
+                        )
+                        BoolToggleRow(
+                            label = "PERCENT SIGN",
+                            value = gradeFieldConfig.showPercentSign,
+                            onChange = { on ->
+                                gradeFieldConfig = gradeFieldConfig.copy(showPercentSign = on)
+                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                            },
+                        )
                     }
 
                     ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
