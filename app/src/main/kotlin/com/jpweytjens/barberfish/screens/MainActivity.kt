@@ -1162,15 +1162,14 @@ class MainActivity : ComponentActivity() {
                     expanded = designExpanded,
                     onToggle = { designExpanded = !designExpanded },
                 ) {
-                    ControlLabel("ICONS")
-                    HelperText("Show the icon in each field header.")
-                    SegmentedRow(
-                        options = listOf(false to "Off", true to "On"),
-                        selected = dataFieldDesignConfig.showIcons,
-                        onSelect = { on ->
+                    BoolToggleRow(
+                        label = "ICONS",
+                        value = dataFieldDesignConfig.showIcons,
+                        onChange = { on ->
                             dataFieldDesignConfig = dataFieldDesignConfig.copy(showIcons = on)
                             lifecycleScope.launch { saveDataFieldDesignConfig(dataFieldDesignConfig) }
                         },
+                        help = "Show the icon in each field header.",
                         trackColor = Grey100,
                     )
 
@@ -1231,11 +1230,10 @@ private fun ClimberMapCard(
             HelperText("Gradient-colour upcoming climbs along the route on the map.")
         },
     ) {
-        ControlLabel("ENABLED")
-        SegmentedRow(
-            options = listOf(false to "Off", true to "On"),
-            selected = config.enabled,
-            onSelect = { onUpdate(config.copy(enabled = it)) },
+        BoolToggleRow(
+            label = "ENABLED",
+            value = config.enabled,
+            onChange = { onUpdate(config.copy(enabled = it)) },
         )
 
         if (config.enabled) {
@@ -1282,20 +1280,18 @@ private fun ClimberMapCard(
                 )
             }
 
-            ControlLabel("POLYLINES")
-            HelperText("Gradient-colour the route line; off keeps the native line.")
-            SegmentedRow(
-                options = listOf(false to "Off", true to "On"),
-                selected = config.showPolylines,
-                onSelect = { onUpdate(config.copy(showPolylines = it)) },
+            BoolToggleRow(
+                label = "POLYLINES",
+                value = config.showPolylines,
+                onChange = { onUpdate(config.copy(showPolylines = it)) },
+                help = "Gradient-colour the route line; off keeps the native line.",
             )
 
-            ControlLabel("CHEVRONS")
-            HelperText("Gradient-colour the direction chevrons; off keeps the native ones.")
-            SegmentedRow(
-                options = listOf(false to "Off", true to "On"),
-                selected = config.showChevrons,
-                onSelect = { onUpdate(config.copy(showChevrons = it)) },
+            BoolToggleRow(
+                label = "CHEVRONS",
+                value = config.showChevrons,
+                onChange = { onUpdate(config.copy(showChevrons = it)) },
+                help = "Gradient-colour the direction chevrons; off keeps the native ones.",
             )
         }
     }
@@ -1344,6 +1340,28 @@ internal fun LabeledHelper(
         content()
     }
 }
+
+@Composable
+internal fun <T> ChoiceRow(
+    label: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    help: String? = null,
+    trackColor: Color = Color.White,
+) {
+    if (help != null) LabeledHelper(label) { HelperText(help) } else ControlLabel(label)
+    SegmentedRow(options = options, selected = selected, onSelect = onSelect, trackColor = trackColor)
+}
+
+@Composable
+internal fun BoolToggleRow(
+    label: String,
+    value: Boolean,
+    onChange: (Boolean) -> Unit,
+    help: String? = null,
+    trackColor: Color = Color.White,
+) = ChoiceRow(label, listOf(false to "Off", true to "On"), value, onChange, help, trackColor)
 
 @Composable
 internal fun <T> SmoothingSlider(
@@ -1654,13 +1672,12 @@ private fun RouteRemainingCard(
             }
         },
     ) {
-        LabeledHelper("SIMPLIFICATION") {
-            HelperText("Smooths the whole-route profile into broader strokes.")
-        }
-        SegmentedRow(
+        ChoiceRow(
+            label = "SIMPLIFICATION",
             options = RouteSimplification.entries.map { it to it.label },
             selected = config.simplification,
             onSelect = { onUpdate(config.copy(simplification = it)) },
+            help = "Smooths the whole-route profile into broader strokes.",
         )
     }
 }
@@ -1780,24 +1797,12 @@ private fun ThresholdLegend() {
 }
 
 @Composable
-internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
-    ControlLabel("ZONE COLOR")
-    SegmentedRow(
-        options = ZoneColorMode.entries.map { it to it.label },
-        selected = selected,
-        onSelect = onSelected,
-    )
-}
+internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) =
+    ChoiceRow("ZONE COLOR", ZoneColorMode.entries.map { it to it.label }, selected, onSelected)
 
 @Composable
-internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) {
-    ControlLabel("ZONE DISPLAY")
-    SegmentedRow(
-        options = ZoneDisplayMode.entries.map { it to it.label },
-        selected = selected,
-        onSelect = onSelected,
-    )
-}
+internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) =
+    ChoiceRow("ZONE DISPLAY", ZoneDisplayMode.entries.map { it to it.label }, selected, onSelected)
 
 @Composable
 private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {

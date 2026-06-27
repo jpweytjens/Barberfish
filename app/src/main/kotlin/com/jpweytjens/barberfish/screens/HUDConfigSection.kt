@@ -796,15 +796,15 @@ internal fun SparklineOptionsControls(
 ) {
     // Lookahead is inert in Climbs mode: the window is pinned to the climb, not your position.
     if (config.hudMode != SparklineMode.CLIMBS) {
-        LabeledHelper("LOOKAHEAD") { HelperText("Distance shown ahead of your position.") }
-        SegmentedRow(
-            options =
-                listOf(5, 10, 20).map { km ->
-                    val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-                    km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-                },
+        ChoiceRow(
+            label = "LOOKAHEAD",
+            options = listOf(5, 10, 20).map { km ->
+                val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+            },
             selected = config.lookaheadKm,
             onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
+            help = "Distance shown ahead of your position.",
         )
     }
     val fillRange =
@@ -848,46 +848,41 @@ internal fun SparklineOptionsControls(
             onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
         )
     }
-    LabeledHelper("SIMPLIFICATION") {
-        HelperText("Merges small elevation wiggles into larger same-colour blocks.")
-    }
-    SegmentedRow(
+    ChoiceRow(
+        label = "SIMPLIFICATION",
         options = ElevationSimplification.entries.map { it to it.label },
         selected = config.simplification,
         onSelect = { onUpdate(config.copy(simplification = it)) },
+        help = "Merges small elevation wiggles into larger same-colour blocks.",
     )
     // X-warp is inert in Climbs mode: the climb frame uses a linear axis, not a fisheye.
     if (config.hudMode != SparklineMode.CLIMBS) {
-        LabeledHelper("X-WARP") { HelperText("Fisheye magnification around the position dot.") }
-        SegmentedRow(
+        ChoiceRow(
+            label = "X-WARP",
             options = SparklineWarp.entries.map { it to it.label },
             selected = config.warp,
             onSelect = { onUpdate(config.copy(warp = it)) },
+            help = "Fisheye magnification around the position dot.",
         )
     }
-    LabeledHelper("Y-ZOOM") {
-        HelperText(
-            "Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out."
-        )
-    }
-    SegmentedRow(
+    ChoiceRow(
+        label = "Y-ZOOM",
         options = ElevationZoom.entries.map { it to it.label },
         selected = config.yZoom,
         onSelect = { onUpdate(config.copy(yZoom = it)) },
+        help = "Zoom in on elevation changes. Close amplifies minor bumps, wide smooths them out.",
     )
-    LabeledHelper("CLIMBS") {
-        HelperText("Tint the outline blue on climbs as detected by Karoo Climber.")
-    }
-    SegmentedRow(
-        options = listOf(false to "Off", true to "On"),
-        selected = config.showClimbs,
-        onSelect = { onUpdate(config.copy(showClimbs = it)) },
+    BoolToggleRow(
+        label = "CLIMBS",
+        value = config.showClimbs,
+        onChange = { onUpdate(config.copy(showClimbs = it)) },
+        help = "Tint the outline blue on climbs as detected by Karoo Climber.",
     )
-    LabeledHelper("POIs") { HelperText("Mark points of interest (POIs) along the elevation profile.") }
-    SegmentedRow(
-        options = listOf(false to "Off", true to "On"),
-        selected = config.showPois,
-        onSelect = { onUpdate(config.copy(showPois = it)) },
+    BoolToggleRow(
+        label = "POIs",
+        value = config.showPois,
+        onChange = { onUpdate(config.copy(showPois = it)) },
+        help = "Mark points of interest (POIs) along the elevation profile.",
     )
 }
 
