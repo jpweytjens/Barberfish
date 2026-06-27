@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
@@ -26,6 +27,9 @@ import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
+
+/** Render state for graphical fields: the bitmap plus whether to draw the header band. */
+data class SparklineRender(val bitmap: Bitmap?, val showHeader: Boolean)
 
 private const val DEBUG_LAYOUT = false
 
@@ -156,9 +160,13 @@ fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int {
  * ImageView's fitXY an identity (no aspect distortion) in any layout. Sized from [config].viewSize
  * — the freshest cell size the field has; clamped so a degenerate viewSize can't yield 0.
  */
-fun sparklineImageSize(config: ViewConfig, context: Context): Pair<Int, Int> {
+fun sparklineImageSize(
+    config: ViewConfig,
+    context: Context,
+    showHeader: Boolean = true,
+): Pair<Int, Int> {
     val density = context.resources.displayMetrics.density
-    val headerPx = sparklineHeaderPx(config.toViewSizeConfig(), density)
+    val headerPx = if (showHeader) sparklineHeaderPx(config.toViewSizeConfig(), density) else 0
     val widthPx = config.viewSize.first.coerceAtLeast(1)
     val heightPx = (config.viewSize.second - headerPx).coerceAtLeast(1)
     return widthPx to heightPx

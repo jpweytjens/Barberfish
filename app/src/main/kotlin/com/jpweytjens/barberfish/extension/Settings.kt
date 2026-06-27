@@ -183,6 +183,7 @@ data class SparklineConfig(
     val yZoom: ElevationZoom = ElevationZoom.NORMAL,
     val showClimbs: Boolean = true,
     val showPois: Boolean = true,
+    val showHeader: Boolean = true,
 ) {
     val hudMode: SparklineMode
         get() = mode ?: if (legacyEnabled == false) SparklineMode.OFF else SparklineMode.ON
@@ -518,6 +519,7 @@ suspend fun Context.saveEffortFieldConfig(config: EffortFieldConfig) =
 @Serializable
 data class RouteRemainingConfig(
     val simplification: RouteSimplification = RouteSimplification.MEDIUM,
+    val showHeader: Boolean = true,
 )
 
 private val routeRemainingConfigKey = stringPreferencesKey("route_remaining_field_config")
