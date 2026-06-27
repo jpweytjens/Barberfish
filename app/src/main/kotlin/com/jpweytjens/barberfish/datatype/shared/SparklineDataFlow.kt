@@ -9,11 +9,13 @@ import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamGlobalPOIs
 import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamRideState
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
+import io.hammerhead.karooext.models.OnGlobalPOIs
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
@@ -21,11 +23,17 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.sample
+
+// Max cross-track distance (metres) for a saved/global POI to count as "on this route". Matches
+// karoo-routegraph's poiDistanceToRouteMaxMeters default (issue #22).
+private const val POI_ROUTE_CORRIDOR_M = 500.0
 
 internal data class SparklineFrame(
     val bitmap: Bitmap?,
@@ -57,6 +65,11 @@ internal fun sparklineBitmapFlow(
     var lastOnRoutePositionM = 0f
     var cachedElevKey: Triple<String, ElevationSimplification, Int>? = null
     var cachedElevPoints: List<Pair<Float, Float>> = emptyList()
+    // Projection of global POIs onto the route is keyed on (routePolyline, global POI ids) so it
+    // only recomputes when the route or the saved-POI set changes — snapping over a dense polyline
+    // every emission would be wasteful.
+    var cachedGlobalPoiKey: Pair<String, List<String>>? = null
+    var cachedGlobalPoiDistances: List<Float> = emptyList()
 
     val rideStateFlow: Flow<RideState> =
         if (isPreview) flowOf(RideState.Idle) else karooSystem.streamRideState()
@@ -76,12 +89,26 @@ internal fun sparklineBitmapFlow(
                     .streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION)
                     .sample(HUD_UPDATE_INTERVAL_MS)
 
+        // Global (saved) POIs arrive on their own event, separate from route.pois. Guard both
+        // failure modes so this extra source can't break the combined sparkline: onStart seeds an
+        // empty value so combine never stalls waiting for a first emission (there may be no global
+        // POIs), and catch degrades an error to empty rather than cancelling the whole flow.
+        val globalPoisFlow: Flow<OnGlobalPOIs> =
+            karooSystem
+                .streamGlobalPOIs()
+                .onStart { emit(OnGlobalPOIs(emptyList())) }
+                .catch { e ->
+                    android.util.Log.e("Barberfish", "OnGlobalPOIs stream threw", e)
+                    emit(OnGlobalPOIs(emptyList()))
+                }
+
         combine(
             karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
             distFlow,
             context.streamZoneConfig(),
             configFlow,
-        ) { navState, distState, zoneConfig, sparkCfg ->
+            globalPoisFlow,
+        ) { navState, distState, zoneConfig, sparkCfg, globalPois ->
             val isNightMode =
                 (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
@@ -164,10 +191,40 @@ internal fun sparklineBitmapFlow(
                 resolveClimbReveal(sparkCfg.hudMode, climbRanges, elevPoints, sparklinePositionM)
             val windowOverride = reveal.windowOverride
             val showArea = reveal.visible
+            // Project saved (global) POIs onto the route so they show alongside route-embedded ones.
+            // Globals arrive with an empty distancesAlongRoute (lat/lng only), so snap each to the
+            // nearest point on the route geometry and keep those within POI_ROUTE_CORRIDOR_M. Cached
+            // on (routePolyline, global POI ids). A global that already carries a projected distance
+            // (rare) is used as-is.
+            if (route != null) {
+                val globalKey = route.routePolyline to globalPois.pois.map { it.id }
+                if (globalKey != cachedGlobalPoiKey) {
+                    val routePts = decodeGpsPolyline(route.routePolyline)
+                    val routeCum = cumulativeDistancesM(routePts)
+                    cachedGlobalPoiDistances =
+                        globalPois.pois.flatMap { poi ->
+                            if (poi.distancesAlongRoute.isNotEmpty())
+                                poi.distancesAlongRoute.map { it.toFloat() }
+                            else
+                                projectPoiAlongRoute(
+                                        LatLng(poi.lat, poi.lng),
+                                        routePts,
+                                        routeCum,
+                                        POI_ROUTE_CORRIDOR_M,
+                                    )
+                                    ?.let { listOf(it.toFloat()) } ?: emptyList()
+                        }
+                    cachedGlobalPoiKey = globalKey
+                }
+            } else {
+                cachedGlobalPoiDistances = emptyList()
+                cachedGlobalPoiKey = null
+            }
             val poiDistances: List<Float> =
                 when {
                     route != null ->
-                        route.pois.flatMap { it.distancesAlongRoute }.map { it.toFloat() }
+                        route.pois.flatMap { it.distancesAlongRoute }.map { it.toFloat() } +
+                            cachedGlobalPoiDistances
                     debugClimbs -> colDeRatesPoisFixture()
                     debugSweep -> rvvPoisFixture()
                     else -> emptyList()

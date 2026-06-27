@@ -4,6 +4,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.KarooEvent
+import io.hammerhead.karooext.models.OnGlobalPOIs
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.OnStreamState
 import io.hammerhead.karooext.models.RideState
@@ -32,6 +33,16 @@ fun KarooSystemService.streamUserProfile(): Flow<UserProfile> = consumerFlow()
 fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consumerFlow()
 
 fun KarooSystemService.streamRideState(): Flow<RideState> = consumerFlow()
+
+/**
+ * Global (saved) POIs, delivered independently of the active route. Uses the explicit
+ * [OnGlobalPOIs.Params] consumer so the event is actually started, rather than the param-less
+ * [consumerFlow] overload which may not begin emitting for this event.
+ */
+fun KarooSystemService.streamGlobalPOIs(): Flow<OnGlobalPOIs> = callbackFlow {
+    val listenerId = addConsumer(OnGlobalPOIs.Params) { event: OnGlobalPOIs -> trySendBlocking(event) }
+    awaitClose { removeConsumer(listenerId) }
+}
 
 /**
  * Returns a [FieldState] for non-Streaming states, or null if the state is [StreamState.Streaming].
