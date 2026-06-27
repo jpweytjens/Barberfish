@@ -11,6 +11,7 @@ import com.jpweytjens.barberfish.datatype.shared.gradeReadingReducer
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
@@ -94,6 +95,15 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 )
             } + toGradeFieldState(GradeReading.Stale(6.2f), cfg, zones.gradePalette)
 
+        private fun formatGrade(percent: Double, cfg: GradeFieldConfig): String {
+            val num =
+                when (cfg.precision) {
+                    ZoneDisplayMode.INTEGER -> "%.0f".format(percent)
+                    ZoneDisplayMode.FLOAT -> "%.1f".format(percent)
+                }
+            return if (cfg.showPercentSign) "$num%" else num
+        }
+
         fun toGradeFieldState(
             reading: GradeReading,
             cfg: GradeFieldConfig,
@@ -107,7 +117,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                     FieldState.searching("Grade", R.drawable.ic_grade)
                 is GradeReading.Stale ->
                     FieldState(
-                        primary = "%.1f%%".format(reading.percent.toDouble()),
+                        primary = formatGrade(reading.percent.toDouble(), cfg),
                         label = "Grade",
                         color = FieldColor.Muted,
                         iconRes = R.drawable.ic_grade,
@@ -118,7 +128,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                         if (cfg.colorMode == ZoneColorMode.NONE) FieldColor.Default
                         else FieldColor.Grade(reading.percent.toDouble(), palette)
                     FieldState(
-                        "%.1f%%".format(reading.percent.toDouble()),
+                        formatGrade(reading.percent.toDouble(), cfg),
                         label = "Grade",
                         color = color,
                         iconRes = R.drawable.ic_grade,

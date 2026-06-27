@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -50,5 +51,23 @@ class GradeFieldStateTest {
     @Test fun fresh_withColorModeNone_usesDefaultColor() {
         val s = state(GradeReading.Fresh(7.0f), GradeFieldConfig(ZoneColorMode.NONE))
         assertEquals(FieldColor.Default, s.color)
+    }
+
+    @Test fun fresh_integerPrecision_roundsAndKeepsPercent() {
+        val cfg = GradeFieldConfig(ZoneColorMode.TEXT, ZoneDisplayMode.INTEGER, showPercentSign = true)
+        val s = state(GradeReading.Fresh(7.4f), cfg)
+        assertEquals("7%", s.primary)
+    }
+
+    @Test fun fresh_decimalPrecision_noPercentSign() {
+        val cfg = GradeFieldConfig(ZoneColorMode.TEXT, ZoneDisplayMode.FLOAT, showPercentSign = false)
+        val s = state(GradeReading.Fresh(7.0f), cfg)
+        assertTrue("expected no % sign, got '${s.primary}'", s.primary.matches(Regex("7[.,]0")))
+    }
+
+    @Test fun stale_integerNoPercent_holdsRoundedValue() {
+        val cfg = GradeFieldConfig(ZoneColorMode.TEXT, ZoneDisplayMode.INTEGER, showPercentSign = false)
+        val s = state(GradeReading.Stale(7.6f), cfg)
+        assertEquals("8", s.primary)
     }
 }

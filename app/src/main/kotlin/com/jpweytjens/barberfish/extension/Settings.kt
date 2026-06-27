@@ -587,7 +587,12 @@ enum class GradePalette(val label: String) {
     TURBO("Turbo"),
 }
 
-@Serializable data class GradeFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+@Serializable
+data class GradeFieldConfig(
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val precision: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
+    val showPercentSign: Boolean = true,
+)
 
 fun Context.streamGradeFieldConfig(): Flow<GradeFieldConfig> =
     streamConfig(gradeFieldConfigKey, GradeFieldConfig())
