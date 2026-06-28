@@ -70,4 +70,19 @@ class GradeFieldStateTest {
         val s = state(GradeReading.Stale(7.6f), cfg)
         assertEquals("8", s.primary)
     }
+
+    // Exact .5 ties round HALF_UP (nearest, ties away from zero) via java.util.Formatter.
+    // 6.5 / -6.5 / 6.25 are all exactly representable as floats, so the tie is genuine.
+    @Test fun fresh_integerHalfUp_roundsTieAwayFromZero() {
+        val cfg = GradeFieldConfig(ZoneColorMode.TEXT, ZoneDisplayMode.INTEGER, showPercentSign = true)
+        assertEquals("7%", state(GradeReading.Fresh(6.5f), cfg).primary)
+        // Descents round symmetrically, away from zero.
+        assertEquals("-7%", state(GradeReading.Fresh(-6.5f), cfg).primary)
+    }
+
+    @Test fun fresh_decimalHalfUp_roundsTieUp() {
+        val cfg = GradeFieldConfig(ZoneColorMode.TEXT, ZoneDisplayMode.FLOAT, showPercentSign = true)
+        val s = state(GradeReading.Fresh(6.25f), cfg)
+        assertTrue("expected 6.3%, got '${s.primary}'", s.primary.matches(Regex("6[.,]3%")))
+    }
 }
