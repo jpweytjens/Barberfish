@@ -16,6 +16,12 @@ Navigation fields take their names and icons from the Karoo, so they sit natural
 
 - Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
 
+Grade:
+- Shows a whole number or one decimal, with or without the % sign
+
+Profile and Overview:
+- Hide the header to give the elevation trace the whole cell
+
 Fixes:
 - Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
 - Grade keeps its fill while holding a stale value in fill mode, instead of dropping to grey text
