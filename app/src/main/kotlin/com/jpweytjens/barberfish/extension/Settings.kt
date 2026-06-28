@@ -206,8 +206,9 @@ suspend fun Context.saveHUDConfig(config: HUDConfig) = saveConfig(hudConfigKey, 
 // --- SparklineConfig ---
 // Two independent instances: the HUD strip and the standalone elevation-sparkline field.
 // The HUD instance keeps the original "sparkline_config" key; the field instance has its
-// own key and, when unset, seeds its options from the HUD value at read time so a user's
-// tuned options carry over after upgrade instead of resetting to defaults.
+// own key and, when unset, falls back to plain defaults. The two are not linked: the field
+// never reads the HUD value, and its mode is always ON (see toFieldConfig) so a placed field
+// always renders, never inheriting the HUD's OFF/CLIMBS strip behaviour.
 
 // Resolves the HUD sparkline config: own key first, then the legacy embedded HUDConfig
 // blob (pre-split installs), then defaults.
@@ -226,12 +227,18 @@ fun Context.streamHudSparklineConfig(): Flow<SparklineConfig> =
 suspend fun Context.saveHudSparklineConfig(config: SparklineConfig) =
     saveConfig(sparklineConfigKey, config)
 
+// Coerces a stored field config (or none) into the effective field config: plain defaults
+// when unset, and mode forced to ON so the standalone field always renders regardless of
+// any OFF/CLIMBS value baked in by a past tap or inherited before the surfaces were split.
+fun SparklineConfig?.toFieldConfig(): SparklineConfig =
+    (this ?: SparklineConfig()).copy(mode = SparklineMode.ON)
+
 fun Context.streamFieldSparklineConfig(): Flow<SparklineConfig> =
     dataStore.data
         .map { prefs ->
             prefs[fieldSparklineConfigKey]?.let {
                 runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
-            } ?: prefs.hudSparklineConfig() // seed options from the HUD value until first saved
+            }.toFieldConfig()
         }
         .distinctUntilChanged()
 
