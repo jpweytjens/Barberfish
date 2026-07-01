@@ -1315,5 +1315,13 @@ if __name__ == "__main__":
         help="Detect the magenta header_ref marker (requires Barberfish "
         "running with the layoutProbeMode debug flag enabled).",
     )
+    parser.add_argument(
+        "--dir",
+        type=Path,
+        default=SCREENCAPS,
+        help="Directory of <page>.jpg captures to measure (default: screencaps/). "
+        "Point at a per-combo subdirectory to keep sweep runs isolated.",
+    )
     args = parser.parse_args()
+    SCREENCAPS = args.dir
     main(probe=args.probe)
