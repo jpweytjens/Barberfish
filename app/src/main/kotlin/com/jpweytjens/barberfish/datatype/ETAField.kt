@@ -108,7 +108,7 @@ class ETAField(
                 }
                 .map { (state, input, raw) ->
                     if (raw == null || raw.distToDestM == null || input == null) {
-                        return@map FieldState.notAvailable(kind.label, kind.iconRes)
+                        return@map FieldState.noRoute(kind.label, kind.iconRes)
                     }
 
                     val ridingEtaSec = computeRidingETA(input, state)

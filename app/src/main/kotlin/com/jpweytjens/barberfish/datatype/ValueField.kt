@@ -100,21 +100,20 @@ class ValueField(
 
     companion object {
         fun toFieldState(state: StreamState, kind: ValueKind, profile: UserProfile): FieldState {
-            state.toErrorFieldState(kind.label, kind.iconRes)?.let {
+            val notAvailable =
+                if (kind.requiresRoute) FieldState.noRoute(kind.label, kind.iconRes)
+                else FieldState.notAvailable(kind.label, kind.iconRes)
+            state.toErrorFieldState(kind.label, kind.iconRes, notAvailable)?.let {
                 return it
             }
-            val streaming =
-                state as? StreamState.Streaming
-                    ?: return FieldState.notAvailable(kind.label, kind.iconRes)
+            val streaming = state as? StreamState.Streaming ?: return notAvailable
             if (kind.requiresRoute) {
                 val onRoute = streaming.dataPoint.values[DataType.Field.ON_ROUTE]
                 if (onRoute != null && onRoute == 0.0) {
-                    return FieldState.notAvailable(kind.label, kind.iconRes)
+                    return FieldState.offRoute(kind.label, kind.iconRes)
                 }
             }
-            val raw =
-                streaming.dataPoint.values[kind.fieldId]
-                    ?: return FieldState.notAvailable(kind.label, kind.iconRes)
+            val raw = streaming.dataPoint.values[kind.fieldId] ?: return notAvailable
             val converted = kind.convert.apply(raw, profile)
             return FieldState(
                 primary = formatFixed(converted, kind.decimals),

@@ -77,7 +77,7 @@ class EffortField(
         ): FieldState {
             val distM = onRouteValue(distState, DataType.Field.DISTANCE_TO_DESTINATION)
             val ascentM = onRouteValue(ascentState, DataType.Field.ASCENT_REMAINING)
-            if (distM == null || ascentM == null) return FieldState.notAvailable(LABEL, ICON)
+            if (distM == null || ascentM == null) return FieldState.noRoute(LABEL, ICON)
             return effortFieldState(
                 distText = formatFixed(ConvertType.DISTANCE.apply(distM, profile), 1),
                 ascentText = formatFixed(ConvertType.ELEVATION.apply(ascentM, profile), 0),
