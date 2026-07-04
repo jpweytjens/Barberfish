@@ -58,7 +58,8 @@ class NPField(private val karooSystem: KarooSystemService) :
             }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
-                    ?: return FieldState.notAvailable("NP", R.drawable.ic_col_power)
+                    // Power is streaming but NP is undefined until its 30s window fills.
+                    ?: return FieldState.needs30sPower("NP", R.drawable.ic_col_power)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(
