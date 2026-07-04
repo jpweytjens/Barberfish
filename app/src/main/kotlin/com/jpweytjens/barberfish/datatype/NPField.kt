@@ -49,7 +49,11 @@ class NPField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState("NP", R.drawable.ic_col_power)?.let {
+            state.toErrorFieldState(
+                "NP",
+                R.drawable.ic_col_power,
+                FieldState.noSensor("NP", R.drawable.ic_col_power),
+            )?.let {
                 return it
             }
             val raw =

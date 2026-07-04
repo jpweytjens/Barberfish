@@ -42,7 +42,7 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             lapNumber: Int = 0,
         ): FieldState {
             if (isLastLap && lapNumber <= 1) return FieldState.noLapsYet(label, iconRes)
-            state.toErrorFieldState(label, iconRes)?.let {
+            state.toErrorFieldState(label, iconRes, FieldState.noSensor(label, iconRes))?.let {
                 return it
             }
             val raw =

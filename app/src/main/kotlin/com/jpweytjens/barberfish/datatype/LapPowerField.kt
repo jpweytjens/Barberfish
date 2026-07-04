@@ -78,7 +78,7 @@ class LapPowerField(
             val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
             val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
             if (isLastLap && lapNumber <= 1) return FieldState.noLapsYet(label, iconRes)
-            state.toErrorFieldState(label, iconRes)?.let {
+            state.toErrorFieldState(label, iconRes, FieldState.noSensor(label, iconRes))?.let {
                 return it
             }
             val raw =

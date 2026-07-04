@@ -35,7 +35,7 @@ class PowerZoneField(private val karooSystem: KarooSystemService) :
             displayMode: ZoneDisplayMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_power
-            state.toErrorFieldState(LABEL, iconRes)?.let {
+            state.toErrorFieldState(LABEL, iconRes, FieldState.noSensor(LABEL, iconRes))?.let {
                 return it
             }
             val raw =

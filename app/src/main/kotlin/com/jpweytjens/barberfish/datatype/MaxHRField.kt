@@ -33,7 +33,7 @@ class MaxHRField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_hr
-            state.toErrorFieldState(LABEL, iconRes)?.let {
+            state.toErrorFieldState(LABEL, iconRes, FieldState.noSensor(LABEL, iconRes))?.let {
                 return it
             }
             val raw =

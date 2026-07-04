@@ -30,7 +30,11 @@ class HRField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState("HR", R.drawable.ic_col_hr)?.let {
+            state.toErrorFieldState(
+                "HR",
+                R.drawable.ic_col_hr,
+                FieldState.noSensor("HR", R.drawable.ic_col_hr),
+            )?.let {
                 return it
             }
             val raw =
