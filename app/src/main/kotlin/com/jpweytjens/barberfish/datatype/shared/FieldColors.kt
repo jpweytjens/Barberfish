@@ -20,7 +20,8 @@ internal val MutedFillGrey = Color(0xFF6E6E6E)
 
 // Named palette colors
 private val ERROR_RED = Color(0xFFFF5252)
-internal val ICON_TINT_TEAL = Color(0xFF31E09A)
+internal val ICON_TINT_TEAL = Color(0xFF31E09A) // native connected icon green, dark mode
+internal val ICON_TINT_TEAL_DAY = Color(0xFF129A5E) // native connected icon green, light mode
 internal val CLIMBER_BLUE = Color(0xFF2086d8)
 internal val KAROO_REJOIN_RED = Color(0xFFfc292b)
 internal val KAROO_DESTINATION_PURPLE = Color(0xFFddacfa)
@@ -88,14 +89,14 @@ private fun thresholdColorConfig(
             ColorConfig(
                 valueText = thresholdTextColor(factor, isNightMode),
                 headerText = defaultText,
-                iconTint = ICON_TINT_TEAL,
+                iconTint = if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY,
                 background = null,
             )
         ZoneColorMode.NONE ->
             ColorConfig(
                 valueText = defaultText,
                 headerText = defaultText,
-                iconTint = ICON_TINT_TEAL,
+                iconTint = if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY,
                 background = null,
             )
     }
@@ -442,7 +443,7 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boo
             when {
                 this is FieldColor.StreamState -> defaultText
                 onBgText != null -> onBgText
-                else -> ICON_TINT_TEAL
+                else -> if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY
             },
         background = bg,
     )
