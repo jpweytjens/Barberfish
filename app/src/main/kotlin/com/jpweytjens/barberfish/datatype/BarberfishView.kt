@@ -292,8 +292,12 @@ private fun makeFieldRemoteViews(
             TypedValue.COMPLEX_UNIT_SP,
             stateFont.coerceAtMost(19).toFloat()
         )
+        // Top: the reserved max-lines header band (labelLines is the layout's reserved
+        // line count, not the rendered count), matching native's placeholder anchor
+        // below its label band. Bottom: native's streamStateStyle layout_marginBottom
+        // (6dp), which nudges the centered placeholder up by half that.
         val actualHeaderPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
-        rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, 0)
+        rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, (6 * density).toInt())
         if (stateMaxLines == 2) {
             rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
         }
@@ -308,7 +312,8 @@ private fun makeFieldRemoteViews(
 /**
  * Applies the Barberfish field header (icon[s] + label) to [rv], sized from [sizeConfig]. Shared by
  * the numeric field layout and the graphical (sparkline) field layout, which use the same header
- * view ids. Returns the label line count, needed to position the stream-state overlay.
+ * view ids. Returns the layout's reserved label line count, used to anchor the stream-state
+ * overlay below the header band.
  */
 private fun applyHeaderChrome(
     rv: RemoteViews,
