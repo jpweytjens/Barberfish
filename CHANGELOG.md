@@ -30,6 +30,7 @@ Placeholders and icons:
 Fixes:
 - Searching and other placeholder text now sits at the same height as in the native fields, instead of slightly low
 - Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
+- POI dots on the elevation profile are now solid instead of slightly see-through
 - Grade keeps its fill while holding a stale value in fill mode, instead of dropping to grey text
 - The held-grey grade reading is now readable in light mode, not only dark
 - The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off mode. It now always shows its elevation trace. Thanks to Jamie Bishop for the report.
