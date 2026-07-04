@@ -50,8 +50,8 @@ internal val SPARKLINE_PAST_OVERLAY_NIGHT =
     Color(0x8C000000) // dims grade fills under past region (night)
 internal val SPARKLINE_PAST_OVERLAY_DAY =
     Color(0xC8B4B4B4) // dims grade fills under past region (day)
-internal val SPARKLINE_POI_FILL_NIGHT = Color(0xE6FFFFFF) // ahead-of-position POI fill (night)
-internal val SPARKLINE_POI_FILL_DAY = Color(0xE6000000) // ahead-of-position POI fill (day)
+internal val SPARKLINE_POI_FILL_NIGHT = Color(0xFFFFFFFF) // ahead-of-position POI fill (night)
+internal val SPARKLINE_POI_FILL_DAY = Color(0xFF000000) // ahead-of-position POI fill (day)
 
 // sqrt curve pushes color out quickly: at 10% of range, ~31% saturation; at 1%, ~10%
 // Text neutral matches the default text color so "at threshold" looks like a default cell.
