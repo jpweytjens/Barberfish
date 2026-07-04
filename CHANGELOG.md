@@ -12,9 +12,13 @@ New data fields:
 - Distance and the remaining fields also selectable as HUD slots
 - The standalone elevation sparkline is now called Profile
 
-Navigation fields take their names and icons from the Karoo, so they sit naturally beside the native ones: a finish flag for Distance Remaining, up and down arrows for Ascent and Descent Remaining, the route line for Distance.
-
+Data Field Design:
 - Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
+
+Map overlay (beta):
+- While navigating a route, climbs are drawn over the route line in the same grade colors as the elevation profile, with chevrons along the way
+- The new Map Overlay card under Climbing toggles the overlay, the colored lines, and the chevrons
+- Beta means less riding than the rest of 4.0; if the map misbehaves, turn it off and report what you saw
 
 Grade:
 - Shows a whole number or one decimal, with or without the % sign
@@ -23,17 +27,17 @@ Profile and Overview:
 - Hide the header to give the elevation trace the whole cell
 
 Placeholders and icons:
-- Fields now say why data is missing, like the native fields do: No sensor for an unpaired sensor, No route and Off route on route fields, and Needs 30s power data on NP, instead of a generic Not available
+- The generic Not available is gone; fields now say why data is missing, like the native ones: No sensor for an unpaired sensor, No route and Off route on route fields, Needs 30s power data on NP
 - Time field icons stay plain until the ride starts, then turn green, matching the native Ride Time field
 - The green icon tint now uses Karoo's darker shade in light mode
 
 Fixes:
-- Searching and other placeholder text now sits at the same height as in the native fields, instead of slightly low
 - Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
+- The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
 - POI dots on the elevation profile are now solid instead of slightly see-through
-- Grade keeps its fill while holding a stale value in fill mode, instead of dropping to grey text
+- Grade in fill mode keeps its color while holding the last value, instead of dropping to grey text
 - The held-grey grade reading is now readable in light mode, not only dark
-- The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off mode. It now always shows its elevation trace. Thanks to Jamie Bishop for the report.
+- Searching and other placeholder text now sits at the same height as in the native fields, instead of slightly low
 
 ## 3.3.1
 
