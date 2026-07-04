@@ -74,3 +74,6 @@ scripts/output/
 # Brainstorming visual-companion mockups (local only)
 .superpowers/
 docs/native-header-internals.md
+
+# Serena MCP server state (local only)
+.serena/
