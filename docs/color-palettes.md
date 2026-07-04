@@ -1,7 +1,10 @@
 # Color palettes
 
 Every Barberfish field has a color mode (Text, Fill, or None), set per field.
-The mode determines how the chosen palette is rendered, and each mode handles
+None is the default and applies no coloring. Text colors the value itself
+with the zone color. Fill paints the cell background with the zone color and
+picks black or white for the value so it stays readable on top. The mode
+determines how the chosen palette is rendered, and each mode handles
 contrast on both Karoo themes automatically. There is no global readable/original
 choice; pick any palette and both modes stay legible.
 
