@@ -10,8 +10,32 @@ mode. All contrast calculations below are run against both, producing a pair of
 tuned palettes per brand; Barberfish picks the matching variant from the
 current system theme.
 
-Visual previews of every palette in both themes live in the
-[README's Color palettes section](../README.md#color-palettes).
+Each palette is shown in three rows. The first two are Text mode against the
+Karoo cell background, once in light mode and once in dark mode, each using
+its contrast-tuned variant. The third row is Fill mode: palette color as cell
+fill with the auto-picked overlay text color, which renders the same in
+either theme.
+
+## Zone palettes
+
+| Palette       | Power zones                          | HR zones                          |
+| ------------- | ------------------------------------ | --------------------------------- |
+| Karoo         | ![](img/palette-power-karoo.svg)     | ![](img/palette-hr-karoo.svg)     |
+| Wahoo         | ![](img/palette-power-wahoo.svg)     | ![](img/palette-hr-wahoo.svg)     |
+| Zwift         | ![](img/palette-power-zwift.svg)     | ![](img/palette-hr-zwift.svg)     |
+| Intervals.icu | ![](img/palette-power-intervals.svg) | ![](img/palette-hr-intervals.svg) |
+| HSLuv         | ![](img/palette-power-hsluv.svg)     | ![](img/palette-hr-hsluv.svg)     |
+
+## Grade palettes
+
+| Palette | Grade bands                       |
+| ------- | --------------------------------- |
+| Karoo   | ![](img/palette-grade-karoo.svg)  |
+| Wahoo   | ![](img/palette-grade-wahoo.svg)  |
+| Garmin  | ![](img/palette-grade-garmin.svg) |
+| Zwift   | ![](img/palette-grade-zwift.svg)  |
+| HSLuv   | ![](img/palette-grade-hsluv.svg)  |
+| Turbo   | ![](img/palette-grade-turbo.svg)  |
 
 ## Text mode: auto contrast-tuning
 

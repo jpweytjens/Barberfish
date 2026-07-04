@@ -84,30 +84,9 @@ A 3- or 4-column HUD groups any combination of fields side by side with per-slot
 
 ## Color palettes
 
-Each palette is shown in three rows. The first two are Text mode against the Karoo cell background, once in light mode and once in dark mode, each using its contrast-tuned variant. The third row is Fill mode: palette color as cell fill with the auto-picked overlay text color, which renders the same in either theme.
+Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes add Garmin and Turbo. Each is kept legible in light and dark mode. Every palette in both modes, and the contrast tuning behind them: [docs/color-palettes.md](docs/color-palettes.md).
 
-### Zone palettes
-
-| Palette       | Power zones                               | HR zones                               |
-| ------------- | ----------------------------------------- | -------------------------------------- |
-| Karoo         | ![](docs/img/palette-power-karoo.svg)     | ![](docs/img/palette-hr-karoo.svg)     |
-| Wahoo         | ![](docs/img/palette-power-wahoo.svg)     | ![](docs/img/palette-hr-wahoo.svg)     |
-| Zwift         | ![](docs/img/palette-power-zwift.svg)     | ![](docs/img/palette-hr-zwift.svg)     |
-| Intervals.icu | ![](docs/img/palette-power-intervals.svg) | ![](docs/img/palette-hr-intervals.svg) |
-| HSLuv         | ![](docs/img/palette-power-hsluv.svg)     | ![](docs/img/palette-hr-hsluv.svg)     |
-
-### Grade palettes
-
-| Palette | Grade bands                            |
-| ------- | -------------------------------------- |
-| Karoo   | ![](docs/img/palette-grade-karoo.svg)  |
-| Wahoo   | ![](docs/img/palette-grade-wahoo.svg)  |
-| Garmin  | ![](docs/img/palette-grade-garmin.svg) |
-| Zwift   | ![](docs/img/palette-grade-zwift.svg)  |
-| HSLuv   | ![](docs/img/palette-grade-hsluv.svg)  |
-| Turbo   | ![](docs/img/palette-grade-turbo.svg)  |
-
-For the APCA contrast and HSLuv tuning behind every palette, see [docs/color-palettes.md](docs/color-palettes.md).
+![Karoo power palette in both themes and fill mode](docs/img/palette-power-karoo.svg)
 
 ## Data fields
 
