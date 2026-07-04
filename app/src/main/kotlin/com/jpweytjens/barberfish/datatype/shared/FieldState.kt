@@ -14,6 +14,10 @@ data class FieldState(
     // Optional second value row, rendered stacked below `primary` (Remaining effort).
     val secondary: String? = null,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    // false drops the icon's teal "connected" tint to the theme foreground. Native gates
+    // the ride-clock fields' icon green on the ride having started; everything else is
+    // stream-driven and stays true.
+    val liveIcon: Boolean = true,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =

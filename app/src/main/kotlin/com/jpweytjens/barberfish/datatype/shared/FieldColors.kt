@@ -72,8 +72,12 @@ private fun thresholdColorConfig(
     factor: Float,
     colorMode: ZoneColorMode,
     isNightMode: Boolean,
+    liveIcon: Boolean = true,
 ): ColorConfig {
     val defaultText = if (isNightMode) Color.White else Color.Black
+    val liveTint =
+        if (!liveIcon) defaultText
+        else if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY
     return when (colorMode) {
         ZoneColorMode.BACKGROUND -> {
             val bg = thresholdBackgroundColor(factor, isNightMode)
@@ -89,14 +93,14 @@ private fun thresholdColorConfig(
             ColorConfig(
                 valueText = thresholdTextColor(factor, isNightMode),
                 headerText = defaultText,
-                iconTint = if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY,
+                iconTint = liveTint,
                 background = null,
             )
         ZoneColorMode.NONE ->
             ColorConfig(
                 valueText = defaultText,
                 headerText = defaultText,
-                iconTint = if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY,
+                iconTint = liveTint,
                 background = null,
             )
     }
@@ -417,8 +421,13 @@ internal fun FieldColor.toColor(isNightMode: Boolean = true): Color? =
             gradeColor(percent, palette, readable = true, isNightMode = isNightMode)
     }
 
-internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boolean): ColorConfig {
-    if (this is FieldColor.Threshold) return thresholdColorConfig(factor, colorMode, isNightMode)
+internal fun FieldColor.toColorConfig(
+    colorMode: ZoneColorMode,
+    isNightMode: Boolean,
+    liveIcon: Boolean = true,
+): ColorConfig {
+    if (this is FieldColor.Threshold)
+        return thresholdColorConfig(factor, colorMode, isNightMode, liveIcon)
     val defaultText = if (isNightMode) Color.White else Color.Black
     val bg = if (colorMode == ZoneColorMode.BACKGROUND) toBackgroundColor() else null
     // On a colored fill, pick whichever of white/black gives higher APCA contrast.
@@ -443,6 +452,7 @@ internal fun FieldColor.toColorConfig(colorMode: ZoneColorMode, isNightMode: Boo
             when {
                 this is FieldColor.StreamState -> defaultText
                 onBgText != null -> onBgText
+                !liveIcon -> defaultText
                 else -> if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY
             },
         background = bg,

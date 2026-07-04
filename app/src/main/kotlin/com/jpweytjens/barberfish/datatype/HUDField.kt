@@ -421,17 +421,19 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             lapNumberFrom(it)
                         },
                         context.streamTimeConfig(),
-                    ) { seconds, lapNumber, cfg ->
+                        TimeField.liveIconFlow(karooSystem, slot.field.kind),
+                    ) { seconds, lapNumber, cfg, liveIcon ->
                         if (lapNumber <= 1)
                             FieldState.noLapsYet(slot.field.kind.label, slot.field.kind.iconRes)
-                        else TimeField.toFieldState(seconds, slot.field.kind, cfg.format)
+                        else TimeField.toFieldState(seconds, slot.field.kind, cfg.format, liveIcon)
                     }
                 } else {
                     combine(
                         TimeField.secondsFlow(karooSystem, slot.field.kind),
-                        context.streamTimeConfig()
-                    ) { seconds, cfg ->
-                        TimeField.toFieldState(seconds, slot.field.kind, cfg.format)
+                        context.streamTimeConfig(),
+                        TimeField.liveIconFlow(karooSystem, slot.field.kind),
+                    ) { seconds, cfg, liveIcon ->
+                        TimeField.toFieldState(seconds, slot.field.kind, cfg.format, liveIcon)
                     }
                 }
             is HUDSlotField.ETA ->

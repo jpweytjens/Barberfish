@@ -10,14 +10,17 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamRideState
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
+import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 fun formatTime(seconds: Long, format: TimeFormat): String {
@@ -66,14 +69,31 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                 ConvertType.TIME.apply(it).toLong()
             } ?: 0L
 
-        fun toFieldState(seconds: Long, kind: TimeKind, format: TimeFormat): FieldState =
+        fun toFieldState(
+            seconds: Long,
+            kind: TimeKind,
+            format: TimeFormat,
+            liveIcon: Boolean = true,
+        ): FieldState =
             FieldState(
                 formatTime(seconds, format),
                 label = kind.label,
                 color = FieldColor.Default,
                 iconRes = kind.iconRes,
                 secondaryIconRes = kind.secondaryIconRes,
+                liveIcon = liveIcon,
             )
+
+        // Ride-clock kinds: native only tints their icon green once the ride has started
+        // (verified on-device: plain pre-ride, green while recording and paused). The
+        // daylight kinds stream regardless of ride state and keep the live tint.
+        internal val RIDE_CLOCK_KINDS =
+            setOf(TimeKind.TOTAL, TimeKind.RIDING, TimeKind.PAUSED, TimeKind.LAP, TimeKind.LAST_LAP)
+
+        fun liveIconFlow(karooSystem: KarooSystemService, kind: TimeKind): Flow<Boolean> =
+            if (kind in RIDE_CLOCK_KINDS)
+                karooSystem.streamRideState().map { it !is RideState.Idle }
+            else flowOf(true)
 
         fun secondsFlow(karooSystem: KarooSystemService, kind: TimeKind): Flow<Long> =
             when (kind) {
@@ -121,19 +141,24 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
 
     override fun liveFlow(context: Context): Flow<FieldState> {
         val secondsFlow = secondsFlow(karooSystem, kind)
+        val liveIconFlow = liveIconFlow(karooSystem, kind)
         if (kind == TimeKind.LAST_LAP) {
             val lapNumberFlow =
                 karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER).map { lapNumberFrom(it) }
-            return combine(secondsFlow, lapNumberFlow, context.streamTimeConfig()) {
+            return combine(secondsFlow, lapNumberFlow, context.streamTimeConfig(), liveIconFlow) {
                 seconds,
                 lapNumber,
-                cfg ->
+                cfg,
+                liveIcon ->
                 if (lapNumber <= 1) FieldState.noLapsYet(kind.label, kind.iconRes)
-                else toFieldState(seconds, kind, cfg.format)
+                else toFieldState(seconds, kind, cfg.format, liveIcon)
             }
         }
-        return combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->
-            toFieldState(seconds, kind, cfg.format)
+        return combine(secondsFlow, context.streamTimeConfig(), liveIconFlow) {
+            seconds,
+            cfg,
+            liveIcon ->
+            toFieldState(seconds, kind, cfg.format, liveIcon)
         }
     }
 

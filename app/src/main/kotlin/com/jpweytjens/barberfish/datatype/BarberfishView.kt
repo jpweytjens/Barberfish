@@ -58,7 +58,7 @@ fun barberfishFieldRemoteViews(
     val isNightMode =
         (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
             Configuration.UI_MODE_NIGHT_YES
-    val colors = field.color.toColorConfig(colorMode, isNightMode)
+    val colors = field.color.toColorConfig(colorMode, isNightMode, field.liveIcon)
     val rv =
         makeFieldRemoteViews(
             field,
