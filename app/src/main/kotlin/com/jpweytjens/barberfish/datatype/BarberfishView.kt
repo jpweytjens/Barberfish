@@ -273,11 +273,11 @@ private fun makeFieldRemoteViews(
     rv.setImageViewBitmap(R.id.field_value, valueBitmap)
 
     // Stream state overlay (Searching / NotAvailable / Idle) replaces
-    // field_value. Sized from "Searching..." — widest single-line state.
+    // field_value. Sized from "Searching…" — widest single-line state.
     if (field.color is FieldColor.StreamState) {
         val (stateFont, stateMaxLines) =
             fontSizeForCell(
-                "Searching...",
+                "Searching…",
                 sizeConfig.valueFontSizeBase,
                 cellWidthPx,
                 density,

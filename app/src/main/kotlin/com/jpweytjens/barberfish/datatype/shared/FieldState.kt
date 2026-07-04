@@ -17,7 +17,7 @@ data class FieldState(
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =
-            FieldState("Searching...", label, FieldColor.StreamState, iconRes = iconRes)
+            FieldState("Searching…", label, FieldColor.StreamState, iconRes = iconRes)
 
         fun notAvailable(label: String = "", iconRes: Int? = null) =
             FieldState("Not available", label, FieldColor.StreamState, iconRes = iconRes)

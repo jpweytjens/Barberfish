@@ -27,7 +27,7 @@ class GradeFieldStateTest {
     @Test fun unavailable_showsSearching() {
         // Cold start and the first 30 m of warm-up: no trusted value yet.
         val s = state(GradeReading.Unavailable)
-        assertEquals("Searching...", s.primary)
+        assertEquals("Searching…", s.primary)
         assertEquals(FieldColor.StreamState, s.color)
         assertEquals("Grade", s.label)
     }
