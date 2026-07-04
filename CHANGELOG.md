@@ -22,7 +22,13 @@ Grade:
 Profile and Overview:
 - Hide the header to give the elevation trace the whole cell
 
+Placeholders and icons:
+- Fields now say why data is missing, like the native fields do: No sensor for an unpaired sensor, No route and Off route on route fields, and Needs 30s power data on NP, instead of a generic Not available
+- Time field icons stay plain until the ride starts, then turn green, matching the native Ride Time field
+- The green icon tint now uses Karoo's darker shade in light mode
+
 Fixes:
+- Searching and other placeholder text now sits at the same height as in the native fields, instead of slightly low
 - Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
 - Grade keeps its fill while holding a stale value in fill mode, instead of dropping to grey text
 - The held-grey grade reading is now readable in light mode, not only dark
