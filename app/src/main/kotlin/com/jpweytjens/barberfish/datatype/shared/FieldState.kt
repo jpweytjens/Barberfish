@@ -27,6 +27,23 @@ data class FieldState(
 
         fun noLapsYet(label: String = "", iconRes: Int? = null) =
             FieldState("No laps yet", label, FieldColor.StreamState, iconRes = iconRes)
+
+        // Each replaces the generic "Not available" where the field knows why
+        // its data is absent, matching the native fields' vocabulary.
+        fun noSensor(label: String = "", iconRes: Int? = null) =
+            FieldState("No sensor", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun noRoute(label: String = "", iconRes: Int? = null) =
+            FieldState("No route", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun offRoute(label: String = "", iconRes: Int? = null) =
+            FieldState("Off route", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun noGps(label: String = "", iconRes: Int? = null) =
+            FieldState("No GPS signal", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun needs30sPower(label: String = "", iconRes: Int? = null) =
+            FieldState("Needs 30s power data", label, FieldColor.StreamState, iconRes = iconRes)
     }
 }
 

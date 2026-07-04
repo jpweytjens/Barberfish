@@ -46,12 +46,18 @@ fun KarooSystemService.streamGlobalPOIs(): Flow<OnGlobalPOIs> = callbackFlow {
 
 /**
  * Returns a [FieldState] for non-Streaming states, or null if the state is [StreamState.Streaming].
+ * [notAvailable] lets a field say what its NotAvailable means (e.g. [FieldState.noSensor] for
+ * sensor fields, [FieldState.noGps] for GPS-derived fields); the default keeps the generic text.
  */
-fun StreamState.toErrorFieldState(label: String = "", iconRes: Int? = null): FieldState? =
+fun StreamState.toErrorFieldState(
+    label: String = "",
+    iconRes: Int? = null,
+    notAvailable: FieldState = FieldState.notAvailable(label, iconRes),
+): FieldState? =
     when (this) {
         is StreamState.Streaming -> null
         is StreamState.Searching -> FieldState.searching(label, iconRes)
-        is StreamState.NotAvailable -> FieldState.notAvailable(label, iconRes)
+        is StreamState.NotAvailable -> notAvailable
         else -> FieldState.idle(label, iconRes) // Idle: sensor stopped emitting data
     }
 
