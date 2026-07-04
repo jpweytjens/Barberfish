@@ -232,6 +232,38 @@ isolation, and icon px and gap with icons enabled.
 
 ---
 
+## Stream-state icon tint and placeholders
+
+Verified on-device 2026-07-04. Implemented in Barberfish in fa91ca7..6ab5f69.
+
+### Icon tint
+
+- The connected icon green is #32E09A in dark mode and #129A5E in light mode.
+  The idle color is the theme foreground.
+- The tint applies to the icon only; the label keeps the normal header color.
+- Ride-clock fields (Ride Time) gate the green on ride state: theme foreground
+  before the ride starts, green while Recording and while Paused. Stream-backed
+  fields (grade, distance, avg speed) turn green whenever their stream
+  delivers, even pre-ride.
+
+### Placeholders
+
+- Native fields draw placeholder messages from one shared vocabulary: No
+  Sensor, No Route, Off Route, No GPS Signal, Needs 30s Power Data, Press Lap,
+  No Laps Yet, No Data, Searching… (single ellipsis glyph), Loading…. Each
+  message carries its own text and icon color.
+- The strings are localized on the device (132 locales).
+
+### Placeholder geometry
+
+- The placeholder text anchors below the reserved max-lines label band, 19 sp,
+  maxLines 2, line-spacing multiplier 0.6, 6 dp bottom margin.
+- Barberfish's flat 1.7 `headerHeightPx` factor matches native everywhere
+  except 5x2, where native uses the 0.6 spacing; there the 1.7 empirically
+  cancels other unmodeled height, measured delta 0 px. Do not "fix" it to 1.6.
+
+---
+
 ## Container resize on route toast (GitHub issue #2)
 
 When a rerouting/turn-cue toast appears, the data-grid cells physically shrink, but
