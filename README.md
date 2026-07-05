@@ -44,15 +44,9 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
     <td align="center"><img src="docs/climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
     <td align="center"><img src="docs/climbs_profile.jpg" alt="Climbs mode profile framing a climb foot to summit with the position dot partway up"></td>
   </tr>
-  <tr>
-    <td align="center">Light mode with zone-colored HUD and field comparison</td>
-    <td align="center">4-column HUD config with fill-mode zone coloring</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/light_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
-    <td align="center"><img src="docs/hud_config.jpg" alt="HUD config screen with 4-column layout and fill-mode zones"></td>
-  </tr>
 </table>
+
+More screenshots, including light mode, threshold coloring, the grey stale grade state, and the config screens: [docs/gallery.md](docs/gallery.md).
 
 ## Installation
 
