@@ -86,7 +86,7 @@ for mode in target range; do
     [ -d "$dir" ] || continue
     forward=$(ls "$dir"/*.png)
     backward=$(ls -r "$dir"/*.png | sed '1d;$d')
-    magick -delay 8 -loop 0 $forward $backward \
+    magick -delay 12 -loop 0 $forward $backward \
         "docs/screenshots/threshold_${mode}_sweep.gif"
     echo "docs sweep: docs/screenshots/threshold_${mode}_sweep.gif"
 done
