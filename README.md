@@ -60,16 +60,9 @@ Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes
 
 ## Compatibility
 
-| Device  | Oldest tested firmware |
-| ------- | ---------------------- |
-| Karoo 3 | 1.618.2377.20          |
-| Karoo 2 | 1.613.2351.12          |
+Tested back to firmware 1.618.2377.20 on Karoo 3 and 1.613.2351.12 on Karoo 2. Newer firmware is expected to keep working unless Hammerhead introduces breaking changes to the extension SDK.
 
-Barberfish is expected to keep working on newer Karoo firmware unless Hammerhead introduces breaking changes to the extension SDK.
-
-Light mode and dark mode are both supported, as are metric and imperial units.
-
-Karoo's Data Field Design settings (Data Icons and Label Size) are not visible to extensions, so Barberfish cannot follow them automatically. Mirror your choices in the Data Field Design section of the Barberfish config and its fields will render like the native fields beside them.
+Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Design settings do not. [Match Barberfish to your Karoo](docs/matching-karoo.md) shows how to mirror them.
 
 ## Installation
 
