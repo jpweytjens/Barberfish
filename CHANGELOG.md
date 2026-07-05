@@ -14,7 +14,6 @@ New data fields:
 
 Data Field Design:
 - Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
-- The Barberfish toggle is called Data Icons, the same name Karoo uses
 
 Config previews:
 - Field previews now play one simulated ride: power, heart rate, cadence, and grade rise and fall together, elapsed time is moving plus paused, and dawn and dusk track sunrise and sunset
