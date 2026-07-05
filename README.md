@@ -46,15 +46,15 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
   </tr>
 </table>
 
-The [full gallery](docs/gallery.md) adds light mode, threshold coloring, the grey stale grade state, and the config screens.
+The [gallery](docs/gallery.md) continues with light mode, threshold coloring, the grey stale grade state, and the config screens.
 
 ## Data fields
 
-39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [full field list](docs/data-fields.md) shows each field's palette, threshold, format, and smoothing options.
+39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
 ## Color palettes
 
-Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [full palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
+Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
 
 ![Karoo power palette in both themes and fill mode](docs/img/palette-power-karoo.svg)
 

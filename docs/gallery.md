@@ -49,7 +49,7 @@ Grade colors its cell by the gradient palette and greys out when the estimate is
 
 ## Themes and the native comparison
 
-Light and dark mode are both supported, with each palette tuned per theme ([the full set](color-palettes.md)).
+Light and dark mode are both supported, with [each palette tuned per theme](color-palettes.md).
 
 <table>
   <tr>
@@ -64,7 +64,7 @@ Light and dark mode are both supported, with each palette tuned per theme ([the 
 
 ## Config screens
 
-Every option lives in the Barberfish app with live previews ([the full option list](data-fields.md)); threshold coloring compares against a target or range ([thresholds](data-fields.md#thresholds)).
+[Every option](data-fields.md) lives in the Barberfish app with live previews; threshold coloring compares against [a target or range](data-fields.md#thresholds).
 
 <table>
   <tr>
