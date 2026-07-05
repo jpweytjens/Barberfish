@@ -21,6 +21,7 @@ android {
         targetSdk = 34
         versionCode = 8
         versionName = "3.3.1"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -90,4 +91,6 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }
