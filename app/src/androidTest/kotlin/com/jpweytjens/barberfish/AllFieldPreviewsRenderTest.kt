@@ -11,6 +11,8 @@ import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
+import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.streamHUDConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
 import java.io.File
@@ -69,13 +71,14 @@ class AllFieldPreviewsRenderTest {
         try {
             val design = DataFieldDesignConfig()
             val outDir = File(context.getExternalFilesDir(null), "previews").apply { mkdirs() }
+            val types = barberfishDataTypes(karooSystem)
             // Preview flows cycle through a fixture list at 1 Hz. Sampling a staggered
             // position per field keeps same-category neighbours (all power fields, all
             // time fields) from landing on near-identical values. Flows are collected
             // concurrently so the deepest drop bounds the wall-clock, not the sum.
             val samples =
                 runBlocking {
-                    barberfishDataTypes(karooSystem)
+                    types
                         .mapIndexed { i, type ->
                             val config = if (type is HUDDataType) hudConfig else cellConfig
                             async { collectSample(type, drops = i % 5, config, context) }
@@ -84,18 +87,39 @@ class AllFieldPreviewsRenderTest {
                 }
             for (sample in samples) {
                 val config = if (sample.type is HUDDataType) hudConfig else cellConfig
-                val rendered = renderSample(sample, config, design, context)
-                val flattened = flattenOntoBlack(rendered)
-                assertTrue(
-                    "${sample.type.typeId} rendered fully black",
-                    hasNonBlackPixel(flattened),
-                )
-                FileOutputStream(File(outDir, "${sample.type.typeId}.png")).use {
-                    flattened.compress(Bitmap.CompressFormat.PNG, 100, it)
-                }
+                writePreviewPng(sample, sample.type.typeId, config, design, context, outDir)
+            }
+
+            // Second HUD render: flip the HUD setting to 4 columns so both variants
+            // land in the contact sheet, then restore the rider's config.
+            val hud = types.filterIsInstance<HUDDataType>().single()
+            val originalHudConfig = runBlocking { context.streamHUDConfig().first() }
+            try {
+                runBlocking { context.saveHUDConfig(originalHudConfig.copy(columns = 4)) }
+                // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
+                // two HUD renders show different values.
+                val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
+                writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
+            } finally {
+                runBlocking { context.saveHUDConfig(originalHudConfig) }
             }
         } finally {
             karooSystem.disconnect()
+        }
+    }
+
+    private fun <T> writePreviewPng(
+        sample: Sample<T>,
+        name: String,
+        config: ViewConfig,
+        design: DataFieldDesignConfig,
+        context: Context,
+        outDir: File,
+    ) {
+        val flattened = flattenOntoBlack(renderSample(sample, config, design, context))
+        assertTrue("$name rendered fully black", hasNonBlackPixel(flattened))
+        FileOutputStream(File(outDir, "$name.png")).use {
+            flattened.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
 

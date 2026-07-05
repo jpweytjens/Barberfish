@@ -22,12 +22,27 @@ adb shell am instrument -w \
 rm -rf "$outdir"
 adb pull "$devicedir" "$outdir"
 
+# Grid of single-cell fields; the full-width HUD strips go in their own
+# single-column montage appended below so they don't break the 4-column grid.
+grid_pngs=$(ls "$outdir"/*.png | grep -v three-column)
 montage \
     -label '%t' \
     -font /System/Library/Fonts/Supplemental/Arial.ttf \
     -background black -fill white \
     -geometry +8+8 \
     -tile 4x \
-    "$outdir"/*.png \
+    $grid_pngs \
+    "$outdir/.sheet_grid.png"
+montage \
+    -label '%t' \
+    -font /System/Library/Fonts/Supplemental/Arial.ttf \
+    -background black -fill white \
+    -geometry +8+8 \
+    -tile 1x \
+    "$outdir/three-column.png" "$outdir/three-column-4col.png" \
+    "$outdir/.sheet_hud.png"
+magick "$outdir/.sheet_grid.png" "$outdir/.sheet_hud.png" \
+    -background black -gravity center -append \
     screencaps/preview_contact_sheet.png
+rm "$outdir/.sheet_grid.png" "$outdir/.sheet_hud.png"
 echo "contact sheet: screencaps/preview_contact_sheet.png"
