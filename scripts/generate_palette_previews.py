@@ -13,7 +13,7 @@ Each row is 26 px tall; the final SVG is 78 px tall. Cached
 (typically the light set before it lands in source) are computed on the fly
 via ``adjust_for_readability``.
 
-Outputs land in ``docs/img/palette-{power,hr,grade}-<slug>.svg``.
+Outputs land in ``docs/palettes/palette-{power,hr,grade}-<slug>.svg``.
 
 Usage
 -----
@@ -265,7 +265,7 @@ def _write_grade_palettes(out_dir: Path) -> list[Path]:
 
 
 def main() -> None:
-    out_dir = Path(__file__).parent.parent / "docs" / "img"
+    out_dir = Path(__file__).parent.parent / "docs" / "palettes"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[Path] = []
