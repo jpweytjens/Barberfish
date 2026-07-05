@@ -31,7 +31,7 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
 - ETA [learns from how you have actually been riding](docs/algorithms.md#eta), so the estimate sharpens as the ride goes on instead of starting from a generic guess.
 - Zone and grade coloring as colored text or a filled cell, with [brand palettes kept legible](docs/color-palettes.md) in light and dark mode.
 - Threshold coloring for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
-- Per-field setup in the Barberfish app with live previews across [every field and its options](docs/data-fields.md); changes apply mid-ride.
+- Per-field setup in the Barberfish app with live previews, covering [every field and its options](docs/data-fields.md).
 
 ## Gallery
 
@@ -66,7 +66,7 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 
 ## Installation
 
-1. On your phone, download [barberfish.apk](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk) (always the latest release; older versions are on the [releases page](https://github.com/jpweytjens/barberfish/releases)).
+1. On your phone, download the latest [barberfish.apk](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk).
 2. Sideload it:
    * Karoo 3: share the downloaded APK to the Hammerhead companion app, following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
    * Karoo 2: install from a computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html).
@@ -84,7 +84,7 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 
 ## Contributing
 
-Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish). Suggestions for new HUD data fields are especially welcomed.
+Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish), especially suggestions for new HUD data fields.
 
 ### For extension developers
 
