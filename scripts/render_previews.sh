@@ -46,3 +46,28 @@ magick "$outdir/.sheet_grid.png" "$outdir/.sheet_hud.png" \
     screencaps/preview_contact_sheet.png
 rm "$outdir/.sheet_grid.png" "$outdir/.sheet_hud.png"
 echo "contact sheet: screencaps/preview_contact_sheet.png"
+
+# Unlabeled variant for docs/data-fields.md: the field headers already name
+# each tile, so the typeId filename labels are developer noise there.
+# -font is needed even without labels: montage errors out when no default
+# font is configured, and set -e would abort the script.
+montage \
+    -font /System/Library/Fonts/Supplemental/Arial.ttf \
+    -background black \
+    -geometry +8+8 \
+    -tile 4x \
+    $grid_pngs \
+    "$outdir/.docs_grid.png"
+montage \
+    -font /System/Library/Fonts/Supplemental/Arial.ttf \
+    -background black \
+    -geometry +8+8 \
+    -tile 1x \
+    "$outdir/three-column.png" "$outdir/three-column-4col.png" \
+    "$outdir/.docs_hud.png"
+magick "$outdir/.docs_grid.png" "$outdir/.docs_hud.png" \
+    -background black -gravity center -append \
+    -depth 8 \
+    docs/screenshots/all_fields.png
+rm "$outdir/.docs_grid.png" "$outdir/.docs_hud.png"
+echo "docs overview: docs/screenshots/all_fields.png"
