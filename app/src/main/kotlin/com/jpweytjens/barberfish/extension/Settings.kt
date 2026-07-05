@@ -124,7 +124,7 @@ data class HUDSlotConfig(
     val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
     val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
 )
 
 @Serializable
@@ -329,7 +329,7 @@ enum class ZoneDisplayMode(val label: String) {
 @Serializable
 data class HRZoneFieldConfig(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
 )
 
 private val hrZoneFieldConfigKey = stringPreferencesKey("hr_zone_field_config")
@@ -561,7 +561,7 @@ suspend fun Context.saveLapPowerFieldConfig(isLastLap: Boolean, config: LapPower
 @Serializable
 data class PowerZoneFieldConfig(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
 )
 
 private val powerZoneFieldConfigKey = stringPreferencesKey("power_zone_field_config")
