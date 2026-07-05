@@ -91,16 +91,18 @@ class AllFieldPreviewsRenderTest {
             val design = DataFieldDesignConfig()
             val outDir = File(context.getExternalFilesDir(null), "previews").apply { mkdirs() }
             val types = barberfishDataTypes(karooSystem)
-            // Preview flows cycle through a fixture list at 1 Hz. Sampling a staggered
-            // position per field keeps same-category neighbours (all power fields, all
-            // time fields) from landing on near-identical values. Flows are collected
-            // concurrently so the deepest drop bounds the wall-clock, not the sum.
+            // Preview flows cycle through the shared PreviewRide fixture at 1 Hz.
+            // Sampling every field at the same cycle position keeps the sheet
+            // coherent: index 4 is the ride's steep climb, so power, HR, cadence,
+            // and grade all describe the same moment (3-entry duration lists wrap
+            // to their mid-ride snapshot). Flows are collected concurrently so one
+            // drop depth bounds the wall-clock, not the sum.
             val samples =
                 runBlocking {
                     types
-                        .mapIndexed { i, type ->
+                        .map { type ->
                             val config = if (type is HUDDataType) hudConfig else cellConfig
-                            async { collectSample(type, drops = i % 5, config, context) }
+                            async { collectSample(type, drops = 4, config, context) }
                         }
                         .awaitAll()
                 }
