@@ -56,20 +56,11 @@ The [gallery](docs/gallery.md) continues with light mode, threshold coloring, th
 
 Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
 
-<table>
-  <tr>
-    <td align="center">HSLuv power zones, designed for Barberfish: Text mode on light and dark, then Fill</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/palettes/palette-power-hsluv.svg" alt="HSLuv power palette in both themes and fill mode"></td>
-  </tr>
-  <tr>
-    <td align="center">Turbo grade bands, covering descents as well as climbs</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/palettes/palette-grade-turbo.svg" alt="Turbo grade palette in both themes and fill mode"></td>
-  </tr>
-</table>
+Two samples, each shown in Text mode on light and dark, then Fill: the Barberfish-designed HSLuv power zones, and Turbo grade bands covering descents as well as climbs.
+
+![HSLuv power palette in both themes and fill mode](docs/palettes/palette-power-hsluv.svg)
+
+![Turbo grade palette in both themes and fill mode](docs/palettes/palette-grade-turbo.svg)
 
 ## Compatibility
 
