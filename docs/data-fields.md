@@ -89,7 +89,7 @@ Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`
 
 ## Thresholds
 
-Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands.
+Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands. The scale itself is documented in [Threshold colors](color-palettes.md#threshold-colors).
 
 <table>
   <tr>
