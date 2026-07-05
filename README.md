@@ -48,12 +48,15 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
 
 [More screenshots](docs/gallery.md), including light mode, threshold coloring, the grey stale grade state, and the config screens.
 
-## Installation
+## Data fields
 
-1. On your phone, download [barberfish.apk](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk) (always the latest release; older versions are on the [releases page](https://github.com/jpweytjens/barberfish/releases)).
-2. Sideload it:
-   * Karoo 3: share the downloaded APK to the Hammerhead companion app, following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
-   * Karoo 2: install from a computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html).
+39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [full field list](docs/data-fields.md) shows each field's palette, threshold, format, and smoothing options.
+
+## Color palettes
+
+Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [full palette gallery](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
+
+![Karoo power palette in both themes and fill mode](docs/img/palette-power-karoo.svg)
 
 ## Compatibility
 
@@ -68,15 +71,12 @@ Light mode and dark mode are both supported, as are metric and imperial units.
 
 Karoo's Data Field Design settings (Data Icons and Label Size) are not visible to extensions, so Barberfish cannot follow them automatically. Mirror your choices in the Data Field Design section of the Barberfish config and its fields will render like the native fields beside them.
 
-## Data fields
+## Installation
 
-39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [full field list](docs/data-fields.md) shows each field's palette, threshold, format, and smoothing options.
-
-## Color palettes
-
-Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [full palette gallery](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
-
-![Karoo power palette in both themes and fill mode](docs/img/palette-power-karoo.svg)
+1. On your phone, download [barberfish.apk](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk) (always the latest release; older versions are on the [releases page](https://github.com/jpweytjens/barberfish/releases)).
+2. Sideload it:
+   * Karoo 3: share the downloaded APK to the Hammerhead companion app, following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
+   * Karoo 2: install from a computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html).
 
 ## Roadmap
 
