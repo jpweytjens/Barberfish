@@ -46,7 +46,7 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
   </tr>
 </table>
 
-More screenshots, including light mode, threshold coloring, the grey stale grade state, and the config screens: [docs/gallery.md](docs/gallery.md).
+[More screenshots](docs/gallery.md), including light mode, threshold coloring, the grey stale grade state, and the config screens.
 
 ## Installation
 
@@ -70,11 +70,11 @@ Karoo's Data Field Design settings (Data Icons and Label Size) are not visible t
 
 ## Data fields
 
-39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The full list, with each field's palette, threshold, format, and smoothing options, is in [docs/data-fields.md](docs/data-fields.md).
+39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [full field list](docs/data-fields.md) shows each field's palette, threshold, format, and smoothing options.
 
 ## Color palettes
 
-Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. Every palette in both modes, and the contrast tuning behind them: [docs/color-palettes.md](docs/color-palettes.md).
+Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [full palette gallery](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
 
 ![Karoo power palette in both themes and fill mode](docs/img/palette-power-karoo.svg)
 
@@ -97,7 +97,7 @@ Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytj
 
 `BarberfishView` and `BarberfishDataType` are a reimplementation of the native Karoo data field that matches the Hammerhead look and feel, with added support for variable font sizes and control over the fill color behind the label and icon.
 
-See [docs/architecture.md](docs/architecture.md) for the component hierarchy, naming conventions, and the rationale behind using `AndroidRemoteViews` for the label and value rendering. See [docs/sdk-findings.md](docs/sdk-findings.md) for empirically discovered SDK behavior.
+The [architecture reference](docs/architecture.md) covers the component hierarchy, naming conventions, and the rationale behind using `AndroidRemoteViews` for the label and value rendering. The [SDK findings](docs/sdk-findings.md) collect empirically discovered SDK behavior.
 
 ## License
 
