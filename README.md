@@ -54,7 +54,7 @@ The [full gallery](docs/gallery.md) adds light mode, threshold coloring, the gre
 
 ## Color palettes
 
-Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [full palette gallery](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
+Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. The [full palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
 
 ![Karoo power palette in both themes and fill mode](docs/img/palette-power-karoo.svg)
 
