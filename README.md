@@ -26,12 +26,12 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
 ## Highlights
 
 - A 3- or 4-column HUD groups any fields side by side, with zone coloring, smoothing, and formatting set per slot.
-- With a route loaded, the elevation profile below the HUD shows the terrain ahead or, in Climbs mode, frames each climb foot to summit ([see the gallery](docs/gallery.md#climbs-mode)).
-- Grade is smoothed over the last 30 m of road rather than a time window, so it holds steady at any speed and stops moving when you do ([how it works](docs/algorithms.md#grade)).
-- ETA learns from how you have actually been riding, so the estimate sharpens as the ride goes on instead of starting from a generic guess ([how it works](docs/algorithms.md#eta)).
-- Zone and grade coloring as colored text or a filled cell, with brand palettes kept legible in light and dark mode ([all palettes](docs/color-palettes.md)).
+- With a route loaded, the elevation profile below the HUD shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
+- Grade is [smoothed over the last 30 m of road](docs/algorithms.md#grade) rather than a time window, so it holds steady at any speed and stops moving when you do.
+- ETA [learns from how you have actually been riding](docs/algorithms.md#eta), so the estimate sharpens as the ride goes on instead of starting from a generic guess.
+- Zone and grade coloring as colored text or a filled cell, with [brand palettes kept legible](docs/color-palettes.md) in light and dark mode.
 - Threshold coloring for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
-- Per-field setup in the Barberfish app with live previews; changes apply mid-ride ([every field and its options](docs/data-fields.md)).
+- Per-field setup in the Barberfish app with live previews across [every field and its options](docs/data-fields.md); changes apply mid-ride.
 
 ## Gallery
 
