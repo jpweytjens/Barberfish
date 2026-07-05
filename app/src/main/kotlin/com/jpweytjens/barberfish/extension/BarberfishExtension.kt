@@ -4,6 +4,7 @@ import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
+import com.jpweytjens.barberfish.datatype.BarberfishBase
 import com.jpweytjens.barberfish.datatype.CadenceField
 import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
@@ -67,60 +68,62 @@ private const val CHEVRON_ICON_HEIGHT_DP = 17f
 // polyline alone marks the climb. 12 matches the native `hhk` heading-threshold breakpoint.
 private const val CHEVRON_PER_SEGMENT_MIN_ZOOM = 12.0
 
+// Order matches extension_info.xml — keep in sync when adding fields.
+// Top-level so the instrumented preview-render harness can iterate every field.
+fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>> =
+    listOf(
+        HUDField(karooSystem),
+        // Power
+        PowerField(karooSystem),
+        AvgPowerField(karooSystem),
+        NPField(karooSystem),
+        LapPowerField(karooSystem, isLastLap = false),
+        LapPowerField(karooSystem, isLastLap = true),
+        PowerZoneField(karooSystem),
+        MaxPowerField(karooSystem),
+        // HR
+        HRField(karooSystem),
+        AvgHRField(karooSystem),
+        LapAvgHRField(karooSystem),
+        LastLapAvgHRField(karooSystem),
+        HRMaxPercentField(karooSystem),
+        MaxHRField(karooSystem),
+        HRZoneField(karooSystem),
+        // Speed
+        SpeedField(karooSystem),
+        AvgSpeedField(karooSystem, includePaused = true),
+        AvgSpeedField(karooSystem, includePaused = false),
+        // Other
+        CadenceField(karooSystem),
+        GradeField(karooSystem),
+        ElevationSparklineField(karooSystem),
+        // Distance & route-remaining
+        ValueField(karooSystem, ValueKind.DISTANCE),
+        ValueField(karooSystem, ValueKind.DISTANCE_REMAINING),
+        ValueField(karooSystem, ValueKind.ELEVATION_REMAINING),
+        ValueField(karooSystem, ValueKind.DESCENT_REMAINING),
+        EffortField(karooSystem),
+        RouteRemainingField(karooSystem),
+        // Time
+        TimeField(karooSystem, TimeKind.TOTAL),
+        TimeField(karooSystem, TimeKind.RIDING),
+        TimeField(karooSystem, TimeKind.PAUSED),
+        TimeField(karooSystem, TimeKind.LAP),
+        TimeField(karooSystem, TimeKind.LAST_LAP),
+        ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME),
+        ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION),
+        ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL),
+        TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
+        TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
+        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
+        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK),
+    )
+
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
 
     private lateinit var karooSystem: KarooSystemService
 
-    // Order matches extension_info.xml — keep in sync when adding fields.
-    override val types by lazy {
-        listOf(
-            HUDField(karooSystem),
-            // Power
-            PowerField(karooSystem),
-            AvgPowerField(karooSystem),
-            NPField(karooSystem),
-            LapPowerField(karooSystem, isLastLap = false),
-            LapPowerField(karooSystem, isLastLap = true),
-            PowerZoneField(karooSystem),
-            MaxPowerField(karooSystem),
-            // HR
-            HRField(karooSystem),
-            AvgHRField(karooSystem),
-            LapAvgHRField(karooSystem),
-            LastLapAvgHRField(karooSystem),
-            HRMaxPercentField(karooSystem),
-            MaxHRField(karooSystem),
-            HRZoneField(karooSystem),
-            // Speed
-            SpeedField(karooSystem),
-            AvgSpeedField(karooSystem, includePaused = true),
-            AvgSpeedField(karooSystem, includePaused = false),
-            // Other
-            CadenceField(karooSystem),
-            GradeField(karooSystem),
-            ElevationSparklineField(karooSystem),
-            // Distance & route-remaining
-            ValueField(karooSystem, ValueKind.DISTANCE),
-            ValueField(karooSystem, ValueKind.DISTANCE_REMAINING),
-            ValueField(karooSystem, ValueKind.ELEVATION_REMAINING),
-            ValueField(karooSystem, ValueKind.DESCENT_REMAINING),
-            EffortField(karooSystem),
-            RouteRemainingField(karooSystem),
-            // Time
-            TimeField(karooSystem, TimeKind.TOTAL),
-            TimeField(karooSystem, TimeKind.RIDING),
-            TimeField(karooSystem, TimeKind.PAUSED),
-            TimeField(karooSystem, TimeKind.LAP),
-            TimeField(karooSystem, TimeKind.LAST_LAP),
-            ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME),
-            ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION),
-            ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL),
-            TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
-            TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
-            TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
-            TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK),
-        )
-    }
+    override val types by lazy { barberfishDataTypes(karooSystem) }
 
     override fun onCreate() {
         super.onCreate()
