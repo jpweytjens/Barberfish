@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
@@ -75,7 +76,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(195, 210, 220, 185, 230).map { watts ->
+            PreviewRide.avgPowerW.map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(

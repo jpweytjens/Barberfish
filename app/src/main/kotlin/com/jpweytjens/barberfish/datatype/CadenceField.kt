@@ -4,6 +4,7 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
@@ -122,7 +123,7 @@ class CadenceField(private val karooSystem: KarooSystemService) :
         fun previewStates(cfg: CadenceFieldConfig): List<FieldState> {
             val label = cadenceLabel(cfg.smoothing)
             if (!isThresholdActive(cfg.threshold)) {
-                return listOf(82, 87, 91, 78, 95, 45, 120).map { rpm ->
+                return PreviewRide.cadenceRpm.map { rpm ->
                     FieldState(
                         rpm.toString(),
                         label = label,

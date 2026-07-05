@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
@@ -62,7 +63,21 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
     BarberfishDataType("barberfish", kind.typeId) {
 
     companion object {
-        private val previewDurationSeconds = listOf(1665L, 5025L, 37425L)
+        // Per-kind durations from the shared preview ride so the family stays
+        // coherent at each index: elapsed = moving + paused, dawn precedes
+        // sunrise, dusk follows sunset.
+        private fun previewDurationSeconds(kind: TimeKind): List<Long> =
+            when (kind) {
+                TimeKind.TOTAL -> PreviewRide.elapsedS
+                TimeKind.RIDING -> PreviewRide.ridingS
+                TimeKind.PAUSED -> PreviewRide.pausedS
+                TimeKind.LAP -> PreviewRide.lapS
+                TimeKind.LAST_LAP -> PreviewRide.lastLapS
+                TimeKind.TIME_TO_SUNRISE -> PreviewRide.toSunriseS
+                TimeKind.TIME_TO_SUNSET -> PreviewRide.toSunsetS
+                TimeKind.TIME_TO_CIVIL_DAWN -> PreviewRide.toCivilDawnS
+                TimeKind.TIME_TO_CIVIL_DUSK -> PreviewRide.toCivilDuskS
+            }
 
         fun extractSeconds(state: StreamState, fieldKey: String): Long =
             (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)?.let {
@@ -136,7 +151,7 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
             }
 
         fun previewStates(cfg: TimeConfig, kind: TimeKind): List<FieldState> =
-            previewDurationSeconds.map { seconds -> toFieldState(seconds, kind, cfg.format) }
+            previewDurationSeconds(kind).map { seconds -> toFieldState(seconds, kind, cfg.format) }
     }
 
     override fun liveFlow(context: Context): Flow<FieldState> {

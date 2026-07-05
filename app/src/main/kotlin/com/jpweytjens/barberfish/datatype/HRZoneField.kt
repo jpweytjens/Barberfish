@@ -4,6 +4,7 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.MAX_HR_ZONES
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldPreviewFlow
@@ -62,7 +63,7 @@ class HRZoneField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(1.2, 2.5, 3.4, 3.8, 4.2, 4.7, 5.0).map { raw ->
+            PreviewRide.hrZone.map { raw ->
                 val zoneInt = raw.toInt().coerceIn(1, MAX_HR_ZONES)
                 val value =
                     when (cfg.zoneDisplayMode) {

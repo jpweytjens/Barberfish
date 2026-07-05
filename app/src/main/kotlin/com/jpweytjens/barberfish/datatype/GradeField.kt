@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.GradeSmoother
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.gradeReadingReducer
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
@@ -87,7 +88,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
         }
 
         fun previewStates(cfg: GradeFieldConfig, zones: ZoneConfig): List<FieldState> =
-            listOf(2.0, 5.5, 9.2, 13.0, 6.2, 1.0, -5.2).map { percent ->
+            PreviewRide.gradePercent.map { percent ->
                 toGradeFieldState(
                     GradeReading.Fresh(percent.toFloat()),
                     cfg,

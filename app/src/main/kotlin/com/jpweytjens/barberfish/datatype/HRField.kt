@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
@@ -56,7 +57,7 @@ class HRField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(85, 130, 152, 165, 172, 187, 145).map { bpm ->
+            PreviewRide.hrBpm.map { bpm ->
                 val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
                 FieldState(

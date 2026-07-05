@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
@@ -56,7 +57,7 @@ class MaxPowerField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(420, 510, 620, 740, 880, 1020, 1180).map { watts ->
+            PreviewRide.maxPowerW.map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(

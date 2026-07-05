@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
@@ -104,7 +105,8 @@ class LapPowerField(
         ): List<FieldState> {
             val label = if (isLastLap) "LL Avg Power" else "Lap Avg Power"
             val iconRes = if (isLastLap) R.drawable.ic_last_lap else R.drawable.ic_lap
-            return listOf(195, 210, 220, 185, 230).map { watts ->
+            val wattsList = if (isLastLap) PreviewRide.lastLapPowerW else PreviewRide.lapPowerW
+            return wattsList.map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(

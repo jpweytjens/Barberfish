@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
@@ -38,6 +39,7 @@ class LastLapAvgHRField(private val karooSystem: KarooSystemService) :
                 label = "LL Avg HR",
                 iconRes = R.drawable.ic_last_lap,
                 secondaryIconRes = R.drawable.ic_avg_hr,
+                bpmValues = PreviewRide.lastLapAvgHrBpm,
             )
     }
 

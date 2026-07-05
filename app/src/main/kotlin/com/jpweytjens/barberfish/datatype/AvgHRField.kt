@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
@@ -67,8 +68,9 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             label: String = "Avg HR",
             iconRes: Int = R.drawable.ic_avg_hr,
             secondaryIconRes: Int? = null,
+            bpmValues: List<Int> = PreviewRide.avgHrBpm,
         ): List<FieldState> =
-            listOf(85, 130, 152, 165, 172, 187, 145).map { bpm ->
+            bpmValues.map { bpm ->
                 val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
                 FieldState(

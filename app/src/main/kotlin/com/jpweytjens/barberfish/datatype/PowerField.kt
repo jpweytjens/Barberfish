@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
@@ -93,7 +94,7 @@ class PowerField(private val karooSystem: KarooSystemService) :
             val label =
                 if (cfg.smoothing == PowerSmoothingStream.S0) "Power"
                 else "${cfg.smoothing.label} Power"
-            return listOf(180, 240, 320, 400, 451, 511, 1234).map { watts ->
+            return PreviewRide.powerW.map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(

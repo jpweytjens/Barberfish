@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
@@ -74,7 +75,7 @@ class HRMaxPercentField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
         ): List<FieldState> {
             val maxHr = profile.maxHr.takeIf { it > 0 } ?: 190
-            return listOf(85, 130, 152, 165, 172, 187, 145).map { bpm ->
+            return PreviewRide.hrBpm.map { bpm ->
                 val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
                 val percent = (bpm * 100.0 / maxHr).toInt()
