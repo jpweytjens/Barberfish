@@ -38,6 +38,15 @@ internal val RDYLGN_GREEN = Color(0xFF1A9850)
 // Danger zone color map (min/max mode) — light amber so the whitish gradient reads clearly
 internal val DANGER_ORANGE = Color(0xFFFFA726)
 
+// Text-mode readable variants: HSLuv lightness moved until APCA |Lc| >= 45 against the
+// theme background (same pipeline as the zone palettes; scripts/palettes.py
+// adjust_for_readability). Colors that already pass keep the brand value: orange passes
+// on dark, red and green pass on light. Fill mode keeps the brand colors everywhere —
+// its overlay text is APCA-picked per cell instead.
+internal val RDYLGN_RED_READABLE_DARK = Color(0xFFF5645F)
+internal val RDYLGN_GREEN_READABLE_DARK = Color(0xFF1EAA5A)
+internal val DANGER_ORANGE_READABLE_LIGHT = Color(0xFFED9800)
+
 // Sparkline palette — used by ElevationSparkline rendering. Call sites pass to Paint.color
 // via .toArgb() since android.graphics.Paint expects an Int, not a Compose Color.
 internal val SPARKLINE_PAST_OUTLINE = Color(0xFF646464) // grey for past stroke + past POI fill
@@ -57,8 +66,10 @@ internal val SPARKLINE_POI_FILL_DAY = Color(0xFF000000) // ahead-of-position POI
 // Text neutral matches the default text color so "at threshold" looks like a default cell.
 private fun thresholdTextColor(factor: Float, isNightMode: Boolean): Color {
     val neutral = if (isNightMode) Color.White else Color.Black
-    return if (factor >= 0f) lerp(neutral, RDYLGN_GREEN, sqrt(factor))
-    else lerp(neutral, RDYLGN_RED, sqrt(-factor))
+    val green = if (isNightMode) RDYLGN_GREEN_READABLE_DARK else RDYLGN_GREEN
+    val red = if (isNightMode) RDYLGN_RED_READABLE_DARK else RDYLGN_RED
+    return if (factor >= 0f) lerp(neutral, green, sqrt(factor))
+    else lerp(neutral, red, sqrt(-factor))
 }
 
 // Background neutral matches the Karoo cell color so "at threshold" blends into neighbors.
@@ -120,6 +131,26 @@ private fun dangerZoneColor(
         hasSafeZone -> lerp(RDYLGN_GREEN, DANGER_ORANGE, sqrt(borderProximity))
         else -> lerp(Color.White, DANGER_ORANGE, sqrt(borderProximity))
     }
+
+// Text-mode variant of dangerZoneColor with readable endpoints per theme. The one-sided
+// neutral follows the theme text color (white on dark, black on light) — a fixed White
+// start would be invisible as text on the day background.
+private fun dangerZoneTextColor(
+    outsideFactor: Float,
+    borderProximity: Float,
+    hasSafeZone: Boolean,
+    isNightMode: Boolean,
+): Color {
+    val red = if (isNightMode) RDYLGN_RED_READABLE_DARK else RDYLGN_RED
+    val green = if (isNightMode) RDYLGN_GREEN_READABLE_DARK else RDYLGN_GREEN
+    val orange = if (isNightMode) DANGER_ORANGE else DANGER_ORANGE_READABLE_LIGHT
+    val neutral = if (isNightMode) Color.White else Color.Black
+    return when {
+        outsideFactor > 0f -> lerp(orange, red, sqrt(outsideFactor))
+        hasSafeZone -> lerp(green, orange, sqrt(borderProximity))
+        else -> lerp(neutral, orange, sqrt(borderProximity))
+    }
+}
 
 // Grade color bands — sorted descending, first match wins (percent >= threshold)
 private val WAHOO_GRADE_BANDS =
@@ -413,7 +444,8 @@ internal fun FieldColor.toColor(isNightMode: Boolean = true): Color? =
         is FieldColor.Muted -> MutedTextGrey
         is FieldColor.StreamState -> null
         is FieldColor.Threshold -> null
-        is FieldColor.DangerZone -> dangerZoneColor(outsideFactor, borderProximity, hasSafeZone)
+        is FieldColor.DangerZone ->
+            dangerZoneTextColor(outsideFactor, borderProximity, hasSafeZone, isNightMode)
         is FieldColor.Zone ->
             if (isHr) hrZoneColor(zone, palette, readable = true, isNightMode = isNightMode)
             else powerZoneColor(zone, palette, readable = true, isNightMode = isNightMode)
