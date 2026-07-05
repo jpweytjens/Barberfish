@@ -91,31 +91,14 @@ Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`
 
 Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands.
 
-Target mode against a 25 km/h target:
-
 <table>
   <tr>
-    <td align="center">Below the target</td>
-    <td align="center">Above the target</td>
+    <td align="center">Target mode sweeping through a 25 km/h target</td>
+    <td align="center">Range mode sweeping through a 20 to 30 km/h range</td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/threshold_target_below.jpg" alt="Avg Speed in fill mode, red cell at 22.0 below the 25 target"></td>
-    <td align="center"><img src="screenshots/threshold_target_above.jpg" alt="Avg Speed in fill mode, green cell at 28.0 above the 25 target"></td>
-  </tr>
-</table>
-
-Range mode against a 20 to 30 km/h range:
-
-<table>
-  <tr>
-    <td align="center">Below the range</td>
-    <td align="center">Within the range</td>
-    <td align="center">Above the range</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/threshold_range_below.jpg" alt="Avg Speed in fill mode, red cell at 18.5 below the 20 to 30 range"></td>
-    <td align="center"><img src="screenshots/threshold_range_within.jpg" alt="Avg Speed in fill mode, green cell at 25.0 within the 20 to 30 range"></td>
-    <td align="center"><img src="screenshots/threshold_range_above.jpg" alt="Avg Speed in fill mode, orange cell at 31.5 above the 20 to 30 range"></td>
+    <td align="center"><img src="screenshots/threshold_target_sweep.gif" alt="Avg Speed in fill mode sweeping through a 25 km/h target, fading from red below to green above"></td>
+    <td align="center"><img src="screenshots/threshold_range_sweep.gif" alt="Avg Speed in fill mode sweeping through a 20 to 30 km/h range, red outside, green within, amber warning bands at the edges"></td>
   </tr>
 </table>
 
