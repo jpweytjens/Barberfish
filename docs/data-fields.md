@@ -4,8 +4,6 @@ Every data field Barberfish provides, grouped by category. The Enhancements
 columns list the options each field supports. All of them are set per field
 in the Barberfish app, with live previews; changes apply mid-ride.
 
-<img src="screenshots/config.jpg" width="300" alt="Main Barberfish config screen with HUD and Data Fields sections">
-
 <table>
   <thead>
     <tr>
