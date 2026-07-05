@@ -26,7 +26,7 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
 ## Highlights
 
 - A 3- or 4-column HUD groups any fields side by side, with zone coloring, smoothing, and formatting set per slot.
-- When a route is loaded, an elevation profile drawn as a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired sparkline sits below the HUD. It shows the whole route's upcoming terrain with tap-to-cycle 5/10/20 km lookahead, or runs in Climbs mode: hidden until a climb nears, a `Climb 2/5` heads-up, then the climb framed foot to summit until it clears at the top, revealing earlier for harder climbs.
+- With a route loaded, an elevation profile drawn as a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired sparkline sits below the HUD, showing the terrain ahead or, in Climbs mode, framing each climb foot to summit ([see it in action](docs/gallery.md#climbs-mode)).
 - Grade is smoothed over the last 30 m of road rather than a time window, so it holds steady at any speed and stops moving when you do ([how it works](docs/algorithms.md#grade)).
 - ETA learns from how you have actually been riding, so the estimate sharpens as the ride goes on instead of starting from a generic guess ([how it works](docs/algorithms.md#eta)).
 - Zone and grade coloring as colored text or a filled cell, with brand palettes kept legible in light and dark mode ([all palettes](docs/color-palettes.md)).

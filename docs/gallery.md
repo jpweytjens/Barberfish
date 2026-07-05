@@ -4,7 +4,7 @@ Barberfish on the Karoo, including the states a short ride might not show. Where
 
 ## HUD and elevation profile
 
-Slots, columns, and the profile modes are set per field in the Barberfish app ([every field and its options](data-fields.md)).
+Slots, columns, and the profile modes are set per field in the Barberfish app ([every field and its options](data-fields.md)). Tap the profile to cycle 5, 10, or 20 km of lookahead.
 
 <table>
   <tr>
@@ -19,7 +19,7 @@ Slots, columns, and the profile modes are set per field in the Barberfish app ([
 
 ## Climbs mode
 
-The profile stays hidden until a climb nears, flags it with a heads-up, then frames it foot to summit until it clears at the top.
+The profile stays hidden until a climb nears, flags it with a `Climb 2/5` heads-up, then frames it foot to summit until it clears at the top. The overlay appears earlier for harder climbs.
 
 <table>
   <tr>
