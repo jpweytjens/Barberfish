@@ -1,6 +1,7 @@
 # Barberfish
 
 [![Release](https://img.shields.io/github/v/release/jpweytjens/barberfish)](https://github.com/jpweytjens/barberfish/releases/latest)
+[![Download](https://img.shields.io/badge/download-barberfish.apk-2ea44f?logo=android&logoColor=white)](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk)
 [![CI](https://img.shields.io/github/actions/workflow/status/jpweytjens/barberfish/ci.yml?branch=master)](https://github.com/jpweytjens/barberfish/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/github/downloads/jpweytjens/barberfish/barberfish.apk)](https://github.com/jpweytjens/barberfish/releases)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
