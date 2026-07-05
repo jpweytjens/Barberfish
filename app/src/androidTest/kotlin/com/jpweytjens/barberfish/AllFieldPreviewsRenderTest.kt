@@ -8,17 +8,26 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
 import com.jpweytjens.barberfish.datatype.BarberfishDataType
+import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
+import com.jpweytjens.barberfish.datatype.SparklineRender
 import com.jpweytjens.barberfish.datatype.avgSpeedFieldState
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
+import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
+import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
+import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
+import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
+import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.datatype.sparklineImageSize
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
 import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -164,6 +173,43 @@ class AllFieldPreviewsRenderTest {
                 val state = avgSpeedFieldState(kph / 3.6, cfg, profile, includePaused = false)
                 writePreviewPng(Sample(avgSpeed, state), name, cellConfig, design, context, statesDir)
             }
+
+            // Pinned Profile render for docs: a fixed position on the RvV fixture so
+            // recaptures never move the window. 2.5 km in, the default 5 km lookahead
+            // frames the Muur and the second climb with their summit POIs.
+            val sparkline = types.filterIsInstance<ElevationSparklineField>().single()
+            val sparkCfg = runBlocking { context.streamFieldSparklineConfig().first() }
+            val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
+            val elevPoints =
+                visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
+            val (spBitmap, _) =
+                renderElevationSparkline(
+                    elevationPoints = elevPoints,
+                    positionM = 3_000f,
+                    widthPx = spWidth,
+                    heightPx = spHeight,
+                    density = context.resources.displayMetrics.density,
+                    palette = gradePalette,
+                    readable = false,
+                    lookaheadM = sparkCfg.lookaheadKm * 1000f,
+                    skipBands = sparkCfg.skipBands,
+                    skipBandsDescent = sparkCfg.skipBandsDescent,
+                    minElevRangeM = sparkCfg.yZoom.minRangeM,
+                    logWarpK = sparkCfg.warp.k,
+                    positionFraction = sparkCfg.warp.positionFraction,
+                    climbRanges = rvvClimbsFixture(),
+                    showClimbs = sparkCfg.showClimbs,
+                    poiDistances = rvvPoisFixture(),
+                    showPois = sparkCfg.showPois,
+                )
+            writePreviewPng(
+                Sample(sparkline, SparklineRender(spBitmap, sparkCfg.showHeader)),
+                "profile_poi",
+                cellConfig,
+                design,
+                context,
+                statesDir,
+            )
         } finally {
             karooSystem.disconnect()
         }
