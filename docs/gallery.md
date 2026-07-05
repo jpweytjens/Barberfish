@@ -19,7 +19,7 @@ Slots, columns, and the profile modes are set per field in the Barberfish app ([
 
 ## Climbs mode
 
-The profile stays hidden until a climb nears, flags it with a `Climb 2/5` heads-up, then frames it foot to summit until it clears at the top. The overlay appears earlier for harder climbs.
+The profile stays hidden until a climb nears, flags it with a heads-up counter (`Climb 1/1` below: the first and only climb on that route), then frames it foot to summit until it clears at the top. The overlay appears earlier for harder climbs.
 
 <table>
   <tr>
@@ -34,16 +34,18 @@ The profile stays hidden until a climb nears, flags it with a `Climb 2/5` heads-
 
 ## Grade
 
-Grade colors its cell by the gradient palette and greys out when the estimate is not reliable, holding the last reading instead of going blank ([how the estimate works](algorithms.md#grade)).
+Grade colors its cell by the gradient palette, searches until it has 30 m of road, and greys out when the estimate is not reliable, holding the last reading instead of going blank ([how the estimate works](algorithms.md#grade)).
 
 <table>
   <tr>
-    <td align="center">Grade fill colored by the gradient palette</td>
-    <td align="center">Grade greys out when the estimate is not reliable</td>
+    <td align="center">Searching during the first 30 m</td>
+    <td align="center">Fill colored by the gradient palette</td>
+    <td align="center">Grey hold when you stop</td>
   </tr>
   <tr>
+    <td align="center"><img src="screenshots/grade_searching.jpg" alt="Grade data field showing Searching before it has 30 m of road to fit"></td>
     <td align="center"><img src="screenshots/grade_color.jpg" alt="Grade data field in fill mode, orange cell at 13 percent"></td>
-    <td align="center"><img src="screenshots/grade_stale.jpg" alt="Grade data field in fill mode showing the grey stale state when no reliable estimate is available"></td>
+    <td align="center"><img src="screenshots/grade_stale.jpg" alt="Grade data field in fill mode holding the last reading in grey when no reliable estimate is available"></td>
   </tr>
 </table>
 
@@ -73,6 +75,6 @@ Light and dark mode are both supported, with [each palette tuned per theme](colo
   </tr>
   <tr>
     <td align="center"><img src="screenshots/config.jpg" alt="Main Barberfish config screen with HUD and Data Fields sections"></td>
-    <td align="center"><img src="screenshots/threshold.jpg" alt="Avg Speed threshold config with text-mode green above-target coloring"></td>
+    <td align="center"><img src="screenshots/threshold_config.jpg" alt="Avg Speed threshold config with text-mode green above-target coloring"></td>
   </tr>
 </table>
