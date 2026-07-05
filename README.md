@@ -91,9 +91,7 @@ Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytj
 
 ### For extension developers
 
-[`BarberfishView`](app/src/main/kotlin/com/jpweytjens/barberfish/datatype/BarberfishView.kt) and [`BarberfishDataType`](app/src/main/kotlin/com/jpweytjens/barberfish/datatype/BarberfishDataType.kt) are a reimplementation of the native Karoo data field that matches the Hammerhead look and feel, with added support for variable font sizes and control over the fill color behind the label and icon.
-
-The [architecture reference](docs/architecture.md) covers the component hierarchy, naming conventions, and the rationale behind using `AndroidRemoteViews` for the label and value rendering. The [SDK findings page](docs/sdk-findings.md) collects empirically discovered SDK behavior.
+[`BarberfishView`](app/src/main/kotlin/com/jpweytjens/barberfish/datatype/BarberfishView.kt) and [`BarberfishDataType`](app/src/main/kotlin/com/jpweytjens/barberfish/datatype/BarberfishDataType.kt) reimplement the native Karoo data field look and feel, with variable font sizes and control over the fill color behind the label and icon. The [developer docs](docs/README.md#for-developers) cover the architecture, the SDK findings, and the Karoo 2 quirks.
 
 ## License
 
