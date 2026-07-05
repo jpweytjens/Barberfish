@@ -4,7 +4,7 @@ Every data field Barberfish provides, grouped by category. The Enhancements
 columns list the options each field supports. All of them are set per field
 in the Barberfish app, with live previews; changes apply mid-ride.
 
-<img src="config.jpg" width="300" alt="Main Barberfish config screen with HUD and Data Fields sections">
+<img src="screenshots/config.jpg" width="300" alt="Main Barberfish config screen with HUD and Data Fields sections">
 
 <table>
   <thead>
@@ -88,7 +88,7 @@ Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`
 
 Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands.
 
-<img src="threshold.jpg" width="300" alt="Avg Speed threshold config with text-mode green above-target coloring">
+<img src="screenshots/threshold.jpg" width="300" alt="Avg Speed threshold config with text-mode green above-target coloring">
 
 ## Average speed variants
 

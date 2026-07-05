@@ -18,8 +18,8 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
     <td align="center">Karoo native fields beside their Barberfish counterparts</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
-    <td align="center"><img src="docs/karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
+    <td align="center"><img src="docs/screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
+    <td align="center"><img src="docs/screenshots/karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
   </tr>
 </table>
 
@@ -41,8 +41,8 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
     <td align="center">Climbs mode frames the climb foot to summit</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
-    <td align="center"><img src="docs/climbs_profile.jpg" alt="Climbs mode profile framing a climb foot to summit with the position dot partway up"></td>
+    <td align="center"><img src="docs/screenshots/climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
+    <td align="center"><img src="docs/screenshots/climbs_profile.jpg" alt="Climbs mode profile framing a climb foot to summit with the position dot partway up"></td>
   </tr>
 </table>
 

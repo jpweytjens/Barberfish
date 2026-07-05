@@ -16,8 +16,8 @@ Grade is smoothed over distance rather than time, fitting an [ordinary least squ
     <td align="center">Grade greys out when the estimate is not reliable</td>
   </tr>
   <tr>
-    <td align="center"><img src="grade_color.jpg" alt="Grade data field in fill mode, orange cell at 13 percent"></td>
-    <td align="center"><img src="grade_stale.jpg" alt="Grade data field in fill mode showing the grey stale state when no reliable estimate is available"></td>
+    <td align="center"><img src="screenshots/grade_color.jpg" alt="Grade data field in fill mode, orange cell at 13 percent"></td>
+    <td align="center"><img src="screenshots/grade_stale.jpg" alt="Grade data field in fill mode showing the grey stale state when no reliable estimate is available"></td>
   </tr>
 </table>
 

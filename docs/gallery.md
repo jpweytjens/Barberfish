@@ -12,8 +12,8 @@ Slots, columns, and the profile modes are set per field in the Barberfish app ([
     <td align="center">4-column HUD config with fill-mode zone coloring</td>
   </tr>
   <tr>
-    <td align="center"><img src="hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
-    <td align="center"><img src="hud_config.jpg" alt="HUD config screen with 4-column layout and fill-mode zones"></td>
+    <td align="center"><img src="screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
+    <td align="center"><img src="screenshots/hud_config.jpg" alt="HUD config screen with 4-column layout and fill-mode zones"></td>
   </tr>
 </table>
 
@@ -27,8 +27,8 @@ The profile stays hidden until a climb nears, flags it with a `Climb 2/5` heads-
     <td align="center">Climbs mode frames the climb foot to summit</td>
   </tr>
   <tr>
-    <td align="center"><img src="climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
-    <td align="center"><img src="climbs_profile.jpg" alt="Climbs mode profile framing a climb foot to summit with the position dot partway up"></td>
+    <td align="center"><img src="screenshots/climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
+    <td align="center"><img src="screenshots/climbs_profile.jpg" alt="Climbs mode profile framing a climb foot to summit with the position dot partway up"></td>
   </tr>
 </table>
 
@@ -42,8 +42,8 @@ Grade colors its cell by the gradient palette and greys out when the estimate is
     <td align="center">Grade greys out when the estimate is not reliable</td>
   </tr>
   <tr>
-    <td align="center"><img src="grade_color.jpg" alt="Grade data field in fill mode, orange cell at 13 percent"></td>
-    <td align="center"><img src="grade_stale.jpg" alt="Grade data field in fill mode showing the grey stale state when no reliable estimate is available"></td>
+    <td align="center"><img src="screenshots/grade_color.jpg" alt="Grade data field in fill mode, orange cell at 13 percent"></td>
+    <td align="center"><img src="screenshots/grade_stale.jpg" alt="Grade data field in fill mode showing the grey stale state when no reliable estimate is available"></td>
   </tr>
 </table>
 
@@ -57,8 +57,8 @@ Light and dark mode are both supported, with [each palette tuned per theme](colo
     <td align="center">Karoo native fields beside their Barberfish counterparts</td>
   </tr>
   <tr>
-    <td align="center"><img src="light_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
-    <td align="center"><img src="karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
+    <td align="center"><img src="screenshots/light_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
+    <td align="center"><img src="screenshots/karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
   </tr>
 </table>
 
@@ -72,7 +72,7 @@ Light and dark mode are both supported, with [each palette tuned per theme](colo
     <td align="center">Average speed with target-mode threshold, text coloring above target</td>
   </tr>
   <tr>
-    <td align="center"><img src="config.jpg" alt="Main Barberfish config screen with HUD and Data Fields sections"></td>
-    <td align="center"><img src="threshold.jpg" alt="Avg Speed threshold config with text-mode green above-target coloring"></td>
+    <td align="center"><img src="screenshots/config.jpg" alt="Main Barberfish config screen with HUD and Data Fields sections"></td>
+    <td align="center"><img src="screenshots/threshold.jpg" alt="Avg Speed threshold config with text-mode green above-target coloring"></td>
   </tr>
 </table>
