@@ -363,7 +363,7 @@ enum class SpeedThresholdSource {
 
 @Serializable
 data class SpeedFieldConfig(
-    val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S3,
+    val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0,
     val source: SpeedThresholdSource = SpeedThresholdSource.FIXED,
     val thresholdKph: Double = 0.0,
     val rangePercentBelow: Double = 10.0,
