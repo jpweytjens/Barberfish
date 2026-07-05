@@ -318,6 +318,30 @@ def parse_palettes(path: Path = ZONE_COLORING_KT) -> dict[str, list[str]]:
             continue
 
         # current_name is set — we are inside a literal block body.
+        if not palettes[current_name]:
+            # Derived body on its own line: ``PARENT.take(N)`` or
+            # ``listOf(i, j, ...).map { PARENT[it] }``.
+            take_match = _TAKE_RE.match(line.strip())
+            if take_match:
+                parent, n = take_match.group(1), int(take_match.group(2))
+                if parent in palettes:
+                    palettes[current_name] = palettes[parent][:n]
+                else:
+                    del palettes[current_name]
+                current_name = None
+                continue
+
+            idx_match = _INDEX_MAP_RE.match(line.strip())
+            if idx_match:
+                indices = [int(x) for x in idx_match.group(1).split(",") if x.strip()]
+                parent = idx_match.group(2)
+                if parent in palettes:
+                    palettes[current_name] = [palettes[parent][i] for i in indices]
+                else:
+                    del palettes[current_name]
+                current_name = None
+                continue
+
         if "listOf(" in line and not palettes[current_name]:
             continue
 
@@ -341,6 +365,8 @@ def parse_palettes(path: Path = ZONE_COLORING_KT) -> dict[str, list[str]]:
 _GRADE_OPEN_RE = re.compile(
     r"^\s*(?:private\s+)?val\s+(\w+_GRADE_BANDS\w*)\s*=\s*listOf\("
 )
+# Declaration with the ``listOf(`` opener wrapped onto the next line.
+_GRADE_DECL_RE = re.compile(r"^\s*(?:private\s+)?val\s+(\w+_GRADE_BANDS\w*)\s*=\s*$")
 # Threshold can be a signed float (e.g. ``-9.0``) or the literal
 # ``Double.NEGATIVE_INFINITY`` sentinel used by the Turbo palette.
 _THRESHOLD = r"(-?\d+(?:\.\d+)?|Double\.NEGATIVE_INFINITY)"
@@ -380,12 +406,26 @@ def parse_grade_bands(
     palettes = palettes or parse_palettes()
     bands: dict[str, list[tuple[float, str]]] = {}
     current_name: str | None = None
+    pending_name: str | None = None
 
     for line in path.read_text(encoding="utf-8").splitlines():
         open_match = _GRADE_OPEN_RE.match(line)
         if open_match:
             current_name = open_match.group(1)
             bands[current_name] = []
+            pending_name = None
+            continue
+
+        if pending_name is not None:
+            if line.strip().startswith("listOf("):
+                current_name = pending_name
+                bands[current_name] = []
+            pending_name = None
+            continue
+
+        decl_match = _GRADE_DECL_RE.match(line)
+        if decl_match:
+            pending_name = decl_match.group(1)
             continue
 
         if current_name is None:
