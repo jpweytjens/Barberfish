@@ -202,14 +202,12 @@ class AllFieldPreviewsRenderTest {
                     poiDistances = rvvPoisFixture(),
                     showPois = sparkCfg.showPois,
                 )
-            writePreviewPng(
-                Sample(sparkline, SparklineRender(spBitmap, sparkCfg.showHeader)),
-                "profile_poi",
-                cellConfig,
-                design,
-                context,
-                statesDir,
-            )
+            val pinnedProfile = Sample(sparkline, SparklineRender(spBitmap, sparkCfg.showHeader))
+            writePreviewPng(pinnedProfile, "profile_poi", cellConfig, design, context, statesDir)
+            // The grid tile sampled from previewFlow lands wherever the clock-driven
+            // sweep happens to be; overwrite it with the pinned render so the
+            // all-fields overview shows bands and POIs on every recapture.
+            writePreviewPng(pinnedProfile, sparkline.typeId, cellConfig, design, context, outDir)
         } finally {
             karooSystem.disconnect()
         }
