@@ -163,17 +163,27 @@ class AllFieldPreviewsRenderTest {
                     maxKph = 30.0,
                     colorMode = ZoneColorMode.BACKGROUND,
                 )
-            val thresholdCases =
+            // Fine-grained sweeps through the target and range for the docs GIFs
+            // (assembled by render_previews.sh): the fade and the warning bands
+            // animate instead of showing three discrete states.
+            val sweeps =
                 listOf(
-                    Triple("threshold_target_below", 22.0, targetCfg),
-                    Triple("threshold_target_above", 28.0, targetCfg),
-                    Triple("threshold_range_below", 18.5, rangeCfg),
-                    Triple("threshold_range_within", 25.0, rangeCfg),
-                    Triple("threshold_range_above", 31.5, rangeCfg),
+                    Triple("target", targetCfg, sweepKph(21.0, 29.0, step = 0.25)),
+                    Triple("range", rangeCfg, sweepKph(17.5, 32.5, step = 0.5)),
                 )
-            for ((name, kph, cfg) in thresholdCases) {
-                val state = avgSpeedFieldState(kph / 3.6, cfg, profile, includePaused = false)
-                writePreviewPng(Sample(avgSpeed, state), name, cellConfig, design, context, statesDir)
+            for ((mode, cfg, kphs) in sweeps) {
+                val sweepDir = File(File(outDir, "sweep"), mode).apply { mkdirs() }
+                kphs.forEachIndexed { i, kph ->
+                    val state = avgSpeedFieldState(kph / 3.6, cfg, profile, includePaused = false)
+                    writePreviewPng(
+                        Sample(avgSpeed, state),
+                        "%02d".format(i),
+                        cellConfig,
+                        design,
+                        context,
+                        sweepDir,
+                    )
+                }
             }
 
             // Pinned Profile render for docs: a fixed position on the RvV fixture so
@@ -231,6 +241,9 @@ class AllFieldPreviewsRenderTest {
     }
 
     private class Sample<T>(val type: BarberfishBase<T>, val state: T)
+
+    private fun sweepKph(start: Double, end: Double, step: Double): List<Double> =
+        generateSequence(start) { it + step }.takeWhile { it <= end + 1e-9 }.toList()
 
     private suspend fun <T> collectSample(
         type: BarberfishBase<T>,
