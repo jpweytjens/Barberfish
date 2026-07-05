@@ -1,10 +1,13 @@
 # Data fields
 
-Every data field Barberfish provides, grouped by category. The Enhancements
-columns list the options each field supports. All of them are set per field
-in the Barberfish app, with live previews; changes apply mid-ride.
+Every data field Barberfish provides, rendered as it appears on the Karoo:
+the single-cell fields first, then the 3- and 4-column HUD strips.
 
 <img src="screenshots/all_fields.png" alt="Every Barberfish field rendered from its live preview, with the 3-column and 4-column HUD strips at the bottom">
+
+The table lists the same fields grouped by category. The Enhancements
+columns list the options each field supports. All of them are set per field
+in the Barberfish app, with live previews; changes apply mid-ride.
 
 <table>
   <thead>
@@ -87,8 +90,6 @@ Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`
 ## Thresholds
 
 Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands.
-
-<img src="screenshots/threshold.jpg" width="300" alt="Avg Speed threshold config with text-mode green above-target coloring">
 
 ## Average speed variants
 
