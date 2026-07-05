@@ -16,7 +16,7 @@ fields hide, or labels at a different size.
 1. On the Karoo, open the Data Field Design settings and note your choices
    for Data Icons and Label Size.
 2. Open the Barberfish app, expand its Data Field Design section, and set
-   ICONS and LABEL SIZE to the same values.
+   DATA ICONS and LABEL SIZE to the same values.
 
 <table>
   <tr>

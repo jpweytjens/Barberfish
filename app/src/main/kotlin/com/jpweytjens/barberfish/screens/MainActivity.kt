@@ -1184,7 +1184,7 @@ class MainActivity : ComponentActivity() {
                     onToggle = { designExpanded = !designExpanded },
                 ) {
                     BoolToggleRow(
-                        label = "ICONS",
+                        label = "DATA ICONS",
                         value = dataFieldDesignConfig.showIcons,
                         onChange = { on ->
                             dataFieldDesignConfig = dataFieldDesignConfig.copy(showIcons = on)
