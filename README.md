@@ -15,11 +15,11 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
 <table>
   <tr>
     <td align="center">Elevation profile below a 3-column HUD on the map view</td>
-    <td align="center">Karoo native fields beside their Barberfish counterparts</td>
+    <td align="center">A full page of Barberfish fields, from the HUD to the route overview</td>
   </tr>
   <tr>
     <td align="center"><img src="docs/screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
-    <td align="center"><img src="docs/screenshots/karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
+    <td align="center"><img src="docs/screenshots/barberfish_fields.jpg" alt="Data page with 3-column HUD, elevation profile, zone-colored grade, elapsed time, both average speeds, route overview, and ride remaining"></td>
   </tr>
 </table>
 
