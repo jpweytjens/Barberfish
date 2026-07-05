@@ -29,7 +29,7 @@ Barberfish is a collection of data fields for the Hammerhead Karoo. They sit alo
 - With a route loaded, the elevation profile below the HUD shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
 - Grade is [smoothed over the last 30 m of road](docs/algorithms.md#grade) rather than a time window, so it holds steady at any speed and stops moving when you do.
 - ETA [learns from how you have actually been riding](docs/algorithms.md#eta), so the estimate sharpens as the ride goes on instead of starting from a generic guess.
-- Zone and grade coloring as colored text or a filled cell, with [brand palettes kept legible](docs/color-palettes.md) in light and dark mode.
+- Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md) kept legible in light and dark mode.
 - Threshold coloring for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
 - Per-field setup in the Barberfish app with live previews, covering [every field and its options](docs/data-fields.md).
 
