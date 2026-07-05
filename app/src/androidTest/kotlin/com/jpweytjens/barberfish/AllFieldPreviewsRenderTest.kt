@@ -7,16 +7,21 @@ import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
+import com.jpweytjens.barberfish.datatype.BarberfishDataType
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
+import com.jpweytjens.barberfish.datatype.avgSpeedFieldState
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
+import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
 import com.jpweytjens.barberfish.extension.saveHUDConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
@@ -128,6 +133,36 @@ class AllFieldPreviewsRenderTest {
             for ((name, reading) in gradeReadings) {
                 val state = GradeField.toGradeFieldState(reading, gradeCfg, gradePalette)
                 writePreviewPng(Sample(grade, state), name, cellConfig, design, context, statesDir)
+            }
+
+            // Avg Speed threshold statuses for docs/data-fields.md § Thresholds:
+            // target mode below/above, then min-max range below/within/above.
+            val avgSpeed = types.first { it.typeId == "avg-speed-moving" } as BarberfishDataType
+            val profile = runBlocking { karooSystem.streamUserProfile().first() }
+            val targetCfg =
+                AvgSpeedConfig(
+                    mode = ThresholdMode.TARGET,
+                    thresholdKph = 25.0,
+                    colorMode = ZoneColorMode.BACKGROUND,
+                )
+            val rangeCfg =
+                AvgSpeedConfig(
+                    mode = ThresholdMode.MIN_MAX,
+                    minKph = 20.0,
+                    maxKph = 30.0,
+                    colorMode = ZoneColorMode.BACKGROUND,
+                )
+            val thresholdCases =
+                listOf(
+                    Triple("threshold_target_below", 22.0, targetCfg),
+                    Triple("threshold_target_above", 28.0, targetCfg),
+                    Triple("threshold_range_below", 18.5, rangeCfg),
+                    Triple("threshold_range_within", 25.0, rangeCfg),
+                    Triple("threshold_range_above", 31.5, rangeCfg),
+                )
+            for ((name, kph, cfg) in thresholdCases) {
+                val state = avgSpeedFieldState(kph / 3.6, cfg, profile, includePaused = false)
+                writePreviewPng(Sample(avgSpeed, state), name, cellConfig, design, context, statesDir)
             }
         } finally {
             karooSystem.disconnect()
