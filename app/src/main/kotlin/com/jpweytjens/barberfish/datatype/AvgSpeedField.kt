@@ -174,7 +174,10 @@ class AvgSpeedField(
                     }
                 }
             val offsets = listOf(-0.15, -0.08, -0.03, 0.03, 0.08, 0.15)
-            val rawValues = offsets.map { pct -> centerKph * (1.0 + pct) / 3.6 }
+            // Total includes paused time, so for the same ride it always reads lower
+            // than Moving. Bake that into the pair so side-by-side previews stay truthful.
+            val pauseFactor = if (includePaused) 0.92 else 1.0
+            val rawValues = offsets.map { pct -> centerKph * (1.0 + pct) * pauseFactor / 3.6 }
             return rawValues.map { rawMs -> avgSpeedFieldState(rawMs, cfg, profile, includePaused) }
         }
     }
