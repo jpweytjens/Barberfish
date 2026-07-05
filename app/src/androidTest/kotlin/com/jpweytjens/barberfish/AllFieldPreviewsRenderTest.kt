@@ -17,6 +17,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -66,15 +69,28 @@ class AllFieldPreviewsRenderTest {
         try {
             val design = DataFieldDesignConfig()
             val outDir = File(context.getExternalFilesDir(null), "previews").apply { mkdirs() }
-            for (type in barberfishDataTypes(karooSystem)) {
-                val config = if (type is HUDDataType) hudConfig else cellConfig
-                val rendered = renderPreview(type, config, design, context)
+            // Preview flows cycle through a fixture list at 1 Hz. Sampling a staggered
+            // position per field keeps same-category neighbours (all power fields, all
+            // time fields) from landing on near-identical values. Flows are collected
+            // concurrently so the deepest drop bounds the wall-clock, not the sum.
+            val samples =
+                runBlocking {
+                    barberfishDataTypes(karooSystem)
+                        .mapIndexed { i, type ->
+                            val config = if (type is HUDDataType) hudConfig else cellConfig
+                            async { collectSample(type, drops = i % 5, config, context) }
+                        }
+                        .awaitAll()
+                }
+            for (sample in samples) {
+                val config = if (sample.type is HUDDataType) hudConfig else cellConfig
+                val rendered = renderSample(sample, config, design, context)
                 val flattened = flattenOntoBlack(rendered)
                 assertTrue(
-                    "${type.typeId} rendered fully black",
+                    "${sample.type.typeId} rendered fully black",
                     hasNonBlackPixel(flattened),
                 )
-                FileOutputStream(File(outDir, "${type.typeId}.png")).use {
+                FileOutputStream(File(outDir, "${sample.type.typeId}.png")).use {
                     flattened.compress(Bitmap.CompressFormat.PNG, 100, it)
                 }
             }
@@ -83,22 +99,31 @@ class AllFieldPreviewsRenderTest {
         }
     }
 
-    private fun <T> renderPreview(
+    private class Sample<T>(val type: BarberfishBase<T>, val state: T)
+
+    private suspend fun <T> collectSample(
         type: BarberfishBase<T>,
+        drops: Int,
+        config: ViewConfig,
+        context: Context,
+    ): Sample<T> =
+        Sample(
+            type,
+            withTimeout(20_000) { type.previewFlow(context, config).drop(drops).first() },
+        )
+
+    private fun <T> renderSample(
+        sample: Sample<T>,
         config: ViewConfig,
         design: DataFieldDesignConfig,
         context: Context,
     ): Bitmap {
-        val state =
-            runBlocking {
-                withTimeout(10_000) { type.previewFlow(context, config).first() }
-            }
         var bitmap: Bitmap? = null
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val rv = type.renderState(state, design, config, context)
+            val rv = sample.type.renderState(sample.state, design, config, context)
             bitmap = remoteViewsToBitmap(rv, config.viewSize.first, config.viewSize.second, context)
         }
-        return bitmap ?: error("render produced no bitmap for ${type.typeId}")
+        return bitmap ?: error("render produced no bitmap for ${sample.type.typeId}")
     }
 
     private fun flattenOntoBlack(rendered: Bitmap): Bitmap {
