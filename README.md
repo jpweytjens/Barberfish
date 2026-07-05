@@ -74,7 +74,7 @@ Karoo's Data Field Design settings (Data Icons and Label Size) are not visible t
 
 ## Color palettes
 
-Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes add Garmin and Turbo. Each is kept legible in light and dark mode. Every palette in both modes, and the contrast tuning behind them: [docs/color-palettes.md](docs/color-palettes.md).
+Zone palettes from Karoo, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes swap in Garmin and Turbo. Each is kept legible in light and dark mode. Every palette in both modes, and the contrast tuning behind them: [docs/color-palettes.md](docs/color-palettes.md).
 
 ![Karoo power palette in both themes and fill mode](docs/img/palette-power-karoo.svg)
 
