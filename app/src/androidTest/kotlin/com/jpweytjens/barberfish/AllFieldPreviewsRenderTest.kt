@@ -7,12 +7,17 @@ import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
+import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
+import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
 import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
 import java.io.File
@@ -102,6 +107,27 @@ class AllFieldPreviewsRenderTest {
                 writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
             } finally {
                 runBlocking { context.saveHUDConfig(originalHudConfig) }
+            }
+
+            // Doc renders: the three Grade statuses as single-cell crops for
+            // docs/algorithms.md, written to a subdir so the contact-sheet grid
+            // skips them. Fill mode matches the captions there. "Searching…" is
+            // not part of the preview cycle, so build the states directly.
+            val statesDir = File(outDir, "states").apply { mkdirs() }
+            val grade = types.filterIsInstance<GradeField>().single()
+            val gradeCfg =
+                runBlocking { context.streamGradeFieldConfig().first() }
+                    .copy(colorMode = ZoneColorMode.BACKGROUND)
+            val gradePalette = runBlocking { context.streamZoneConfig().first() }.gradePalette
+            val gradeReadings =
+                listOf(
+                    "grade_searching" to GradeReading.Unavailable,
+                    "grade_color" to GradeReading.Fresh(13.0f),
+                    "grade_stale" to GradeReading.Stale(6.2f),
+                )
+            for ((name, reading) in gradeReadings) {
+                val state = GradeField.toGradeFieldState(reading, gradeCfg, gradePalette)
+                writePreviewPng(Sample(grade, state), name, cellConfig, design, context, statesDir)
             }
         } finally {
             karooSystem.disconnect()

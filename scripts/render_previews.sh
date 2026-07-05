@@ -71,3 +71,10 @@ magick "$outdir/.docs_grid.png" "$outdir/.docs_hud.png" \
     docs/screenshots/all_fields.png
 rm "$outdir/.docs_grid.png" "$outdir/.docs_hud.png"
 echo "docs overview: docs/screenshots/all_fields.png"
+
+# Per-state doc renders (Grade statuses for docs/algorithms.md).
+for f in "$outdir"/states/*.png; do
+    name=$(basename "${f%.png}")
+    magick "$f" "docs/screenshots/$name.jpg"
+    echo "docs state: docs/screenshots/$name.jpg"
+done
