@@ -81,6 +81,9 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 - [karoo-ext](https://github.com/hammerheadnav/karoo-ext): the official Hammerhead SDK for building Karoo extensions
 - [awesome-karoo](https://github.com/timklge/awesome-karoo): a curated list of Karoo extensions and resources
 - [Hammerhead Visual Data Field System](https://www.figma.com/design/Adr23SlulPNE2RBu1VI28C/%3CH%3E-Visual-Data-Field-System?node-id=1-64&p=f): the Figma design guide used to match the native Karoo look and feel
+- [Edward Tufte](https://www.edwardtufte.com/): the sparkline behind the elevation profile
+- [Diátaxis](https://diataxis.fr/): the structure behind the documentation
+- The Karoo community on [Reddit](https://www.reddit.com/r/Karoo/) and the [Hammerhead forums](https://support.hammerhead.io/hc/en-us/community/topics): feedback and suggestions
 
 ## Contributing
 
