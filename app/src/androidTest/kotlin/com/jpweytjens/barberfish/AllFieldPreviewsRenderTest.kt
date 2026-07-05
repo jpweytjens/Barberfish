@@ -7,12 +7,10 @@ import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
-import com.jpweytjens.barberfish.datatype.BarberfishDataType
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.SparklineRender
-import com.jpweytjens.barberfish.datatype.avgSpeedFieldState
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -21,16 +19,13 @@ import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.datatype.sparklineImageSize
-import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
-import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
 import com.jpweytjens.barberfish.extension.saveHUDConfig
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
-import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
@@ -146,45 +141,8 @@ class AllFieldPreviewsRenderTest {
                 writePreviewPng(Sample(grade, state), name, cellConfig, design, context, statesDir)
             }
 
-            // Avg Speed threshold statuses for docs/data-fields.md § Thresholds:
-            // target mode below/above, then min-max range below/within/above.
-            val avgSpeed = types.first { it.typeId == "avg-speed-moving" } as BarberfishDataType
-            val profile = runBlocking { karooSystem.streamUserProfile().first() }
-            val targetCfg =
-                AvgSpeedConfig(
-                    mode = ThresholdMode.TARGET,
-                    thresholdKph = 25.0,
-                    colorMode = ZoneColorMode.BACKGROUND,
-                )
-            val rangeCfg =
-                AvgSpeedConfig(
-                    mode = ThresholdMode.MIN_MAX,
-                    minKph = 20.0,
-                    maxKph = 30.0,
-                    colorMode = ZoneColorMode.BACKGROUND,
-                )
-            // Fine-grained sweeps through the target and range for the docs GIFs
-            // (assembled by render_previews.sh): the fade and the warning bands
-            // animate instead of showing three discrete states.
-            val sweeps =
-                listOf(
-                    Triple("target", targetCfg, sweepKph(21.0, 29.0, step = 0.25)),
-                    Triple("range", rangeCfg, sweepKph(17.5, 32.5, step = 0.5)),
-                )
-            for ((mode, cfg, kphs) in sweeps) {
-                val sweepDir = File(File(outDir, "sweep"), mode).apply { mkdirs() }
-                kphs.forEachIndexed { i, kph ->
-                    val state = avgSpeedFieldState(kph / 3.6, cfg, profile, includePaused = false)
-                    writePreviewPng(
-                        Sample(avgSpeed, state),
-                        "%02d".format(i),
-                        cellConfig,
-                        design,
-                        context,
-                        sweepDir,
-                    )
-                }
-            }
+            // Threshold coloring in docs/data-fields.md is shown as generated SVG
+            // strips (scripts/generate_threshold_legends.py), not device renders.
 
             // Pinned Profile render for docs: a fixed position on the RvV fixture so
             // recaptures never move the window. 2.5 km in, the default 5 km lookahead
@@ -241,9 +199,6 @@ class AllFieldPreviewsRenderTest {
     }
 
     private class Sample<T>(val type: BarberfishBase<T>, val state: T)
-
-    private fun sweepKph(start: Double, end: Double, step: Double): List<Double> =
-        generateSequence(start) { it + step }.takeWhile { it <= end + 1e-9 }.toList()
 
     private suspend fun <T> collectSample(
         type: BarberfishBase<T>,

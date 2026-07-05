@@ -1,11 +1,12 @@
 """
-Generate threshold legend SVGs for docs/data-fields.md.
+Generate threshold strips for docs/data-fields.md.
 
-Two strips mirroring the config screen's ThresholdLegend, drawn with the
-exact field colors from FieldColors.kt: target mode fades red -> cell
-black -> green through the target; range mode runs red -> orange at min ->
-green -> orange at max -> red. The sqrt easing of the on-device lerp is
-baked into the gradient stops.
+Two swatch rows in the style of the zone palette previews: seven cells per
+strip, each filled with the threshold color at a sample speed and labelled
+with that speed, using the exact colors and easing from FieldColors.kt.
+Target mode fades red -> cell black -> green through the target; range mode
+runs red -> orange at min -> green -> orange at max -> red. Grey markers
+under the strip name the target / min / max cells.
 
 Outputs land in ``docs/palettes/threshold-legend-{target,range}.svg``.
 
@@ -19,16 +20,22 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
+from palettes import best_text_on_background
+
 # FieldColors.kt
 RDYLGN_RED = (0xD7, 0x30, 0x27)
 RDYLGN_GREEN = (0x1A, 0x98, 0x50)
 DANGER_ORANGE = (0xFF, 0xA7, 0x26)
 CELL_BLACK = (0x00, 0x00, 0x00)
 
-WIDTH = 392
-BAR_H = 24
+CELL_W = 56
+CELL_H = 26
 HEIGHT = 44
-STOPS = 96
+FONT = "-apple-system, system-ui, sans-serif"
+
+TARGET_KPH = 25.0
+RANGE_MIN_KPH, RANGE_MAX_KPH = 20.0, 30.0
+RANGE_PERCENT = 10.0
 
 
 def lerp(a: tuple, b: tuple, t: float) -> tuple:
@@ -39,53 +46,52 @@ def hexc(c: tuple) -> str:
     return "#{:02X}{:02X}{:02X}".format(*c)
 
 
-def target_color(x: float) -> tuple:
-    # Target at 0.5; fully saturated beyond +/- 0.4 (the +/- range% band).
-    factor = max(-1.0, min(1.0, (x - 0.5) / 0.4))
+def target_color(kph: float) -> tuple:
+    factor = (kph - TARGET_KPH) / TARGET_KPH * 100.0 / RANGE_PERCENT
+    factor = max(-1.0, min(1.0, factor))
     if factor >= 0:
         return lerp(CELL_BLACK, RDYLGN_GREEN, math.sqrt(factor))
     return lerp(CELL_BLACK, RDYLGN_RED, math.sqrt(-factor))
 
 
-RANGE_MIN, RANGE_MAX = 0.22, 0.78
-BAND_OUT, BAND_IN = 0.10, 0.16
-
-
-def range_color(x: float) -> tuple:
-    if x < RANGE_MIN:
-        outside = min(1.0, (RANGE_MIN - x) / BAND_OUT)
+def range_color(kph: float) -> tuple:
+    band_below = RANGE_MIN_KPH * RANGE_PERCENT / 100.0
+    band_above = RANGE_MAX_KPH * RANGE_PERCENT / 100.0
+    if kph < RANGE_MIN_KPH:
+        outside = min(1.0, (RANGE_MIN_KPH - kph) / band_below)
         return lerp(DANGER_ORANGE, RDYLGN_RED, math.sqrt(outside))
-    if x > RANGE_MAX:
-        outside = min(1.0, (x - RANGE_MAX) / BAND_OUT)
+    if kph > RANGE_MAX_KPH:
+        outside = min(1.0, (kph - RANGE_MAX_KPH) / band_above)
         return lerp(DANGER_ORANGE, RDYLGN_RED, math.sqrt(outside))
     proximity = max(
         0.0,
-        1.0 - (x - RANGE_MIN) / BAND_IN,
-        1.0 - (RANGE_MAX - x) / BAND_IN,
+        1.0 - (kph - RANGE_MIN_KPH) / band_below,
+        1.0 - (RANGE_MAX_KPH - kph) / band_above,
     )
     return lerp(RDYLGN_GREEN, DANGER_ORANGE, math.sqrt(proximity))
 
 
-def legend_svg(color_at, markers: list[tuple[float, str]]) -> str:
-    grad_id = "g"
-    stops = "".join(
-        f'<stop offset="{i / (STOPS - 1):.4f}" stop-color="{hexc(color_at(i / (STOPS - 1)))}" />'
-        for i in range(STOPS)
-    )
-    ticks = "".join(
-        f'<line x1="{x * WIDTH:.0f}" y1="0" x2="{x * WIDTH:.0f}" y2="{BAR_H + 4}" '
-        f'stroke="#808080" stroke-width="1.5" />'
-        f'<text x="{x * WIDTH:.0f}" y="{HEIGHT - 3}" '
-        f'font-family="-apple-system, system-ui, sans-serif" font-size="12" '
-        f'fill="#808080" text-anchor="middle">{label}</text>'
-        for x, label in markers
-    )
+def strip_svg(kphs: list[float], color_at, markers: dict[int, str]) -> str:
+    width = CELL_W * len(kphs)
+    cells = []
+    for i, kph in enumerate(kphs):
+        fill = hexc(color_at(kph))
+        text = best_text_on_background(fill)
+        cells.append(
+            f'<rect x="{i * CELL_W}" y="0" width="{CELL_W}" height="{CELL_H}" fill="{fill}" />'
+            f'<text x="{i * CELL_W + CELL_W / 2:.1f}" y="{CELL_H / 2 + 4:.1f}" '
+            f'font-family="{FONT}" font-size="13" font-weight="600" '
+            f'fill="{text}" text-anchor="middle">{kph:.1f}</text>'
+        )
+    for i, label in markers.items():
+        cells.append(
+            f'<text x="{i * CELL_W + CELL_W / 2:.1f}" y="{HEIGHT - 3}" '
+            f'font-family="{FONT}" font-size="12" '
+            f'fill="#808080" text-anchor="middle">{label}</text>'
+        )
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" '
-        f'viewBox="0 0 {WIDTH} {HEIGHT}">'
-        f'<defs><linearGradient id="{grad_id}">{stops}</linearGradient></defs>'
-        f'<rect x="0" y="0" width="{WIDTH}" height="{BAR_H}" fill="url(#{grad_id})" />'
-        f"{ticks}</svg>\n"
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{HEIGHT}" '
+        f'viewBox="0 0 {width} {HEIGHT}">' + "".join(cells) + "</svg>\n"
     )
 
 
@@ -93,10 +99,18 @@ def main() -> None:
     out = Path(__file__).resolve().parent.parent / "docs" / "palettes"
     out.mkdir(exist_ok=True)
     (out / "threshold-legend-target.svg").write_text(
-        legend_svg(target_color, [(0.5, "target")])
+        strip_svg(
+            [22.0, 23.5, 24.5, 25.0, 25.5, 26.5, 28.0],
+            target_color,
+            markers={3: "target"},
+        )
     )
     (out / "threshold-legend-range.svg").write_text(
-        legend_svg(range_color, [(RANGE_MIN, "min"), (RANGE_MAX, "max")])
+        strip_svg(
+            [18.5, 20.0, 21.5, 25.0, 28.5, 30.0, 31.5],
+            range_color,
+            markers={1: "min", 5: "max"},
+        )
     )
     print("wrote threshold-legend-target.svg, threshold-legend-range.svg")
 

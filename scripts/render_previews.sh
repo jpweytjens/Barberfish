@@ -78,15 +78,3 @@ for f in "$outdir"/states/*.png; do
     magick "$f" "docs/screenshots/$name.jpg"
     echo "docs state: docs/screenshots/$name.jpg"
 done
-
-# Threshold sweep GIFs for docs/data-fields.md. Frames run low→high; append
-# the reversed middle so the loop ping-pongs instead of jump-cutting.
-for mode in target range; do
-    dir="$outdir/sweep/$mode"
-    [ -d "$dir" ] || continue
-    forward=$(ls "$dir"/*.png)
-    backward=$(ls -r "$dir"/*.png | sed '1d;$d')
-    magick -delay 12 -loop 0 $forward $backward \
-        "docs/screenshots/threshold_${mode}_sweep.gif"
-    echo "docs sweep: docs/screenshots/threshold_${mode}_sweep.gif"
-done

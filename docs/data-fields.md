@@ -93,16 +93,12 @@ Speed, average speed, and cadence support threshold coloring. Speed compares aga
 
 <table>
   <tr>
-    <td align="center">Target mode sweeping through a 25 km/h target</td>
-    <td align="center">Range mode sweeping through a 20 to 30 km/h range</td>
+    <td align="center">Target mode around a 25 km/h target</td>
+    <td align="center">Range mode across a 20 to 30 km/h range</td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/threshold_target_sweep.gif" alt="Avg Speed in fill mode sweeping through a 25 km/h target, fading from red below to green above"></td>
-    <td align="center"><img src="screenshots/threshold_range_sweep.gif" alt="Avg Speed in fill mode sweeping through a 20 to 30 km/h range, red outside, green within, amber warning bands at the edges"></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="palettes/threshold-legend-target.svg" width="240" alt="Target legend: red below the target fading through neutral to green above"></td>
-    <td align="center"><img src="palettes/threshold-legend-range.svg" width="240" alt="Range legend: red then orange below min, green within, orange then red above max"></td>
+    <td align="center"><img src="palettes/threshold-legend-target.svg" alt="Speeds around a 25 km/h target: red below, fading through neutral at the target, green above"></td>
+    <td align="center"><img src="palettes/threshold-legend-range.svg" alt="Speeds across a 20 to 30 km/h range: red then orange below min, green within, orange then red above max"></td>
   </tr>
 </table>
 
