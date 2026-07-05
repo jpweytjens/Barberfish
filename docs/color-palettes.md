@@ -8,6 +8,17 @@ determines how the chosen palette is rendered, and each mode handles
 contrast on both Karoo themes automatically. There is no global readable/original
 choice; pick any palette and both modes stay legible.
 
+<table>
+  <tr>
+    <td align="center">Text mode colors the value</td>
+    <td align="center">Fill mode colors the cell</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/power_zone_text.jpg" alt="Power field in Text mode, zone-colored orange value on the dark cell background"></td>
+    <td align="center"><img src="screenshots/power_zone_fill.jpg" alt="Power field in Fill mode, orange zone-colored cell with auto-picked white value"></td>
+  </tr>
+</table>
+
 The Karoo datafield background is `#000000` in dark mode and `#FFFFFF` in light
 mode. All contrast calculations below are run against both, producing a pair of
 tuned palettes per brand; Barberfish picks the matching variant from the
