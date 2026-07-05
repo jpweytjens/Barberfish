@@ -14,6 +14,19 @@ New data fields:
 
 Data Field Design:
 - Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
+- The Barberfish toggle is called Data Icons, the same name Karoo uses
+
+Config previews:
+- Field previews now play one simulated ride: power, heart rate, cadence, and grade rise and fall together, elapsed time is moving plus paused, and dawn and dusk track sunrise and sunset
+- Similar fields preview different values: average speed Total reads below Moving, last lap trails the current lap
+
+Colors:
+- Threshold text colors now adjust per theme like the zone palettes: red and green read clearly at night, the range warning orange in daylight
+- A one-sided min or max range in text mode no longer fades from white in light mode, where it was invisible
+
+New defaults, saved settings stay as they are:
+- Speed starts at instant rather than 3s smoothing
+- Power Zone and HR Zone start with one decimal
 
 Map overlay (beta):
 - While navigating a route, climbs are drawn over the route line in the same grade colors as the elevation profile, with chevrons along the way
