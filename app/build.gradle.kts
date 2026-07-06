@@ -22,6 +22,10 @@ android {
         versionCode = 8
         versionName = "3.3.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Update channel: the Karoo polls this manifest for new versions.
+        // Beta builds override it via MANIFEST_URL to point at the betafish repo.
+        manifestPlaceholders["manifestUrl"] = System.getenv("MANIFEST_URL")
+            ?: "https://github.com/jpweytjens/barberfish/releases/latest/download/manifest.json"
     }
 
     signingConfigs {
