@@ -209,9 +209,6 @@ private val HudHeaderFontFamily = FontFamily(Font(DeviceFontFamilyName("ibm-plex
 internal fun SparklinePreview(
     sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
-    fixturePoints: List<Pair<Float, Float>>? = null,
-    fixtureClimbRanges: List<Pair<Float, Float>>? = null,
-    fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
     onVisibleChange: (Boolean) -> Unit = {},
     spaceReserved: Boolean = true,
@@ -222,14 +219,12 @@ internal fun SparklinePreview(
     var boxHeightPx by remember { mutableIntStateOf(0) }
 
     // Climbs mode previews against a real climb (Col de Rates); other modes keep the mixed RvV
-    // terrain. Explicit fixtures (debug gallery) always win.
+    // terrain.
     val climbsMode = sparklineConfig.hudMode == SparklineMode.CLIMBS
     val elevationPoints =
-        fixturePoints ?: if (climbsMode) colDeRatesElevationFixture() else previewElevationFixture()
-    val climbRanges =
-        fixtureClimbRanges ?: if (climbsMode) colDeRatesClimbsFixture() else rvvClimbsFixture()
-    val poiDistances =
-        fixturePoiDistances ?: if (climbsMode) colDeRatesPoisFixture() else rvvPoisFixture()
+        if (climbsMode) colDeRatesElevationFixture() else previewElevationFixture()
+    val climbRanges = if (climbsMode) colDeRatesClimbsFixture() else rvvClimbsFixture()
+    val poiDistances = if (climbsMode) colDeRatesPoisFixture() else rvvPoisFixture()
 
     // Animate position: sweep from route start to end, then loop
     var positionM by remember { mutableStateOf(elevationPoints.first().first) }
@@ -364,9 +359,6 @@ private fun HUDPreview(
     onSlotSelected: (Int) -> Unit,
     stripSelected: Boolean,
     onStripSelected: () -> Unit,
-    fixturePoints: List<Pair<Float, Float>>? = null,
-    fixtureClimbRanges: List<Pair<Float, Float>>? = null,
-    fixturePoiDistances: List<Float>? = null,
     previewSweepSeconds: Int = 10,
 ) {
     val states =
@@ -435,9 +427,6 @@ private fun HUDPreview(
                 SparklinePreview(
                     sparklineConfig = sparklineConfig,
                     zoneConfig = zoneConfig,
-                    fixturePoints = fixturePoints,
-                    fixtureClimbRanges = fixtureClimbRanges,
-                    fixturePoiDistances = fixturePoiDistances,
                     previewSweepSeconds = previewSweepSeconds,
                     onVisibleChange = { sparklineVisible = it },
                     spaceReserved = showSparkline,
