@@ -125,6 +125,8 @@ data class HUDSlotConfig(
     val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
     val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
+    val gradePrecision: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
+    val gradeShowPercentSign: Boolean = true,
 )
 
 @Serializable

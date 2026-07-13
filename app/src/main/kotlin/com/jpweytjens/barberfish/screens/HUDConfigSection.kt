@@ -88,6 +88,7 @@ import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
@@ -568,7 +569,7 @@ private fun HUDSlotFieldCard(
                         onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
                     )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
-                HUDSlotField.Grade -> {}
+                HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
                 HUDSlotField.Distance -> {}
                 HUDSlotField.DistanceRemaining -> {}
                 HUDSlotField.ElevationRemaining -> {}
@@ -773,6 +774,25 @@ private fun HUDCadenceCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Uni
     CadenceThresholdControls(
         config = slot.cadenceThreshold,
         onConfigChange = { onUpdate(slot.copy(cadenceThreshold = it)) },
+    )
+}
+
+@Composable
+private fun HUDGradeCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+    ChoiceRow(
+        label = "DECIMALS",
+        options =
+            listOf(
+                ZoneDisplayMode.INTEGER to "Integer",
+                ZoneDisplayMode.FLOAT to "Decimal",
+            ),
+        selected = slot.gradePrecision,
+        onSelect = { onUpdate(slot.copy(gradePrecision = it)) },
+    )
+    BoolToggleRow(
+        label = "PERCENT SIGN",
+        value = slot.gradeShowPercentSign,
+        onChange = { onUpdate(slot.copy(gradeShowPercentSign = it)) },
     )
 }
 

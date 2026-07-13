@@ -386,7 +386,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 GradeField.gradeOlsFlow(karooSystem).map {
                     GradeField.toGradeFieldState(
                         it,
-                        GradeFieldConfig(slot.colorMode),
+                        GradeFieldConfig(
+                            slot.colorMode,
+                            slot.gradePrecision,
+                            slot.gradeShowPercentSign
+                        ),
                         zones.gradePalette
                     )
                 }
@@ -546,7 +550,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             zones
                         )
                     HUDSlotField.Grade ->
-                        GradeField.previewStates(GradeFieldConfig(slotCfg.colorMode), zones)
+                        GradeField.previewStates(
+                            GradeFieldConfig(
+                                slotCfg.colorMode,
+                                slotCfg.gradePrecision,
+                                slotCfg.gradeShowPercentSign
+                            ),
+                            zones
+                        )
                     HUDSlotField.Distance -> ValueField.previewStates(ValueKind.DISTANCE, profile)
                     HUDSlotField.DistanceRemaining ->
                         ValueField.previewStates(ValueKind.DISTANCE_REMAINING, profile)
