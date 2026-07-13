@@ -1,18 +1,31 @@
 # Elevation profile
 
-The elevation profile is a strip of the terrain ahead, colored by grade, with a dot marking where you are. One glance answers the mid-ride question of what's coming: whether the road tips up, how steep, and for how long.
+A route on the map tells you where to turn, not when to save your legs. The elevation profile answers that second question: a strip of the terrain ahead, colored by grade, with a dot marking where you are. One glance tells you whether the road tips up, how steep, and for how long, early enough to shift, eat, or ease off before the climb instead of on it.
 
 <img src="screenshots/hud_sparkline.jpg" alt="3-column HUD with the elevation profile strip over the map view">
 
 The profile renders in three places, each with its own settings in the Barberfish app:
 
-- The HUD strip, drawn below the 3- or 4-column HUD. Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded or you are riding to a destination, and Climbs keeps it hidden until a climb nears, then frames that climb foot to summit ([Climbs mode in the gallery](gallery.md#climbs-mode)).
+- The HUD strip, drawn below the 3- or 4-column HUD. Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded or you are riding to a destination, and Climbs keeps it hidden until a climb nears, then [frames that climb foot to summit](gallery.md#climbs-mode).
 - The Profile field, the same lookahead profile as a standalone data field on any page layout.
-- The Overview field, the whole route at once ([below](#the-overview-field)).
+- The [Overview field](#the-overview-field), the whole route at once.
 
 ## Reading it
 
-The fill uses the same gradient palette as the Grade field ([every palette, tuned per theme](color-palettes.md)), so steepness reads as color before the shape registers. The gentlest grades stay uncolored, which keeps flat roads quiet and makes the climbs stand out; how much stays quiet is the Emphasis setting. Climbs detected by Karoo tint the outline blue, and points of interest on the route appear as markers at their distance down the road.
+The fill uses the same [gradient palette](color-palettes.md) as the Grade field, so steepness reads as color before the shape registers. The gentlest grades stay uncolored, which keeps flat roads quiet and makes the climbs stand out; how much stays quiet is the Emphasis setting.
+
+<table>
+  <tr>
+    <td align="center">Emphasis off colors every gentle rise</td>
+    <td align="center">The default one-band skip keeps them quiet</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/profile_emphasis_off.jpg" alt="Route-start window with Emphasis off: gentle rises are colored along with the steep sections"></td>
+    <td align="center"><img src="screenshots/profile_emphasis_default.jpg" alt="The same window at the default Emphasis: gentle rises stay uncolored so the steep sections stand out"></td>
+  </tr>
+</table>
+
+Climbs detected by Karoo tint the outline blue, and points of interest on the route appear as markers at their distance down the road.
 
 <table>
   <tr>
