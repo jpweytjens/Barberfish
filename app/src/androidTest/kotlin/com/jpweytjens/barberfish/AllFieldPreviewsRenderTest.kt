@@ -10,8 +10,10 @@ import com.jpweytjens.barberfish.datatype.BarberfishBase
 import com.jpweytjens.barberfish.datatype.ElevationSparklineField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
+import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
+import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -26,6 +28,7 @@ import com.jpweytjens.barberfish.extension.saveHUDConfig
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
+import com.jpweytjens.barberfish.extension.streamRouteRemainingConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
@@ -144,40 +147,87 @@ class AllFieldPreviewsRenderTest {
             // Threshold coloring in docs/data-fields.md is shown as generated SVG
             // strips (scripts/generate_threshold_legends.py), not device renders.
 
-            // Pinned Profile render for docs: a fixed position on the RvV fixture so
-            // recaptures never move the window. 2.5 km in, the default 5 km lookahead
+            // Pinned Profile renders for docs: fixed positions on the RvV fixture so
+            // recaptures never move the windows. 2.5 km in, the default 5 km lookahead
             // frames the Muur and the second climb with their summit POIs.
             val sparkline = types.filterIsInstance<ElevationSparklineField>().single()
             val sparkCfg = runBlocking { context.streamFieldSparklineConfig().first() }
             val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
             val elevPoints =
                 visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
-            val (spBitmap, _) =
-                renderElevationSparkline(
-                    elevationPoints = elevPoints,
-                    positionM = 3_000f,
-                    widthPx = spWidth,
-                    heightPx = spHeight,
-                    density = context.resources.displayMetrics.density,
-                    palette = gradePalette,
-                    readable = false,
-                    lookaheadM = sparkCfg.lookaheadKm * 1000f,
-                    skipBands = sparkCfg.skipBands,
-                    skipBandsDescent = sparkCfg.skipBandsDescent,
-                    minElevRangeM = sparkCfg.yZoom.minRangeM,
-                    logWarpK = sparkCfg.warp.k,
-                    positionFraction = sparkCfg.warp.positionFraction,
-                    climbRanges = rvvClimbsFixture(),
-                    showClimbs = sparkCfg.showClimbs,
-                    poiDistances = rvvPoisFixture(),
-                    showPois = sparkCfg.showPois,
+            fun profileRender(positionM: Float, showPois: Boolean): Sample<SparklineRender> {
+                val (spBitmap, _) =
+                    renderElevationSparkline(
+                        elevationPoints = elevPoints,
+                        positionM = positionM,
+                        widthPx = spWidth,
+                        heightPx = spHeight,
+                        density = context.resources.displayMetrics.density,
+                        palette = gradePalette,
+                        readable = false,
+                        lookaheadM = sparkCfg.lookaheadKm * 1000f,
+                        skipBands = sparkCfg.skipBands,
+                        skipBandsDescent = sparkCfg.skipBandsDescent,
+                        minElevRangeM = sparkCfg.yZoom.minRangeM,
+                        logWarpK = sparkCfg.warp.k,
+                        positionFraction = sparkCfg.warp.positionFraction,
+                        climbRanges = rvvClimbsFixture(),
+                        showClimbs = sparkCfg.showClimbs,
+                        poiDistances = rvvPoisFixture(),
+                        showPois = showPois,
+                    )
+                return Sample(sparkline, SparklineRender(spBitmap, sparkCfg.showHeader))
+            }
+            // Dot-lifecycle renders for docs/elevation-profile.md: route start (dot at
+            // the left edge), mid-ride anchor, and inside the final lookahead window
+            // (window pinned to the route end, dot traversing). profile_pois_off pairs
+            // with profile_poi. Fixture spans 97.1..20 000 m.
+            val docProfileStates =
+                listOf(
+                    Triple("profile_poi", 3_000f, true),
+                    Triple("profile_pois_off", 3_000f, false),
+                    Triple("profile_dot_start", 100f, true),
+                    Triple("profile_dot_anchor", 10_000f, true),
+                    Triple("profile_dot_finish", 19_000f, true),
                 )
-            val pinnedProfile = Sample(sparkline, SparklineRender(spBitmap, sparkCfg.showHeader))
-            writePreviewPng(pinnedProfile, "profile_poi", cellConfig, design, context, statesDir)
+            for ((name, positionM, showPois) in docProfileStates) {
+                val render = profileRender(positionM, showPois)
+                writePreviewPng(render, name, cellConfig, design, context, statesDir)
+            }
             // The grid tile sampled from previewFlow lands wherever the clock-driven
             // sweep happens to be; overwrite it with the pinned render so the
             // all-fields overview shows bands and POIs on every recapture.
-            writePreviewPng(pinnedProfile, sparkline.typeId, cellConfig, design, context, outDir)
+            writePreviewPng(
+                profileRender(3_000f, true),
+                sparkline.typeId,
+                cellConfig,
+                design,
+                context,
+                outDir,
+            )
+
+            // Overview pinned render for docs: the whole fixture route with the dot
+            // at the default 45% position, at the field's default simplification.
+            val overviewField = types.filterIsInstance<RouteRemainingField>().single()
+            val routeCfg = runBlocking { context.streamRouteRemainingConfig().first() }
+            val (ovWidth, ovHeight) = sparklineImageSize(cellConfig, context, routeCfg.showHeader)
+            val ovBitmap =
+                checkNotNull(
+                    overviewPreviewBitmap(
+                        widthPx = ovWidth,
+                        heightPx = ovHeight,
+                        isNightMode = true,
+                        targetCount = routeCfg.simplification.targetCount,
+                    )
+                ) { "overview render produced no bitmap" }
+            writePreviewPng(
+                Sample(overviewField, SparklineRender(ovBitmap, routeCfg.showHeader)),
+                "overview",
+                cellConfig,
+                design,
+                context,
+                statesDir,
+            )
         } finally {
             karooSystem.disconnect()
         }
