@@ -34,6 +34,7 @@ Map overlay (beta):
 
 Grade:
 - Shows a whole number or one decimal, with or without the % sign
+- The HUD grade column has the same choices, set on the column itself
 
 Profile and Overview:
 - Hide the header to give the elevation trace the whole cell
