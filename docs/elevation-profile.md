@@ -6,7 +6,7 @@ The elevation profile is a strip of the terrain ahead, colored by grade, with a 
 
 The profile renders in three places, each with its own settings in the Barberfish app:
 
-- The HUD strip, drawn below the 3- or 4-column HUD. Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded, and Climbs keeps it hidden until a climb nears, then frames that climb foot to summit ([Climbs mode in the gallery](gallery.md#climbs-mode)).
+- The HUD strip, drawn below the 3- or 4-column HUD. Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded or you are riding to a destination, and Climbs keeps it hidden until a climb nears, then frames that climb foot to summit ([Climbs mode in the gallery](gallery.md#climbs-mode)).
 - The Profile field, the same lookahead profile as a standalone data field on any page layout.
 - The Overview field, the whole route at once ([below](#the-overview-field)).
 
@@ -29,19 +29,19 @@ The strip shows a fixed window of road ahead: 5, 10, or 20 km. Tapping the profi
 
 ## The position dot
 
-At the start of a route the dot sits at the far left edge, the whole window ahead of it. As distance accumulates the dot slides right until it settles about a fifth of the way in, and there it stays for most of the ride. From that anchor the road scrolls past the dot rather than the dot moving across the road: a short stretch of road behind you stays visible on the left, and the terrain ahead compresses gently into the distance, so the road right in front of you gets the most pixels.
+At the start of a route the dot sits at the far left edge, the whole window ahead of it. As distance accumulates the dot slides right until it settles about an eighth of the way in, and there it stays for most of the ride. From that anchor the road scrolls past the dot rather than the dot moving across the road: a short stretch of road behind you stays visible on the left, and the terrain ahead compresses gently into the distance, so the road right in front of you gets the most pixels.
 
-The anchor holds until less than one window of route remains. Then the window pins to the end of the route, stops scrolling, and the dot moves again, traversing from its anchor to the right edge over the final kilometres.
+The anchor holds until less than one window of route remains. Then the window pins to the end of the route, stops scrolling, and the dot moves again, traversing from its anchor to the right edge over the final kilometers.
 
 <table>
   <tr>
     <td align="center">Route start: everything ahead</td>
-    <td align="center">Mid-ride: anchored at a fifth</td>
-    <td align="center">Final kilometres: closing out</td>
+    <td align="center">Mid-ride: anchored an eighth in</td>
+    <td align="center">Final kilometers: closing out</td>
   </tr>
   <tr>
     <td align="center"><img src="screenshots/profile_dot_start.jpg" alt="Position dot at the far left edge at the route start"></td>
-    <td align="center"><img src="screenshots/profile_dot_anchor.jpg" alt="Position dot anchored about a fifth of the way in mid-ride"></td>
+    <td align="center"><img src="screenshots/profile_dot_anchor.jpg" alt="Position dot anchored about an eighth of the way in mid-ride"></td>
     <td align="center"><img src="screenshots/profile_dot_finish.jpg" alt="Position dot traversing toward the right edge near the route end"></td>
   </tr>
 </table>
