@@ -22,13 +22,13 @@ import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.datatype.sparklineImageSize
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.RouteRemainingConfig
+import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
 import com.jpweytjens.barberfish.extension.saveHUDConfig
-import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamHUDConfig
-import com.jpweytjens.barberfish.extension.streamRouteRemainingConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
@@ -148,10 +148,10 @@ class AllFieldPreviewsRenderTest {
             // strips (scripts/generate_threshold_legends.py), not device renders.
 
             // Pinned Profile renders for docs: fixed positions on the RvV fixture so
-            // recaptures never move the windows. 2.5 km in, the default 5 km lookahead
+            // recaptures never move the windows. 3 km in, the default 5 km lookahead
             // frames the Muur and the second climb with their summit POIs.
             val sparkline = types.filterIsInstance<ElevationSparklineField>().single()
-            val sparkCfg = runBlocking { context.streamFieldSparklineConfig().first() }
+            val sparkCfg = SparklineConfig()
             val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
             val elevPoints =
                 visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
@@ -209,7 +209,7 @@ class AllFieldPreviewsRenderTest {
             // Overview pinned render for docs: the whole fixture route with the dot
             // at the default 45% position, at the field's default simplification.
             val overviewField = types.filterIsInstance<RouteRemainingField>().single()
-            val routeCfg = runBlocking { context.streamRouteRemainingConfig().first() }
+            val routeCfg = RouteRemainingConfig()
             val (ovWidth, ovHeight) = sparklineImageSize(cellConfig, context, routeCfg.showHeader)
             val ovBitmap =
                 checkNotNull(
