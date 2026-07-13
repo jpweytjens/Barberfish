@@ -155,7 +155,11 @@ class AllFieldPreviewsRenderTest {
             val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
             val elevPoints =
                 visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
-            fun profileRender(positionM: Float, showPois: Boolean): Sample<SparklineRender> {
+            fun profileRender(
+                positionM: Float,
+                showPois: Boolean,
+                skipBands: Int = sparkCfg.skipBands,
+            ): Sample<SparklineRender> {
                 val (spBitmap, _) =
                     renderElevationSparkline(
                         elevationPoints = elevPoints,
@@ -166,7 +170,7 @@ class AllFieldPreviewsRenderTest {
                         palette = gradePalette,
                         readable = false,
                         lookaheadM = sparkCfg.lookaheadKm * 1000f,
-                        skipBands = sparkCfg.skipBands,
+                        skipBands = skipBands,
                         skipBandsDescent = sparkCfg.skipBandsDescent,
                         minElevRangeM = sparkCfg.yZoom.minRangeM,
                         logWarpK = sparkCfg.warp.k,
@@ -194,6 +198,25 @@ class AllFieldPreviewsRenderTest {
                 val render = profileRender(positionM, showPois)
                 writePreviewPng(render, name, cellConfig, design, context, statesDir)
             }
+            // Emphasis pair for docs: the route-start window with every band colored
+            // vs the default one-band skip that keeps the gentle rises quiet. POIs off
+            // so the fill is the only variable.
+            writePreviewPng(
+                profileRender(100f, false, skipBands = 0),
+                "profile_emphasis_off",
+                cellConfig,
+                design,
+                context,
+                statesDir,
+            )
+            writePreviewPng(
+                profileRender(100f, false),
+                "profile_emphasis_default",
+                cellConfig,
+                design,
+                context,
+                statesDir,
+            )
             // The grid tile sampled from previewFlow lands wherever the clock-driven
             // sweep happens to be; overwrite it with the pinned render so the
             // all-fields overview shows bands and POIs on every recapture.
