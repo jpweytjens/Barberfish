@@ -10,7 +10,7 @@
 [Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keep Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.
 Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
 
-Barberfish fields sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, an elevation profile drawn as a [Tufte](https://www.edwardtufte.com/notebook/sparkline-theory-and-practice-edward-tufte/)-inspired sparkline, and configurable smoothing, color modes, color palettes, and thresholds per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
+Barberfish fields sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, an elevation profile of the road ahead, a grade that holds steady at any speed, an ETA that learns as you ride, and smoothing, color palettes, and thresholds set per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
 
 <table>
   <tr>
