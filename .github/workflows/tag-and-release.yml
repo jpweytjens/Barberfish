@@ -30,6 +30,9 @@ jobs:
 
           if git tag -l | grep -q "^$current_version$"; then
             echo "Version $current_version already tagged. No new release will be created."
+          elif [[ "$current_version" == *-* ]]; then
+            echo "::error::versionName $current_version is a pre-release; betas ship from the Betafish repo. Bump to a stable version before releasing from master."
+            exit 1
           else
             echo "Version $current_version is new."
             echo "VERSION=$current_version" >> $GITHUB_OUTPUT
