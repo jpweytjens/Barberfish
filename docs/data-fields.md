@@ -7,7 +7,8 @@ the single-cell fields first, then the 3- and 4-column HUD strips.
 
 The table lists the same fields grouped by category. The Enhancements
 columns list the options each field supports. All of them are set per field
-in the Barberfish app, with live previews; changes apply mid-ride.
+in the Barberfish app, with live previews; changes apply mid-ride. The
+graphical Profile and Overview fields have [a page of their own](elevation-profile.md).
 
 <table>
   <thead>
