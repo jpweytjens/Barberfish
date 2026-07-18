@@ -1,18 +1,18 @@
 package com.jpweytjens.barberfish
 
-import com.jpweytjens.barberfish.datatype.shared.resolveClimbTuning
-import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class ClimbTuningTest {
+class GradeMapTuningTest {
 
     @Test
     fun `synced reads from sparkline, ignoring overlay values`() {
         val map =
-            ClimberMapConfig(
+            GradeMapConfig(
                 syncWithSparkline = true,
                 skipBands = 3,
                 simplification = ElevationSimplification.NONE,
@@ -23,7 +23,7 @@ class ClimbTuningTest {
                 simplification = ElevationSimplification.HEAVY,
             )
 
-        val tuning = resolveClimbTuning(map, sparkline)
+        val tuning = resolveGradeMapTuning(map, sparkline)
 
         assertEquals(1, tuning.skipBands)
         assertEquals(ElevationSimplification.HEAVY, tuning.simplification)
@@ -32,7 +32,7 @@ class ClimbTuningTest {
     @Test
     fun `independent reads from overlay, ignoring sparkline values`() {
         val map =
-            ClimberMapConfig(
+            GradeMapConfig(
                 syncWithSparkline = false,
                 skipBands = 3,
                 simplification = ElevationSimplification.NONE,
@@ -43,7 +43,7 @@ class ClimbTuningTest {
                 simplification = ElevationSimplification.HEAVY,
             )
 
-        val tuning = resolveClimbTuning(map, sparkline)
+        val tuning = resolveGradeMapTuning(map, sparkline)
 
         assertEquals(3, tuning.skipBands)
         assertEquals(ElevationSimplification.NONE, tuning.simplification)

@@ -1,13 +1,13 @@
 package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.toArgb
-import com.jpweytjens.barberfish.datatype.shared.ClimbPolylineSpec
+import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
 import com.jpweytjens.barberfish.datatype.shared.LemonYellow
-import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
+import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
-import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradePalette
 import org.junit.Assert.assertEquals
@@ -15,7 +15,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ClimbPolylinesTest {
+class GradeMapPolylinesTest {
 
     // 4 points along the equator, spaced 0.01° of longitude apart.
     // At the equator, 0.01° of longitude ≈ 1112 m, so total route length ≈ 3336 m —
@@ -43,7 +43,7 @@ class ClimbPolylinesTest {
         )
 
     private val noneCfg =
-        ClimberMapConfig(
+        GradeMapConfig(
             enabled = true,
             simplification = ElevationSimplification.NONE,
             skipBands = 0
@@ -52,7 +52,7 @@ class ClimbPolylinesTest {
     @Test
     fun blank_route_polyline_returns_empty() {
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = "",
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
@@ -66,7 +66,7 @@ class ClimbPolylinesTest {
     @Test
     fun missing_elevation_polyline_returns_empty() {
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = null,
                 palette = GradePalette.KAROO,
@@ -80,7 +80,7 @@ class ClimbPolylinesTest {
     @Test
     fun blank_elevation_polyline_returns_empty() {
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = "",
                 palette = GradePalette.KAROO,
@@ -97,7 +97,7 @@ class ClimbPolylinesTest {
         // so they merge into one run; the 0% segment is in the dark-green band (the lowest),
         // a different colour, so it becomes its own run.
         val specs =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                     routePolyline = routePolyline,
                     routeElevationPolyline = elevationPolyline,
                     palette = GradePalette.KAROO,
@@ -127,7 +127,7 @@ class ClimbPolylinesTest {
                 ),
             )
         val specs =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                     routePolyline = routePolyline,
                     routeElevationPolyline = twoBandsPolyline,
                     palette = GradePalette.KAROO,
@@ -149,13 +149,13 @@ class ClimbPolylinesTest {
     @Test
     fun skipBands_one_suppresses_flat_segment() {
         val specs =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                     routePolyline = routePolyline,
                     routeElevationPolyline = elevationPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
                     cfg =
-                        ClimberMapConfig(
+                        GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.NONE,
                             skipBands = 1
@@ -182,13 +182,13 @@ class ClimbPolylinesTest {
                 ),
             )
         val specs =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                     routePolyline = routePolyline,
                     routeElevationPolyline = dipPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
                     cfg =
-                        ClimberMapConfig(
+                        GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.NONE,
                             skipBands = 0
@@ -212,13 +212,13 @@ class ClimbPolylinesTest {
         }
         val noisyPolyline = encodeElevationManually(noisy)
         val rawSpecs =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                     routePolyline = routePolyline,
                     routeElevationPolyline = noisyPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
                     cfg =
-                        ClimberMapConfig(
+                        GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.NONE,
                             skipBands = 0
@@ -226,13 +226,13 @@ class ClimbPolylinesTest {
                 )
                 .polylines
         val heavySpecs =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                     routePolyline = routePolyline,
                     routeElevationPolyline = noisyPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
                     cfg =
-                        ClimberMapConfig(
+                        GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.HEAVY,
                             skipBands = 0
@@ -252,7 +252,7 @@ class ClimbPolylinesTest {
         // 30/90/150 fall in the yellow run, 210/270 in the flat run. Both runs draw from
         // the same global grid — they are not sampled run-relative.
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
@@ -270,7 +270,7 @@ class ClimbPolylinesTest {
     @Test
     fun chevrons_omitted_when_includeChevrons_false() {
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
@@ -288,7 +288,7 @@ class ClimbPolylinesTest {
         // With the curvature filter enabled, every spacing interval emits a chevron because
         // the local bearing spread is 0°.
         val unfiltered =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
@@ -296,7 +296,7 @@ class ClimbPolylinesTest {
                 cfg = noneCfg,
             )
         val filtered =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
@@ -331,7 +331,7 @@ class ClimbPolylinesTest {
                 ),
             )
         val unfiltered =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = bendyPolyline,
                 routeElevationPolyline = climbPolyline,
                 palette = GradePalette.KAROO,
@@ -339,7 +339,7 @@ class ClimbPolylinesTest {
                 cfg = noneCfg,
             )
         val filtered =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = bendyPolyline,
                 routeElevationPolyline = climbPolyline,
                 palette = GradePalette.KAROO,
@@ -364,7 +364,7 @@ class ClimbPolylinesTest {
     fun below_threshold_segment_inside_climb_gets_yellow_filler() {
         // skipBands=1 → KAROO climb threshold is 2.0%. A 1% segment is below it.
         val cfg =
-            ClimberMapConfig(
+            GradeMapConfig(
                 enabled = true,
                 simplification = ElevationSimplification.NONE,
                 skipBands = 1,
@@ -379,7 +379,7 @@ class ClimbPolylinesTest {
             )
         // No climb ranges: the gentle 3% segment is skipped entirely.
         val plain =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = poly,
                 palette = GradePalette.KAROO,
@@ -391,7 +391,7 @@ class ClimbPolylinesTest {
         // With a climb spanning the route, the 3% segment becomes a yellow filler run so
         // the overlay covers the whole climb.
         val withClimb =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = poly,
                 palette = GradePalette.KAROO,
@@ -407,7 +407,7 @@ class ClimbPolylinesTest {
     fun chevron_carries_run_color() {
         // The default fixture's first run is salmon (8% + 10% in the KAROO salmon band).
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
@@ -434,7 +434,7 @@ class ClimbPolylinesTest {
                 ),
             )
         val noDedup =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = twoShortRuns,
                 palette = GradePalette.KAROO,
@@ -442,7 +442,7 @@ class ClimbPolylinesTest {
                 cfg = noneCfg,
             )
         val deduped =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = twoShortRuns,
                 palette = GradePalette.KAROO,
@@ -467,7 +467,7 @@ class ClimbPolylinesTest {
                 ),
             )
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = shortPoly,
                 palette = GradePalette.KAROO,
@@ -492,7 +492,7 @@ class ClimbPolylinesTest {
                 ),
             )
         val overlay =
-            buildClimbOverlaySpecs(
+            buildGradeMapSpecs(
                 routePolyline = routePolyline,
                 routeElevationPolyline = shortPoly,
                 palette = GradePalette.KAROO,
@@ -504,7 +504,7 @@ class ClimbPolylinesTest {
         assertTrue(overlay.chevrons.isEmpty())
     }
 
-    private fun segLenM(spec: ClimbPolylineSpec): Double =
+    private fun segLenM(spec: GradeMapPolylineSpec): Double =
         decodeGpsPolyline(spec.encoded).let {
             if (it.size < 2) 0.0 else cumulativeDistancesM(it).last()
         }
@@ -512,7 +512,7 @@ class ClimbPolylinesTest {
     @Test fun cap_trim_flags_mark_chain_outer_ends() {
         // Default fixture: salmon [0,200] and flat [200,300] are adjacent → one chain.
         // First run owns the chain start, second owns the chain end.
-        val specs = buildClimbOverlaySpecs(
+        val specs = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
@@ -525,14 +525,14 @@ class ClimbPolylinesTest {
     }
 
     @Test fun cap_trim_shortens_outer_ends_only() {
-        val full = buildClimbOverlaySpecs(
+        val full = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             cfg = noneCfg,
         ).polylines
-        val trimmed = buildClimbOverlaySpecs(
+        val trimmed = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
@@ -562,14 +562,14 @@ class ClimbPolylinesTest {
                 300f to 120f,
             ),
         )
-        val full = buildClimbOverlaySpecs(
+        val full = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = dipPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             cfg = noneCfg,
         ).polylines
-        val specs = buildClimbOverlaySpecs(
+        val specs = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = dipPolyline,
             palette = GradePalette.KAROO,
@@ -586,14 +586,14 @@ class ClimbPolylinesTest {
     }
 
     @Test fun cap_trim_does_not_move_chevrons() {
-        val none = buildClimbOverlaySpecs(
+        val none = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
             cfg = noneCfg,
         ).chevrons
-        val trimmed = buildClimbOverlaySpecs(
+        val trimmed = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,

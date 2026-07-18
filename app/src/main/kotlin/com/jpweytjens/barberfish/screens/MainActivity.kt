@@ -139,7 +139,7 @@ import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
-import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
@@ -174,7 +174,7 @@ import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
-import com.jpweytjens.barberfish.extension.saveClimberMapConfig
+import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import com.jpweytjens.barberfish.extension.saveDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
@@ -198,7 +198,7 @@ import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
-import com.jpweytjens.barberfish.extension.streamClimberMapConfig
+import com.jpweytjens.barberfish.extension.streamGradeMapConfig
 import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamEffortFieldConfig
@@ -263,7 +263,7 @@ class MainActivity : ComponentActivity() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
         var hudSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
-        var climberMapConfig by remember { mutableStateOf(ClimberMapConfig()) }
+        var gradeMapConfig by remember { mutableStateOf(GradeMapConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -311,7 +311,7 @@ class MainActivity : ComponentActivity() {
 
         var fieldsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
-        var climberExpanded by remember { mutableStateOf(false) }
+        var climbingExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var globalExpanded by remember { mutableStateOf(false) }
         var designExpanded by remember { mutableStateOf(false) }
@@ -320,7 +320,7 @@ class MainActivity : ComponentActivity() {
             launch { streamHUDConfig().collect { hudConfig = it } }
             launch { streamHudSparklineConfig().collect { hudSparklineConfig = it } }
             launch { streamFieldSparklineConfig().collect { fieldSparklineConfig = it } }
-            launch { streamClimberMapConfig().collect { climberMapConfig = it } }
+            launch { streamGradeMapConfig().collect { gradeMapConfig = it } }
             launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
             launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
             launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
@@ -1069,10 +1069,10 @@ class MainActivity : ComponentActivity() {
 
                 CollapsibleSection(
                     title = "Climbing",
-                    description = "Configure the elevation profile and map overlay",
+                    description = "Configure the elevation profile and grade map",
                     icon = R.drawable.ic_grade,
-                    expanded = climberExpanded,
-                    onToggle = { climberExpanded = !climberExpanded },
+                    expanded = climbingExpanded,
+                    onToggle = { climbingExpanded = !climbingExpanded },
                 ) {
                     var sparklineExpanded by remember { mutableStateOf(false) }
                     SparklineCard(
@@ -1086,16 +1086,16 @@ class MainActivity : ComponentActivity() {
                             lifecycleScope.launch { saveFieldSparklineConfig(updated) }
                         },
                     )
-                    var climberMapExpanded by remember { mutableStateOf(false) }
-                    ClimberMapCard(
-                        config = climberMapConfig,
+                    var gradeMapExpanded by remember { mutableStateOf(false) }
+                    GradeMapCard(
+                        config = gradeMapConfig,
                         sparklineConfig = fieldSparklineConfig,
                         gradePalette = zoneConfig.gradePalette,
-                        selected = climberMapExpanded,
-                        onSelect = { climberMapExpanded = !climberMapExpanded },
+                        selected = gradeMapExpanded,
+                        onSelect = { gradeMapExpanded = !gradeMapExpanded },
                         onUpdate = { updated ->
-                            climberMapConfig = updated
-                            lifecycleScope.launch { saveClimberMapConfig(updated) }
+                            gradeMapConfig = updated
+                            lifecycleScope.launch { saveGradeMapConfig(updated) }
                         },
                     )
                 } // end Climbing
@@ -1235,16 +1235,16 @@ class MainActivity : ComponentActivity() {
 internal const val SECTION_ANIM_MS = 200
 
 @Composable
-private fun ClimberMapCard(
-    config: ClimberMapConfig,
+private fun GradeMapCard(
+    config: GradeMapConfig,
     sparklineConfig: SparklineConfig,
     gradePalette: GradePalette,
     selected: Boolean,
     onSelect: () -> Unit,
-    onUpdate: (ClimberMapConfig) -> Unit,
+    onUpdate: (GradeMapConfig) -> Unit,
 ) {
     ExpandableCard(
-        title = "MAP OVERLAY",
+        title = "GRADE MAP",
         selected = selected,
         onSelect = onSelect,
         headerExtra = {
@@ -1258,7 +1258,7 @@ private fun ClimberMapCard(
         )
 
         if (config.enabled) {
-            ClimbOverlayPreview(
+            GradeMapPreview(
                 config = config,
                 sparklineConfig = sparklineConfig,
                 gradePalette = gradePalette,

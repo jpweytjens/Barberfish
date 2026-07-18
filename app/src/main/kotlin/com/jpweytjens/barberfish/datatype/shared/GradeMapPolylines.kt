@@ -1,7 +1,7 @@
 package com.jpweytjens.barberfish.datatype.shared
 
 import androidx.compose.ui.graphics.toArgb
-import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -12,7 +12,7 @@ import kotlin.math.sin
 /**
  * A single coloured fill polyline for a route gradient segment.
  */
-internal data class ClimbPolylineSpec(
+internal data class GradeMapPolylineSpec(
     val id: String,
     val encoded: String,
     val colorArgb: Int,
@@ -36,9 +36,9 @@ internal data class ClimbChevronSpec(
     val colorArgb: Int,
 )
 
-/** Specs produced by [buildClimbOverlaySpecs]. */
-internal data class ClimbOverlaySpecs(
-    val polylines: List<ClimbPolylineSpec>,
+/** Specs produced by [buildGradeMapSpecs]. */
+internal data class GradeMapSpecs(
+    val polylines: List<GradeMapPolylineSpec>,
     val chevrons: List<ClimbChevronSpec>,
 )
 
@@ -81,12 +81,12 @@ internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
  *
  * Returns empty lists if either polyline is missing.
  */
-internal fun buildClimbOverlaySpecs(
+internal fun buildGradeMapSpecs(
     routePolyline: String,
     routeElevationPolyline: String?,
     palette: GradePalette,
     readable: Boolean,
-    cfg: ClimberMapConfig,
+    cfg: GradeMapConfig,
     climbRanges: List<Pair<Double, Double>> = emptyList(),
     includeChevrons: Boolean = true,
     chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
@@ -96,18 +96,18 @@ internal fun buildClimbOverlaySpecs(
     chevronMinSpacingM: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
     capTrimM: Double = 0.0,
-): ClimbOverlaySpecs {
+): GradeMapSpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
-        return ClimbOverlaySpecs(emptyList(), emptyList())
+        return GradeMapSpecs(emptyList(), emptyList())
     }
     val gps = decodeGpsPolyline(routePolyline)
-    if (gps.size < 2) return ClimbOverlaySpecs(emptyList(), emptyList())
+    if (gps.size < 2) return GradeMapSpecs(emptyList(), emptyList())
     val cumDist = cumulativeDistancesM(gps)
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
-    if (rawElev.isEmpty()) return ClimbOverlaySpecs(emptyList(), emptyList())
+    if (rawElev.isEmpty()) return GradeMapSpecs(emptyList(), emptyList())
     val elevPoints = visvalingamWhyatt(rawElev, cfg.simplification.minAreaM2)
     val threshold = gradeFillRange(palette, skipBandsClimb = cfg.skipBands).posMin
-        ?: return ClimbOverlaySpecs(emptyList(), emptyList())
+        ?: return GradeMapSpecs(emptyList(), emptyList())
 
     // Collect same-colour runs, then emit one polyline per run. A below-threshold segment
     // inside a Karoo climb range is kept as a route-yellow run so our overlay covers the
@@ -137,7 +137,7 @@ internal fun buildClimbOverlaySpecs(
         }
     }
 
-    val polylines = mutableListOf<ClimbPolylineSpec>()
+    val polylines = mutableListOf<GradeMapPolylineSpec>()
     val chevrons = mutableListOf<ClimbChevronSpec>()
     runs.forEachIndexed { runIdx, run ->
         // A contiguous chain is a maximal run sequence with no distance gap between
@@ -153,7 +153,7 @@ internal fun buildClimbOverlaySpecs(
         val drawEnd = run.endM - (if (chainEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
         val sub = extractSubPolyline(gps, cumDist, drawStart, drawEnd)
         if (sub.size >= 2) {
-            polylines += ClimbPolylineSpec(
+            polylines += GradeMapPolylineSpec(
                 id = "barberfish-seg-$runIdx",
                 encoded = encodeGpsPolyline(sub),
                 colorArgb = run.colorArgb,
@@ -199,7 +199,7 @@ internal fun buildClimbOverlaySpecs(
     } else {
         dedupedChevrons
     }
-    return ClimbOverlaySpecs(polylines, filteredChevrons)
+    return GradeMapSpecs(polylines, filteredChevrons)
 }
 
 private fun chevronsForRun(

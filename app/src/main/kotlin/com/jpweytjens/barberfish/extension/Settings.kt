@@ -429,27 +429,27 @@ fun Context.streamZoneConfig(): Flow<ZoneConfig> = streamConfig(zoneConfigKey, Z
 
 suspend fun Context.saveZoneConfig(config: ZoneConfig) = saveConfig(zoneConfigKey, config)
 
-// --- ClimberMapConfig ---
+// --- GradeMapConfig ---
 
 @Serializable
-data class ClimberMapConfig(
+data class GradeMapConfig(
     val enabled: Boolean = true,
     val showPolylines: Boolean = true,
     val showChevrons: Boolean = true,
     // When true, skipBands/simplification are taken from the field sparkline config
-    // at the consumer via resolveClimbTuning(); the two fields below are ignored.
+    // at the consumer via resolveGradeMapTuning(); the two fields below are ignored.
     val syncWithSparkline: Boolean = true,
     val skipBands: Int = 1,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
 )
 
-private val climberMapConfigKey = stringPreferencesKey("climber_map_config")
+private val gradeMapConfigKey = stringPreferencesKey("grade_map_config")
 
-fun Context.streamClimberMapConfig(): Flow<ClimberMapConfig> =
-    streamConfig(climberMapConfigKey, ClimberMapConfig())
+fun Context.streamGradeMapConfig(): Flow<GradeMapConfig> =
+    streamConfig(gradeMapConfigKey, GradeMapConfig())
 
-suspend fun Context.saveClimberMapConfig(config: ClimberMapConfig) =
-    saveConfig(climberMapConfigKey, config)
+suspend fun Context.saveGradeMapConfig(config: GradeMapConfig) =
+    saveConfig(gradeMapConfigKey, config)
 
 // --- CadenceFieldConfig ---
 

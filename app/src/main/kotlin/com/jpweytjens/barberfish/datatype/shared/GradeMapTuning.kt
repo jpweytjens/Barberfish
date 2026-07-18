@@ -1,11 +1,11 @@
 package com.jpweytjens.barberfish.datatype.shared
 
-import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
 
 /** Emphasis/simplification actually used to render the climb overlay. */
-data class EffectiveClimbTuning(
+data class EffectiveGradeMapTuning(
     val skipBands: Int,
     val simplification: ElevationSimplification,
 )
@@ -14,9 +14,9 @@ data class EffectiveClimbTuning(
  * When [map].syncWithSparkline is true the overlay follows the field sparkline's emphasis and
  * simplification; otherwise it uses its own stored values.
  */
-fun resolveClimbTuning(map: ClimberMapConfig, sparkline: SparklineConfig): EffectiveClimbTuning =
+fun resolveGradeMapTuning(map: GradeMapConfig, sparkline: SparklineConfig): EffectiveGradeMapTuning =
     if (map.syncWithSparkline) {
-        EffectiveClimbTuning(sparkline.skipBands, sparkline.simplification)
+        EffectiveGradeMapTuning(sparkline.skipBands, sparkline.simplification)
     } else {
-        EffectiveClimbTuning(map.skipBands, map.simplification)
+        EffectiveGradeMapTuning(map.skipBands, map.simplification)
     }

@@ -25,13 +25,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import com.jpweytjens.barberfish.datatype.shared.ClimbPreviewFixture
 import com.jpweytjens.barberfish.datatype.shared.LemonYellow
-import com.jpweytjens.barberfish.datatype.shared.buildClimbOverlaySpecs
+import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.mercatorBoundsAspect
 import com.jpweytjens.barberfish.datatype.shared.projectToUnit
-import com.jpweytjens.barberfish.datatype.shared.resolveClimbTuning
-import com.jpweytjens.barberfish.extension.ClimberMapConfig
+import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import kotlin.math.hypot
@@ -48,20 +48,20 @@ private val CHEVRON_WIDTH = 12.dp
 private const val CHEVRON_HEIGHT_RATIO = 17f / 25f
 
 @Composable
-internal fun ClimbOverlayPreview(
-    config: ClimberMapConfig,
+internal fun GradeMapPreview(
+    config: GradeMapConfig,
     sparklineConfig: SparklineConfig,
     gradePalette: GradePalette,
     modifier: Modifier = Modifier,
 ) {
     val specs = remember(config, sparklineConfig, gradePalette) {
-        val eff = resolveClimbTuning(config, sparklineConfig)
+        val eff = resolveGradeMapTuning(config, sparklineConfig)
         val cfg = config.copy(
             skipBands = eff.skipBands,
             simplification = eff.simplification,
             syncWithSparkline = false,
         )
-        buildClimbOverlaySpecs(
+        buildGradeMapSpecs(
             routePolyline = ClimbPreviewFixture.routePolyline,
             routeElevationPolyline = ClimbPreviewFixture.elevationPolyline,
             palette = gradePalette,

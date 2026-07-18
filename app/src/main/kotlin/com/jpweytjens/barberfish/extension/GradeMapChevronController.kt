@@ -16,7 +16,7 @@ import io.hammerhead.karooext.models.Symbol
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not thread-safe.
  */
-internal class ClimbChevronController {
+internal class GradeMapChevronController {
     private var previousIds: Set<String> = emptySet()
 
     fun emit(emitter: Emitter<MapEffect>, specs: List<ClimbChevronSpec>) {

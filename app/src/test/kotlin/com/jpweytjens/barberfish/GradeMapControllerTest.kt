@@ -1,7 +1,7 @@
 package com.jpweytjens.barberfish
 
-import com.jpweytjens.barberfish.datatype.shared.ClimbPolylineSpec
-import com.jpweytjens.barberfish.extension.ClimbMapController
+import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
+import com.jpweytjens.barberfish.extension.GradeMapController
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.MapEffect
@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class ClimbMapControllerTest {
+class GradeMapControllerTest {
 
     private class FakeEmitter : Emitter<MapEffect> {
         val events = mutableListOf<MapEffect>()
@@ -34,11 +34,11 @@ class ClimbMapControllerTest {
 
     @Test
     fun emit_single_spec_outputs_one_show_polyline() {
-        val controller = ClimbMapController()
+        val controller = GradeMapController()
         val fake = FakeEmitter()
         controller.emit(
             emitter = fake,
-            specs = listOf(ClimbPolylineSpec("a", "xyz", red)),
+            specs = listOf(GradeMapPolylineSpec("a", "xyz", red)),
             fillWidth = fillW,
         )
         assertEquals(1, fake.events.size)
@@ -51,14 +51,14 @@ class ClimbMapControllerTest {
 
     @Test
     fun emit_two_specs_outputs_in_order() {
-        val controller = ClimbMapController()
+        val controller = GradeMapController()
         val fake = FakeEmitter()
         controller.emit(
             emitter = fake,
             specs =
                 listOf(
-                    ClimbPolylineSpec("a", "xyz", red),
-                    ClimbPolylineSpec("b", "pqr", green),
+                    GradeMapPolylineSpec("a", "xyz", red),
+                    GradeMapPolylineSpec("b", "pqr", green),
                 ),
             fillWidth = fillW,
         )
@@ -68,14 +68,14 @@ class ClimbMapControllerTest {
 
     @Test
     fun second_emit_hides_removed_specs() {
-        val controller = ClimbMapController()
+        val controller = GradeMapController()
         val fake = FakeEmitter()
         controller.emit(
             emitter = fake,
             specs =
                 listOf(
-                    ClimbPolylineSpec("a", "xyz", red),
-                    ClimbPolylineSpec("b", "pqr", green),
+                    GradeMapPolylineSpec("a", "xyz", red),
+                    GradeMapPolylineSpec("b", "pqr", green),
                 ),
             fillWidth = fillW,
         )
@@ -84,8 +84,8 @@ class ClimbMapControllerTest {
             emitter = fake,
             specs =
                 listOf(
-                    ClimbPolylineSpec("a", "xyz", red),
-                    ClimbPolylineSpec("c", "stu", red),
+                    GradeMapPolylineSpec("a", "xyz", red),
+                    GradeMapPolylineSpec("c", "stu", red),
                 ),
             fillWidth = fillW,
         )
@@ -97,14 +97,14 @@ class ClimbMapControllerTest {
 
     @Test
     fun clearAll_hides_all_previous_ids_then_empty_emit_is_noop() {
-        val controller = ClimbMapController()
+        val controller = GradeMapController()
         val fake = FakeEmitter()
         controller.emit(
             emitter = fake,
             specs =
                 listOf(
-                    ClimbPolylineSpec("a", "xyz", red),
-                    ClimbPolylineSpec("b", "pqr", green),
+                    GradeMapPolylineSpec("a", "xyz", red),
+                    GradeMapPolylineSpec("b", "pqr", green),
                 ),
             fillWidth = fillW,
         )

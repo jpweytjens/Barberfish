@@ -1,6 +1,6 @@
 package com.jpweytjens.barberfish.extension
 
-import com.jpweytjens.barberfish.datatype.shared.ClimbPolylineSpec
+import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.MapEffect
@@ -19,12 +19,12 @@ import io.hammerhead.karooext.models.ShowPolyline
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not thread-safe.
  */
-internal class ClimbMapController {
+internal class GradeMapController {
     private var previousIds: Set<String> = emptySet()
 
     fun emit(
         emitter: Emitter<MapEffect>,
-        specs: List<ClimbPolylineSpec>,
+        specs: List<GradeMapPolylineSpec>,
         fillWidth: Int,
     ) {
         val newIds = specs.mapTo(mutableSetOf()) { it.id }
