@@ -308,17 +308,17 @@ private data class ViewportInputs(
     val lat: Double,
     val lng: Double,
 ) {
-    /** Bucket lat/lng to ~11 m so GPS jitter doesn't trigger rebuilds; zoom is already
-     *  integer-stepped at the flow source. */
+    /** Bucket lat at 0.05 deg (~5.5 km). Location's only use in the rebuild is the
+     *  cos(lat) term in the spacing math, which is insensitive below tens of km; lng
+     *  is unused (log line only), so it stays out of the signature entirely. Zoom is
+     *  already integer-stepped at the flow source. */
     fun bucketedSignature() = ViewportSignature(
         zoomBucket = zoomLevel.toInt(),
-        latBucket = (lat * 1e4).toLong(),
-        lngBucket = (lng * 1e4).toLong(),
+        latBucket = (lat / 0.05).toLong(),
     )
 }
 
 private data class ViewportSignature(
     val zoomBucket: Int,
     val latBucket: Long,
-    val lngBucket: Long,
 )
