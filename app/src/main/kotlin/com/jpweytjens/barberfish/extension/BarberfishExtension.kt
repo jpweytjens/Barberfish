@@ -175,11 +175,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 karooSystem.consumerFlow<OnLocationChanged>()
                     .onStart { emit(OnLocationChanged(0.0, 0.0, null)) },
             ) { zoom, loc ->
-                // Round to integer zoom: the rideapp emits continuous zoom on every
+                // Snap to quarter zoom levels: the rideapp emits continuous zoom on every
                 // SCALE_EVENT (including the double-tap settling animation), but each rebuild
-                // is a cross-IPC full overlay rebuild. Snapping to integer levels collapses a
-                // gesture to one rebuild that settles cleanly and makes spacing deterministic.
-                ViewportInputs(zoom.zoomLevel.roundToInt().toDouble(), loc.lat, loc.lng)
+                // is a cross-IPC overlay rebuild. Snapping collapses a gesture to a few
+                // rebuilds that settle cleanly and makes spacing deterministic. Quarter steps
+                // (not integers) keep our chevron grid within ~9% of the native spacing at
+                // the fractional zooms auto-follow renders, so ours stay on top of native's.
+                ViewportInputs((zoom.zoomLevel * 4).roundToInt() / 4.0, loc.lat, loc.lng)
             }
 
             configNavFlow.combine(viewportFlow) { cfg, vp -> cfg to vp }
@@ -311,9 +313,9 @@ private data class ViewportInputs(
     /** Bucket lat at 0.05 deg (~5.5 km). Location's only use in the rebuild is the
      *  cos(lat) term in the spacing math, which is insensitive below tens of km; lng
      *  is unused (log line only), so it stays out of the signature entirely. Zoom is
-     *  already integer-stepped at the flow source. */
+     *  already quarter-stepped at the flow source; the bucket just makes it hashable. */
     fun bucketedSignature() = ViewportSignature(
-        zoomBucket = zoomLevel.toInt(),
+        zoomBucket = (zoomLevel * 4).roundToInt(),
         latBucket = (lat / 0.05).toLong(),
     )
 }
