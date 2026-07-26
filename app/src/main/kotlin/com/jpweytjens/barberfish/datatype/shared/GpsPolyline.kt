@@ -70,49 +70,6 @@ internal fun mapDiagonalMeters(lat: Double, lng: Double, zoomLevel: Double): Dou
         )
 }
 
-// Native chevron geometry (reverse-engineered from rideapp hhq5/m.java):
-// spacing = xdpi * 0.4 * groundResolution(zoom), heading threshold per zoom band.
-
-/**
- * Spacing in metres between consecutive direction chevrons, matching the rideapp's native
- * route-arrow placement. On Karoo 3 (~240 dpi) at zoom 14 this is ~50 m.
- */
-internal fun nativeChevronSpacingM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
-    xdpi * 0.4 * groundResolution(lat, zoomLevel)
-
-/**
- * Half-width in metres of the neighbourhood around a candidate chevron position used to measure
- * local bearing spread, matching the rideapp's `hhj` constant (`xdpi × 0.05 × groundResolution`).
- */
-internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
-    xdpi * 0.05 * groundResolution(lat, zoomLevel)
-
-/**
- * Ground length in metres of a chevron icon [heightDp] tall at display [density] and the given
- * [zoomLevel]. Two chevrons closer than this overlap on screen, so it doubles as the
- * collision-dedup minimum spacing. Unlike the rideapp's fixed `hhi`, this tracks our actual
- * (enlarged) icon rather than the native 10×12 dp arrow.
- */
-internal fun chevronIconLengthM(
-    heightDp: Float,
-    density: Float,
-    lat: Double,
-    zoomLevel: Double,
-): Double = heightDp * density * groundResolution(lat, zoomLevel)
-
-/**
- * Maximum bearing spread (degrees) allowed inside the local window for a chevron to be emitted.
- * Spreads at or above this threshold suppress the chevron because the route is curving too sharply
- * for a single rotation to faithfully indicate direction. Matches the rideapp's zoom-dependent
- * `hhk` constant.
- */
-internal fun nativeChevronHeadingThresholdDeg(zoomLevel: Double): Double =
-    when {
-        zoomLevel > 12.0 -> 30.0
-        zoomLevel > 10.0 -> 45.0
-        else -> 60.0
-    }
-
 /**
  * Decodes a Google encoded polyline at the given precision (default 5 for GPS). Returns an empty
  * list on blank input.
