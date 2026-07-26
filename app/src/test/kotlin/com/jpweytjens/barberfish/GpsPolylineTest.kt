@@ -148,4 +148,29 @@ class GpsPolylineTest {
             projectPoiAlongRoute(LatLng(0.0, 0.0), listOf(LatLng(0.0, 0.0)), doubleArrayOf(0.0), 500.0)
         assertNull(along)
     }
+
+    @Test
+    fun projecting_onto_a_reversed_route_mirrors_the_distance() {
+        val pts =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.0, 0.01),
+                LatLng(0.0, 0.02),
+                LatLng(0.0, 0.03),
+            )
+        val cum = cumulativeDistancesM(pts)
+        val reversedPts = pts.asReversed()
+        val reversedCum = cumulativeDistancesM(reversedPts)
+        val poi = LatLng(0.0, 0.005)
+
+        val forward =
+            projectPoiAlongRoute(poi, pts, cum, 500.0) ?: error("expected a forward projection")
+        val reversed =
+            projectPoiAlongRoute(poi, reversedPts, reversedCum, 500.0)
+                ?: error("expected a reversed projection")
+
+        // Same physical point, measured from opposite ends, so the two must sum to
+        // the route length.
+        assertEquals(cum.last(), forward + reversed, 1.0)
+    }
 }
