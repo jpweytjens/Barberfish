@@ -46,13 +46,13 @@ import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -62,6 +62,10 @@ private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune 
 // Chevron icon height in dp — keep in sync with ic_climber_chevron*.xml. Drives the
 // collision-dedup spacing so chevrons never overlap regardless of zoom.
 private const val CHEVRON_ICON_HEIGHT_DP = 17f
+
+// Zoom assumed until the map reports one, so the overlay builds on route load. Provisional:
+// the first real zoom replaces it whatever band it lands in.
+private const val SEED_ZOOM = 15.0
 
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
@@ -135,6 +139,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         Timber.d("grademap: startMap invoked")
         val polylineController = GradeMapController()
         val chevronController = GradeMapChevronController()
+        val zoomBand = ChevronZoomBand()
         val xdpi = applicationContext.resources.displayMetrics.xdpi
         val density = applicationContext.resources.displayMetrics.density
         val scope = CoroutineScope(Dispatchers.IO)
@@ -162,21 +167,23 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 )
             }
             // Branch B: zoom + location (changes on every GPS tick / map interaction).
-            // Debounce so rapid bursts coalesce; onStart seeds defaults so the combine
-            // fires immediately on route load even before the first location fix.
+            // onStart seeds defaults so the combine fires immediately on route load even
+            // before the first location fix.
+            //
+            // The zoom is frozen per integer band before the combine, never inside it: the
+            // band's provisional-seed rule must see one call per zoom emission, and a
+            // location tick arriving with an unchanged zoom would otherwise spend it.
+            val zoomFlow = karooSystem.consumerFlow<OnMapZoomLevel>()
+                .map { it.zoomLevel }
+                .onStart { emit(SEED_ZOOM) }
+                .map { zoomBand.effectiveZoom(it) }
+                .distinctUntilChanged()
             val viewportFlow = combine(
-                karooSystem.consumerFlow<OnMapZoomLevel>()
-                    .onStart { emit(OnMapZoomLevel(15.0)) },
+                zoomFlow,
                 karooSystem.consumerFlow<OnLocationChanged>()
                     .onStart { emit(OnLocationChanged(0.0, 0.0, null)) },
             ) { zoom, loc ->
-                // Snap to quarter zoom levels: the rideapp emits continuous zoom on every
-                // SCALE_EVENT (including the double-tap settling animation), but each rebuild
-                // is a cross-IPC overlay rebuild. Snapping collapses a gesture to a few
-                // rebuilds that settle cleanly and makes spacing deterministic. Quarter steps
-                // (not integers) keep our chevron grid within ~9% of the native spacing at
-                // the fractional zooms auto-follow renders, so ours stay on top of native's.
-                ViewportInputs((zoom.zoomLevel * 4).roundToInt() / 4.0, loc.lat, loc.lng)
+                ViewportInputs(zoom, loc.lat, loc.lng)
             }
 
             configNavFlow.combine(viewportFlow) { cfg, vp -> cfg to vp }
@@ -306,14 +313,14 @@ private data class ViewportInputs(
     /** Bucket lat at 0.05 deg (~5.5 km). Location's only use in the rebuild is the
      *  cos(lat) term in the spacing math, which is insensitive below tens of km; lng
      *  is unused (log line only), so it stays out of the signature entirely. Zoom is
-     *  already quarter-stepped at the flow source; the bucket just makes it hashable. */
+     *  already frozen per integer band at the flow source, so it needs no bucketing. */
     fun bucketedSignature() = ViewportSignature(
-        zoomBucket = (zoomLevel * 4).roundToInt(),
+        zoomLevel = zoomLevel,
         latBucket = (lat / 0.05).toLong(),
     )
 }
 
 private data class ViewportSignature(
-    val zoomBucket: Int,
+    val zoomLevel: Double,
     val latBucket: Long,
 )
