@@ -181,7 +181,7 @@ private const val DOT_RADIUS_PX = 7f
 private const val POI_RADIUS_PX = 7f
 private const val MARKER_STROKE_PX = 1.5f
 // Half-stroke + radius, ceil'd: keeps the stroked outer edge of the dot/POI inside the bitmap.
-private const val MARKER_PAD_PX = 8f
+internal const val MARKER_PAD_PX = 8f
 
 /** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
 internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
@@ -224,11 +224,18 @@ internal fun renderElevationSparkline(
         windowEnd = windowOverride.second.coerceAtMost(lastDist)
         effWarpK = 0f
     } else {
-        // Clamp window to route bounds so the sparkline fills full width even at the start.
-        // The dot migrates from the left edge to the 25% position as you accumulate past distance.
-        val rawEnd = positionM - lookaheadM * positionFraction + lookaheadM
-        windowEnd = rawEnd.coerceAtMost(lastDist)
-        windowStart = (windowEnd - lookaheadM).coerceAtLeast(firstDist)
+        val window =
+            sparklineWindow(
+                firstDist,
+                lastDist,
+                positionM,
+                lookaheadM,
+                positionFraction,
+                widthPx,
+                logWarpK,
+            )
+        windowStart = window.first
+        windowEnd = window.second
         effWarpK = logWarpK
     }
 
@@ -615,12 +622,61 @@ internal fun resolveClimbReveal(
     }
 
 /**
+ * Position-tracking window for the default (non-climb) mode: [lookaheadM] wide, clamped to the route
+ * bounds so the strip fills the full width, but never so tight that the rider ends up on a window
+ * edge. An edge maps to x = 0 (or x = widthPx), so a rider sitting on one would draw the position
+ * dot half outside the bitmap.
+ *
+ * The reserve is [markerEdgeMarginM], the route distance one dot radius covers, so at the route ends
+ * the dot still reads as sitting on the edge and the empty strip in front of the route is no wider
+ * than the dot itself. The climb frame in [resolveClimbReveal] reserves its own margins the same
+ * way.
+ */
+internal fun sparklineWindow(
+    firstDist: Float,
+    lastDist: Float,
+    positionM: Float,
+    lookaheadM: Float,
+    positionFraction: Float,
+    widthPx: Int,
+    logWarpK: Float,
+): Pair<Float, Float> {
+    val edgeMarginM = markerEdgeMarginM(lookaheadM, widthPx, logWarpK)
+    val end =
+        (positionM - lookaheadM * positionFraction + lookaheadM)
+            .coerceAtMost(lastDist)
+            .coerceAtLeast(positionM + edgeMarginM)
+    val start = (end - lookaheadM).coerceAtLeast(firstDist).coerceAtMost(positionM - edgeMarginM)
+    return start to end
+}
+
+/**
+ * Route distance that spans [MARKER_PAD_PX] pixels right at the rider, where [buildWarpedXMapper]
+ * packs the most pixels per metre.
+ *
+ * Pixels per metre there are `(1 + logWarpK) / totalBudget * widthPx`. At either route end the
+ * window lies entirely on one side of the rider, so the budget integrates to
+ * `lookaheadM * (1 + 2(1 - exp(-logWarpK / 2)))`, and the pad's own share of that budget is folded
+ * back in so the result holds once the window has been widened by it.
+ *
+ * That closed form lands within about a pixel of the mapper's discrete stepping (density is not
+ * quite flat across the reserve, and the window at a route end is not quite `lookaheadM` wide), so
+ * it asks for one pixel more than the pad to keep the dot on the inside of the rounding. Pinned by
+ * `position_dot_clears_the_marker_pad_at_both_route_ends`.
+ */
+private fun markerEdgeMarginM(lookaheadM: Float, widthPx: Int, logWarpK: Float): Float {
+    val padFraction = ((MARKER_PAD_PX + 1f) / widthPx.coerceAtLeast(1)).coerceAtMost(0.5f)
+    val oneSidedBudget = lookaheadM * (1f + 2f * (1f - kotlin.math.exp(-logWarpK / 2f)))
+    return padFraction * oneSidedBudget / ((1f + logWarpK) * (1f - padFraction))
+}
+
+/**
  * Builds a monotonic function mapping a route distance in metres to a screen x-coordinate in
  * [0, widthPx]. Applies log-warp so pixels near [positionM] get more density than pixels farther
  * away: `mag(d) = 1 + K·exp(-normalised_distance · K/2)`. With `logWarpK = 0f` the mapping
  * collapses to linear (every metre gets one pixel budget).
  */
-private fun buildWarpedXMapper(
+internal fun buildWarpedXMapper(
     windowStart: Float,
     windowEnd: Float,
     positionM: Float,

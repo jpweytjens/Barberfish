@@ -1,7 +1,11 @@
 package com.jpweytjens.barberfish
 
+import com.jpweytjens.barberfish.datatype.shared.MARKER_PAD_PX
+import com.jpweytjens.barberfish.datatype.shared.buildWarpedXMapper
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
+import com.jpweytjens.barberfish.datatype.shared.sparklineWindow
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.extension.SparklineWarp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -89,5 +93,128 @@ class ElevationStripTest {
         assertEquals(2, simplified.size)
         assertEquals(0f to 0f, simplified.first())
         assertEquals(200f to 20f, simplified.last())
+    }
+
+    // --- sparklineWindow ---
+
+    // Every user-selectable lookahead (km) and warp setting.
+    private val lookaheadKmOptions = listOf(5, 10, 20)
+
+    // Narrowest plausible sparkline cell through a full-width one.
+    private val cellWidthsPx = listOf(160, 240, 480)
+
+    private val ROUTE_LENGTH_M = 60_000f
+
+    // Route-end dot x for every lookahead × warp × cell width, via the same window and mapper the
+    // renderer uses.
+    private fun routeEndDotX(
+        lookaheadM: Float,
+        warp: SparklineWarp,
+        widthPx: Int,
+        positionM: Float,
+    ): Float {
+        val (start, end) =
+            sparklineWindow(
+                firstDist = 0f,
+                lastDist = ROUTE_LENGTH_M,
+                positionM = positionM,
+                lookaheadM = lookaheadM,
+                positionFraction = warp.positionFraction,
+                widthPx = widthPx,
+                logWarpK = warp.k,
+            )
+        return buildWarpedXMapper(start, end, positionM, lookaheadM, widthPx, warp.k)(positionM)
+    }
+
+    @Test
+    fun position_dot_clears_the_marker_pad_at_both_route_ends() {
+        for (lookaheadKm in lookaheadKmOptions) {
+            val lookaheadM = lookaheadKm * 1000f
+            for (warp in SparklineWarp.entries) {
+                for (positionM in listOf(0f, ROUTE_LENGTH_M)) {
+                    for (widthPx in cellWidthsPx) {
+                        val dotX = routeEndDotX(lookaheadM, warp, widthPx, positionM)
+                        val case =
+                            "${lookaheadKm}km ${warp.label} ${widthPx}px at ${positionM}m: $dotX"
+                        assertTrue(case, dotX >= MARKER_PAD_PX)
+                        assertTrue(case, dotX <= widthPx - MARKER_PAD_PX)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun route_start_reserves_no_more_than_the_marker_pad() {
+        // The reserve exists only to keep the dot whole, so the empty strip in front of the route
+        // must stay within a pixel of the dot's own radius rather than growing to the mid-ride
+        // past region (which is an eighth of the strip).
+        for (lookaheadKm in lookaheadKmOptions) {
+            val lookaheadM = lookaheadKm * 1000f
+            for (warp in SparklineWarp.entries) {
+                for (widthPx in cellWidthsPx) {
+                    val dotX = routeEndDotX(lookaheadM, warp, widthPx, 0f)
+                    val case = "${lookaheadKm}km ${warp.label} ${widthPx}px: $dotX"
+                    assertTrue(case, dotX <= MARKER_PAD_PX + 4f)
+                    val endDotX = routeEndDotX(lookaheadM, warp, widthPx, ROUTE_LENGTH_M)
+                    assertTrue(case, endDotX >= widthPx - MARKER_PAD_PX - 4f)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun window_is_unchanged_mid_route() {
+        // Well away from both ends the margin is already satisfied, so the window must stay exactly
+        // where it was: `positionFraction` of it behind the rider, the rest ahead.
+        val lookaheadM = 10_000f
+        val fraction = SparklineWarp.MEDIUM.positionFraction
+        val positionM = 30_000f
+        val (start, end) =
+            sparklineWindow(
+                firstDist = 0f,
+                lastDist = ROUTE_LENGTH_M,
+                positionM = positionM,
+                lookaheadM = lookaheadM,
+                positionFraction = fraction,
+                widthPx = 240,
+                logWarpK = SparklineWarp.MEDIUM.k,
+            )
+        assertEquals(positionM - lookaheadM * fraction, start, 0.01f)
+        assertEquals(positionM + lookaheadM * (1f - fraction), end, 0.01f)
+        assertEquals(lookaheadM, end - start, 0.01f)
+    }
+
+    @Test
+    fun window_never_exceeds_the_lookahead_width() {
+        // stepM in buildWarpedXMapper divides the window by a step count derived from lookaheadM;
+        // a window wider than lookaheadM would silently coarsen the warp lookup.
+        for (lookaheadKm in lookaheadKmOptions) {
+            val lookaheadM = lookaheadKm * 1000f
+            for (warp in SparklineWarp.entries) {
+                for (routeLengthM in listOf(400f, 2_000f, ROUTE_LENGTH_M)) {
+                    var positionM = 0f
+                    while (positionM <= routeLengthM) {
+                        val (start, end) =
+                            sparklineWindow(
+                                firstDist = 0f,
+                                lastDist = routeLengthM,
+                                positionM = positionM,
+                                lookaheadM = lookaheadM,
+                                positionFraction = warp.positionFraction,
+                                widthPx = 240,
+                                logWarpK = warp.k,
+                            )
+                        assertTrue(
+                            "${lookaheadKm}km ${warp.label} on ${routeLengthM}m at ${positionM}m: " +
+                                "${end - start}",
+                            end - start <= lookaheadM + 0.01f,
+                        )
+                        assertTrue(end > start)
+                        positionM += routeLengthM / 20f
+                    }
+                }
+            }
+        }
     }
 }
