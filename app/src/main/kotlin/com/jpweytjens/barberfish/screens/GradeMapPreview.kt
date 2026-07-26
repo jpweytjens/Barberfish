@@ -37,8 +37,8 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-// Fixed preview "zoom": every coloured run gets a chevron so the toggle reads clearly.
-// Spaced wide enough that chevrons don't overlap at the middle-section crop's zoom.
+// Fixed preview "zoom": tight enough that every coloured run in the fixture contains a
+// cadence position, wide enough that chevrons don't overlap at the middle-section crop.
 private const val PREVIEW_CHEVRON_SPACING_M = 150.0
 
 // On-screen chevron width; the drawable's 25x17 viewport fixes the height ratio. Drawing
@@ -71,7 +71,6 @@ internal fun GradeMapPreview(
             // Always place chevrons; the toggle only changes their colour (grade vs native).
             includeChevrons = true,
             chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,
-            chevronGuaranteePerRun = true,
         )
     }
     val routePoints = remember { decodeGpsPolyline(ClimbPreviewFixture.routePolyline) }

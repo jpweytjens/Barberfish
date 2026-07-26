@@ -63,11 +63,6 @@ private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune 
 // collision-dedup spacing so chevrons never overlap regardless of zoom.
 private const val CHEVRON_ICON_HEIGHT_DP = 17f
 
-// Zoom at/above which every climb segment is guaranteed a chevron. Below it, chevrons
-// thin out with the route-distance grid like the native rideapp and the coloured
-// polyline alone marks the climb. 12 matches the native `hhk` heading-threshold breakpoint.
-private const val CHEVRON_PER_SEGMENT_MIN_ZOOM = 12.0
-
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
 fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>> =
@@ -205,7 +200,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     val chevronCollision =
                         chevronIconLengthM(CHEVRON_ICON_HEIGHT_DP, density, viewport.lat, viewport.zoomLevel)
                     val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
-                    val guaranteePerRun = viewport.zoomLevel >= CHEVRON_PER_SEGMENT_MIN_ZOOM
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
                     // between HideSymbols and ShowSymbols causes chevrons to vanish when
                     // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
@@ -234,12 +228,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronSpacingM = chevronStep,
                         chevronWindowHalfM = chevronWindow,
                         chevronHeadingThresholdDeg = headingThreshold,
-                        chevronGuaranteePerRun = guaranteePerRun,
                         chevronMinSpacingM = chevronCollision,
                         chevronViewport = bounds,
                         capTrimM = capTrimM,
                     )
-                    Timber.d("grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° guarantee=$guaranteePerRun zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
+                    Timber.d("grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     if (BuildConfig.DEBUG) {
                         val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
                         Timber.d("grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}")

@@ -246,11 +246,11 @@ class GradeMapPolylinesTest {
     }
 
     @Test
-    fun chevrons_sit_on_a_shared_route_distance_grid() {
-        // Two runs: a 200 m salmon run and a 100 m flat run. At 60 m spacing the grid is
-        // phase + k·60 with phase = 30 (half-spacing), measured from the route start:
-        // 30/90/150 fall in the yellow run, 210/270 in the flat run. Both runs draw from
-        // the same global grid — they are not sampled run-relative.
+    fun chevrons_come_from_one_route_wide_cadence() {
+        // Two runs: a 200 m salmon run and a 100 m flat run. At 60 m spacing the cadence is
+        // 30, 90, 150, 210, 270 and continues past the runs to the end of the 3336 m route.
+        // The first five placements fall inside the two runs, so ids 0 to 4 are emitted and
+        // every later placement is dropped for sitting on no run.
         val overlay =
             buildGradeMapSpecs(
                 routePolyline = routePolyline,
@@ -261,10 +261,9 @@ class GradeMapPolylinesTest {
             )
         assertEquals(2, overlay.polylines.size)
         assertEquals(5, overlay.chevrons.size)
-        assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
-        assertEquals("barberfish-chev-0-2", overlay.chevrons[2].id)
-        assertEquals("barberfish-chev-1-0", overlay.chevrons[3].id)
-        assertEquals("barberfish-chev-1-1", overlay.chevrons[4].id)
+        assertEquals("barberfish-chev-0", overlay.chevrons[0].id)
+        assertEquals("barberfish-chev-2", overlay.chevrons[2].id)
+        assertEquals("barberfish-chev-4", overlay.chevrons[4].id)
     }
 
     @Test
@@ -345,9 +344,10 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 cfg = noneCfg,
-                // 250 m window: grid points whose neighbourhood spans both legs (the 90° corner)
-                // see a 90° spread and drop; points past the corner keep their chevrons.
-                chevronWindowHalfM = 250.0,
+                // 40 m window, close to the native ~28 m at zoom 15: only the positions whose
+                // neighbourhood spans both legs (the 90° corner) see a 90° spread and drop.
+                // Positions along either straight leg keep their chevrons.
+                chevronWindowHalfM = 40.0,
                 chevronHeadingThresholdDeg = 30.0,
             )
         assertTrue(
@@ -420,23 +420,22 @@ class GradeMapPolylinesTest {
     }
 
     @Test
-    fun near_overlapping_chevrons_are_deduped() {
-        // Two adjacent sub-grid runs in different bands: 6% mint [0,10] m and 8% yellow
-        // [10,25] m. Each is shorter than the grid phase, so each gets a guaranteed
-        // fallback chevron — at 5 m and 17.5 m, only 12.5 m apart. The collision pass
-        // drops the second; with no min-spacing both survive.
-        val twoShortRuns =
+    fun collision_radius_stretches_the_cadence() {
+        // A 300 m climb covering the first 300 m of the route. At 60 m spacing the cadence
+        // is 30, 90, 150, 210, 270. With a 100 m collision radius, 90 and 150 are inside
+        // 100 m of the chevron at 30 and every one of their offsets collides too, so the
+        // walk skips to 150 + 60 = 210 before it can place again.
+        val longClimb =
             encodeElevationManually(
                 listOf(
                     0f to 100f,
-                    10f to 100.6f, // 6% → KAROO mint band
-                    25f to 101.8f, // 8% → KAROO yellow band
+                    300f to 124f, // 8% over 300 m → KAROO yellow band
                 ),
             )
         val noDedup =
             buildGradeMapSpecs(
                 routePolyline = routePolyline,
-                routeElevationPolyline = twoShortRuns,
+                routeElevationPolyline = longClimb,
                 palette = GradePalette.KAROO,
                 readable = true,
                 cfg = noneCfg,
@@ -444,64 +443,58 @@ class GradeMapPolylinesTest {
         val deduped =
             buildGradeMapSpecs(
                 routePolyline = routePolyline,
-                routeElevationPolyline = twoShortRuns,
+                routeElevationPolyline = longClimb,
                 palette = GradePalette.KAROO,
                 readable = true,
                 cfg = noneCfg,
-                chevronMinSpacingM = 20.0,
+                chevronMinSpacingM = 100.0,
             )
-        assertEquals(2, noDedup.chevrons.size)
-        assertEquals(1, deduped.chevrons.size)
+        assertEquals(5, noDedup.chevrons.size)
+        assertTrue(
+            "expected the collision radius to thin the cadence, got ${deduped.chevrons.size}",
+            deduped.chevrons.size < noDedup.chevrons.size,
+        )
     }
 
     @Test
-    fun short_run_gets_exactly_one_chevron() {
-        // A 25 m climb is shorter than the grid's half-spacing phase (30 m at 60 m
-        // spacing), so no grid point lands inside it. The per-segment guarantee still
-        // places a single chevron at the run midpoint so no coloured segment is bare.
-        val shortPoly =
+    fun short_run_gets_a_chevron_only_when_a_cadence_position_lands_in_it() {
+        // At 60 m spacing the first cadence position is 30 m. A 25 m climb ends before it,
+        // so the run is drawn with no chevron. A 60 m climb contains it, so it gets one.
+        val tooShort =
             encodeElevationManually(
                 listOf(
                     0f to 100f,
                     25f to 102f, // 8% grade → KAROO yellow band
                 ),
             )
-        val overlay =
-            buildGradeMapSpecs(
-                routePolyline = routePolyline,
-                routeElevationPolyline = shortPoly,
-                palette = GradePalette.KAROO,
-                readable = true,
-                cfg = noneCfg,
-            )
-        assertEquals(1, overlay.polylines.size)
-        assertEquals(1, overlay.chevrons.size)
-        assertEquals("barberfish-chev-0-0", overlay.chevrons[0].id)
-    }
-
-    @Test
-    fun short_run_gets_no_chevron_when_guarantee_disabled() {
-        // Same 25 m climb, but with the per-segment guarantee off (zoomed-out behaviour):
-        // no grid point lands inside, and nothing forces a fallback — the run gets a
-        // coloured polyline but zero chevrons, like the native rideapp when zoomed out.
-        val shortPoly =
+        val longEnough =
             encodeElevationManually(
                 listOf(
                     0f to 100f,
-                    25f to 102f, // 8% grade → KAROO yellow band
+                    60f to 104.8f, // 8% grade → KAROO yellow band
                 ),
             )
-        val overlay =
+        val bare =
             buildGradeMapSpecs(
                 routePolyline = routePolyline,
-                routeElevationPolyline = shortPoly,
+                routeElevationPolyline = tooShort,
                 palette = GradePalette.KAROO,
                 readable = true,
                 cfg = noneCfg,
-                chevronGuaranteePerRun = false,
             )
-        assertEquals(1, overlay.polylines.size)
-        assertTrue(overlay.chevrons.isEmpty())
+        val marked =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = longEnough,
+                palette = GradePalette.KAROO,
+                readable = true,
+                cfg = noneCfg,
+            )
+        assertEquals(1, bare.polylines.size)
+        assertTrue(bare.chevrons.isEmpty())
+        assertEquals(1, marked.polylines.size)
+        assertEquals(1, marked.chevrons.size)
+        assertEquals("barberfish-chev-0", marked.chevrons[0].id)
     }
 
     private fun segLenM(spec: GradeMapPolylineSpec): Double =
