@@ -241,11 +241,19 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronMinSpacingM = chevronCollision,
                         chevronViewport = bounds,
                         capTrimM = capTrimM,
+                        reversed = route.reversed,
                     )
                     Timber.d("grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
                     if (BuildConfig.DEBUG) {
                         val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
                         Timber.d("grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}")
+                        // Direction diagnostic. routePolyline always arrives in saved
+                        // order, so gpsFirst/gpsLast are identical forward and reversed;
+                        // segStart is what moves once the reversal is applied.
+                        val gpsPts = decodeGpsPolyline(route.routePolyline)
+                        val segStart = specs.polylines.firstOrNull()
+                            ?.let { decodeGpsPolyline(it.encoded).firstOrNull() }
+                        Timber.d("grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}")
                         val segLen = specs.polylines
                             .map { decodeGpsPolyline(it.encoded) }
                             .map { if (it.size < 2) 0.0 else cumulativeDistancesM(it).last() }
@@ -288,6 +296,7 @@ private data class GradeMapConfigInputs(
             routeElevationHash = route?.routeElevationPolyline?.hashCode() ?: 0,
             routePolylineHash = route?.routePolyline?.hashCode() ?: 0,
             climbsHash = route?.climbs?.hashCode() ?: 0,
+            reversed = route?.reversed ?: false,
             // Bucket the rejoin offset to ~50 m so the filler tracks the rider riding the
             // rejoin path without rebuilding on every metre.
             rejoinBucket = ((route?.rejoinDistance ?: 0.0) / 50.0).toInt(),
@@ -305,6 +314,7 @@ private data class GradeMapConfigSignature(
     val routeElevationHash: Int,
     val routePolylineHash: Int,
     val climbsHash: Int,
+    val reversed: Boolean,
     val rejoinBucket: Int,
 )
 
