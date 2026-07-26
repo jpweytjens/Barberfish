@@ -29,6 +29,7 @@ New defaults, saved settings stay as they are:
 
 Map overlay (beta):
 - While navigating a route, climbs are drawn over the route line in the same grade colors as the elevation profile, with chevrons along the way
+- Chevrons keep one rhythm along the whole route instead of restarting inside each climb, and they stay pinned to the road as you zoom rather than rearranging themselves
 - The new Map Overlay card under Climbing toggles the overlay, the colored lines, and the chevrons
 - Beta means less riding than the rest of 4.0; if the map misbehaves, turn it off and report what you saw
 
@@ -45,6 +46,8 @@ Placeholders and icons:
 - The green icon tint now uses Karoo's darker shade in light mode
 
 Fixes:
+- A route ridden in reverse now shows the map overlay's climb colors and chevrons, and saved POIs on the elevation profile, where you meet them rather than mirrored to the far end of the route
+- The position dot on the elevation profile no longer sits half outside the field at the very start and end of a route
 - Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
 - The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
 - POI dots on the elevation profile are now solid instead of slightly see-through
