@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.sample
 private const val OVERVIEW_DOT_RADIUS_PX = 7f
 private const val OVERVIEW_STROKE_PX = 3f
 private const val OVERVIEW_MARKER_STROKE_PX = 1.5f
-private const val OVERVIEW_PAD_PX = 8f
+internal const val OVERVIEW_PAD_PX = 8f
 private const val OVERVIEW_MIN_ELEV_RANGE_M = 50f
 
 // Preview-only: sweep the dot at a fixed ~3 px/s. On-screen jump = speed × the host's redraw
@@ -35,6 +35,18 @@ private const val OVERVIEW_MIN_ELEV_RANGE_M = 50f
 // at the cost of larger jumps. On a real ride the dot uses the live distance-to-destination.
 private const val OVERVIEW_PREVIEW_PX_PER_SEC = 3f
 private const val OVERVIEW_PREVIEW_TICK_MS = 125L
+
+/**
+ * Maps a route distance to an x-coordinate, holding [OVERVIEW_PAD_PX] free at both ends.
+ *
+ * The frame is the whole route, so both of its ends are always on screen: without the inset the
+ * route start maps to x = 0 and the finish to x = widthPx, which puts half the position dot outside
+ * the bitmap at the beginning and end of every ride, and clips half the trace's own stroke there
+ * too. `toY` reserves the same pad vertically for the same reason.
+ */
+internal fun overviewToX(d: Float, startM: Float, spanM: Float, widthPx: Int): Float =
+    (OVERVIEW_PAD_PX + (d - startM) / spanM * (widthPx - 2 * OVERVIEW_PAD_PX))
+        .coerceIn(0f, widthPx.toFloat())
 
 /**
  * Draw the whole route as a single uncolored polyline with a position dot. No grade coloring, no
@@ -57,7 +69,7 @@ fun renderOverviewSparkline(
     val elevMax = points.maxOf { it.second }
     val elevRange = (elevMax - elevMin).coerceAtLeast(OVERVIEW_MIN_ELEV_RANGE_M)
 
-    fun toX(d: Float) = ((d - startM) / spanM * widthPx).coerceIn(0f, widthPx.toFloat())
+    fun toX(d: Float) = overviewToX(d, startM, spanM, widthPx)
     fun toY(e: Float) =
         (heightPx - (e - elevMin) / elevRange * (heightPx - 2 * OVERVIEW_PAD_PX) - OVERVIEW_PAD_PX)
             .coerceIn(0f, heightPx.toFloat())

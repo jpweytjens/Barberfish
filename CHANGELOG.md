@@ -47,7 +47,7 @@ Placeholders and icons:
 
 Fixes:
 - A route ridden in reverse now shows the map overlay's climb colors and chevrons, and saved POIs on the elevation profile, where you meet them rather than mirrored to the far end of the route
-- The position dot on the elevation profile no longer sits half outside the field at the very start and end of a route
+- The position dot on the elevation profile and on Overview no longer sits half outside the field at the very start and end of a route
 - Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
 - The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
 - POI dots on the elevation profile are now solid instead of slightly see-through
