@@ -335,3 +335,23 @@ The ideal SDK fix is one of:
 This was investigated during the climb overlay work. See
 `app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ClimbPolylines.kt`
 for the extraction pipeline that hits this limitation.
+
+---
+
+## Route polyline and distance fields disagree on direction when reversed
+
+`NavigatingRoute.routePolyline` is delivered in saved order regardless of the
+direction the rider is travelling. `routeElevationPolyline` is delivered in ride
+order, so its distance axis always starts at the rider's actual start point.
+`climbs[].startDistance` and `DISTANCE_TO_DESTINATION` are likewise in ride order.
+`NavigatingRoute.reversed` is the only signal linking the two orderings. Any
+extension that combines the GPS polyline with a ride-order distance value must
+reverse the decoded GPS points itself when `reversed` is true.
+
+Confirmed empirically: loading the same route once forward and once reversed
+produced identical first and last GPS coordinates in `routePolyline` in both
+cases, but the elevation profile's start and end elevations were swapped. Route
+length 115810 m.
+
+Still unverified: whether `rejoinDistance` and `Symbol.POI.distancesAlongRoute`
+follow saved order or ride order.
