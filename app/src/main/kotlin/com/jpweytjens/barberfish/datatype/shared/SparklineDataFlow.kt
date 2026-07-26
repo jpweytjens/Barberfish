@@ -59,9 +59,9 @@ internal fun sparklineBitmapFlow(
     var lastOnRoutePositionM = 0f
     var cachedElevKey: Triple<String, ElevationSimplification, Int>? = null
     var cachedElevPoints: List<Pair<Float, Float>> = emptyList()
-    // Projection of global POIs onto the route is keyed on (routePolyline, global POI ids) so it
-    // only recomputes when the route or the saved-POI set changes — snapping over a dense polyline
-    // every emission would be wasteful.
+    // Projection of global POIs onto the route is keyed on (routePolyline, reversed, global POI
+    // ids) so it only recomputes when the route, its direction, or the saved-POI set changes —
+    // snapping over a dense polyline every emission would be wasteful.
     var cachedGlobalPoiKey: Triple<String, Boolean, List<String>>? = null
     var cachedGlobalPoiDistances: List<Float> = emptyList()
 
@@ -179,8 +179,8 @@ internal fun sparklineBitmapFlow(
         // Project saved (global) POIs onto the route so they show alongside route-embedded ones.
         // Globals arrive with an empty distancesAlongRoute (lat/lng only), so snap each to the
         // nearest point on the route geometry and keep those within POI_ROUTE_CORRIDOR_M. Cached
-        // on (routePolyline, global POI ids). A global that already carries a projected distance
-        // (rare) is used as-is.
+        // on (routePolyline, reversed, global POI ids). A global that already carries a projected
+        // distance (rare) is used as-is.
         if (route != null) {
             val globalKey =
                 Triple(route.routePolyline, route.reversed, globalPois.pois.map { it.id })
