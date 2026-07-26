@@ -46,6 +46,7 @@ import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
+import kotlin.math.floor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -220,10 +221,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         (it.startDistance - rejoinOffset) to
                             (it.startDistance + it.length - rejoinOffset)
                     }
-                    // Round line-cap overhang per end = (width/2) px in ground metres at the
-                    // current (stepped) zoom. Trimmed at chain outer ends inside the builder.
+                    // Round line-cap overhang per end = (width/2) px in ground metres.
+                    // The overlay only re-emits on a band crossing, so this trim is fixed for
+                    // the whole band while the rendered zoom moves across it. Centring on the
+                    // band's midpoint bounds the error at about 1.41x either way instead of 2x.
                     val capTrimM = (CLIMB_OVERLAY_WIDTH / 2.0) *
-                        groundResolution(viewport.lat, viewport.zoomLevel)
+                        groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
                     val specs = buildGradeMapSpecs(
                         routePolyline = route.routePolyline,
                         routeElevationPolyline = route.routeElevationPolyline,

@@ -19,8 +19,10 @@ internal data class GradeMapPolylineSpec(
 )
 
 /**
- * A single chevron symbol placed along a coloured gradient run. The bearing is the
- * direction the chevron points (derived from two adjacent route vertices ~10 m apart).
+ * A single chevron symbol placed along the route. Placement is route-wide, then filtered
+ * onto the coloured gradient run it lands on. The bearing is the direction the chevron
+ * points, taken as a chord across the bearing window (about 24 m on device); 10 m survives
+ * only as the fallback when no window is configured.
  * [colorArgb] is the gradient-band colour of the polyline run the chevron sits on.
  */
 internal data class ClimbChevronSpec(

@@ -4,7 +4,10 @@ import com.jpweytjens.barberfish.datatype.shared.ChevronTuning
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.placeChevrons
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,6 +17,31 @@ class ChevronPlacementTest {
     // 1 degree of longitude at the equator is 111_320 m, so 0.001 deg is 111.32 m.
     private fun straightEast(pointCount: Int, stepDeg: Double = 0.001): List<LatLng> =
         (0 until pointCount).map { LatLng(0.0, it * stepDeg) }
+
+    // Turns turnDegPerEdge degrees at every edgeLengthM-metre edge, starting due east from
+    // the origin. Used for the post-loop-acceptance fixture: a gentle, continuous curve
+    // whose local bearing spread sits between the early-accept and heading thresholds.
+    private fun curvingRoute(
+        pointCount: Int,
+        edgeLengthM: Double = 20.0,
+        turnDegPerEdge: Double = 4.0,
+    ): List<LatLng> {
+        var lat = 0.0
+        var lng = 0.0
+        var headingDeg = 90.0
+        val points = mutableListOf(LatLng(lat, lng))
+        repeat(pointCount - 1) {
+            val rad = headingDeg * PI / 180.0
+            lat += edgeLengthM * cos(rad) / 111_320.0
+            lng += edgeLengthM * sin(rad) / 111_320.0
+            points += LatLng(lat, lng)
+            headingDeg += turnDegPerEdge
+        }
+        return points
+    }
+
+    // 1 metre of latitude or longitude at the equator is 1/111_320 degrees.
+    private fun metersToDeg(m: Double): Double = m / 111_320.0
 
     private fun tuning(
         spacingM: Double = 100.0,
@@ -65,8 +93,9 @@ class ChevronPlacementTest {
     @Test
     fun sharp_bend_nudges_the_chevron_instead_of_dropping_it() {
         // Right angle at 200 m, then straight north. Spacing 100 m puts a cadence point at
-        // 150, whose 60 m window spans the corner. Offset -0.375 lands at 112.5 m, whose
-        // window clears the corner, so a chevron is placed short of the nominal position.
+        // 150, whose 60 m window spans the corner. Offset -0.25 lands at 125 m, whose window
+        // clears the corner, so it is early-accepted; the full trace for this fixture is
+        // 50, 125, 262.5, 362.5.
         val east = 0.001797 // ~200 m east at the equator
         val gps = listOf(
             LatLng(0.0, 0.0),
@@ -112,8 +141,12 @@ class ChevronPlacementTest {
 
     @Test
     fun cadence_after_a_nudge_is_measured_from_the_accepted_position() {
-        // Reuses the nudge case: whatever position was accepted near the bend, the next
-        // accepted position is one spacing beyond it, not back on the original grid.
+        // Reuses the nudge case: the next accepted position is measured from the nudged
+        // 125 m position (125 + 100 = 225 nominal), not from the original 150 m grid point
+        // (150 + 100 = 250). The next chevron actually lands at 262.5 m, a 137.5 m gap, not
+        // an exact spacing on either grid, because the cadence after re-phasing still walks
+        // in 100 m steps but the acceptance criteria at each step can nudge the candidate
+        // again. Either way it is nowhere near a fixed-grid implementation's 225 m.
         val east = 0.001797
         val gps = listOf(
             LatLng(0.0, 0.0),
@@ -131,5 +164,53 @@ class ChevronPlacementTest {
         assertTrue("expected a chevron after the nudged one", next != null)
         val gap = (next?.distanceM ?: 0.0) - nudged.distanceM
         assertTrue("expected the next chevron one spacing on, got $gap", gap in 60.0..140.0)
+    }
+
+    @Test
+    fun gentle_continuous_curve_relies_on_the_post_loop_acceptance() {
+        // A route turning 4 degrees every 20 m edge is never straight enough for early
+        // acceptance (every candidate's local bearing spread is at least ~24 degrees, the
+        // spread of a ~120 m window over a 4 deg/20 m curve) but is straight enough for the
+        // 30 degree heading threshold. Every placement below can only come from the
+        // post-loop "take the straightest candidate" branch; deleting that branch drops
+        // every one of them.
+        val gps = curvingRoute(pointCount = 30)
+        val cum = cumulativeDistancesM(gps)
+        val placed = placeChevrons(
+            gps,
+            cum,
+            tuning(spacingM = 100.0, windowHalfM = 60.0, headingThresholdDeg = 30.0),
+        )
+        assertEquals(
+            listOf(12.5, 112.5, 212.5, 312.5, 412.5, 550.0),
+            placed.map { it.distanceM },
+        )
+    }
+
+    @Test
+    fun collision_at_one_offset_slides_to_a_clearing_offset_instead_of_dropping_the_step() {
+        // A 250 m out-and-back hairpin, 5 m wide at the turn: north 250 m, a 5 m jog east,
+        // then south 250 m back down almost on top of the outbound leg. The 100 m cadence
+        // places chevrons at 50, 150, 250 on the outbound leg with no collisions. At the
+        // 350 m cursor step the offset-0 candidate sits on the inbound leg at 155 m north,
+        // only ~7 m from the chevron already placed at 150 m north — inside the 12 m
+        // collision radius — but the -0.25 offset candidate at 325 m sits at 180 m north,
+        // ~30 m from that same chevron and clear of every other one, so it is placed there
+        // instead. The walk then re-phases off 325, landing next at 425.
+        val d = 250.0
+        val eps = 5.0
+        val gps = listOf(
+            LatLng(0.0, 0.0),
+            LatLng(metersToDeg(d), 0.0),
+            LatLng(metersToDeg(d), metersToDeg(eps)),
+            LatLng(0.0, metersToDeg(eps)),
+        )
+        val cum = cumulativeDistancesM(gps)
+        val placed = placeChevrons(
+            gps,
+            cum,
+            tuning(spacingM = 100.0, collisionRadiusM = 12.0),
+        )
+        assertEquals(listOf(50.0, 150.0, 250.0, 325.0, 425.0), placed.map { it.distanceM })
     }
 }

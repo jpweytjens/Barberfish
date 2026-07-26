@@ -21,6 +21,11 @@ internal data class ChevronPlacement(
 /**
  * Zoom-derived geometry for one placement pass. All distances are ground metres at the
  * zoom level being rendered.
+ *
+ * [headingThresholdDeg] left at its default 0.0 means the post-loop acceptance in
+ * [placeChevrons] can never fire (no spread is below 0.0), so a caller that sets
+ * [windowHalfM] without also setting [headingThresholdDeg] gets near-total suppression on
+ * any curving route.
  */
 internal data class ChevronTuning(
     val spacingM: Double,

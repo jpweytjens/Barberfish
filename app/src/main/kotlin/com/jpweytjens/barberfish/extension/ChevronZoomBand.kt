@@ -7,9 +7,10 @@ import kotlin.math.floor
  * integer zoom band changes.
  *
  * Freezing the zoom per band keeps chevrons geo-pinned while you pinch, so their on-screen
- * density grows as you zoom in rather than the whole overlay re-laying out. Since the frozen
- * value only moves on a band crossing, a pinch gesture costs at most one overlay rebuild
- * instead of one per zoom step. It also reads closer to the native map's own arrow rhythm.
+ * density shrinks as you zoom in (and grows as you zoom out) within the band, rather than the
+ * whole overlay re-laying out. Since the frozen value only moves on a band crossing, a pinch
+ * gesture costs at most one overlay rebuild instead of one per zoom step. It also reads closer
+ * to the native map's own arrow rhythm.
  *
  * The first value is treated as provisional so the flow's seeded default cannot lock in a
  * whole band: the first real zoom replaces it regardless of band.

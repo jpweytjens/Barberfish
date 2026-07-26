@@ -38,7 +38,11 @@ import kotlin.math.hypot
 import kotlin.math.roundToInt
 
 // Fixed preview "zoom": tight enough that every coloured run in the fixture contains a
-// cadence position, wide enough that chevrons don't overlap at the middle-section crop.
+// cadence position at MILD/MEDIUM/HEAVY simplification, wide enough that chevrons don't
+// overlap at the middle-section crop. At ElevationSimplification.NONE the fixture cuts into
+// far more, much shorter runs and most of those are bare (no cadence position lands inside
+// them) — the same as how the field renders on the device, which carries no such guarantee
+// either.
 private const val PREVIEW_CHEVRON_SPACING_M = 150.0
 
 // On-screen chevron width; the drawable's 25x17 viewport fixes the height ratio. Drawing

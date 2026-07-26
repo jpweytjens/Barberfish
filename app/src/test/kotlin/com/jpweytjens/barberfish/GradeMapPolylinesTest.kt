@@ -421,10 +421,12 @@ class GradeMapPolylinesTest {
 
     @Test
     fun collision_radius_stretches_the_cadence() {
-        // A 300 m climb covering the first 300 m of the route. At 60 m spacing the cadence
-        // is 30, 90, 150, 210, 270. With a 100 m collision radius, 90 and 150 are inside
-        // 100 m of the chevron at 30 and every one of their offsets collides too, so the
-        // walk skips to 150 + 60 = 210 before it can place again.
+        // A 300 m climb covering the first 300 m of the route, straight along the equator.
+        // At 60 m spacing the uncollided cadence is 30, 90, 150, 210, 270. With a 100 m
+        // collision radius: 90 collides with 30 (60 m apart, every offset still within 100 m
+        // of it), so the walk skips to 150 (120 m from 30, clear); 210 collides with 150 the
+        // same way, so the walk skips to 270 (120 m from 150, clear). The walk lands on
+        // 30, 150, 270.
         val longClimb =
             encodeElevationManually(
                 listOf(
@@ -450,9 +452,10 @@ class GradeMapPolylinesTest {
                 chevronMinSpacingM = 100.0,
             )
         assertEquals(5, noDedup.chevrons.size)
-        assertTrue(
-            "expected the collision radius to thin the cadence, got ${deduped.chevrons.size}",
-            deduped.chevrons.size < noDedup.chevrons.size,
+        assertEquals(3, deduped.chevrons.size)
+        assertEquals(
+            listOf("barberfish-chev-0", "barberfish-chev-1", "barberfish-chev-2"),
+            deduped.chevrons.map { it.id },
         )
     }
 
