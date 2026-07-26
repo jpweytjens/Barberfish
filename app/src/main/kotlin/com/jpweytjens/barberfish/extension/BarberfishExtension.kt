@@ -279,6 +279,7 @@ private data class GradeMapConfigInputs(
             routeElevationHash = route?.routeElevationPolyline?.hashCode() ?: 0,
             routePolylineHash = route?.routePolyline?.hashCode() ?: 0,
             climbsHash = route?.climbs?.hashCode() ?: 0,
+            reversed = route?.reversed ?: false,
             // Bucket the rejoin offset to ~50 m so the filler tracks the rider riding the
             // rejoin path without rebuilding on every metre.
             rejoinBucket = ((route?.rejoinDistance ?: 0.0) / 50.0).toInt(),
@@ -296,6 +297,7 @@ private data class GradeMapConfigSignature(
     val routeElevationHash: Int,
     val routePolylineHash: Int,
     val climbsHash: Int,
+    val reversed: Boolean,
     val rejoinBucket: Int,
 )
 
