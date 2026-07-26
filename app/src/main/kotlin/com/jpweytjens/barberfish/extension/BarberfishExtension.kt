@@ -237,6 +237,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     if (BuildConfig.DEBUG) {
                         val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
                         Timber.d("grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}")
+                        // Direction diagnostic. routePolyline always arrives in saved
+                        // order, so gpsFirst/gpsLast are identical forward and reversed;
+                        // segStart is what moves once the reversal is applied.
+                        val gpsPts = decodeGpsPolyline(route.routePolyline)
+                        val segStart = specs.polylines.firstOrNull()
+                            ?.let { decodeGpsPolyline(it.encoded).firstOrNull() }
+                        Timber.d("grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}")
                         val segLen = specs.polylines
                             .map { decodeGpsPolyline(it.encoded) }
                             .map { if (it.size < 2) 0.0 else cumulativeDistancesM(it).last() }
