@@ -29,8 +29,8 @@ internal data class ChevronTuning(
     val headingThresholdDeg: Double,
 )
 
-// Candidate offsets in spacings, tried in this order around each cursor position. The
-// rideapp searches the same seven, so a chevron slides off a bend rather than vanishing.
+// Candidate offsets in spacings, tried in this order around each cursor position, so a
+// chevron slides off a bend rather than vanishing.
 private val CANDIDATE_OFFSETS =
     doubleArrayOf(0.0, -0.25, 0.25, -0.125, 0.125, -0.375, 0.375)
 
@@ -43,8 +43,7 @@ private const val EARLY_ACCEPT_SPREAD_DEG = 10.0
 private const val DEFAULT_BEARING_HALF_M = 10.0
 
 /**
- * Places direction chevrons along a route, mirroring the rideapp's own route-marker
- * placement.
+ * Places direction chevrons along a route.
  *
  * A cursor starts half a spacing into the route and walks to its end. At each step seven
  * candidate positions are tried in [CANDIDATE_OFFSETS] order. A candidate is skipped when
@@ -75,8 +74,8 @@ internal fun placeChevrons(
         var bestM = -1.0
         var bestSpread = 360.0
         for (offset in CANDIDATE_OFFSETS) {
-            // Clamped rather than skipped: near the route ends the rideapp also collapses
-            // out-of-range candidates onto the first or last vertex.
+            // Clamped rather than skipped, so a candidate running past either end of the
+            // route collapses onto the first or last vertex instead of being dropped.
             val candidateM = (cursorM + offset * tuning.spacingM).coerceIn(0.0, totalM)
             if (collides(placed, gps, cumDist, candidateM, tuning.collisionRadiusM)) continue
             val spread = bearingSpreadInWindow(gps, cumDist, candidateM, tuning.windowHalfM)
@@ -197,21 +196,21 @@ private fun bearingDeg(from: LatLng, to: LatLng): Float {
 
 // --- Zoom-derived tuning ---------------------------------------------------------
 //
-// Reverse-engineered from the rideapp's route marker placement: spacing and collision
-// radius are fixed pixel counts scaled to ground metres by the map's ground resolution.
+// Spacing and collision radius are fixed pixel counts scaled to ground metres by the map's
+// ground resolution, so the on-screen rhythm holds as the map scales.
 
 /**
- * Spacing in metres between consecutive direction chevrons, matching the rideapp's native
- * route-arrow placement. On a Karoo 3 (xdpi 320.842) at zoom 15 and latitude 44 this is
- * about 220 m, which is roughly a quarter of the screen width.
+ * Spacing in metres between consecutive direction chevrons, tuned to sit close to the
+ * native arrow cadence at typical zooms. On a Karoo 3 (xdpi 320.842) at zoom 15 and
+ * latitude 44 this is about 220 m, roughly a quarter of the screen width.
  */
 internal fun nativeChevronSpacingM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
     xdpi * 0.4 * groundResolution(lat, zoomLevel)
 
 /**
  * Half-width in metres of the neighbourhood around a candidate position used both to
- * measure local bearing spread and as the chord for the chevron's rotation. The rideapp
- * uses half its collision radius, so `xdpi * 0.05 * groundResolution`.
+ * measure local bearing spread and as the chord for the chevron's rotation. Half the
+ * collision radius, so `xdpi * 0.05 * groundResolution`.
  */
 internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
     xdpi * 0.05 * groundResolution(lat, zoomLevel)
@@ -219,8 +218,7 @@ internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Doubl
 /**
  * Ground length in metres of a chevron icon [heightDp] tall at display [density] and the
  * given [zoomLevel]. Two chevrons closer than this overlap on screen, so it doubles as the
- * collision radius. Tracks our own enlarged icon rather than the native 10x12 dp arrow;
- * at 17 dp and density 1.875 it lands within a percent of the rideapp's own radius.
+ * collision radius. Tracks our own icon, 17 dp tall at density 1.875.
  */
 internal fun chevronIconLengthM(
     heightDp: Float,

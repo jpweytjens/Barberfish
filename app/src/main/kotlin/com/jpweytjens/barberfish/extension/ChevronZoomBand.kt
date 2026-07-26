@@ -6,11 +6,10 @@ import kotlin.math.floor
  * Holds the zoom level the chevron spacing is computed from, refreshing it only when the
  * integer zoom band changes.
  *
- * The rideapp lays out its route markers once per integer band, at whatever fractional zoom
- * it happened to be at when the band changed, and leaves them geo-pinned for the rest of
- * that band. Following that keeps our cadence in step with native's and, since the frozen
- * value only moves on a band crossing, collapses a pinch gesture into at most one overlay
- * rebuild instead of one per zoom step.
+ * Freezing the zoom per band keeps chevrons geo-pinned while you pinch, so their on-screen
+ * density grows as you zoom in rather than the whole overlay re-laying out. Since the frozen
+ * value only moves on a band crossing, a pinch gesture costs at most one overlay rebuild
+ * instead of one per zoom step. It also reads closer to the native map's own arrow rhythm.
  *
  * The first value is treated as provisional so the flow's seeded default cannot lock in a
  * whole band: the first real zoom replaces it regardless of band.

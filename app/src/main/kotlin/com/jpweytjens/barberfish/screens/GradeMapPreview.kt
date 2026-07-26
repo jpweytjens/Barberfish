@@ -148,9 +148,8 @@ internal fun GradeMapPreview(
     }
 }
 
-// Map palette. Feature hues are from the Karoo render theme
-// (docs/ride_decompiled/.../offline.xml): forest/wood #a8bc9a, water #6aabb8, road fill
-// #ffffff over a #707070 casing. The base is shifted to an alpine meadow green and topo
+// Map palette. Feature hues are sampled from the Karoo map: forest/wood #a8bc9a,
+// water #6aabb8, road fill #ffffff over a #707070 casing. The base is shifted to an alpine meadow green and topo
 // contour lines are added to evoke the reference (a Stelvio-style topo map). The Karoo map
 // stays light even in system dark mode (see docs/hud_sparkline.jpg) and the config screen
 // is always light, so the preview map is light in both modes.

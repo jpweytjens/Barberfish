@@ -10,11 +10,10 @@ internal data class LatLng(val lat: Double, val lng: Double)
 /** Earth radius in metres (mean). */
 private const val EARTH_RADIUS_M = 6_371_000.0
 
-// --- VTM/oscim viewport geometry (reverse-engineered from Karoo rideapp) --------
+// --- Map viewport geometry ------------------------------------------------------
 //
-// The rideapp uses VTM (org.oscim) with Tile.SIZE = 512.
-// groundResolution (metres per pixel) = cos(lat) * 40_075_016.686 / (512 * 2^zoom)
-// Karoo 3 display: 480 × 800 px.
+// The Karoo map renders 512 px tiles, so ground resolution in metres per pixel is
+// cos(lat) * 40_075_016.686 / (512 * 2^zoom). Karoo 3 display: 480 × 800 px.
 
 private const val VTM_TILE_SIZE = 512
 private const val EARTH_CIRCUMFERENCE_M = 40_075_016.686

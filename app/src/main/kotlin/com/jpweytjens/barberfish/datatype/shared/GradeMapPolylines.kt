@@ -70,8 +70,8 @@ internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
  * 4. Place chevrons along the whole route with [placeChevrons], then colour each placement
  *    with the run containing it and drop the placements that sit on no run. Placement is a
  *    property of the route, not of the runs: a run shorter than the spacing carries a
- *    chevron only when a cadence position happens to fall inside it, which is what the
- *    rideapp does with its own arrows.
+ *    chevron only when a cadence position happens to fall inside it, so short runs are
+ *    marked by their colour alone.
  * 5. If [chevronViewport] is non-null, drop any chevron whose lat/lng falls outside the
  *    viewport bounds. This keeps the emitted symbol count bounded regardless of route
  *    length — we only render what the rider can see.
