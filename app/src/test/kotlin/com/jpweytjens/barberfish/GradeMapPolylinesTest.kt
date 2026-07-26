@@ -598,6 +598,93 @@ class GradeMapPolylinesTest {
         assertEquals(none.map { it.lat to it.lng }, trimmed.map { it.lat to it.lng })
     }
 
+    @Test
+    fun reversed_places_runs_at_mirrored_end() {
+        val overlay =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                cfg = noneCfg,
+                reversed = true,
+            )
+        assertTrue(overlay.polylines.isNotEmpty())
+        val lngs = overlay.polylines.flatMap { decodeGpsPolyline(it.encoded) }.map { it.lng }
+        assertTrue(
+            "reversed runs should sit at the lng 0.03 end, got ${lngs.minOrNull()}..${lngs.maxOrNull()}",
+            lngs.all { it > 0.027 },
+        )
+    }
+
+    @Test
+    fun forward_places_runs_at_route_start() {
+        val overlay =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                cfg = noneCfg,
+            )
+        assertTrue(overlay.polylines.isNotEmpty())
+        val lngs = overlay.polylines.flatMap { decodeGpsPolyline(it.encoded) }.map { it.lng }
+        assertTrue(
+            "forward runs should sit at the lng 0.0 end, got ${lngs.minOrNull()}..${lngs.maxOrNull()}",
+            lngs.all { it < 0.003 },
+        )
+    }
+
+    @Test
+    fun reversed_flips_chevron_bearings() {
+        val forward =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                cfg = noneCfg,
+            )
+        val reversed =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                cfg = noneCfg,
+                reversed = true,
+            )
+        assertTrue(forward.chevrons.isNotEmpty())
+        assertTrue(reversed.chevrons.isNotEmpty())
+        forward.chevrons.forEach { assertEquals(90.0f, it.bearingDeg, 1.0f) }
+        reversed.chevrons.forEach { assertEquals(270.0f, it.bearingDeg, 1.0f) }
+    }
+
+    @Test
+    fun reversed_preserves_grade_colors() {
+        val forward =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                cfg = noneCfg,
+            )
+        val reversed =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                cfg = noneCfg,
+                reversed = true,
+            )
+        assertEquals(
+            forward.polylines.map { it.colorArgb },
+            reversed.polylines.map { it.colorArgb },
+        )
+    }
+
     // --- inline polyline encoders (test-only) -----------------------------------
 
     // Precision-5 Google polyline encoder.

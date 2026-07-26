@@ -92,11 +92,13 @@ internal fun buildGradeMapSpecs(
     chevronMinSpacingM: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
     capTrimM: Double = 0.0,
+    reversed: Boolean = false,
 ): GradeMapSpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
         return GradeMapSpecs(emptyList(), emptyList())
     }
-    val gps = decodeGpsPolyline(routePolyline)
+    val decoded = decodeGpsPolyline(routePolyline)
+    val gps = if (reversed) decoded.asReversed() else decoded
     if (gps.size < 2) return GradeMapSpecs(emptyList(), emptyList())
     val cumDist = cumulativeDistancesM(gps)
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
