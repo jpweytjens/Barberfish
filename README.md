@@ -75,6 +75,10 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
    * Karoo 3: share the downloaded APK to the Hammerhead companion app, following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
    * Karoo 2: install from a computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html).
 
+### Beta builds
+
+New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta channel, before they ship here. Betas are less tested, so expect rough edges. A beta replaces your stable install and carries your settings over, and later betas arrive as regular updates in the Karoo's extension manager.
+
 ## Roadmap
 
 - Gradient-aware forward-looking ETA: see [Godot](https://github.com/jpweytjens/godot)
