@@ -59,10 +59,12 @@ internal fun GradeMapPreview(
     modifier: Modifier = Modifier,
 ) {
     val specs = remember(config, sparklineConfig, gradePalette) {
-        val eff = resolveGradeMapTuning(config, sparklineConfig)
+        val eff = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
         val cfg = config.copy(
             skipBands = eff.skipBands,
             simplification = eff.simplification,
+            climbEdge = eff.climbEdge,
+            descentEdge = eff.descentEdge,
             syncWithSparkline = false,
         )
         buildGradeMapSpecs(

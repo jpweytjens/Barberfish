@@ -74,7 +74,29 @@ class SparklineConfigSerializationTest {
     @Test
     fun `neither key present falls back to the default counts`() {
         val cfg = json.decodeFromString<SparklineConfig>("{}")
-        assertEquals(3.0 to -3.0, cfg.gradeEdges(GradePalette.TURBO))
+        assertEquals(3.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
+    }
+
+    // A stored count of 0 is the "Off" option in both selectors, and 0 is the shipped default
+    // for skipBandsDescent. It has to keep meaning "colour this whole side", not "snap to the
+    // flattest stop", or every install on defaults is silently recoloured by the migration.
+
+    @Test
+    fun `a stored climb count of zero still colours every climb`() {
+        val cfg = json.decodeFromString<SparklineConfig>("""{"skipBands":0}""")
+        assertEquals(0.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
+    }
+
+    @Test
+    fun `a stored descent count of zero still colours every descent`() {
+        val cfg = json.decodeFromString<SparklineConfig>("""{"skipBandsDescent":0}""")
+        assertEquals(3.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
+    }
+
+    @Test
+    fun `the grade map's absent descent count still colours every descent`() {
+        val cfg = json.decodeFromString<GradeMapConfig>("""{"skipBands":0}""")
+        assertEquals(0.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
     }
 
     @Test
@@ -92,7 +114,7 @@ class SparklineConfigSerializationTest {
     @Test
     fun `grade map legacy skip count alone migrates to edges`() {
         val cfg = json.decodeFromString<GradeMapConfig>("""{"skipBands":3}""")
-        assertEquals(9.0 to -3.0, cfg.gradeEdges(GradePalette.TURBO))
+        assertEquals(9.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
     }
 
     @Test
@@ -104,13 +126,13 @@ class SparklineConfigSerializationTest {
     @Test
     fun `grade map stored edges win over the legacy skip count`() {
         val cfg = json.decodeFromString<GradeMapConfig>("""{"skipBands":3,"climbEdge":12.0}""")
-        assertEquals(12.0 to -3.0, cfg.gradeEdges(GradePalette.TURBO))
+        assertEquals(12.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
     }
 
     @Test
     fun `grade map with neither key falls back to the default count`() {
         val cfg = json.decodeFromString<GradeMapConfig>("{}")
-        assertEquals(3.0 to -3.0, cfg.gradeEdges(GradePalette.TURBO))
+        assertEquals(3.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
     }
 
     @Test

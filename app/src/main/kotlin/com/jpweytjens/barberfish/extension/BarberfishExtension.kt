@@ -154,10 +154,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             ) { gradeMapCfg, sparklineCfg, zoneCfg, navEvent ->
                 // Resolve sparkline-sync here so the signature() below hashes the
                 // effective tuning and a sparkline edit triggers a rebuild while synced.
-                val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg)
+                val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
                 val effectiveCfg = gradeMapCfg.copy(
                     skipBands = eff.skipBands,
                     simplification = eff.simplification,
+                    climbEdge = eff.climbEdge,
+                    descentEdge = eff.descentEdge,
                 )
                 GradeMapConfigInputs(
                     enabled = gradeMapCfg.enabled,

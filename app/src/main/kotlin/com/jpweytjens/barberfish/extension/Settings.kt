@@ -176,14 +176,14 @@ enum class SparklineMode {
  * The (climb, descent) grade edges a stored pair of band-skip counts means, read off [palette]'s
  * own band stops.
  *
- * Counts stopped being portable in 4.x: every palette drops its flattest positive band into the
+ * Counts stopped being portable in 4.x: most palettes drop their flattest positive band into the
  * neutral, so the same count resolves to a different threshold before and after. Persisting the
  * threshold instead of the count keeps a stored config meaning what it meant when it was written.
  *
- * A count of 0 ("Off") and a count of 1 both land on the flattest stop, because the band a 0 used
- * to colour is the neutral now and has no edge to map to. Counts past the last stop clamp to it. A
- * side with no bands at all (every palette but Barberfish and Turbo, on the descent side) has no
- * edge and stays uncoloured.
+ * A count of 0 ("Off") maps to an edge of 0.0 on both sides, keeping exactly what the count meant:
+ * colour every climb from grade 0 up, colour every descent. Counts of 1 and up step outward through
+ * the stops and clamp to the last one. A side with no bands at all (every palette but Barberfish
+ * and Turbo, on the descent side) has no edge and stays uncoloured.
  */
 internal fun edgesFromSkipBands(
     skipBands: Int,
@@ -195,7 +195,11 @@ internal fun edgesFromSkipBands(
 }
 
 private fun List<Double>.stopAt(skipCount: Int): Double? =
-    if (isEmpty()) null else this[(skipCount - 1).coerceIn(0, lastIndex)]
+    when {
+        isEmpty() -> null
+        skipCount <= 0 -> 0.0
+        else -> this[(skipCount - 1).coerceAtMost(lastIndex)]
+    }
 
 @Serializable
 data class SparklineConfig(
@@ -211,6 +215,12 @@ data class SparklineConfig(
     // Grade thresholds at and beyond which a side takes its band colour. Null means unset, so an
     // absent key falls through to the migrated legacy counts instead of masking them; a side is
     // turned off by parking its edge past the palette's last stop, not by storing null.
+    //
+    // WARNING: nothing writes these yet, and the counts above are still the live read path for
+    // the profile renderer (ElevationSparkline via SparklineDataFlow) and the map renderer
+    // (GradeMapPolylines), plus the readouts in HUDConfigSection and MainActivity. The two are
+    // not kept in sync. A writer of these fields must either write the matching count too, or
+    // land in the same change as the removal of the last count reader.
     val climbEdge: Double? = null,
     val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
@@ -484,13 +494,24 @@ data class GradeMapConfig(
     // Legacy band-skip count, superseded by climbEdge/descentEdge. Read through `gradeEdges`.
     // The map never had a descent count, so its descent edge migrates as if the count were 0.
     val skipBands: Int = 1,
+    // WARNING: nothing writes these yet, and `skipBands` above is still the live read path for
+    // the map renderer (GradeMapPolylines) and the readout in MainActivity. The two are not kept
+    // in sync. A writer of these fields must either write the matching count too, or land in the
+    // same change as the removal of the last count reader.
     val climbEdge: Double? = null,
     val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
 ) {
     /**
-     * The resolved (climb, descent) edges: the stored thresholds when set, otherwise the legacy
-     * count migrated through [palette]. A null in the result means that side stays uncoloured.
+     * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,
+     * otherwise the legacy count migrated through [palette]. A null in the result means that side
+     * stays uncoloured.
+     *
+     * WARNING: this is the overlay's own answer, not the effective one. It ignores
+     * [syncWithSparkline], which defaults to true, so a synced overlay follows the field
+     * sparkline's edges instead. Render paths must take theirs from
+     * `resolveGradeMapTuning(map, sparkline, palette)`, which applies the sync the same way it
+     * already does for the other shared settings.
      */
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) =

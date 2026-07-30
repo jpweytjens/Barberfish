@@ -17,10 +17,15 @@ class GradeEdgeMigrationTest {
     }
 
     @Test
-    fun skip_zero_colours_everything_from_the_lowest_stop() {
-        val (climb, _) =
+    fun skip_zero_maps_to_a_zero_edge_on_both_sides() {
+        val (karooClimb, _) =
             edgesFromSkipBands(skipBands = 0, skipBandsDescent = 0, palette = GradePalette.KAROO)
-        assertEquals(2.0, climb)
+        assertEquals(0.0, karooClimb)
+
+        val (turboClimb, turboDescent) =
+            edgesFromSkipBands(skipBands = 0, skipBandsDescent = 0, palette = GradePalette.TURBO)
+        assertEquals(0.0, turboClimb)
+        assertEquals(0.0, turboDescent)
     }
 
     @Test

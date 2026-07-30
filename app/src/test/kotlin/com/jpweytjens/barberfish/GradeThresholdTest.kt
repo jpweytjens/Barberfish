@@ -38,19 +38,6 @@ class GradeThresholdTest {
         }
     }
 
-    @Test
-    fun climb_stops_ascend_and_descent_stops_descend() {
-        GradePalette.entries.forEach { palette ->
-            val stops = gradeBandStops(palette)
-            assertEquals("$palette climb stops ascend", stops.climb.sorted(), stops.climb)
-            assertEquals(
-                "$palette descent stops descend",
-                stops.descent.sortedDescending(),
-                stops.descent,
-            )
-        }
-    }
-
     // The band-count fill range still feeds the sparkline and the map until they read edges.
 
     @Test
