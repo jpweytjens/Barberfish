@@ -216,6 +216,7 @@ internal fun sparklineBitmapFlow(
                 isPreview -> rvvPoisFixture()
                 else -> emptyList()
             }
+        val (climbEdge, descentEdge) = sparkCfg.gradeEdges(zoneConfig.gradePalette)
         val (bitmap, updatedRange) =
             if (showArea && reveal.counterText == null) {
                 renderElevationSparkline(
@@ -228,8 +229,8 @@ internal fun sparklineBitmapFlow(
                     // Sparkline always renders as a fill; use brand colors.
                     readable = false,
                     lookaheadM = sparkCfg.lookaheadKm * 1000f,
-                    skipBands = sparkCfg.skipBands,
-                    skipBandsDescent = sparkCfg.skipBandsDescent,
+                    climbEdge = climbEdge,
+                    descentEdge = descentEdge,
                     displayedRange = ratchetRange,
                     distanceDeltaM = distanceDeltaM,
                     dotColor = dotColor,

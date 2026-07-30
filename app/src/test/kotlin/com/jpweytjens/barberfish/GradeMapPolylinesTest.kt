@@ -2,10 +2,11 @@ package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
-import com.jpweytjens.barberfish.datatype.shared.LemonYellow
+import com.jpweytjens.barberfish.datatype.shared.FlatGrey
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
@@ -94,8 +95,8 @@ class GradeMapPolylinesTest {
     @Test
     fun merges_adjacent_same_colour_segments() {
         // Segments in the KAROO palette: 8% and 10% both fall in the "salmon" band (8–10.9%),
-        // so they merge into one run; the 0% segment is in the dark-green band (the lowest),
-        // a different colour, so it becomes its own run.
+        // so they merge into one run; the 0% segment is flat, neither a climb nor a descent,
+        // so it takes the neutral and becomes its own run.
         val specs =
             buildGradeMapSpecs(
                     routePolyline = routePolyline,
@@ -109,9 +110,8 @@ class GradeMapPolylinesTest {
         assertEquals("barberfish-seg-0", specs[0].id)
         assertEquals("barberfish-seg-1", specs[1].id)
         val yellow = gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb()
-        val flat = gradeColor(0.0, GradePalette.KAROO, true)!!.toArgb()
         assertEquals(yellow, specs[0].colorArgb)
-        assertEquals(flat, specs[1].colorArgb)
+        assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
     }
 
     @Test
@@ -147,7 +147,7 @@ class GradeMapPolylinesTest {
     }
 
     @Test
-    fun skipBands_one_suppresses_flat_segment() {
+    fun below_the_climb_edge_takes_the_neutral() {
         val specs =
             buildGradeMapSpecs(
                     routePolyline = routePolyline,
@@ -162,22 +162,24 @@ class GradeMapPolylinesTest {
                         ),
                 )
                 .polylines
-        // Flat 0% segment drops to below threshold; the two climbing segments (8% and 10%)
-        // are both in the salmon band and merge into a single run.
-        assertEquals(1, specs.size)
+        // The two climbing segments (8% and 10%) are both in the salmon band and merge into a
+        // single run; the flat 0% segment is below the 2% climb edge, so it keeps the neutral
+        // instead of dropping out of the overlay.
+        assertEquals(2, specs.size)
         assertEquals("barberfish-seg-0", specs[0].id)
         assertEquals(gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb(), specs[0].colorArgb)
+        assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
     }
 
     @Test
-    fun dip_segment_is_skipped_sparkline_parity() {
+    fun dip_segment_takes_the_neutral_sparkline_parity() {
         // Elevation goes up, down, up → middle segment has a negative local grade.
         val dipPolyline =
             encodeElevationManually(
                 listOf(
                     0f to 100f,
                     100f to 110f, // +10 m in 100 m = 10% grade
-                    200f to 105f, // -5 m in 100 m = -5% grade (skipped)
+                    200f to 105f, // -5 m in 100 m = -5% grade (KAROO has no descent bands)
                     300f to 120f, // +15 m in 100 m = 15% grade
                 ),
             )
@@ -195,11 +197,14 @@ class GradeMapPolylinesTest {
                         ),
                 )
                 .polylines
-        // Two runs, one per above-threshold segment (non-adjacent, different colours).
-        // IDs are contiguous run indices — not the original VW vertex indices.
-        assertEquals(2, specs.size)
+        // Three runs: a climb band, the neutral over the dip (KAROO colours no descent),
+        // then a second climb band. IDs are contiguous run indices — not the original VW
+        // vertex indices.
+        assertEquals(3, specs.size)
         assertEquals("barberfish-seg-0", specs[0].id)
         assertEquals("barberfish-seg-1", specs[1].id)
+        assertEquals("barberfish-seg-2", specs[2].id)
+        assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
     }
 
     @Test
@@ -361,46 +366,31 @@ class GradeMapPolylinesTest {
     }
 
     @Test
-    fun below_threshold_segment_inside_climb_gets_yellow_filler() {
-        // skipBands=1 → KAROO climb threshold is 2.0%. A 1% segment is below it.
-        val cfg =
-            GradeMapConfig(
-                enabled = true,
-                simplification = ElevationSimplification.NONE,
-                skipBands = 1,
-            )
-        val poly =
+    fun descent_takes_its_band_colour_on_a_two_sided_palette() {
+        // Barberfish colours both sides, so the -5% dip takes its own descent band rather
+        // than the neutral KAROO gives it.
+        val dipPolyline =
             encodeElevationManually(
                 listOf(
                     0f to 100f,
-                    100f to 101f, // 1% — below the 2.0% threshold
-                    200f to 111f, // 10% — above → KAROO salmon band
+                    100f to 110f, // +10% → climb band
+                    200f to 105f, // -5% → descent band
                 ),
             )
-        // No climb ranges: the gentle 3% segment is skipped entirely.
-        val plain =
+        val specs =
             buildGradeMapSpecs(
-                routePolyline = routePolyline,
-                routeElevationPolyline = poly,
-                palette = GradePalette.KAROO,
-                readable = true,
-                cfg = cfg,
-            )
-        assertEquals(1, plain.polylines.size)
-
-        // With a climb spanning the route, the 3% segment becomes a yellow filler run so
-        // the overlay covers the whole climb.
-        val withClimb =
-            buildGradeMapSpecs(
-                routePolyline = routePolyline,
-                routeElevationPolyline = poly,
-                palette = GradePalette.KAROO,
-                readable = true,
-                cfg = cfg,
-                climbRanges = listOf(0.0 to 220.0),
-            )
-        assertEquals(2, withClimb.polylines.size)
-        assertEquals(LemonYellow.toArgb(), withClimb.polylines[0].colorArgb)
+                    routePolyline = routePolyline,
+                    routeElevationPolyline = dipPolyline,
+                    palette = GradePalette.BARBERFISH,
+                    readable = false,
+                    cfg = noneCfg,
+                )
+                .polylines
+        assertEquals(2, specs.size)
+        assertEquals(
+            gradeColor(-5.0, GradePalette.BARBERFISH, false)!!.toArgb(),
+            specs[1].colorArgb,
+        )
     }
 
     @Test
@@ -505,9 +495,9 @@ class GradeMapPolylinesTest {
             if (it.size < 2) 0.0 else cumulativeDistancesM(it).last()
         }
 
-    @Test fun cap_trim_flags_mark_chain_outer_ends() {
-        // Default fixture: salmon [0,200] and flat [200,300] are adjacent → one chain.
-        // First run owns the chain start, second owns the chain end.
+    @Test fun cap_trim_flags_mark_the_route_ends() {
+        // Default fixture: salmon [0,200] and neutral [200,300] tile the coloured extent.
+        // First run owns the start end, second owns the finish end.
         val specs = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
@@ -547,9 +537,9 @@ class GradeMapPolylinesTest {
         assertEquals(end0.lng, start1.lng, 1e-6)
     }
 
-    @Test fun cap_trim_treats_gap_separated_runs_as_separate_chains() {
-        // dip: 10% [0,100], skipped -5% dip, 15% [200,300] → two non-adjacent chains,
-        // so each run is trimmed at BOTH ends.
+    @Test fun cap_trim_leaves_an_interior_run_untouched() {
+        // dip: 10% [0,100], neutral -5% dip [100,200], 15% [200,300] → three runs that
+        // abut, so the middle one is interior at both ends and keeps its full geometry.
         val dipPolyline = encodeElevationManually(
             listOf(
                 0f to 100f,
@@ -573,12 +563,14 @@ class GradeMapPolylinesTest {
             cfg = noneCfg,
             capTrimM = 15.0,
         ).polylines
-        assertEquals(2, specs.size)
-        assertTrue(specs[0].trimStart && specs[0].trimEnd)
-        assertTrue(specs[1].trimStart && specs[1].trimEnd)
-        // Both ends trimmed → each isolated run loses ~2 × 15 m of geometry.
-        assertEquals(segLenM(full[0]) - 30.0, segLenM(specs[0]), 3.0)
-        assertEquals(segLenM(full[1]) - 30.0, segLenM(specs[1]), 3.0)
+        assertEquals(3, specs.size)
+        assertTrue(specs[0].trimStart); assertFalse(specs[0].trimEnd)
+        assertFalse(specs[1].trimStart); assertFalse(specs[1].trimEnd)
+        assertFalse(specs[2].trimStart); assertTrue(specs[2].trimEnd)
+        // Outer runs lose ~15 m at their outer end only; the interior run loses nothing.
+        assertEquals(segLenM(full[0]) - 15.0, segLenM(specs[0]), 3.0)
+        assertEquals(segLenM(full[1]), segLenM(specs[1]), 1e-6)
+        assertEquals(segLenM(full[2]) - 15.0, segLenM(specs[2]), 3.0)
     }
 
     @Test fun cap_trim_does_not_move_chevrons() {
@@ -599,6 +591,54 @@ class GradeMapPolylinesTest {
         ).chevrons
         assertEquals(none.map { it.id }, trimmed.map { it.id })
         assertEquals(none.map { it.lat to it.lng }, trimmed.map { it.lat to it.lng })
+    }
+
+    @Test
+    fun map_specs_cover_every_metre_of_the_route() {
+        val specs =
+            buildGradeMapSpecs(
+                    routePolyline = TranquiloFixture.routePolyline,
+                    routeElevationPolyline = TranquiloFixture.elevationPolyline,
+                    palette = GradePalette.BARBERFISH,
+                    readable = false,
+                    cfg = GradeMapConfig(climbEdge = 2.0, descentEdge = -2.0),
+                )
+                .polylines
+        assertTrue("expected polylines for the whole route", specs.isNotEmpty())
+
+        // Every band below the descent edge, i.e. the ones only a descent can reach.
+        val descentArgbs =
+            gradeBands(GradePalette.BARBERFISH, readable = false)
+                .filter { band -> band.hi?.let { it <= -2.0 } == true }
+                .map { it.color.toArgb() }
+                .toSet()
+        assertTrue(
+            "descent bands must produce polylines",
+            specs.any { it.colorArgb in descentArgbs },
+        )
+
+        // No gap between consecutive runs: each starts exactly where the previous ended.
+        specs.zipWithNext().forEachIndexed { i, (a, b) ->
+            val end = decodeGpsPolyline(a.encoded).last()
+            val start = decodeGpsPolyline(b.encoded).first()
+            assertEquals("run $i to ${i + 1} lat gap", end.lat, start.lat, 1e-9)
+            assertEquals("run $i to ${i + 1} lng gap", end.lng, start.lng, 1e-9)
+        }
+
+        // ...and together the runs span the route end to end.
+        val route = decodeGpsPolyline(TranquiloFixture.routePolyline)
+        val first = decodeGpsPolyline(specs.first().encoded).first()
+        val last = decodeGpsPolyline(specs.last().encoded).last()
+        assertEquals("runs must start at the route start", route.first().lat, first.lat, 1e-5)
+        assertEquals("runs must start at the route start", route.first().lng, first.lng, 1e-5)
+        assertEquals("runs must end at the route end", route.last().lat, last.lat, 1e-5)
+        assertEquals("runs must end at the route end", route.last().lng, last.lng, 1e-5)
+        assertEquals(
+            "runs must cover the route length",
+            TranquiloFixture.routeLengthM,
+            specs.sumOf { segLenM(it) },
+            TranquiloFixture.routeLengthM * 0.01,
+        )
     }
 
     @Test

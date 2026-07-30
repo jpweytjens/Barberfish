@@ -11,9 +11,9 @@ internal data class GradeMapPolylineSpec(
     val id: String,
     val encoded: String,
     val colorArgb: Int,
-    // True when this end is the outer end of a contiguous coloured chain (no adjacent
-    // run beyond it). Renderers trim only these ends to cancel the round cap overhang;
-    // interior junctions keep their cap overlap so no gap opens to the native line.
+    // True when this end is the route's start or end. Renderers trim only these ends to
+    // cancel the round cap overhang; interior junctions keep their cap overlap so no gap
+    // opens to the native line.
     val trimStart: Boolean = false,
     val trimEnd: Boolean = false,
 )
@@ -63,12 +63,11 @@ internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
  * Algorithm:
  * 1. Decode the GPS polyline and compute cumulative distance.
  * 2. Decode the elevation polyline and run Visvalingam–Whyatt simplification.
- * 3. Walk adjacent elevation-vertex pairs, computing local grade. Above-threshold segments
- *    take a grade colour; below-threshold segments that fall inside a [climbRanges] entry
- *    take the native route yellow so our overlay fully covers Karoo's blue `CLIMB_LINE`;
- *    all other below-threshold segments are skipped (the native route line shows there).
- *    Consecutive same-colour segments are grouped into runs, each emitting a single
- *    polyline spanning `[runStartM, runEndM]`.
+ * 3. Walk adjacent elevation-vertex pairs, computing local grade. Every segment takes a
+ *    colour: its grade band's when the grade is past that side's edge, the flat grey when
+ *    it is not. Consecutive same-colour segments are grouped into runs, each emitting a
+ *    single polyline spanning `[runStartM, runEndM]`. The runs tile the route, so our
+ *    overlay covers Karoo's own route line everywhere, in both directions of travel.
  * 4. Place chevrons along the whole route with [placeChevrons], then colour each placement
  *    with the run containing it and drop the placements that sit on no run. Placement is a
  *    property of the route, not of the runs: a run shorter than the spacing carries a
@@ -86,7 +85,6 @@ internal fun buildGradeMapSpecs(
     palette: GradePalette,
     readable: Boolean,
     cfg: GradeMapConfig,
-    climbRanges: List<Pair<Double, Double>> = emptyList(),
     includeChevrons: Boolean = true,
     chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
     chevronWindowHalfM: Double = 0.0,
@@ -106,14 +104,13 @@ internal fun buildGradeMapSpecs(
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
     if (rawElev.isEmpty()) return GradeMapSpecs(emptyList(), emptyList())
     val elevPoints = visvalingamWhyatt(rawElev, cfg.simplification.minAreaM2)
-    val threshold = gradeFillRange(palette, skipBandsClimb = cfg.skipBands).posMin
-        ?: return GradeMapSpecs(emptyList(), emptyList())
+    // The live callers resolve sparkline-sync first and copy the effective edges into [cfg],
+    // which is what gradeEdges hands back; the legacy band-skip count is the fallback for a
+    // stored config that predates the thresholds.
+    val (climbEdge, descentEdge) = cfg.gradeEdges(palette)
 
-    // Collect same-colour runs, then emit one polyline per run. A below-threshold segment
-    // inside a Karoo climb range is kept as a route-yellow run so our overlay covers the
-    // whole climb — the native CLIMB_LINE (blue) can never show through a gap; below-
-    // threshold segments outside any climb are skipped and the native route line shows.
-    val fillerArgb = LemonYellow.toArgb()
+    // Collect same-colour runs, then emit one polyline per run. Every segment gets a colour,
+    // so the runs tile the route and no gap can open onto the line underneath.
     data class Run(val startM: Double, var endM: Double, val colorArgb: Int)
     val runs = mutableListOf<Run>()
     elevPoints.windowed(2).forEach { pair ->
@@ -123,12 +120,14 @@ internal fun buildGradeMapSpecs(
         val e0 = pair[0].second.toDouble()
         val e1 = pair[1].second.toDouble()
         val localGradePct = ((e1 - e0) / (d1 - d0)) * 100.0
-        val color = when {
-            localGradePct >= threshold ->
-                gradeColor(localGradePct, palette, readable)?.toArgb() ?: fillerArgb
-            climbRanges.any { (s, e) -> d0 < e && d1 > s } -> fillerArgb
-            else -> return@forEach
-        }
+        val color = gradeBandColor(
+            grade = localGradePct,
+            palette = palette,
+            climbEdge = climbEdge,
+            descentEdge = descentEdge,
+            neutral = FlatGrey,
+            readable = readable,
+        ).toArgb()
         val last = runs.lastOrNull()
         if (last != null && last.colorArgb == color && last.endM == d0) {
             last.endM = d1
@@ -139,25 +138,25 @@ internal fun buildGradeMapSpecs(
 
     val polylines = mutableListOf<GradeMapPolylineSpec>()
     runs.forEachIndexed { runIdx, run ->
-        // A contiguous chain is a maximal run sequence with no distance gap between
-        // neighbours. Only the chain's outer ends overhang the true climb extent via the
-        // renderer's round line-cap, so only those are pulled in by capTrimM; the cap then
-        // lands on the true endpoint. Interior junctions stay full (cap overlap, no gap).
-        val chainStart = runIdx == 0 || runs[runIdx - 1].endM != run.startM
-        val chainEnd = runIdx == runs.lastIndex || runs[runIdx + 1].startM != run.endM
+        // Runs tile the route, so the only ends that overhang the coloured extent via the
+        // renderer's round line-cap are the route's own two: only those are pulled in by
+        // capTrimM, and the cap then lands on the true endpoint. Interior junctions stay
+        // full (cap overlap, no gap).
+        val atRouteStart = runIdx == 0
+        val atRouteEnd = runIdx == runs.lastIndex
         // Cap each end's trim so the two never cross: the 0.5 m buffer keeps drawEnd >
-        // drawStart even when both ends of an isolated run trim to the maximum.
+        // drawStart even when both ends of a lone run trim to the maximum.
         val maxTrim = ((run.endM - run.startM) * 0.5 - 0.5).coerceAtLeast(0.0)
-        val drawStart = run.startM + (if (chainStart) capTrimM else 0.0).coerceAtMost(maxTrim)
-        val drawEnd = run.endM - (if (chainEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
+        val drawStart = run.startM + (if (atRouteStart) capTrimM else 0.0).coerceAtMost(maxTrim)
+        val drawEnd = run.endM - (if (atRouteEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
         val sub = extractSubPolyline(gps, cumDist, drawStart, drawEnd)
         if (sub.size >= 2) {
             polylines += GradeMapPolylineSpec(
                 id = "barberfish-seg-$runIdx",
                 encoded = encodeGpsPolyline(sub),
                 colorArgb = run.colorArgb,
-                trimStart = chainStart,
-                trimEnd = chainEnd,
+                trimStart = atRouteStart,
+                trimEnd = atRouteEnd,
             )
         }
     }

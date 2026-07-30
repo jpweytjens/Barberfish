@@ -293,6 +293,7 @@ internal fun SparklinePreview(
             else {
                 val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
                 lastPositionM = positionM
+                val (climbEdge, descentEdge) = sparklineConfig.gradeEdges(zoneConfig.gradePalette)
                 val (bitmap, newRange) =
                     renderElevationSparkline(
                         elevationPoints = simplifiedElevationPoints,
@@ -304,8 +305,8 @@ internal fun SparklinePreview(
                         // Sparkline always renders as a fill; use brand colors.
                         readable = false,
                         lookaheadM = sparklineConfig.lookaheadKm * 1_000f,
-                        skipBands = sparklineConfig.skipBands,
-                        skipBandsDescent = sparklineConfig.skipBandsDescent,
+                        climbEdge = climbEdge,
+                        descentEdge = descentEdge,
                         displayedRange = displayedRange,
                         distanceDeltaM = distanceDeltaM,
                         isNightMode = isNightMode,

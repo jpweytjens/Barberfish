@@ -155,10 +155,11 @@ class AllFieldPreviewsRenderTest {
             val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
             val elevPoints =
                 visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
+            val sparkEdges = sparkCfg.gradeEdges(gradePalette)
             fun profileRender(
                 positionM: Float,
                 showPois: Boolean,
-                skipBands: Int = sparkCfg.skipBands,
+                climbEdge: Double? = sparkEdges.first,
             ): Sample<SparklineRender> {
                 val (spBitmap, _) =
                     renderElevationSparkline(
@@ -170,8 +171,8 @@ class AllFieldPreviewsRenderTest {
                         palette = gradePalette,
                         readable = false,
                         lookaheadM = sparkCfg.lookaheadKm * 1000f,
-                        skipBands = skipBands,
-                        skipBandsDescent = sparkCfg.skipBandsDescent,
+                        climbEdge = climbEdge,
+                        descentEdge = sparkEdges.second,
                         minElevRangeM = sparkCfg.yZoom.minRangeM,
                         logWarpK = sparkCfg.warp.k,
                         positionFraction = sparkCfg.warp.positionFraction,
@@ -202,7 +203,7 @@ class AllFieldPreviewsRenderTest {
             // vs the default one-band skip that keeps the gentle rises quiet. POIs off
             // so the fill is the only variable.
             writePreviewPng(
-                profileRender(100f, false, skipBands = 0),
+                profileRender(100f, false, climbEdge = 0.0),
                 "profile_emphasis_off",
                 cellConfig,
                 design,

@@ -16,7 +16,7 @@ private val BARBERFISH_GRADE_BANDS =
         8.0 to Color(0xFFF08868), //  [8, 11)  — salmon
         5.0 to Color(0xFFF0D800), //  [5, 8)   — yellow
         2.0 to Color(0xFF40D078), //  [2, 5)   — mint green
-        -2.0 to Color(0xFFC4C4C4), // [-2, 2)   — neutral grey
+        -2.0 to FlatGrey, //          [-2, 2)   — neutral grey
         -6.0 to Color(0xFF5D99DE), // [-6, -2)  — light blue
         -12.0 to Color(0xFF1970B6), // [-12, -6) — blue
         Double.NEGATIVE_INFINITY to Color(0xFF1B3CA7) // (-∞, -12) — navy
@@ -84,7 +84,7 @@ private val BARBERFISH_GRADE_BANDS_READABLE_DARK =
         8.0 to Color(0xFFF08868),
         5.0 to Color(0xFFF0D800),
         2.0 to Color(0xFF40D078),
-        -2.0 to Color(0xFFC4C4C4),
+        -2.0 to FlatGrey,
         -6.0 to Color(0xFF5D99DE),
         -12.0 to Color(0xFF2698F5), // was #1970B6
         Double.NEGATIVE_INFINITY to Color(0xFF7B8DF5), // was #1B3CA7

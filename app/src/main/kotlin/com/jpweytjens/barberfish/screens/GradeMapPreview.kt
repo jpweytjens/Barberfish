@@ -73,7 +73,6 @@ internal fun GradeMapPreview(
             palette = gradePalette,
             readable = false,
             cfg = cfg,
-            climbRanges = ClimbPreviewFixture.climbRanges,
             // Always place chevrons; the toggle only changes their colour (grade vs native).
             includeChevrons = true,
             chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,

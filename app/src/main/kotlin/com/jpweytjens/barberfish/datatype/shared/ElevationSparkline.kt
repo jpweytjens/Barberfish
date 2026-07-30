@@ -163,7 +163,7 @@ private fun vwSimplify(
  *
  * Rendering layers (bottom to top):
  * 1. Ahead silhouette fill (~6% alpha; white on night, black on day)
- * 2. Climb (and optionally descent) fills via gradeFillRange(palette), coloured by gradeColor();
+ * 2. Climb and descent fills, coloured by gradeBandColor() from [climbEdge] and [descentEdge];
  *    consecutive same-colour segments are merged into a single polygon to eliminate seams. 2b.
  *    Overlay on the past region to grey out grade fills behind the dot (night: 55% alpha black;
  *    day: 78% alpha mid-grey — grey desaturates bright grade colours more effectively than white,
@@ -195,8 +195,8 @@ internal fun renderElevationSparkline(
     palette: GradePalette,
     readable: Boolean,
     lookaheadM: Float = 10_000f,
-    skipBands: Int = 1,
-    skipBandsDescent: Int = 0,
+    climbEdge: Double? = null,
+    descentEdge: Double? = null,
     displayedRange: Float = 0f,
     distanceDeltaM: Float = 0f,
     dotColor: Int = BarberfishYellow.toArgb(),
@@ -311,8 +311,6 @@ internal fun renderElevationSparkline(
     }
 
     // 2. Climb fills — merge consecutive same-color segments into one polygon to eliminate seams.
-    val fillRange =
-        gradeFillRange(palette, skipBandsClimb = skipBands, skipBandsDescent = skipBandsDescent)
     paint.style = Paint.Style.FILL
     run {
         var runColor: Int? = null
@@ -352,12 +350,20 @@ internal fun renderElevationSparkline(
                 continue
             }
             val grade = (e2 - e1) / distDelta * 100.0
-            val withinFill =
-                (fillRange.posMin != null && grade >= fillRange.posMin) ||
-                    (fillRange.negMax != null && grade < fillRange.negMax)
-            val segColor =
-                if (withinFill) gradeColor(grade, palette, readable, isNightMode)?.toArgb()
-                else null
+            // The silhouette is this strip's neutral: a segment inside the edges draws no
+            // polygon at all and the silhouette painted in step 1 shows through.
+            val neutral =
+                if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY
+            val resolved = gradeBandColor(
+                grade = grade,
+                palette = palette,
+                climbEdge = climbEdge,
+                descentEdge = descentEdge,
+                neutral = neutral,
+                readable = readable,
+                isNightMode = isNightMode,
+            )
+            val segColor = if (resolved == neutral) null else resolved.toArgb()
             if (segColor == null) {
                 flushRun()
                 continue

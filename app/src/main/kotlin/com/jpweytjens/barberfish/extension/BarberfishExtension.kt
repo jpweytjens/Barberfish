@@ -235,7 +235,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         palette = inputs.palette,
                         readable = false,
                         cfg = inputs.cfg,
-                        climbRanges = climbRanges,
                         includeChevrons = inputs.showChevrons,
                         chevronSpacingM = chevronStep,
                         chevronWindowHalfM = chevronWindow,
