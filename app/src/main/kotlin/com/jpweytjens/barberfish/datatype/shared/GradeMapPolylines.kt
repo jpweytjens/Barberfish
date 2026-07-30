@@ -1,7 +1,9 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.extension.GradePalette
+import kotlin.math.round
 
 /**
  * A single coloured fill polyline for a route gradient segment.
@@ -53,6 +55,109 @@ internal data class LatLngBounds(
 internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
 
 /**
+ * A maximal stretch of route sharing one band colour.
+ *
+ * Four granularities are in play here, finest to coarsest:
+ * - segment: one adjacent pair of simplified elevation vertices.
+ * - cell: a fixed length of route, coloured by its mean grade across the segments it covers.
+ * - run: consecutive cells resolving to the same colour, merged.
+ * - chain: consecutive runs with no distance gap between them.
+ *
+ * Under full coverage every cell yields a colour, so every run abuts its
+ * neighbours and the whole route is a single chain.
+ */
+internal data class GradeRun(val startM: Double, val endM: Double, val colorArgb: Int)
+
+/** One stroke width on screen: the width the run is drawn at is the length it must own. */
+internal const val MIN_RUN_PX = 12.0
+
+/**
+ * Cell length: the grade baseline, or one stroke width on screen, whichever is larger.
+ *
+ * This is a legibility guard — it sets how much route one colour must own before the overlay
+ * may change colour again, so a run is never drawn shorter than it is wide. The sparkline's
+ * own `MIN_FILL_PX` answers a different question: it drops a fill narrower than a single
+ * pixel, which is a rendering guard against a band that would come out invisible.
+ */
+internal fun minRunLengthM(metresPerPixel: Double): Double =
+    maxOf(GRADE_BASELINE_M, MIN_RUN_PX * metresPerPixel)
+
+/**
+ * Tiles `[0, routeEndM]` into cells of [cellM], colours each by the band of its mean grade,
+ * and merges adjacent cells that land in the same band. No run comes out shorter than
+ * [cellM] except the tail, where the route is not a whole number of cells.
+ *
+ * The mean grade is the chord `(elevAtM(end) - elevAtM(start)) / (end - start)`. A chord
+ * rather than a fitted line: it meets the true profile at every cell boundary, where a fit
+ * meets it nowhere. A mean rather than the cell's steepest segment: a short ramp inside an
+ * otherwise gentle cell would otherwise repaint the whole cell at its own colour.
+ */
+internal fun resampleRunsToCells(
+    routeEndM: Double,
+    cellM: Double,
+    elevAtM: (Double) -> Double,
+    palette: GradePalette,
+    climbEdge: Double?,
+    descentEdge: Double?,
+    neutral: Color,
+    readable: Boolean,
+): List<GradeRun> {
+    if (routeEndM <= 0.0 || cellM <= 0.0) return emptyList()
+    val runs = mutableListOf<GradeRun>()
+    var startM = 0.0
+    while (startM < routeEndM) {
+        val endM = minOf(startM + cellM, routeEndM)
+        val chordPct = ((elevAtM(endM) - elevAtM(startM)) / (endM - startM)) * 100.0
+        // Rounded before the band lookup: the chord subtracts two interpolated elevations,
+        // so a cell inside a stretch of constant grade can land a part in 1e14 either side
+        // of the value the stretch actually holds. Elevations arrive quantised to 0.1 m and
+        // band edges are whole per cents, so grades sit exactly on an edge often enough that
+        // the noise alone would stripe a steady climb into alternating bands. Nothing
+        // physical lives below 1e-6 per cent.
+        val meanGradePct = round(chordPct * 1e6) / 1e6
+        val color = gradeBandColor(
+            grade = meanGradePct,
+            palette = palette,
+            climbEdge = climbEdge,
+            descentEdge = descentEdge,
+            neutral = neutral,
+            readable = readable,
+        ).toArgb()
+        val last = runs.lastOrNull()
+        if (last != null && last.colorArgb == color) {
+            runs[runs.lastIndex] = last.copy(endM = endM)
+        } else {
+            runs += GradeRun(startM, endM, color)
+        }
+        startM = endM
+    }
+    return runs
+}
+
+/**
+ * Linear-interpolated elevation at [distanceM] along [points], a distance-ascending profile.
+ * Clamps to the first and last vertex outside the profile's own extent. [points] must hold at
+ * least one vertex.
+ */
+private fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): Double {
+    val first = points.first()
+    if (distanceM <= first.first) return first.second.toDouble()
+    val last = points.last()
+    if (distanceM >= last.first) return last.second.toDouble()
+    var lo = 0
+    var hi = points.lastIndex
+    while (lo + 1 < hi) {
+        val mid = (lo + hi) / 2
+        if (points[mid].first <= distanceM) lo = mid else hi = mid
+    }
+    val (d0, e0) = points[lo]
+    val (d1, e1) = points[hi]
+    val spanM = (d1 - d0).toDouble()
+    if (spanM <= 0.0) return e1.toDouble()
+    return e0 + (e1 - e0) * (distanceM - d0) / spanM
+}
+
+/**
  * Builds gradient polyline specs and chevron symbol specs along a route's elevation
  * profile, mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is
  * intentionally not used — the rider's mental model of "where it gets coloured" must
@@ -64,11 +169,12 @@ internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
  * Algorithm:
  * 1. Decode the GPS polyline and compute cumulative distance.
  * 2. Decode the elevation polyline and run Visvalingam–Whyatt simplification.
- * 3. Walk adjacent elevation-vertex pairs, computing local grade. Every segment takes a
- *    colour: its grade band's when the grade is past that side's edge, the flat grey when
- *    it is not. Consecutive same-colour segments are grouped into runs, each emitting a
- *    single polyline spanning `[runStartM, runEndM]`. The runs tile the route, so our
- *    overlay covers Karoo's own route line everywhere, in both directions of travel.
+ * 3. Resample the simplified profile into fixed-length cells with [resampleRunsToCells].
+ *    Every cell takes a colour from its mean grade: its grade band's when the mean is past
+ *    that side's edge, the flat grey when it is not. Adjacent same-colour cells merge into
+ *    runs, each emitting a single polyline spanning `[runStartM, runEndM]`. The runs tile
+ *    the route, so our overlay covers Karoo's own route line everywhere, in both directions
+ *    of travel, and none of them is too short to read.
  * 4. Place chevrons along the whole route with [placeChevrons], then colour each placement
  *    with the run containing it and drop the placements that sit on no run. Placement is a
  *    property of the route, not of the runs: a run shorter than the spacing carries a
@@ -105,33 +211,23 @@ internal fun buildGradeMapSpecs(
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
     if (rawElev.isEmpty()) return GradeMapSpecs(emptyList(), emptyList())
     val elevPoints = visvalingamWhyatt(rawElev, tuning.simplification.minAreaM2)
+    if (elevPoints.size < 2) return GradeMapSpecs(emptyList(), emptyList())
 
-    // Collect same-colour runs, then emit one polyline per run. Every segment gets a colour,
-    // so the runs tile the route and no gap can open onto the line underneath.
-    data class Run(val startM: Double, var endM: Double, val colorArgb: Int)
-    val runs = mutableListOf<Run>()
-    elevPoints.windowed(2).forEach { pair ->
-        val d0 = pair[0].first.toDouble()
-        val d1 = pair[1].first.toDouble()
-        if (d1 <= d0) return@forEach
-        val e0 = pair[0].second.toDouble()
-        val e1 = pair[1].second.toDouble()
-        val localGradePct = ((e1 - e0) / (d1 - d0)) * 100.0
-        val color = gradeBandColor(
-            grade = localGradePct,
-            palette = palette,
-            climbEdge = tuning.climbEdge,
-            descentEdge = tuning.descentEdge,
-            neutral = FlatGrey,
-            readable = readable,
-        ).toArgb()
-        val last = runs.lastOrNull()
-        if (last != null && last.colorArgb == color && last.endM == d0) {
-            last.endM = d1
-        } else {
-            runs += Run(d0, d1, color)
-        }
-    }
+    // The runs have one derivation: the profile is resampled into cells and each takes the
+    // band of its mean grade, so the vertex spacing decides nothing about where a colour may
+    // change. Every cell gets a colour, so the runs tile the route and no gap can open onto
+    // the line underneath.
+    val runs = resampleRunsToCells(
+        routeEndM = elevPoints.last().first.toDouble(),
+        // No zoom reaches us yet, so the baseline floor is the cell length everywhere.
+        cellM = minRunLengthM(metresPerPixel = 0.0),
+        elevAtM = { distanceM -> elevationAtM(elevPoints, distanceM) },
+        palette = palette,
+        climbEdge = tuning.climbEdge,
+        descentEdge = tuning.descentEdge,
+        neutral = FlatGrey,
+        readable = readable,
+    )
 
     val polylines = mutableListOf<GradeMapPolylineSpec>()
     runs.forEachIndexed { runIdx, run ->

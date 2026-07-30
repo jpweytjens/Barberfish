@@ -104,8 +104,9 @@ class GradeMapPolylinesTest {
     @Test
     fun merges_adjacent_same_colour_segments() {
         // Segments in the KAROO palette: 8% and 10% both fall in the "salmon" band (8–10.9%),
-        // so they merge into one run; the 0% segment is flat, neither a climb nor a descent,
-        // so it takes the neutral and becomes its own run.
+        // so their cells merge into one run; the 0% segment is flat, neither a climb nor a
+        // descent, so it takes the neutral. Between them sits the 30 m cell straddling the
+        // 200 m band boundary: its mean is 6.7%, which is a band of its own.
         val specs =
             buildGradeMapSpecs(
                     routePolyline = routePolyline,
@@ -115,18 +116,21 @@ class GradeMapPolylinesTest {
                     tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
-        assertEquals(2, specs.size)
+        assertEquals(3, specs.size)
         assertEquals("barberfish-seg-0", specs[0].id)
         assertEquals("barberfish-seg-1", specs[1].id)
+        assertEquals("barberfish-seg-2", specs[2].id)
         val yellow = gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb()
         assertEquals(yellow, specs[0].colorArgb)
-        assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
+        assertEquals(gradeColor(6.7, GradePalette.KAROO, true)!!.toArgb(), specs[1].colorArgb)
+        assertEquals(FlatGrey.toArgb(), specs[2].colorArgb)
     }
 
     @Test
     fun different_colour_adjacent_segments_do_not_merge() {
         // Segments at 8% (yellow band) and 16% (orange band) are adjacent but different colours,
-        // so they stay as two runs.
+        // so they stay apart, with the cell straddling their 100 m boundary taking the 13.3%
+        // band that lies between them.
         val twoBandsPolyline =
             encodeElevationManually(
                 listOf(
@@ -144,14 +148,18 @@ class GradeMapPolylinesTest {
                     tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
-        assertEquals(2, specs.size)
+        assertEquals(3, specs.size)
         assertEquals(
             gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb(),
             specs[0].colorArgb,
         )
         assertEquals(
-            gradeColor(16.0, GradePalette.KAROO, true)!!.toArgb(),
+            gradeColor(13.3, GradePalette.KAROO, true)!!.toArgb(),
             specs[1].colorArgb,
+        )
+        assertEquals(
+            gradeColor(16.0, GradePalette.KAROO, true)!!.toArgb(),
+            specs[2].colorArgb,
         )
     }
 
@@ -173,11 +181,13 @@ class GradeMapPolylinesTest {
                 .polylines
         // The two climbing segments (8% and 10%) are both in the salmon band and merge into a
         // single run; the flat 0% segment is below the 2% climb edge, so it keeps the neutral
-        // instead of dropping out of the overlay.
-        assertEquals(2, specs.size)
+        // instead of dropping out of the overlay. The cell across their boundary means 6.7%,
+        // still above the 2% edge, so it takes a band rather than the neutral.
+        assertEquals(3, specs.size)
         assertEquals("barberfish-seg-0", specs[0].id)
         assertEquals(gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb(), specs[0].colorArgb)
-        assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
+        assertEquals(gradeColor(6.7, GradePalette.KAROO, true)!!.toArgb(), specs[1].colorArgb)
+        assertEquals(FlatGrey.toArgb(), specs[2].colorArgb)
     }
 
     @Test
@@ -206,13 +216,14 @@ class GradeMapPolylinesTest {
                         ).resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
-        // Three runs: a climb band, the neutral over the dip (KAROO colours no descent),
-        // then a second climb band. IDs are contiguous run indices — not the original VW
-        // vertex indices.
-        assertEquals(3, specs.size)
+        // Four runs: a climb band, the neutral over the dip (KAROO colours no descent), the
+        // shallow band of the cell straddling the dip's end, then the second climb band. IDs
+        // are contiguous run indices — not the original VW vertex indices.
+        assertEquals(4, specs.size)
         assertEquals("barberfish-seg-0", specs[0].id)
         assertEquals("barberfish-seg-1", specs[1].id)
         assertEquals("barberfish-seg-2", specs[2].id)
+        assertEquals("barberfish-seg-3", specs[3].id)
         assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
     }
 
@@ -261,9 +272,9 @@ class GradeMapPolylinesTest {
 
     @Test
     fun chevrons_come_from_one_route_wide_cadence() {
-        // Two runs: a 200 m salmon run and a 100 m flat run. At 60 m spacing the cadence is
+        // Three runs covering the profile's first 300 m. At 60 m spacing the cadence is
         // 30, 90, 150, 210, 270 and continues past the runs to the end of the 3336 m route.
-        // The first five placements fall inside the two runs, so ids 0 to 4 are emitted and
+        // The first five placements fall inside the runs, so ids 0 to 4 are emitted and
         // every later placement is dropped for sitting on no run.
         val overlay =
             buildGradeMapSpecs(
@@ -273,7 +284,7 @@ class GradeMapPolylinesTest {
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
-        assertEquals(2, overlay.polylines.size)
+        assertEquals(3, overlay.polylines.size)
         assertEquals(5, overlay.chevrons.size)
         assertEquals("barberfish-chev-0", overlay.chevrons[0].id)
         assertEquals("barberfish-chev-2", overlay.chevrons[2].id)
@@ -291,7 +302,7 @@ class GradeMapPolylinesTest {
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 includeChevrons = false,
             )
-        assertEquals(2, overlay.polylines.size)
+        assertEquals(3, overlay.polylines.size)
         assertTrue(overlay.chevrons.isEmpty())
     }
 
@@ -377,7 +388,8 @@ class GradeMapPolylinesTest {
     @Test
     fun descent_takes_its_band_colour_on_a_two_sided_palette() {
         // Barberfish colours both sides, so the -5% dip takes its own descent band rather
-        // than the neutral KAROO gives it.
+        // than the neutral KAROO gives it. The cell across the summit at 100 m means out
+        // level, so the neutral sits between the climb and the descent.
         val dipPolyline =
             encodeElevationManually(
                 listOf(
@@ -395,10 +407,11 @@ class GradeMapPolylinesTest {
                     tuning = noneCfg.resolvedFor(GradePalette.BARBERFISH),
                 )
                 .polylines
-        assertEquals(2, specs.size)
+        assertEquals(3, specs.size)
+        assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
         assertEquals(
             gradeColor(-5.0, GradePalette.BARBERFISH, false)!!.toArgb(),
-            specs[1].colorArgb,
+            specs[2].colorArgb,
         )
     }
 
@@ -505,8 +518,8 @@ class GradeMapPolylinesTest {
         }
 
     @Test fun cap_trim_flags_mark_the_route_ends() {
-        // Default fixture: salmon [0,200] and neutral [200,300] tile the coloured extent.
-        // First run owns the start end, second owns the finish end.
+        // Default fixture: salmon, a transition cell and neutral tile the coloured extent.
+        // First run owns the start end, last owns the finish end, the middle owns neither.
         val specs = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
@@ -514,9 +527,10 @@ class GradeMapPolylinesTest {
             readable = true,
             tuning = noneCfg.resolvedFor(GradePalette.KAROO),
         ).polylines
-        assertEquals(2, specs.size)
+        assertEquals(3, specs.size)
         assertTrue(specs[0].trimStart); assertFalse(specs[0].trimEnd)
-        assertFalse(specs[1].trimStart); assertTrue(specs[1].trimEnd)
+        assertFalse(specs[1].trimStart); assertFalse(specs[1].trimEnd)
+        assertFalse(specs[2].trimStart); assertTrue(specs[2].trimEnd)
     }
 
     @Test fun cap_trim_shortens_outer_ends_only() {
@@ -538,7 +552,7 @@ class GradeMapPolylinesTest {
         // First run: only the chain-start end is pulled in by ~20 m.
         assertEquals(segLenM(full[0]) - 20.0, segLenM(trimmed[0]), 2.0)
         // Last run: only the chain-end is pulled in by ~20 m.
-        assertEquals(segLenM(full[1]) - 20.0, segLenM(trimmed[1]), 2.0)
+        assertEquals(segLenM(full.last()) - 20.0, segLenM(trimmed.last()), 2.0)
         // Interior junction is untouched: trimmed[0] still ends where trimmed[1] starts.
         val end0 = decodeGpsPolyline(trimmed[0].encoded).last()
         val start1 = decodeGpsPolyline(trimmed[1].encoded).first()
@@ -547,8 +561,9 @@ class GradeMapPolylinesTest {
     }
 
     @Test fun cap_trim_leaves_an_interior_run_untouched() {
-        // dip: 10% [0,100], neutral -5% dip [100,200], 15% [200,300] → three runs that
-        // abut, so the middle one is interior at both ends and keeps its full geometry.
+        // dip: 10% [0,100], neutral -5% dip [100,200], 15% [200,300], plus the shallow cell
+        // straddling the dip's end → four runs that abut, so the two middle ones are interior
+        // at both ends and keep their full geometry.
         val dipPolyline = encodeElevationManually(
             listOf(
                 0f to 100f,
@@ -572,14 +587,16 @@ class GradeMapPolylinesTest {
             tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             capTrimM = 15.0,
         ).polylines
-        assertEquals(3, specs.size)
+        assertEquals(4, specs.size)
         assertTrue(specs[0].trimStart); assertFalse(specs[0].trimEnd)
         assertFalse(specs[1].trimStart); assertFalse(specs[1].trimEnd)
-        assertFalse(specs[2].trimStart); assertTrue(specs[2].trimEnd)
-        // Outer runs lose ~15 m at their outer end only; the interior run loses nothing.
+        assertFalse(specs[2].trimStart); assertFalse(specs[2].trimEnd)
+        assertFalse(specs[3].trimStart); assertTrue(specs[3].trimEnd)
+        // Outer runs lose ~15 m at their outer end only; the interior runs lose nothing.
         assertEquals(segLenM(full[0]) - 15.0, segLenM(specs[0]), 3.0)
         assertEquals(segLenM(full[1]), segLenM(specs[1]), 1e-6)
-        assertEquals(segLenM(full[2]) - 15.0, segLenM(specs[2]), 3.0)
+        assertEquals(segLenM(full[2]), segLenM(specs[2]), 1e-6)
+        assertEquals(segLenM(full[3]) - 15.0, segLenM(specs[3]), 3.0)
     }
 
     @Test fun cap_trim_does_not_move_chevrons() {
