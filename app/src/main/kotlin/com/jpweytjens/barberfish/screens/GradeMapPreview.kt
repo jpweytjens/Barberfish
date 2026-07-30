@@ -60,19 +60,12 @@ internal fun GradeMapPreview(
 ) {
     val specs = remember(config, sparklineConfig, gradePalette) {
         val eff = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
-        val cfg = config.copy(
-            skipBands = eff.skipBands,
-            simplification = eff.simplification,
-            climbEdge = eff.climbEdge,
-            descentEdge = eff.descentEdge,
-            syncWithSparkline = false,
-        )
         buildGradeMapSpecs(
             routePolyline = ClimbPreviewFixture.routePolyline,
             routeElevationPolyline = ClimbPreviewFixture.elevationPolyline,
             palette = gradePalette,
             readable = false,
-            cfg = cfg,
+            tuning = eff,
             // Always place chevrons; the toggle only changes their colour (grade vs native).
             includeChevrons = true,
             chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,

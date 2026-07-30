@@ -218,11 +218,12 @@ data class SparklineConfig(
     // absent key falls through to the migrated legacy counts instead of masking them; a side is
     // turned off by parking its edge past the palette's last stop, not by storing null.
     //
-    // WARNING: nothing writes these yet, and the counts above are still the live read path for
-    // the profile renderer (ElevationSparkline via SparklineDataFlow) and the map renderer
-    // (GradeMapPolylines), plus the readouts in HUDConfigSection and MainActivity. The two are
-    // not kept in sync. A writer of these fields must either write the matching count too, or
-    // land in the same change as the removal of the last count reader.
+    // WARNING: nothing writes these yet. Both renderers (ElevationSparkline via
+    // SparklineDataFlow, GradeMapPolylines) now read edges, taking them from `gradeEdges` and so
+    // from the counts above whenever these stay null. The counts' own remaining readers are the
+    // band selectors and their readouts in HUDConfigSection and MainActivity, which is also what
+    // still writes them. The two are not kept in sync. A writer of these fields must either write
+    // the matching count too, or land in the same change as the removal of the last count reader.
     val climbEdge: Double? = null,
     val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
@@ -496,10 +497,12 @@ data class GradeMapConfig(
     // Legacy band-skip count, superseded by climbEdge/descentEdge. Read through `gradeEdges`.
     // The map never had a descent count, so its descent edge migrates as if the count were 0.
     val skipBands: Int = 1,
-    // WARNING: nothing writes these yet, and `skipBands` above is still the live read path for
-    // the map renderer (GradeMapPolylines) and the readout in MainActivity. The two are not kept
-    // in sync. A writer of these fields must either write the matching count too, or land in the
-    // same change as the removal of the last count reader.
+    // WARNING: nothing writes these yet. The map renderer (GradeMapPolylines) now reads edges,
+    // taking them from `gradeEdges` and so from `skipBands` above whenever these stay null. That
+    // count's own remaining reader is the GRADE MAP card's band selector and its readout in
+    // MainActivity, which is also what still writes it. The two are not kept in sync. A writer of
+    // these fields must either write the matching count too, or land in the same change as the
+    // removal of the last count reader.
     val climbEdge: Double? = null,
     val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,

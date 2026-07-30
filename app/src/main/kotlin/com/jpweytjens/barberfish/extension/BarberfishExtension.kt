@@ -29,6 +29,7 @@ import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
+import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
@@ -155,17 +156,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 // Resolve sparkline-sync here so the signature() below hashes the
                 // effective tuning and a sparkline edit triggers a rebuild while synced.
                 val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
-                val effectiveCfg = gradeMapCfg.copy(
-                    skipBands = eff.skipBands,
-                    simplification = eff.simplification,
-                    climbEdge = eff.climbEdge,
-                    descentEdge = eff.descentEdge,
-                )
                 GradeMapConfigInputs(
                     enabled = gradeMapCfg.enabled,
+                    showPolylines = gradeMapCfg.showPolylines,
                     showChevrons = gradeMapCfg.showChevrons,
                     palette = zoneCfg.gradePalette,
-                    cfg = effectiveCfg,
+                    tuning = eff,
                     state = navEvent.state,
                 )
             }
@@ -234,7 +230,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         routeElevationPolyline = route.routeElevationPolyline,
                         palette = inputs.palette,
                         readable = false,
-                        cfg = inputs.cfg,
+                        tuning = inputs.tuning,
                         includeChevrons = inputs.showChevrons,
                         chevronSpacingM = chevronStep,
                         chevronWindowHalfM = chevronWindow,
@@ -244,7 +240,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         capTrimM = capTrimM,
                         reversed = route.reversed,
                     )
-                    Timber.d("grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.cfg.simplification} skipBands=${inputs.cfg.skipBands})")
+                    Timber.d("grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})")
                     if (BuildConfig.DEBUG) {
                         val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
                         Timber.d("grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}")
@@ -261,7 +257,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             .sorted()
                         Timber.d("grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}")
                     }
-                    if (inputs.cfg.showPolylines) {
+                    if (inputs.showPolylines) {
                         polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
                     } else {
                         // Native route line shows through; we just drop our grade overlay.
@@ -280,22 +276,25 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
 internal data class GradeMapConfigInputs(
     val enabled: Boolean,
+    val showPolylines: Boolean,
     val showChevrons: Boolean,
     val palette: GradePalette,
-    val cfg: GradeMapConfig,
+    // Sparkline-sync is resolved upstream, so everything downstream — the rebuild signature
+    // and the specs themselves — reads one already-effective tuning.
+    val tuning: EffectiveGradeMapTuning,
     val state: OnNavigationState.NavigationState,
 ) {
     internal fun signature(): GradeMapConfigSignature {
         val route = state as? OnNavigationState.NavigationState.NavigatingRoute
         return GradeMapConfigSignature(
             enabled = enabled,
-            showPolylines = cfg.showPolylines,
+            showPolylines = showPolylines,
             showChevrons = showChevrons,
             palette = palette,
-            simplification = cfg.simplification,
-            skipBands = cfg.skipBands,
-            climbEdge = cfg.climbEdge,
-            descentEdge = cfg.descentEdge,
+            simplification = tuning.simplification,
+            skipBands = tuning.skipBands,
+            climbEdge = tuning.climbEdge,
+            descentEdge = tuning.descentEdge,
             routeElevationHash = route?.routeElevationPolyline?.hashCode() ?: 0,
             routePolylineHash = route?.routePolyline?.hashCode() ?: 0,
             climbsHash = route?.climbs?.hashCode() ?: 0,

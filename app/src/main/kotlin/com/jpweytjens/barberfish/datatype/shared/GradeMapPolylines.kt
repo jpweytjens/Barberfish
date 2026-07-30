@@ -1,7 +1,6 @@
 package com.jpweytjens.barberfish.datatype.shared
 
 import androidx.compose.ui.graphics.toArgb
-import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 
 /**
@@ -58,7 +57,9 @@ internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
  * profile, mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is
  * intentionally not used — the rider's mental model of "where it gets coloured" must
  * match the sparkline, and the sparkline is driven purely by the elevation polyline +
- * per-consumer simplification/skipBands.
+ * per-consumer simplification and grade edges. [tuning] is the already-resolved tuning:
+ * callers hand it the output of `resolveGradeMapTuning`, so the sparkline-sync question is
+ * settled before we are called and can never be answered differently here.
  *
  * Algorithm:
  * 1. Decode the GPS polyline and compute cumulative distance.
@@ -84,7 +85,7 @@ internal fun buildGradeMapSpecs(
     routeElevationPolyline: String?,
     palette: GradePalette,
     readable: Boolean,
-    cfg: GradeMapConfig,
+    tuning: EffectiveGradeMapTuning,
     includeChevrons: Boolean = true,
     chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
     chevronWindowHalfM: Double = 0.0,
@@ -103,11 +104,7 @@ internal fun buildGradeMapSpecs(
     val cumDist = cumulativeDistancesM(gps)
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
     if (rawElev.isEmpty()) return GradeMapSpecs(emptyList(), emptyList())
-    val elevPoints = visvalingamWhyatt(rawElev, cfg.simplification.minAreaM2)
-    // The live callers resolve sparkline-sync first and copy the effective edges into [cfg],
-    // which is what gradeEdges hands back; the legacy band-skip count is the fallback for a
-    // stored config that predates the thresholds.
-    val (climbEdge, descentEdge) = cfg.gradeEdges(palette)
+    val elevPoints = visvalingamWhyatt(rawElev, tuning.simplification.minAreaM2)
 
     // Collect same-colour runs, then emit one polyline per run. Every segment gets a colour,
     // so the runs tile the route and no gap can open onto the line underneath.
@@ -123,8 +120,8 @@ internal fun buildGradeMapSpecs(
         val color = gradeBandColor(
             grade = localGradePct,
             palette = palette,
-            climbEdge = climbEdge,
-            descentEdge = descentEdge,
+            climbEdge = tuning.climbEdge,
+            descentEdge = tuning.descentEdge,
             neutral = FlatGrey,
             readable = readable,
         ).toArgb()

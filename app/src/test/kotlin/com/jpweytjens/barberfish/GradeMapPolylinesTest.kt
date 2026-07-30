@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.toArgb
+import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
 import com.jpweytjens.barberfish.datatype.shared.FlatGrey
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
@@ -8,9 +9,11 @@ import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradePalette
+import com.jpweytjens.barberfish.extension.SparklineConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -50,6 +53,12 @@ class GradeMapPolylinesTest {
             skipBands = 0
         )
 
+    // buildGradeMapSpecs takes an already-resolved tuning, so these tests resolve their config
+    // through the same function the live callers use. Sync is turned off first: with it on the
+    // overlay would follow the field sparkline, and it is the map config the test configures.
+    private fun GradeMapConfig.resolvedFor(palette: GradePalette): EffectiveGradeMapTuning =
+        resolveGradeMapTuning(copy(syncWithSparkline = false), SparklineConfig(), palette)
+
     @Test
     fun blank_route_polyline_returns_empty() {
         val overlay =
@@ -58,7 +67,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         assertTrue(overlay.polylines.isEmpty())
         assertTrue(overlay.chevrons.isEmpty())
@@ -72,7 +81,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = null,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         assertTrue(overlay.polylines.isEmpty())
         assertTrue(overlay.chevrons.isEmpty())
@@ -86,7 +95,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = "",
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         assertTrue(overlay.polylines.isEmpty())
         assertTrue(overlay.chevrons.isEmpty())
@@ -103,7 +112,7 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = elevationPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
-                    cfg = noneCfg,
+                    tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
         assertEquals(2, specs.size)
@@ -132,7 +141,7 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = twoBandsPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
-                    cfg = noneCfg,
+                    tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
         assertEquals(2, specs.size)
@@ -154,12 +163,12 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = elevationPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
-                    cfg =
+                    tuning =
                         GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.NONE,
                             skipBands = 1
-                        ),
+                        ).resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
         // The two climbing segments (8% and 10%) are both in the salmon band and merge into a
@@ -189,12 +198,12 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = dipPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
-                    cfg =
+                    tuning =
                         GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.NONE,
                             skipBands = 0
-                        ),
+                        ).resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
         // Three runs: a climb band, the neutral over the dip (KAROO colours no descent),
@@ -222,12 +231,12 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = noisyPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
-                    cfg =
+                    tuning =
                         GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.NONE,
                             skipBands = 0
-                        ),
+                        ).resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
         val heavySpecs =
@@ -236,12 +245,12 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = noisyPolyline,
                     palette = GradePalette.KAROO,
                     readable = true,
-                    cfg =
+                    tuning =
                         GradeMapConfig(
                             enabled = true,
                             simplification = ElevationSimplification.HEAVY,
                             skipBands = 0
-                        ),
+                        ).resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
         assertTrue(
@@ -262,7 +271,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         assertEquals(2, overlay.polylines.size)
         assertEquals(5, overlay.chevrons.size)
@@ -279,7 +288,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 includeChevrons = false,
             )
         assertEquals(2, overlay.polylines.size)
@@ -297,7 +306,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         val filtered =
             buildGradeMapSpecs(
@@ -305,7 +314,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 chevronWindowHalfM = 40.0,
                 chevronHeadingThresholdDeg = 30.0,
             )
@@ -340,7 +349,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = climbPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         val filtered =
             buildGradeMapSpecs(
@@ -348,7 +357,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = climbPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 // 40 m window, close to the native ~28 m at zoom 15: only the positions whose
                 // neighbourhood spans both legs (the 90° corner) see a 90° spread and drop.
                 // Positions along either straight leg keep their chevrons.
@@ -383,7 +392,7 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = dipPolyline,
                     palette = GradePalette.BARBERFISH,
                     readable = false,
-                    cfg = noneCfg,
+                    tuning = noneCfg.resolvedFor(GradePalette.BARBERFISH),
                 )
                 .polylines
         assertEquals(2, specs.size)
@@ -402,7 +411,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         assertTrue(overlay.chevrons.isNotEmpty())
         val expectedYellow = gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb()
@@ -430,7 +439,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = longClimb,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         val deduped =
             buildGradeMapSpecs(
@@ -438,7 +447,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = longClimb,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 chevronMinSpacingM = 100.0,
             )
         assertEquals(5, noDedup.chevrons.size)
@@ -473,7 +482,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = tooShort,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         val marked =
             buildGradeMapSpecs(
@@ -481,7 +490,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = longEnough,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         assertEquals(1, bare.polylines.size)
         assertTrue(bare.chevrons.isEmpty())
@@ -503,7 +512,7 @@ class GradeMapPolylinesTest {
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
-            cfg = noneCfg,
+            tuning = noneCfg.resolvedFor(GradePalette.KAROO),
         ).polylines
         assertEquals(2, specs.size)
         assertTrue(specs[0].trimStart); assertFalse(specs[0].trimEnd)
@@ -516,14 +525,14 @@ class GradeMapPolylinesTest {
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
-            cfg = noneCfg,
+            tuning = noneCfg.resolvedFor(GradePalette.KAROO),
         ).polylines
         val trimmed = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
-            cfg = noneCfg,
+            tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             capTrimM = 20.0,
         ).polylines
         // First run: only the chain-start end is pulled in by ~20 m.
@@ -553,14 +562,14 @@ class GradeMapPolylinesTest {
             routeElevationPolyline = dipPolyline,
             palette = GradePalette.KAROO,
             readable = true,
-            cfg = noneCfg,
+            tuning = noneCfg.resolvedFor(GradePalette.KAROO),
         ).polylines
         val specs = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = dipPolyline,
             palette = GradePalette.KAROO,
             readable = true,
-            cfg = noneCfg,
+            tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             capTrimM = 15.0,
         ).polylines
         assertEquals(3, specs.size)
@@ -579,14 +588,14 @@ class GradeMapPolylinesTest {
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
-            cfg = noneCfg,
+            tuning = noneCfg.resolvedFor(GradePalette.KAROO),
         ).chevrons
         val trimmed = buildGradeMapSpecs(
             routePolyline = routePolyline,
             routeElevationPolyline = elevationPolyline,
             palette = GradePalette.KAROO,
             readable = true,
-            cfg = noneCfg,
+            tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             capTrimM = 20.0,
         ).chevrons
         assertEquals(none.map { it.id }, trimmed.map { it.id })
@@ -601,7 +610,9 @@ class GradeMapPolylinesTest {
                     routeElevationPolyline = TranquiloFixture.elevationPolyline,
                     palette = GradePalette.BARBERFISH,
                     readable = false,
-                    cfg = GradeMapConfig(climbEdge = 2.0, descentEdge = -2.0),
+                    tuning =
+                        GradeMapConfig(climbEdge = 2.0, descentEdge = -2.0)
+                            .resolvedFor(GradePalette.BARBERFISH),
                 )
                 .polylines
         assertTrue("expected polylines for the whole route", specs.isNotEmpty())
@@ -649,7 +660,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 reversed = true,
             )
         assertTrue(overlay.polylines.isNotEmpty())
@@ -668,7 +679,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         assertTrue(overlay.polylines.isNotEmpty())
         val lngs = overlay.polylines.flatMap { decodeGpsPolyline(it.encoded) }.map { it.lng }
@@ -686,7 +697,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         val reversed =
             buildGradeMapSpecs(
@@ -694,7 +705,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 reversed = true,
             )
         assertTrue(forward.chevrons.isNotEmpty())
@@ -711,7 +722,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
             )
         val reversed =
             buildGradeMapSpecs(
@@ -719,7 +730,7 @@ class GradeMapPolylinesTest {
                 routeElevationPolyline = elevationPolyline,
                 palette = GradePalette.KAROO,
                 readable = true,
-                cfg = noneCfg,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 reversed = true,
             )
         assertEquals(

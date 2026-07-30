@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish
 
+import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeMapConfig
@@ -86,9 +87,16 @@ class GradeMapTuningTest {
     private fun inputsWithEdges(climbEdge: Double?, descentEdge: Double?) =
         GradeMapConfigInputs(
             enabled = true,
+            showPolylines = true,
             showChevrons = true,
             palette = GradePalette.KAROO,
-            cfg = GradeMapConfig(climbEdge = climbEdge, descentEdge = descentEdge),
+            tuning =
+                EffectiveGradeMapTuning(
+                    skipBands = 1,
+                    simplification = ElevationSimplification.HEAVY,
+                    climbEdge = climbEdge,
+                    descentEdge = descentEdge,
+                ),
             state = OnNavigationState.NavigationState.Idle,
         )
 
@@ -113,24 +121,16 @@ class GradeMapTuningTest {
         val map = GradeMapConfig(syncWithSparkline = true)
         val palette = GradePalette.TURBO
 
-        fun signatureFor(sparkline: SparklineConfig): Any {
-            val eff = resolveGradeMapTuning(map, sparkline, palette)
-            val effectiveCfg =
-                map.copy(
-                    skipBands = eff.skipBands,
-                    simplification = eff.simplification,
-                    climbEdge = eff.climbEdge,
-                    descentEdge = eff.descentEdge,
-                )
-            return GradeMapConfigInputs(
+        fun signatureFor(sparkline: SparklineConfig): Any =
+            GradeMapConfigInputs(
                     enabled = map.enabled,
+                    showPolylines = map.showPolylines,
                     showChevrons = map.showChevrons,
                     palette = palette,
-                    cfg = effectiveCfg,
+                    tuning = resolveGradeMapTuning(map, sparkline, palette),
                     state = OnNavigationState.NavigationState.Idle,
                 )
                 .signature()
-        }
 
         val a = signatureFor(SparklineConfig(skipBands = 1, skipBandsDescent = 0))
         val b = signatureFor(SparklineConfig(skipBands = 1, skipBandsDescent = 1))
