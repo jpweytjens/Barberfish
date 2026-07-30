@@ -3,9 +3,11 @@ package com.jpweytjens.barberfish
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.datatype.shared.GRADE_BASELINE_M
+import com.jpweytjens.barberfish.datatype.shared.elevationAtM
 import com.jpweytjens.barberfish.datatype.shared.minRunLengthM
 import com.jpweytjens.barberfish.datatype.shared.resampleRunsToCells
 import com.jpweytjens.barberfish.extension.GradePalette
+import kotlin.math.roundToInt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -35,6 +37,22 @@ class GradeMapWindowTest {
         }
         return elev
     }
+
+    /**
+     * A straight 8.00 per cent climb from 1234.5 m, as a simplified profile actually reaches
+     * the resampler: vertices about 90 m apart, distances and elevations quantised to 0.1 m
+     * and held as `Float`. 8 per cent is a band edge, so the band a cell lands in turns on
+     * which side of 8.0 its chord falls, and `Float` storage of the vertices alone is enough
+     * to put neighbouring cells on opposite sides. The base elevation is what makes it bite:
+     * the chord strays from 8.00 by 8e-5 per cent here, against 2e-5 from a zero base and
+     * 3e-4 at 5000 m.
+     */
+    private val steadyEightFromAltitude: List<Pair<Float, Float>> =
+        List(31) { i ->
+            val distanceM = i * 90.0
+            val elevationM = 1234.5 + distanceM * 0.08
+            (distanceM * 10).roundToInt() / 10f to (elevationM * 10).roundToInt() / 10f
+        }
 
     private fun guard(cellM: Double, endM: Double, elev: (Double) -> Double) =
         resampleRunsToCells(
@@ -74,6 +92,26 @@ class GradeMapWindowTest {
     fun the_tail_cell_may_be_shorter_than_the_cell_length() {
         val runs = guard(cellM = 200.0, endM = 450.0, elev = ::steadyElev)
         assertEquals(450.0, runs.last().endM, 0.001)
+    }
+
+    @Test
+    fun a_steady_climb_sitting_on_a_band_edge_stays_one_run() {
+        // Pins the rounding step in resampleRunsToCells. Without it the chord noise alone
+        // decides the band on every cell of a climb whose true grade is a whole per cent, and
+        // the overlay stripes between salmon and yellow down a stretch the rider sees as one
+        // steady gradient.
+        val runs = guard(
+            cellM = GRADE_BASELINE_M,
+            endM = steadyEightFromAltitude.last().first.toDouble(),
+            elev = { distanceM -> elevationAtM(steadyEightFromAltitude, distanceM) },
+        )
+        assertEquals(
+            "a straight 8.00 per cent climb striped into ${runs.size} runs",
+            1,
+            runs.size,
+        )
+        // Rounded back onto the edge, so it lands in the band its true grade belongs to.
+        assertEquals(Color(0xFFF08868).toArgb(), runs.single().colorArgb)
     }
 
     @Test

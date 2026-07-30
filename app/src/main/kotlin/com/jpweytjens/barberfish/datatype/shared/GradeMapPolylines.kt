@@ -108,13 +108,20 @@ internal fun resampleRunsToCells(
     while (startM < routeEndM) {
         val endM = minOf(startM + cellM, routeEndM)
         val chordPct = ((elevAtM(endM) - elevAtM(startM)) / (endM - startM)) * 100.0
-        // Rounded before the band lookup: the chord subtracts two interpolated elevations,
-        // so a cell inside a stretch of constant grade can land a part in 1e14 either side
-        // of the value the stretch actually holds. Elevations arrive quantised to 0.1 m and
-        // band edges are whole per cents, so grades sit exactly on an edge often enough that
-        // the noise alone would stripe a steady climb into alternating bands. Nothing
-        // physical lives below 1e-6 per cent.
-        val meanGradePct = round(chordPct * 1e6) / 1e6
+        // Rounded before the band lookup. The chord subtracts two elevations interpolated
+        // from vertices held as Float, so a cell inside a stretch of constant grade lands
+        // either side of the grade the stretch actually holds — by up to one Float step at
+        // the base elevation, spread over the cell. On the 30 m cell that is 4e-4 per cent at
+        // 1200 m and 2e-3 per cent at 5000 m; the double arithmetic on top of it contributes
+        // 1e-14. Band edges are whole per cents and a steady climb sits on one often enough
+        // that this noise alone would stripe it into alternating bands.
+        //
+        // Rounding to 0.01 per cent is coarser than twice that error at any elevation a road
+        // reaches, so both sides of an on-edge grade land back on the edge, and every band
+        // edge is a whole multiple of it, so no edge shifts. It stays far finer than the
+        // profile can resolve: one elevation quantum, 0.1 m, over a 30 m cell is a third of a
+        // per cent, thirty times coarser than what this discards.
+        val meanGradePct = round(chordPct * 100.0) / 100.0
         val color = gradeBandColor(
             grade = meanGradePct,
             palette = palette,
@@ -139,7 +146,7 @@ internal fun resampleRunsToCells(
  * Clamps to the first and last vertex outside the profile's own extent. [points] must hold at
  * least one vertex.
  */
-private fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): Double {
+internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): Double {
     val first = points.first()
     if (distanceM <= first.first) return first.second.toDouble()
     val last = points.last()
