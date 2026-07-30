@@ -1,5 +1,7 @@
 package com.jpweytjens.barberfish
 
+import androidx.compose.ui.graphics.Color
+import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
@@ -10,6 +12,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class GradeBandsTest {
+
+    private val NEUTRAL = Color(0xFFC4C4C4)
 
     @Test
     fun karoo_bands_are_ordered_low_to_high_with_open_ends() {
@@ -42,5 +46,32 @@ class GradeBandsTest {
     @Test
     fun gradeColor_still_colors_descents_on_turbo() {
         assertNotNull(gradeColor(-50.0, GradePalette.TURBO, readable = false))
+    }
+
+    @Test
+    fun grades_inside_the_edges_take_the_neutral() {
+        val c = gradeBandColor(
+            grade = 3.0, palette = GradePalette.KAROO,
+            climbEdge = 8.0, descentEdge = null, neutral = NEUTRAL, readable = false,
+        )
+        assertEquals(NEUTRAL, c)
+    }
+
+    @Test
+    fun grades_outside_the_edges_take_their_own_band_colour() {
+        val c = gradeBandColor(
+            grade = 9.0, palette = GradePalette.KAROO,
+            climbEdge = 8.0, descentEdge = null, neutral = NEUTRAL, readable = false,
+        )
+        assertEquals(Color(0xFFF08868), c)
+    }
+
+    @Test
+    fun a_null_edge_greys_that_whole_side() {
+        val c = gradeBandColor(
+            grade = 25.0, palette = GradePalette.KAROO,
+            climbEdge = null, descentEdge = null, neutral = NEUTRAL, readable = false,
+        )
+        assertEquals(NEUTRAL, c)
     }
 }

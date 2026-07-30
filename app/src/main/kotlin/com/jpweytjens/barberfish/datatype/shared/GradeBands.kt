@@ -269,6 +269,32 @@ internal fun gradeFloor(
 ): Double = gradeThresholdColors(palette, readable, isNightMode).last().first
 
 /**
+ * The band's own colour for [grade], or [neutral] when the grade falls inside the edges.
+ * [climbEdge] null means no climb band is coloured; [descentEdge] null means no descent
+ * band is. Implemented in terms of [gradeBands] so the two can never disagree.
+ */
+internal fun gradeBandColor(
+    grade: Double,
+    palette: GradePalette,
+    climbEdge: Double?,
+    descentEdge: Double?,
+    neutral: Color,
+    readable: Boolean = true,
+    isNightMode: Boolean = true,
+): Color {
+    val coloured = when {
+        grade > 0.0 -> climbEdge != null && grade >= climbEdge
+        grade < 0.0 -> descentEdge != null && grade <= descentEdge
+        else -> false
+    }
+    if (!coloured) return neutral
+    val band = gradeBands(palette, readable, isNightMode).firstOrNull {
+        (it.lo == null || grade >= it.lo) && (it.hi == null || grade < it.hi)
+    }
+    return band?.color ?: neutral
+}
+
+/**
  * Range of grades that receive a colour fill in the elevation sparkline. Symmetric palettes (Turbo)
  * colour both climbs and descents; one-sided palettes only climbs.
  * - [posMin] (climbs): fill when grade >= posMin. null = never fill on the climb side.
