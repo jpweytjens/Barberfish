@@ -1,10 +1,12 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
-import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
+import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfigInputs
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import io.hammerhead.karooext.models.OnNavigationState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -78,45 +80,61 @@ class GradeMapTuningTest {
         assertNull(tuning.descentEdge)
     }
 
-    // BarberfishExtension's map overlay de-dupes rebuilds by comparing a file-private
-    // GradeMapConfigSignature, not the config object. It must hash climbEdge/descentEdge or an
-    // edge-only change is invisible and the overlay goes stale. The class is deliberately
-    // file-private (nothing outside the dedup check should construct one), so reflection reaches
-    // its constructor here rather than widening that visibility for a test.
-    private fun gradeMapConfigSignature(climbEdge: Double?, descentEdge: Double?): Any {
-        val ctor =
-            Class.forName("com.jpweytjens.barberfish.extension.GradeMapConfigSignature")
-                .declaredConstructors
-                .single()
-        ctor.isAccessible = true
-        return ctor.newInstance(
-            true, // enabled
-            true, // showPolylines
-            true, // showChevrons
-            GradePalette.KAROO, // palette
-            ElevationSimplification.HEAVY, // simplification
-            1, // skipBands
-            climbEdge,
-            descentEdge,
-            0, // routeElevationHash
-            0, // routePolylineHash
-            0, // climbsHash
-            false, // reversed
-            0, // rejoinBucket
+    // BarberfishExtension's map overlay de-dupes rebuilds by comparing GradeMapConfigInputs'
+    // signature(), not the config object. It must hash climbEdge/descentEdge or an edge-only
+    // change is invisible and the overlay goes stale.
+    private fun inputsWithEdges(climbEdge: Double?, descentEdge: Double?) =
+        GradeMapConfigInputs(
+            enabled = true,
+            showChevrons = true,
+            palette = GradePalette.KAROO,
+            cfg = GradeMapConfig(climbEdge = climbEdge, descentEdge = descentEdge),
+            state = OnNavigationState.NavigationState.Idle,
         )
-    }
 
     @Test
     fun `map rebuild signature differs when only climbEdge changes`() {
-        val a = gradeMapConfigSignature(climbEdge = 5.0, descentEdge = null)
-        val b = gradeMapConfigSignature(climbEdge = 6.0, descentEdge = null)
-        assertNotEquals(a, b)
+        val a = inputsWithEdges(climbEdge = 5.0, descentEdge = null)
+        val b = inputsWithEdges(climbEdge = 6.0, descentEdge = null)
+        assertNotEquals(a.signature(), b.signature())
     }
 
     @Test
     fun `map rebuild signature differs when only descentEdge changes`() {
-        val a = gradeMapConfigSignature(climbEdge = null, descentEdge = -3.0)
-        val b = gradeMapConfigSignature(climbEdge = null, descentEdge = -6.0)
+        val a = inputsWithEdges(climbEdge = null, descentEdge = -3.0)
+        val b = inputsWithEdges(climbEdge = null, descentEdge = -6.0)
+        assertNotEquals(a.signature(), b.signature())
+    }
+
+    // The same scenario the fix targets: with syncWithSparkline on, only the resolved edge
+    // carries a sparkline change through to the signature (the count itself is hashed nowhere).
+    @Test
+    fun `synced descent-count change reaches the signature via the resolved edge`() {
+        val map = GradeMapConfig(syncWithSparkline = true)
+        val palette = GradePalette.TURBO
+
+        fun signatureFor(sparkline: SparklineConfig): Any {
+            val eff = resolveGradeMapTuning(map, sparkline, palette)
+            val effectiveCfg =
+                map.copy(
+                    skipBands = eff.skipBands,
+                    simplification = eff.simplification,
+                    climbEdge = eff.climbEdge,
+                    descentEdge = eff.descentEdge,
+                )
+            return GradeMapConfigInputs(
+                    enabled = map.enabled,
+                    showChevrons = map.showChevrons,
+                    palette = palette,
+                    cfg = effectiveCfg,
+                    state = OnNavigationState.NavigationState.Idle,
+                )
+                .signature()
+        }
+
+        val a = signatureFor(SparklineConfig(skipBands = 1, skipBandsDescent = 0))
+        val b = signatureFor(SparklineConfig(skipBands = 1, skipBandsDescent = 1))
+
         assertNotEquals(a, b)
     }
 }

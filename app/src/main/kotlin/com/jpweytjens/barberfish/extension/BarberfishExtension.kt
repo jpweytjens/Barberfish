@@ -279,14 +279,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
     }
 }
 
-private data class GradeMapConfigInputs(
+internal data class GradeMapConfigInputs(
     val enabled: Boolean,
     val showChevrons: Boolean,
     val palette: GradePalette,
     val cfg: GradeMapConfig,
     val state: OnNavigationState.NavigationState,
 ) {
-    fun signature(): GradeMapConfigSignature {
+    internal fun signature(): GradeMapConfigSignature {
         val route = state as? OnNavigationState.NavigationState.NavigatingRoute
         return GradeMapConfigSignature(
             enabled = enabled,
@@ -308,7 +308,7 @@ private data class GradeMapConfigInputs(
     }
 }
 
-private data class GradeMapConfigSignature(
+internal data class GradeMapConfigSignature(
     val enabled: Boolean,
     val showPolylines: Boolean,
     val showChevrons: Boolean,

@@ -176,7 +176,7 @@ enum class SparklineMode {
  * The (climb, descent) grade edges a stored pair of band-skip counts means, read off [palette]'s
  * own band stops.
  *
- * Counts stopped being portable in 4.x: Barberfish is the one palette whose climb bands have no
+ * Counts stopped being portable when 4.x added the Barberfish palette: its climb bands have no
  * 0.0 entry (they jump straight from 2.0 to -2.0), so the same count resolves to a different
  * threshold on Barberfish than on the other six palettes, which all open a band at 0.0.
  * Persisting the threshold instead of the count keeps a stored config meaning what it meant when
