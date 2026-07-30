@@ -1,7 +1,7 @@
 """Generate per-grade-colour chevron drawables for the climber map overlay.
 
-Parses `FieldColors.kt` for every unique `Color(0xFFxxxxxx)` reference inside
-a `_GRADE_BANDS*` list, then writes:
+Parses `GradeBands.kt` for every unique colour reference inside a
+`_GRADE_BANDS*` list, then writes:
 
 1. One Android vector drawable per colour at
    `app/src/main/res/drawable/ic_climber_chevron_<rrggbb>.xml`.
@@ -38,6 +38,7 @@ _SHARED_KT = (
     _ROOT / "app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared"
 )
 FIELD_COLORS_KT = _SHARED_KT / "FieldColors.kt"
+GRADE_BANDS_KT = _SHARED_KT / "GradeBands.kt"
 ZONE_COLORING_KT = _SHARED_KT / "ZoneColoring.kt"
 CHEVRON_DRAWABLES_KT = _SHARED_KT / "ChevronDrawables.kt"
 DRAWABLE_DIR = _ROOT / "app/src/main/res/drawable"
@@ -78,11 +79,11 @@ _TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
 # Palette extraction
 # ---------------------------------------------------------------------------
 
-# Match `..._GRADE_BANDS(_READABLE)? = listOf(\n ... \n)` — bounded by a `)` on its
+# Match `..._GRADE_BANDS<suffix> = listOf(\n ... \n)` — bounded by a `)` on its
 # own line so the non-greedy body doesn't terminate at the first `Color(0x...)`'s
-# closing paren.
+# closing paren. The suffix covers the readable dark/light variants.
 _BAND_BLOCK = re.compile(
-    r"_GRADE_BANDS(?:_READABLE)?\s*=\s*listOf\(\n(.*?)\n\)",
+    r"_GRADE_BANDS\w*\s*=\s*listOf\(\n(.*?)\n\s*\)\n",
     re.DOTALL,
 )
 # `val name = [\n] listOf(\n ... \n)` — a named colour array (e.g. karooPowerColors).
@@ -93,6 +94,12 @@ _ARRAY_BLOCK = re.compile(
 _COLOR_REF = re.compile(r"Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
 # An indexed reference into a named colour array, e.g. `karooPowerColors[6]`.
 _INDEX_REF = re.compile(r"(\w+)\[(\d+)\]")
+# A band pointing at a named colour constant, e.g. `-2.0 to FlatGrey,`. The trailing
+# `,`/`//`/end-of-line requirement is what keeps `to Color(0x...)` and
+# `to karooPowerColors[6]` out.
+_NAMED_REF = re.compile(r"to\s+([A-Za-z_]\w*)\s*(?:,|//|$)", re.MULTILINE)
+# A named colour constant's definition, e.g. `internal val FlatGrey = Color(0xFFC4C4C4)`.
+_NAMED_COLOR = re.compile(r"val\s+(\w+)\s*=\s*Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
 # `LemonYellow` is the route-yellow filler the climber overlay paints on below-threshold
 # segments inside a climb — chevrons there need a matching drawable too.
 _FILLER_REF = re.compile(r"val\s+LemonYellow\s*=\s*Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
@@ -142,21 +149,43 @@ def parse_color_arrays(source: str) -> dict[str, list[str]]:
     return arrays
 
 
-def extract_palette_colors(
-    field_colors: str,
-    arrays: dict[str, list[str]],
-) -> list[str]:
-    """Return the unique RGB hex codes used in every grade-band palette.
+def parse_named_colors(source: str) -> dict[str, str]:
+    """Return the RGB hex of each `val Name = Color(0x...)` constant.
 
-    Resolves both inline `Color(0x...)` literals and indexed references into
-    the shared colour [arrays].
+    Grade bands may point at a shared named colour (`-2.0 to FlatGrey`) instead
+    of spelling the literal out.
 
     Parameters
     ----------
-    field_colors : str
+    source : str
         Contents of `FieldColors.kt`.
+
+    Returns
+    -------
+    dict[str, str]
+        Constant name -> lowercase six-character hex string.
+    """
+    return {name: rgb.lower() for name, rgb in _NAMED_COLOR.findall(source)}
+
+
+def extract_palette_colors(
+    grade_bands: str,
+    arrays: dict[str, list[str]],
+    named: dict[str, str],
+) -> list[str]:
+    """Return the unique RGB hex codes used in every grade-band palette.
+
+    Resolves inline `Color(0x...)` literals, indexed references into the shared
+    colour [arrays], and [named] colour constants.
+
+    Parameters
+    ----------
+    grade_bands : str
+        Contents of `GradeBands.kt`.
     arrays : dict[str, list[str]]
         Named colour arrays from `parse_color_arrays`.
+    named : dict[str, str]
+        Named colour constants from `parse_named_colors`.
 
     Returns
     -------
@@ -164,7 +193,7 @@ def extract_palette_colors(
         Lowercase six-character hex strings, sorted for stable output.
     """
     colors: set[str] = set()
-    for block in _BAND_BLOCK.finditer(field_colors):
+    for block in _BAND_BLOCK.finditer(grade_bands):
         body = block.group(1)
         for rgb in _COLOR_REF.findall(body):
             colors.add(rgb.lower())
@@ -176,6 +205,14 @@ def extract_palette_colors(
                     f"Add it to ZoneColoring.kt or update this script."
                 )
             colors.add(palette[int(index)])
+        for name in _NAMED_REF.findall(body):
+            rgb = named.get(name)
+            if rgb is None:
+                raise SystemExit(
+                    f"Unknown colour constant '{name}' referenced in a grade band. "
+                    f"Add it to FieldColors.kt or update this script."
+                )
+            colors.add(rgb)
     return sorted(colors)
 
 
@@ -225,10 +262,11 @@ import com.jpweytjens.barberfish.R
 // Maps grade-band ARGB ints to the matching pre-baked chevron drawable.
 
 @DrawableRes
-internal fun gradeChevronDrawable(colorArgb: Int): Int = when (colorArgb) {{
+internal fun gradeChevronDrawable(colorArgb: Int): Int =
+    when (colorArgb) {{
 {cases}
-    else -> R.drawable.ic_climber_chevron
-}}
+        else -> R.drawable.ic_climber_chevron
+    }}
 """
 
 
@@ -241,7 +279,7 @@ def write_lookup(colors: list[str]) -> None:
         Lowercase six-character RGB hex strings.
     """
     cases = "\n".join(
-        f"    0xFF{c}.toInt() -> R.drawable.ic_climber_chevron_{c}"
+        f"        0xFF{c}.toInt() -> R.drawable.ic_climber_chevron_{c}"
         for c in colors
     )
     CHEVRON_DRAWABLES_KT.write_text(_LOOKUP_TEMPLATE.format(cases=cases))
@@ -249,9 +287,11 @@ def write_lookup(colors: list[str]) -> None:
 
 def main() -> None:
     field_colors = FIELD_COLORS_KT.read_text()
+    grade_bands = GRADE_BANDS_KT.read_text()
     arrays = parse_color_arrays(ZONE_COLORING_KT.read_text())
+    named = parse_named_colors(field_colors)
     colors = sorted(
-        set(extract_palette_colors(field_colors, arrays))
+        set(extract_palette_colors(grade_bands, arrays, named))
         | {extract_filler_color(field_colors)}
     )
     written, removed = sync_drawables(colors)
