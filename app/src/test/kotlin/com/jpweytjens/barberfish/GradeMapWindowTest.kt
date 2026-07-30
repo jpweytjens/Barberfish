@@ -114,6 +114,14 @@ class GradeMapWindowTest {
         assertEquals(Color(0xFFF08868).toArgb(), runs.single().colorArgb)
     }
 
+    @Test(timeout = 10_000)
+    fun a_cell_too_short_to_advance_the_tiling_returns_nothing() {
+        // Without the cell-count bound, `startM + cellM` rounds back to `startM` and the loop
+        // never ends. Unreachable through buildGradeMapSpecs, which floors the cell at the
+        // grade baseline, but it is this function's own precondition.
+        assertTrue(guard(cellM = 1e-9, endM = 1e9, elev = ::steadyElev).isEmpty())
+    }
+
     @Test
     fun guard_floors_at_the_grade_baseline() {
         assertEquals(GRADE_BASELINE_M, minRunLengthM(metresPerPixel = 1.0), 0.001)

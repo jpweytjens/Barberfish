@@ -72,6 +72,12 @@ internal data class GradeRun(val startM: Double, val endM: Double, val colorArgb
 internal const val MIN_RUN_PX = 12.0
 
 /**
+ * Ceiling on the cells one call may tile, and so the resampler's real precondition on its cell
+ * length. See [resampleRunsToCells].
+ */
+private const val MAX_CELLS = 1e6
+
+/**
  * Cell length: the grade baseline, or one stroke width on screen, whichever is larger.
  *
  * This is a legibility guard — it sets how much route one colour must own before the overlay
@@ -102,7 +108,12 @@ internal fun resampleRunsToCells(
     neutral: Color,
     readable: Boolean,
 ): List<GradeRun> {
-    if (routeEndM <= 0.0 || cellM <= 0.0) return emptyList()
+    // The loop advances by `startM = endM`, and for a cell short enough against the route that
+    // addition is a no-op in double precision, so the loop never ends. Bounding the cell
+    // count is the stronger precondition: it holds [cellM] many orders of magnitude above the
+    // step between doubles near [routeEndM], and caps the work besides. Callers floor the cell
+    // at GRADE_BASELINE_M, far inside this.
+    if (routeEndM <= 0.0 || cellM <= 0.0 || routeEndM / cellM > MAX_CELLS) return emptyList()
     val runs = mutableListOf<GradeRun>()
     var startM = 0.0
     while (startM < routeEndM) {
