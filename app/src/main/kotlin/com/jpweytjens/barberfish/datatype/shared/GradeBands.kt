@@ -3,7 +3,7 @@ package com.jpweytjens.barberfish.datatype.shared
 import androidx.compose.ui.graphics.Color
 import com.jpweytjens.barberfish.extension.GradePalette
 
-// Grade color bands — sorted descending, first match wins (percent >= threshold)
+// Grade color bands — sorted descending, highest threshold first
 private val WAHOO_GRADE_BANDS =
     listOf(
         20.0 to Color(0xFF540000), // 20%+
@@ -227,6 +227,9 @@ internal data class GradeBandStops(
 /**
  * The band table for [palette]. Built from the same `*_GRADE_BANDS` lists the previous
  * `gradeColor` used, reversed into low-to-high order and widened into explicit ranges.
+ *
+ * The lowest band's open [GradeBand.lo] is not a real floor for one-sided palettes; callers
+ * matching grades against it must guard with [gradeFloor] first (see [gradeColor]).
  */
 internal fun gradeBands(
     palette: GradePalette,
