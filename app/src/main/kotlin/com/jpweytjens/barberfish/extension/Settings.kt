@@ -9,6 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -171,6 +172,31 @@ enum class SparklineMode {
     ON
 }
 
+/**
+ * The (climb, descent) grade edges a stored pair of band-skip counts means, read off [palette]'s
+ * own band stops.
+ *
+ * Counts stopped being portable in 4.x: every palette drops its flattest positive band into the
+ * neutral, so the same count resolves to a different threshold before and after. Persisting the
+ * threshold instead of the count keeps a stored config meaning what it meant when it was written.
+ *
+ * A count of 0 ("Off") and a count of 1 both land on the flattest stop, because the band a 0 used
+ * to colour is the neutral now and has no edge to map to. Counts past the last stop clamp to it. A
+ * side with no bands at all (every palette but Barberfish and Turbo, on the descent side) has no
+ * edge and stays uncoloured.
+ */
+internal fun edgesFromSkipBands(
+    skipBands: Int,
+    skipBandsDescent: Int,
+    palette: GradePalette,
+): Pair<Double?, Double?> {
+    val stops = gradeBandStops(palette)
+    return stops.climb.stopAt(skipBands) to stops.descent.stopAt(skipBandsDescent)
+}
+
+private fun List<Double>.stopAt(skipCount: Int): Double? =
+    if (isEmpty()) null else this[(skipCount - 1).coerceIn(0, lastIndex)]
+
 @Serializable
 data class SparklineConfig(
     // `mode` is nullable so an absent key falls through to the legacy `enabled` boolean
@@ -178,8 +204,15 @@ data class SparklineConfig(
     val mode: SparklineMode? = null,
     @SerialName("enabled") private val legacyEnabled: Boolean? = null,
     val lookaheadKm: Int = 5,
+    // Legacy band-skip counts, superseded by climbEdge/descentEdge. Still the input the
+    // count-based selector writes; read them through `gradeEdges` rather than directly.
     val skipBands: Int = 1,
     val skipBandsDescent: Int = 0,
+    // Grade thresholds at and beyond which a side takes its band colour. Null means unset, so an
+    // absent key falls through to the migrated legacy counts instead of masking them; a side is
+    // turned off by parking its edge past the palette's last stop, not by storing null.
+    val climbEdge: Double? = null,
+    val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
     val warp: SparklineWarp = SparklineWarp.MILD,
     val yZoom: ElevationZoom = ElevationZoom.NORMAL,
@@ -189,6 +222,15 @@ data class SparklineConfig(
 ) {
     val hudMode: SparklineMode
         get() = mode ?: if (legacyEnabled == false) SparklineMode.OFF else SparklineMode.ON
+
+    /**
+     * The resolved (climb, descent) edges: the stored thresholds when set, otherwise the legacy
+     * counts migrated through [palette]. A null in the result means that side stays uncoloured.
+     */
+    fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
+        val (climb, descent) = edgesFromSkipBands(skipBands, skipBandsDescent, palette)
+        return (climbEdge ?: climb) to (descentEdge ?: descent)
+    }
 }
 
 @Serializable
@@ -439,9 +481,23 @@ data class GradeMapConfig(
     // When true, skipBands/simplification are taken from the field sparkline config
     // at the consumer via resolveGradeMapTuning(); the two fields below are ignored.
     val syncWithSparkline: Boolean = true,
+    // Legacy band-skip count, superseded by climbEdge/descentEdge. Read through `gradeEdges`.
+    // The map never had a descent count, so its descent edge migrates as if the count were 0.
     val skipBands: Int = 1,
+    val climbEdge: Double? = null,
+    val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
-)
+) {
+    /**
+     * The resolved (climb, descent) edges: the stored thresholds when set, otherwise the legacy
+     * count migrated through [palette]. A null in the result means that side stays uncoloured.
+     */
+    fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
+        val (climb, descent) =
+            edgesFromSkipBands(skipBands, skipBandsDescent = 0, palette = palette)
+        return (climbEdge ?: climb) to (descentEdge ?: descent)
+    }
+}
 
 private val gradeMapConfigKey = stringPreferencesKey("grade_map_config")
 
