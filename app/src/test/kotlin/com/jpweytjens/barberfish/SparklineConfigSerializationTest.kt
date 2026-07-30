@@ -94,7 +94,7 @@ class SparklineConfigSerializationTest {
     }
 
     @Test
-    fun `the grade map's absent descent count still colours every descent`() {
+    fun `the grade map's skip count of zero pins both climb and descent edges at zero`() {
         val cfg = json.decodeFromString<GradeMapConfig>("""{"skipBands":0}""")
         assertEquals(0.0 to 0.0, cfg.gradeEdges(GradePalette.TURBO))
     }

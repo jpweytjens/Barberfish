@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -75,5 +76,47 @@ class GradeMapTuningTest {
 
         assertEquals(8.0, tuning.climbEdge)
         assertNull(tuning.descentEdge)
+    }
+
+    // BarberfishExtension's map overlay de-dupes rebuilds by comparing a file-private
+    // GradeMapConfigSignature, not the config object. It must hash climbEdge/descentEdge or an
+    // edge-only change is invisible and the overlay goes stale. The class is deliberately
+    // file-private (nothing outside the dedup check should construct one), so reflection reaches
+    // its constructor here rather than widening that visibility for a test.
+    private fun gradeMapConfigSignature(climbEdge: Double?, descentEdge: Double?): Any {
+        val ctor =
+            Class.forName("com.jpweytjens.barberfish.extension.GradeMapConfigSignature")
+                .declaredConstructors
+                .single()
+        ctor.isAccessible = true
+        return ctor.newInstance(
+            true, // enabled
+            true, // showPolylines
+            true, // showChevrons
+            GradePalette.KAROO, // palette
+            ElevationSimplification.HEAVY, // simplification
+            1, // skipBands
+            climbEdge,
+            descentEdge,
+            0, // routeElevationHash
+            0, // routePolylineHash
+            0, // climbsHash
+            false, // reversed
+            0, // rejoinBucket
+        )
+    }
+
+    @Test
+    fun `map rebuild signature differs when only climbEdge changes`() {
+        val a = gradeMapConfigSignature(climbEdge = 5.0, descentEdge = null)
+        val b = gradeMapConfigSignature(climbEdge = 6.0, descentEdge = null)
+        assertNotEquals(a, b)
+    }
+
+    @Test
+    fun `map rebuild signature differs when only descentEdge changes`() {
+        val a = gradeMapConfigSignature(climbEdge = null, descentEdge = -3.0)
+        val b = gradeMapConfigSignature(climbEdge = null, descentEdge = -6.0)
+        assertNotEquals(a, b)
     }
 }
