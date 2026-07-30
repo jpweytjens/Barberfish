@@ -115,6 +115,10 @@ internal fun resampleRunsToCells(
     // at GRADE_BASELINE_M, far inside this.
     if (routeEndM <= 0.0 || cellM <= 0.0 || routeEndM / cellM > MAX_CELLS) return emptyList()
     val runs = mutableListOf<GradeRun>()
+    // Tiling starts at 0 rather than at the profile's first vertex — the signature carries no
+    // start distance. A profile beginning past 0 would have its leading stretch coloured by a
+    // chord clamped flat, so neutral, where the old per-segment walk left it uncoloured. Every
+    // profile we decode starts at 0.
     var startM = 0.0
     while (startM < routeEndM) {
         val endM = minOf(startM + cellM, routeEndM)
