@@ -172,6 +172,9 @@ private fun vwSimplify(
  * 4. Ahead outline (right of dot): opaque white on night / black on day, strokeWidth 3px
  * 5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default teal)
  */
+// A rendering guard: below a pixel a fill draws as nothing, so it is dropped rather than
+// left to round to an arbitrary column. Not the map overlay's minRunLengthM, which is a
+// legibility guard sized to the stroke width and decides where a colour may change at all.
 private const val MIN_FILL_PX = 1f // skip colour fills narrower than this many pixels
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f // 40 m scale decay per 1000 m ridden
 private const val WARP_STEP_TARGET_M =
