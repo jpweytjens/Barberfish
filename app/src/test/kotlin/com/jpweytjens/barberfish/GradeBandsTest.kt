@@ -74,4 +74,21 @@ class GradeBandsTest {
         )
         assertEquals(NEUTRAL, c)
     }
+
+    @Test
+    fun barberfish_has_a_neutral_flat_band_and_three_descent_bands() {
+        val bands = gradeBands(GradePalette.BARBERFISH, readable = false)
+        assertEquals(10, bands.size)
+        val flat = bands.single { it.lo == -2.0 }
+        assertEquals(2.0, flat.hi)
+        assertEquals(Color(0xFFC4C4C4), flat.color)
+        assertEquals(3, bands.count { (it.hi ?: Double.POSITIVE_INFINITY) <= 0.0 })
+    }
+
+    @Test
+    fun barberfish_keeps_karoo_climb_colours_above_two_percent() {
+        val bf = gradeBands(GradePalette.BARBERFISH, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
+        val karoo = gradeBands(GradePalette.KAROO, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
+        assertEquals(karoo.map { it.color }, bf.map { it.color })
+    }
 }

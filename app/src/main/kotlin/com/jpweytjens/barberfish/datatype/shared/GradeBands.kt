@@ -4,6 +4,24 @@ import androidx.compose.ui.graphics.Color
 import com.jpweytjens.barberfish.extension.GradePalette
 
 // Grade color bands — sorted descending, highest threshold first
+
+// Barberfish grade bands — two-sided. The climb side above 2% carries the same
+// hexes as the Karoo power palette's zones 2–7; -2% to 2% is a neutral grey, and
+// descents deepen from light blue to navy.
+private val BARBERFISH_GRADE_BANDS =
+    listOf(
+        20.0 to Color(0xFF9020A0), // [20, ∞)   — purple
+        14.0 to Color(0xFFD01020), // [14, 20)  — red
+        11.0 to Color(0xFFF06020), // [11, 14)  — orange
+        8.0 to Color(0xFFF08868), //  [8, 11)  — salmon
+        5.0 to Color(0xFFF0D800), //  [5, 8)   — yellow
+        2.0 to Color(0xFF40D078), //  [2, 5)   — mint green
+        -2.0 to Color(0xFFC4C4C4), // [-2, 2)   — neutral grey
+        -6.0 to Color(0xFF5D99DE), // [-6, -2)  — light blue
+        -12.0 to Color(0xFF1970B6), // [-12, -6) — blue
+        Double.NEGATIVE_INFINITY to Color(0xFF1B3CA7) // (-∞, -12) — navy
+    )
+
 private val WAHOO_GRADE_BANDS =
     listOf(
         20.0 to Color(0xFF540000), // 20%+
@@ -58,6 +76,19 @@ private val ZWIFT_GRADE_BANDS =
 // Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against the datafield
 // background. Dark variants target #000000 (night mode); Light variants
 // target #FFFFFF (day mode). Pre-computed via scripts/apca_hsluv.py.
+private val BARBERFISH_GRADE_BANDS_READABLE_DARK =
+    listOf(
+        20.0 to Color(0xFFDE5AF3), // was #9020A0
+        14.0 to Color(0xFFFC5C61), // was #D01020
+        11.0 to Color(0xFFF86421), // was #F06020
+        8.0 to Color(0xFFF08868),
+        5.0 to Color(0xFFF0D800),
+        2.0 to Color(0xFF40D078),
+        -2.0 to Color(0xFFC4C4C4),
+        -6.0 to Color(0xFF5D99DE),
+        -12.0 to Color(0xFF2698F5), // was #1970B6
+        Double.NEGATIVE_INFINITY to Color(0xFF7B8DF5), // was #1B3CA7
+    )
 private val ZWIFT_GRADE_BANDS_READABLE_DARK =
     listOf(
         9.0 to Color(0xFFEB6D66), //  9%+    — red
@@ -92,7 +123,7 @@ private val KAROO_GRADE_BANDS_READABLE_DARK =
         0.0 to karooPowerColorsReadableDark[0], //  <2%      — dark green
     )
 
-// Turbo grade bands — the only palette that colors negative grades. Fill
+// Turbo grade bands — like Barberfish, colors negative grades as well. Fill
 // values are designed for visual distinction; the readable variants
 // brighten the darkest blue/purple descent bands for legibility in text
 // mode (night) and tone down the lighter bands for legibility on white
@@ -124,6 +155,19 @@ private val TURBO_GRADE_BANDS_READABLE_DARK =
         Double.NEGATIVE_INFINITY to Color(0xFFBF79D9),
     )
 
+private val BARBERFISH_GRADE_BANDS_READABLE_LIGHT =
+    listOf(
+        20.0 to Color(0xFF9020A0),
+        14.0 to Color(0xFFD01020),
+        11.0 to Color(0xFFF06020),
+        8.0 to Color(0xFFF08868),
+        5.0 to Color(0xFFC0AC00), // was #F0D800
+        2.0 to Color(0xFF3BC16F), // was #40D078
+        -2.0 to Color(0xFFABABAB), // was #C4C4C4
+        -6.0 to Color(0xFF5D99DE),
+        -12.0 to Color(0xFF1970B6),
+        Double.NEGATIVE_INFINITY to Color(0xFF1B3CA7),
+    )
 private val ZWIFT_GRADE_BANDS_READABLE_LIGHT =
     listOf(
         9.0 to Color(0xFFEA5147),
@@ -179,6 +223,12 @@ private fun gradeThresholdColors(
     isNightMode: Boolean,
 ): List<Pair<Double, Color>> =
     when (palette) {
+        GradePalette.BARBERFISH ->
+            when {
+                !readable -> BARBERFISH_GRADE_BANDS
+                isNightMode -> BARBERFISH_GRADE_BANDS_READABLE_DARK
+                else -> BARBERFISH_GRADE_BANDS_READABLE_LIGHT
+            }
         GradePalette.WAHOO ->
             when {
                 !readable -> WAHOO_GRADE_BANDS
@@ -318,6 +368,7 @@ internal fun gradeFillRange(
 ): GradeFillRange {
     val bands =
         when (palette) {
+            GradePalette.BARBERFISH -> BARBERFISH_GRADE_BANDS
             GradePalette.WAHOO -> WAHOO_GRADE_BANDS
             GradePalette.GARMIN -> GARMIN_GRADE_BANDS
             GradePalette.HSLUV -> HSLUV_GRADE_BANDS

@@ -1916,6 +1916,10 @@ private fun GradePalettePreview(palette: GradePalette) {
     // the last).
     val thresholds: List<Double> =
         when (palette) {
+            GradePalette.BARBERFISH ->
+                listOf(
+                    Double.NEGATIVE_INFINITY, -12.0, -6.0, -2.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0,
+                )
             GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
             GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
             GradePalette.KAROO -> listOf(0.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0)
@@ -1925,7 +1929,10 @@ private fun GradePalettePreview(palette: GradePalette) {
                 listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
         }
     val labels =
-        thresholds.map { if (it == Double.NEGATIVE_INFINITY) "<-9" else formatGradePct(it) }
+        thresholds.mapIndexed { i, t ->
+            if (t == Double.NEGATIVE_INFINITY) "<${formatGradePct(thresholds[i + 1])}"
+            else formatGradePct(t)
+        }
     val isNightMode = isSystemInDarkTheme()
     val textColors =
         thresholds.map {
