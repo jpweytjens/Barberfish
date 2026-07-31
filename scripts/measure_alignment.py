@@ -277,8 +277,6 @@ def match_visible_cells(
         and abs(v.w - target_w) <= 8
         and abs(v.h - target_h) <= 12
     ]
-    # The dump may list several entries with identical bounds. Dedupe by
-    # (x0, y0).
     seen: set[tuple[int, int]] = set()
     unique: list[DumpView] = []
     for v in candidates:
