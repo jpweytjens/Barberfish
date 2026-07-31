@@ -35,6 +35,23 @@ class GradeBandsTest {
         }
     }
 
+    // Only the colours differ between the readable variants. A threshold that drifted in one of
+    // them would move a band for the fields while leaving the selectors' stops where they are:
+    // gradeBandStops reads the base tables, gradeBandColor and gradeColor the readable ones.
+    @Test
+    fun every_readable_variant_keeps_the_base_thresholds() {
+        GradePalette.entries.forEach { palette ->
+            val base = gradeBands(palette, readable = false, isNightMode = false)
+            listOf(false to true, true to false, true to true).forEach { (readable, night) ->
+                assertEquals(
+                    "$palette readable=$readable night=$night",
+                    base.map { it.lo to it.hi },
+                    gradeBands(palette, readable, night).map { it.lo to it.hi },
+                )
+            }
+        }
+    }
+
     @Test
     fun gradeColor_returns_null_below_zero_for_one_sided_palettes() {
         val oneSided = GradePalette.entries.filter { gradeBandStops(it).descent.isEmpty() }
@@ -65,6 +82,27 @@ class GradeBandsTest {
             climbEdge = 8.0, descentEdge = null, neutral = NEUTRAL, readable = false,
         )
         assertEquals(Color(0xFFF08868), c)
+    }
+
+    // The edge itself is coloured, on both sides. The map rounds a cell's mean grade to 0.01 per
+    // cent precisely so a near-edge grade lands on the edge, which decides which way it goes.
+
+    @Test
+    fun a_grade_on_the_climb_edge_takes_its_band_colour() {
+        val c = gradeBandColor(
+            grade = 8.0, palette = GradePalette.KAROO,
+            climbEdge = 8.0, descentEdge = null, neutral = NEUTRAL, readable = false,
+        )
+        assertEquals(Color(0xFFF08868), c)
+    }
+
+    @Test
+    fun a_grade_on_the_descent_edge_takes_its_band_colour() {
+        val c = gradeBandColor(
+            grade = -6.0, palette = GradePalette.BARBERFISH,
+            climbEdge = null, descentEdge = -6.0, neutral = NEUTRAL, readable = false,
+        )
+        assertEquals(Color(0xFF5D99DE), c)
     }
 
     @Test
