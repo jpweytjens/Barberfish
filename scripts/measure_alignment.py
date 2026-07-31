@@ -102,8 +102,8 @@ DENSITY = 1.875
 GLYPH_HEIGHT_RATIO = 0.72
 
 # Threshold (band_height / single_line_height) above which we classify the
-# header as 2-line. Native lineSpacingMultiplier=0.7 makes a 2-line band
-# roughly 1.7× a 1-line band; 1.4× is a safe midpoint.
+# header as 2-line. Measured on native cells, a 2-line header band runs
+# roughly 1.7× the height of a 1-line band; 1.4× is a safe midpoint.
 TWO_LINE_RATIO = 1.4
 
 # Marker colour the Barberfish app paints onto `header_ref` when the
@@ -258,10 +258,10 @@ def match_visible_cells(
     """Return the rows×cols `dataElementRoot` entries that correspond to the
     visible page, sorted by (y0, x0).
 
-    The rideapp pre-renders multiple data pages — every dump contains a
-    superset of cells. We pick the entries whose dimensions match the page's
-    expected on-device cell size (derived from screencap detection on the
-    same capture, with a small tolerance for the cell-edge gap).
+    Every dump lists more cells than the page on screen shows. We pick the
+    entries whose dimensions match the page's expected on-device cell size
+    (derived from screencap detection on the same capture, with a small
+    tolerance for the cell-edge gap).
     """
     if not page.cells:
         return []
@@ -277,8 +277,8 @@ def match_visible_cells(
         and abs(v.w - target_w) <= 8
         and abs(v.h - target_h) <= 12
     ]
-    # The dump may list duplicates of identical bounds (one visible, one
-    # offscreen-prerendered with the same translation). Dedupe by (x0, y0).
+    # The dump may list several entries with identical bounds. Dedupe by
+    # (x0, y0).
     seen: set[tuple[int, int]] = set()
     unique: list[DumpView] = []
     for v in candidates:
@@ -1224,11 +1224,11 @@ def attach_dump_bounds(page: Page) -> None:
     """For each cell in `page.cells`, populate the `dump_*` fields by parsing
     the matching `<page>.dumpsys.txt` and finding the visible-page cells.
 
-    The rideapp's ConstraintLayout starts BELOW the status bar, so dump y
-    coords are content-area-relative; screencap y coords are screen-absolute
-    (status bar at y=0..~60). We compute the offset from the first matched
-    pair and add it to all dump y values so they're directly comparable to
-    screencap measurements.
+    Dump y coords come out content-area-relative, while screencap y coords
+    are screen-absolute (status bar at y=0..~60), so the two spaces differ by
+    a constant offset. We measure that offset from the first matched cell
+    pair rather than assuming any fixed value, and add it to every dump y so
+    they're directly comparable to screencap measurements.
     """
     dump = parse_dumpsys(SCREENCAPS / f"{page.name}.dumpsys.txt")
     if not dump:
