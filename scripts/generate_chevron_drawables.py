@@ -12,9 +12,8 @@ Parses `GradeBands.kt` for every unique colour reference inside a
 Stale variants that no longer correspond to a current palette colour are
 removed.
 
-The pentagon path matches the rideapp's native `directional_arrow.xml`
-(viewport 49 x 41); only the dp size differs so our overlay chevrons just
-cover the native ones.
+Every drawable shares one silhouette and differs only in fill colour, so the
+overlay reads along the route as a grade ramp rather than as a change of shape.
 
 The fallback drawable `ic_climber_chevron.xml` (neutral grey) is hand-
 maintained and is left untouched.
@@ -48,8 +47,10 @@ FALLBACK_NAME = "ic_climber_chevron.xml"  # hand-maintained, never overwritten
 # Drawable template
 # ---------------------------------------------------------------------------
 
-# Chevron path copied verbatim from the rideapp's `ic_chevron.xml` (the wide
-# next-turn-hint chevron) so our silhouette matches Karoo's nav-hint markers.
+# Chevron silhouette: a wide, shallow arrowhead in a 25 x 17 viewport, drawn 1:1
+# at 25 x 17 dp. Shape and size are tuned so an overlay chevron reads as one of
+# the route's own direction markers at typical map zooms, not as a second symbol
+# layered on top.
 _PATH_DATA = (
     "M1,12.294C1,10.385 1.685,8.6 2.848,7.41L3.087,7.181L3.138,7.134"
     "L3.195,7.095L11.675,1.326C12.15,1.003 12.775,1.003 13.25,1.326"
