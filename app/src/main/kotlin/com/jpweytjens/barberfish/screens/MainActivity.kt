@@ -2021,7 +2021,9 @@ private fun RowScope.PreviewSwatch(label: String, bg: Color, text: Color) {
         modifier = Modifier.weight(1f).fillMaxHeight().background(bg),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = label, fontSize = 10.sp, color = text, fontWeight = FontWeight.Bold)
+        // "<-12" is the one label that overflows a 10-band cell; keep the rest at full size.
+        val fontSize = if (label.length > 3) 8.sp else 10.sp
+        Text(text = label, fontSize = fontSize, color = text, fontWeight = FontWeight.Bold)
     }
 }
 
