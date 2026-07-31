@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.extension.GradePalette
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -73,6 +74,35 @@ class GradeBandsTest {
             climbEdge = null, descentEdge = null, neutral = NEUTRAL, readable = false,
         )
         assertEquals(NEUTRAL, c)
+    }
+
+    // gradeBands' KDoc makes the floor guard the caller's job: the lowest band's open low end is
+    // not a real floor on a one-sided palette. A descent edge stored against one is the case that
+    // needs it, and gradeBandColor must answer it the way gradeColor already does.
+
+    @Test
+    fun a_descent_below_a_one_sided_palette_floor_stays_neutral() {
+        val oneSided = GradePalette.entries.filter { gradeBandStops(it).descent.isEmpty() }
+        oneSided.forEach { palette ->
+            val c = gradeBandColor(
+                grade = -5.0, palette = palette,
+                climbEdge = 2.0, descentEdge = -3.0, neutral = NEUTRAL, readable = false,
+            )
+            assertEquals("$palette must not colour a descent", NEUTRAL, c)
+            assertNull("$palette gradeColor agrees", gradeColor(-5.0, palette, readable = false))
+        }
+    }
+
+    @Test
+    fun two_sided_palettes_still_colour_their_deepest_descents() {
+        val twoSided = GradePalette.entries.filter { gradeBandStops(it).descent.isNotEmpty() }
+        twoSided.forEach { palette ->
+            val c = gradeBandColor(
+                grade = -50.0, palette = palette,
+                climbEdge = 2.0, descentEdge = -3.0, neutral = NEUTRAL, readable = false,
+            )
+            assertNotEquals("$palette must colour a deep descent", NEUTRAL, c)
+        }
     }
 
     @Test

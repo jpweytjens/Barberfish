@@ -322,6 +322,10 @@ internal fun gradeFloor(
  * The band's own colour for [grade], or [neutral] when the grade falls inside the edges.
  * [climbEdge] null means no climb band is coloured; [descentEdge] null means no descent
  * band is. Implemented in terms of [gradeBands] so the two can never disagree.
+ *
+ * Grades below the palette's [gradeFloor] stay [neutral], the same guard [gradeColor] applies:
+ * the lowest band's open low end is not a real floor on a one-sided palette, so a descent edge
+ * stored against one would otherwise hand descents the flattest climb band's colour.
  */
 internal fun gradeBandColor(
     grade: Double,
@@ -338,6 +342,7 @@ internal fun gradeBandColor(
         else -> false
     }
     if (!coloured) return neutral
+    if (grade < gradeFloor(palette, readable, isNightMode)) return neutral
     val band = gradeBands(palette, readable, isNightMode).firstOrNull {
         (it.lo == null || grade >= it.lo) && (it.hi == null || grade < it.hi)
     }
