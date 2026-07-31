@@ -1,7 +1,8 @@
 """
 Shared palette data + APCA/HSLuv helpers.
 
-Parses palette literals out of ``ZoneColoring.kt`` and ``FieldColors.kt`` so
+Parses palette literals out of ``ZoneColoring.kt``, grade band tables out of
+``GradeBands.kt``, and named color constants out of ``FieldColors.kt`` so
 the Kotlin sources stay the single source of truth. Other scripts (palette
 APCA correction, README SVG generator, diagnostic visualizer) import from
 this module rather than duplicating palette data.
@@ -37,6 +38,7 @@ _SHARED = (
 
 ZONE_COLORING_KT = _SHARED / "ZoneColoring.kt"
 FIELD_COLORS_KT = _SHARED / "FieldColors.kt"
+GRADE_BANDS_KT = _SHARED / "GradeBands.kt"
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -372,6 +374,12 @@ _GRADE_DECL_RE = re.compile(r"^\s*(?:private\s+)?val\s+(\w+_GRADE_BANDS\w*)\s*=\
 _THRESHOLD = r"(-?\d+(?:\.\d+)?|Double\.NEGATIVE_INFINITY)"
 _GRADE_BAND_RE = re.compile(rf"{_THRESHOLD}\s+to\s+Color\(0xFF([0-9A-Fa-f]{{6}})\)")
 _GRADE_BAND_REF_RE = re.compile(rf"{_THRESHOLD}\s+to\s+(\w+)\[(\d+)\]")
+# A band pointing at a named color constant, e.g. ``-2.0 to FlatGrey,``. The
+# trailing ``,``/``//``/end-of-line requirement is what keeps ``to Color(0x...)``
+# and ``to karooPowerColors[6]`` out.
+_GRADE_BAND_NAMED_RE = re.compile(rf"{_THRESHOLD}\s+to\s+([A-Za-z_]\w*)\s*(?:,|//|$)")
+# A named color constant's definition, e.g. ``internal val FlatGrey = Color(0xFFC4C4C4)``.
+_NAMED_COLOR_RE = re.compile(r"val\s+(\w+)\s*=\s*Color\(0xFF([0-9A-Fa-f]{6})\)")
 
 
 def _parse_threshold(raw: str) -> float:
@@ -388,14 +396,34 @@ def format_threshold(value: float) -> str:
     return repr(value)
 
 
+def parse_named_colors(path: Path = FIELD_COLORS_KT) -> dict[str, str]:
+    """Parse every ``val NAME = Color(0xFF...)`` constant out of ``FieldColors.kt``.
+
+    Grade bands may point at a shared named color (``-2.0 to FlatGrey``) instead
+    of spelling the literal out.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping ``kotlin_var_name -> "#RRGGBB"``.
+    """
+    return {
+        name: f"#{rgb.upper()}"
+        for name, rgb in _NAMED_COLOR_RE.findall(path.read_text(encoding="utf-8"))
+    }
+
+
 def parse_grade_bands(
-    path: Path = FIELD_COLORS_KT,
+    path: Path = GRADE_BANDS_KT,
     palettes: dict[str, list[str]] | None = None,
+    named: dict[str, str] | None = None,
 ) -> dict[str, list[tuple[float, str]]]:
-    """Parse grade band lists out of ``FieldColors.kt``.
+    """Parse grade band lists out of ``GradeBands.kt``.
 
     Resolves references to power palettes (e.g. ``karooPowerColorsReadableDark[3]``)
-    using ``palettes`` (typically the result of :func:`parse_palettes`).
+    using ``palettes`` (typically the result of :func:`parse_palettes`), and
+    named color constants (e.g. ``FlatGrey``) using ``named`` (typically the
+    result of :func:`parse_named_colors`).
 
     Returns
     -------
@@ -404,6 +432,7 @@ def parse_grade_bands(
         order.
     """
     palettes = palettes or parse_palettes()
+    named = named or parse_named_colors()
     bands: dict[str, list[tuple[float, str]]] = {}
     current_name: str | None = None
     pending_name: str | None = None
@@ -448,6 +477,15 @@ def parse_grade_bands(
             parent, idx = ref.group(2), int(ref.group(3))
             if parent in palettes:
                 bands[current_name].append((threshold, palettes[parent][idx]))
+            continue
+
+        named_ref = _GRADE_BAND_NAMED_RE.search(line)
+        if named_ref:
+            constant = named.get(named_ref.group(2))
+            if constant:
+                bands[current_name].append(
+                    (_parse_threshold(named_ref.group(1)), constant)
+                )
 
     return {name: entries for name, entries in bands.items() if entries}
 
