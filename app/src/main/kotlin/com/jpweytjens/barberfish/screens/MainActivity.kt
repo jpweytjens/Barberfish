@@ -127,6 +127,7 @@ import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
+import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
@@ -1285,6 +1286,11 @@ private fun GradeMapCard(
                 LabeledHelper("EMPHASIS") {
                     HelperText("Filter out gentle grades so meaningful climbs stand out.")
                     if (emphasisReadout != null) HelperText(emphasisReadout)
+                    // This card sets the climb side only; the descent side keeps following the
+                    // profile, so say so rather than leave the overlay's descents unexplained.
+                    if (gradeBandStops(gradePalette).descent.isNotEmpty()) {
+                        HelperText("Descents follow the elevation profile.")
+                    }
                 }
                 SegmentedRow(
                     options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),

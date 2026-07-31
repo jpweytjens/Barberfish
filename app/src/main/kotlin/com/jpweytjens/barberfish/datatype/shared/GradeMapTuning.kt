@@ -17,6 +17,11 @@ data class EffectiveGradeMapTuning(
  * When [map].syncWithSparkline is true the overlay follows the field sparkline's emphasis,
  * simplification and grade edges; otherwise it uses its own stored values. The edges resolve
  * against [palette] because a stored config may still carry the legacy band-skip count.
+ *
+ * The descent edge is the exception: the GRADE MAP card has no descent control, so an unsynced
+ * overlay keeps following the field sparkline's descent edge rather than dropping to an edge of 0
+ * and colouring every descent. A stored [GradeMapConfig.descentEdge] still wins once something
+ * writes one.
  */
 fun resolveGradeMapTuning(
     map: GradeMapConfig,
@@ -32,6 +37,12 @@ fun resolveGradeMapTuning(
             descentEdge,
         )
     } else {
-        val (climbEdge, descentEdge) = map.gradeEdges(palette)
-        EffectiveGradeMapTuning(map.skipBands, map.simplification, climbEdge, descentEdge)
+        val (climbEdge, _) = map.gradeEdges(palette)
+        val (_, sparklineDescentEdge) = sparkline.gradeEdges(palette)
+        EffectiveGradeMapTuning(
+            map.skipBands,
+            map.simplification,
+            climbEdge,
+            map.descentEdge ?: sparklineDescentEdge,
+        )
     }

@@ -81,6 +81,43 @@ class GradeMapTuningTest {
         assertNull(tuning.descentEdge)
     }
 
+    // The GRADE MAP card sets the climb side only. Switching to Independent must not silently
+    // widen the descent side to every descent, which is what the overlay's own (absent) descent
+    // count resolves to. Barberfish descent stops are -2/-6/-12.
+
+    @Test
+    fun `the descent edge survives the switch to independent`() {
+        val sparkline = SparklineConfig(skipBands = 1, skipBandsDescent = 3)
+        val palette = GradePalette.BARBERFISH
+
+        val synced =
+            resolveGradeMapTuning(GradeMapConfig(syncWithSparkline = true), sparkline, palette)
+        val independent =
+            resolveGradeMapTuning(
+                GradeMapConfig(syncWithSparkline = false, skipBands = 3),
+                sparkline,
+                palette,
+            )
+
+        assertEquals(-12.0, synced.descentEdge)
+        assertEquals(-12.0, independent.descentEdge)
+        // Only the climb side parts company.
+        assertEquals(2.0, synced.climbEdge)
+        assertEquals(8.0, independent.climbEdge)
+    }
+
+    @Test
+    fun `an overlay descent edge of its own still wins when independent`() {
+        val tuning =
+            resolveGradeMapTuning(
+                GradeMapConfig(syncWithSparkline = false, descentEdge = -3.0),
+                SparklineConfig(skipBandsDescent = 3),
+                GradePalette.BARBERFISH,
+            )
+
+        assertEquals(-3.0, tuning.descentEdge)
+    }
+
     // BarberfishExtension's map overlay de-dupes rebuilds by comparing GradeMapConfigInputs'
     // signature(), not the config object. It must hash climbEdge/descentEdge or an edge-only
     // change is invisible and the overlay goes stale.

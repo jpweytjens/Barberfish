@@ -517,6 +517,10 @@ data class GradeMapConfig(
      * sparkline's edges instead. Render paths must take theirs from
      * `resolveGradeMapTuning(map, sparkline, palette)`, which applies the sync the same way it
      * already does for the other shared settings.
+     *
+     * The descent edge here is the migrated count only, and the map has no descent count, so it
+     * always resolves as 0. An unsynced overlay takes its descent edge from the field sparkline
+     * instead; only the climb side of this pair is the overlay's own.
      */
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) =
