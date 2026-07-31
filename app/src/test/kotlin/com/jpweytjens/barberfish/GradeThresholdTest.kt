@@ -1,9 +1,12 @@
 package com.jpweytjens.barberfish
 
+import androidx.compose.ui.graphics.Color
+import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
-import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
 import com.jpweytjens.barberfish.extension.GradePalette
+import com.jpweytjens.barberfish.extension.SparklineConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -38,33 +41,93 @@ class GradeThresholdTest {
         }
     }
 
-    // The band-count fill range still feeds the sparkline and the map until they read edges.
-
+    // The threshold the shipped default count means, per palette. This is also the number the
+    // EMPHASIS readouts print, since both cards resolve the count through gradeEdges.
     @Test
-    fun wahoo_climb_threshold_is_4() {
-        val range = gradeFillRange(GradePalette.WAHOO)
-        assertEquals(4.0, range.posMin!!, 0.001)
-        assertNull(range.negMax)
+    fun the_default_count_resolves_to_each_palette_s_first_stop() {
+        val expected =
+            mapOf(
+                GradePalette.BARBERFISH to 2.0,
+                GradePalette.WAHOO to 4.0,
+                GradePalette.GARMIN to 3.0,
+                GradePalette.HSLUV to 3.0,
+                GradePalette.KAROO to 2.0,
+                GradePalette.ZWIFT to 3.0,
+                GradePalette.TURBO to 3.0,
+            )
+        assertEquals(
+            "all palettes must be covered",
+            GradePalette.entries.toSet(),
+            expected.keys
+        )
+        expected.forEach { (palette, climbEdge) ->
+            val (climb, descent) = SparklineConfig().gradeEdges(palette)
+            assertEquals("$palette climb edge", climbEdge, climb)
+            if (gradeBandStops(palette).descent.isEmpty()) {
+                assertNull("$palette must not colour descents", descent)
+            }
+        }
     }
 
-    @Test
-    fun garmin_climb_threshold_is_3() {
-        val range = gradeFillRange(GradePalette.GARMIN)
-        assertEquals(3.0, range.posMin!!, 0.001)
-        assertNull(range.negMax)
-    }
+    // The counts the EMPHASIS selectors offer, on both sides.
+    private val offeredCounts = listOf(0, 1, 2, 3)
 
-    @Test
-    fun hsluv_climb_threshold_is_3() {
-        val range = gradeFillRange(GradePalette.HSLUV)
-        assertEquals(3.0, range.posMin!!, 0.001)
-        assertNull(range.negMax)
-    }
+    // Not in any band table, so "took a band colour" cannot pass by accident.
+    private val neutral = Color(0xFF808080)
 
+    /**
+     * Every count both cards offer must resolve to the grade the fill actually starts at: coloured
+     * at the edge, neutral one step inside it. One step is 0.01 per cent, the resolution the map
+     * rounds a cell's mean grade to.
+     */
     @Test
-    fun karoo_climb_threshold_is_2() {
-        val range = gradeFillRange(GradePalette.KAROO)
-        assertEquals(2.0, range.posMin!!, 0.001)
-        assertNull(range.negMax)
+    fun every_offered_count_names_the_grade_the_renderer_paints_from() {
+        GradePalette.entries.forEach { palette ->
+            offeredCounts.forEach { climbCount ->
+                offeredCounts.forEach { descentCount ->
+                    val (climbEdge, descentEdge) =
+                        SparklineConfig(skipBands = climbCount, skipBandsDescent = descentCount)
+                            .gradeEdges(palette)
+                    fun colorAt(grade: Double) =
+                        gradeBandColor(
+                            grade = grade,
+                            palette = palette,
+                            climbEdge = climbEdge,
+                            descentEdge = descentEdge,
+                            neutral = neutral,
+                            readable = false,
+                        )
+                    val at = "$palette climb=$climbCount descent=$descentCount"
+                    if (climbEdge != null) {
+                        assertNotEquals(
+                            "$at: grade $climbEdge% must take a band colour",
+                            neutral,
+                            colorAt(maxOf(climbEdge, 0.01)),
+                        )
+                        if (climbEdge > 0.0) {
+                            assertEquals(
+                                "$at: grade ${climbEdge - 0.01}% must stay neutral",
+                                neutral,
+                                colorAt(climbEdge - 0.01),
+                            )
+                        }
+                    }
+                    if (descentEdge != null) {
+                        assertNotEquals(
+                            "$at: grade $descentEdge% must take a band colour",
+                            neutral,
+                            colorAt(minOf(descentEdge, -0.01)),
+                        )
+                        if (descentEdge < 0.0) {
+                            assertEquals(
+                                "$at: grade ${descentEdge + 0.01}% must stay neutral",
+                                neutral,
+                                colorAt(descentEdge + 0.01),
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

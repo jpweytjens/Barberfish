@@ -66,7 +66,7 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesPoisFixture
-import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
+import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -817,27 +817,21 @@ internal fun SparklineOptionsControls(
             help = "Distance shown ahead of your position.",
         )
     }
-    val fillRange =
-        gradeFillRange(
-            zoneConfig.gradePalette,
-            skipBandsClimb = config.skipBands,
-            skipBandsDescent = config.skipBandsDescent,
-        )
-    val hasDescentBands = gradeFillRange(zoneConfig.gradePalette).negMax != null
-    val posMin = fillRange.posMin
-    val negMax = fillRange.negMax
+    // Read through gradeEdges, the same resolution the renderers use, so the sentence names the
+    // grade the fill actually starts at. An edge of 0 colours that whole side, so it bounds nothing.
+    val (climbEdge, descentEdge) = config.gradeEdges(zoneConfig.gradePalette)
+    val hasDescentBands = gradeBandStops(zoneConfig.gradePalette).descent.isNotEmpty()
+    val upperEdge = climbEdge?.takeIf { it > 0.0 }
+    val lowerEdge = descentEdge?.takeIf { it < 0.0 }
     val readout =
         when {
-            hasDescentBands && (config.skipBands > 0 || config.skipBandsDescent > 0) -> {
-                val upper =
-                    if (config.skipBands > 0 && posMin != null) "%.0f".format(posMin) else "0"
-                val lower =
-                    if (config.skipBandsDescent > 0 && negMax != null) "%.0f".format(negMax)
-                    else "0"
+            hasDescentBands && (upperEdge != null || lowerEdge != null) -> {
+                val upper = if (upperEdge != null) "%.0f".format(upperEdge) else "0"
+                val lower = if (lowerEdge != null) "%.0f".format(lowerEdge) else "0"
                 "Grades between $lower% and $upper% stay uncoloured."
             }
-            !hasDescentBands && config.skipBands > 0 && posMin != null ->
-                "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+            !hasDescentBands && upperEdge != null ->
+                "Grades below ${"%.0f".format(upperEdge)}% stay uncoloured."
             else -> null
         }
     LabeledHelper("EMPHASIS") {

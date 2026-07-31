@@ -128,7 +128,6 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
-import com.jpweytjens.barberfish.datatype.shared.gradeFillRange
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
@@ -1274,10 +1273,12 @@ private fun GradeMapCard(
             if (config.syncWithSparkline) {
                 HelperText("Following the elevation profile's emphasis and simplification.")
             } else {
-                val posMin = gradeFillRange(gradePalette, skipBandsClimb = config.skipBands).posMin
+                // Read through gradeEdges, the same resolution the overlay renders from, so the
+                // sentence names the grade the fill actually starts at.
+                val climbEdge = config.gradeEdges(gradePalette).first?.takeIf { it > 0.0 }
                 val emphasisReadout =
-                    if (config.skipBands > 0 && posMin != null) {
-                        "Grades below ${"%.0f".format(posMin)}% stay uncoloured."
+                    if (climbEdge != null) {
+                        "Grades below ${"%.0f".format(climbEdge)}% stay uncoloured."
                     } else {
                         null
                     }
