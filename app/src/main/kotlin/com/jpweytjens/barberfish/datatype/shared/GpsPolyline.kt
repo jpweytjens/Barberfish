@@ -64,8 +64,7 @@ internal fun mapDiagonalMeters(lat: Double, lng: Double, zoomLevel: Double): Dou
     val mpp = groundResolution(lat, zoomLevel)
     return mpp *
         sqrt(
-            (KAROO3_SCREEN_WIDTH_PX.toDouble()).pow(2) +
-                (KAROO3_SCREEN_HEIGHT_PX.toDouble()).pow(2),
+            (KAROO3_SCREEN_WIDTH_PX.toDouble()).pow(2) + (KAROO3_SCREEN_HEIGHT_PX.toDouble()).pow(2)
         )
 }
 

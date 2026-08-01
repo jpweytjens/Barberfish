@@ -82,11 +82,12 @@ class ChevronPlacementTest {
         // The radius is deliberately not exactly one spacing, which would put a candidate
         // exactly on the boundary and make the test turn on a rounding digit.
         val gps = straightEast(10)
-        val placed = placeChevrons(
-            gps,
-            cumulativeDistancesM(gps),
-            tuning(spacingM = 100.0, collisionRadiusM = 150.0),
-        )
+        val placed =
+            placeChevrons(
+                gps,
+                cumulativeDistancesM(gps),
+                tuning(spacingM = 100.0, collisionRadiusM = 150.0),
+            )
         assertEquals(listOf(50.0, 250.0, 450.0, 650.0, 850.0), placed.map { it.distanceM })
     }
 
@@ -97,17 +98,19 @@ class ChevronPlacementTest {
         // clears the corner, so it is early-accepted; the full trace for this fixture is
         // 50, 125, 262.5, 362.5.
         val east = 0.001797 // ~200 m east at the equator
-        val gps = listOf(
-            LatLng(0.0, 0.0),
-            LatLng(0.0, east),
-            LatLng(0.001797, east),
-        )
+        val gps =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.0, east),
+                LatLng(0.001797, east),
+            )
         val cum = cumulativeDistancesM(gps)
-        val placed = placeChevrons(
-            gps,
-            cum,
-            tuning(spacingM = 100.0, windowHalfM = 60.0, headingThresholdDeg = 30.0),
-        )
+        val placed =
+            placeChevrons(
+                gps,
+                cum,
+                tuning(spacingM = 100.0, windowHalfM = 60.0, headingThresholdDeg = 30.0),
+            )
         val near150 = placed.map { it.distanceM }.filter { it in 100.0..200.0 }
         assertEquals("expected exactly one chevron nudged near the bend", 1, near150.size)
         assertTrue(
@@ -121,17 +124,19 @@ class ChevronPlacementTest {
         // Same corner, but a window wide enough that all seven offsets span it. Nothing is
         // placed between 100 and 300 m, and the cadence resumes on the far leg.
         val east = 0.001797
-        val gps = listOf(
-            LatLng(0.0, 0.0),
-            LatLng(0.0, east),
-            LatLng(0.003594, east),
-        )
+        val gps =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.0, east),
+                LatLng(0.003594, east),
+            )
         val cum = cumulativeDistancesM(gps)
-        val placed = placeChevrons(
-            gps,
-            cum,
-            tuning(spacingM = 100.0, windowHalfM = 250.0, headingThresholdDeg = 30.0),
-        )
+        val placed =
+            placeChevrons(
+                gps,
+                cum,
+                tuning(spacingM = 100.0, windowHalfM = 250.0, headingThresholdDeg = 30.0),
+            )
         assertTrue(
             "expected no chevron spanning the corner, got ${placed.map { it.distanceM }}",
             placed.none { it.distanceM in 100.0..300.0 },
@@ -148,17 +153,19 @@ class ChevronPlacementTest {
         // in 100 m steps but the acceptance criteria at each step can nudge the candidate
         // again. Either way it is nowhere near a fixed-grid implementation's 225 m.
         val east = 0.001797
-        val gps = listOf(
-            LatLng(0.0, 0.0),
-            LatLng(0.0, east),
-            LatLng(0.001797, east),
-        )
+        val gps =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.0, east),
+                LatLng(0.001797, east),
+            )
         val cum = cumulativeDistancesM(gps)
-        val placed = placeChevrons(
-            gps,
-            cum,
-            tuning(spacingM = 100.0, windowHalfM = 60.0, headingThresholdDeg = 30.0),
-        )
+        val placed =
+            placeChevrons(
+                gps,
+                cum,
+                tuning(spacingM = 100.0, windowHalfM = 60.0, headingThresholdDeg = 30.0),
+            )
         val nudged = placed.first { it.distanceM > 100.0 }
         val next = placed.firstOrNull { it.distanceM > nudged.distanceM }
         assertTrue("expected a chevron after the nudged one", next != null)
@@ -176,11 +183,12 @@ class ChevronPlacementTest {
         // every one of them.
         val gps = curvingRoute(pointCount = 30)
         val cum = cumulativeDistancesM(gps)
-        val placed = placeChevrons(
-            gps,
-            cum,
-            tuning(spacingM = 100.0, windowHalfM = 60.0, headingThresholdDeg = 30.0),
-        )
+        val placed =
+            placeChevrons(
+                gps,
+                cum,
+                tuning(spacingM = 100.0, windowHalfM = 60.0, headingThresholdDeg = 30.0),
+            )
         assertEquals(
             listOf(12.5, 112.5, 212.5, 312.5, 412.5, 550.0),
             placed.map { it.distanceM },
@@ -199,18 +207,20 @@ class ChevronPlacementTest {
         // instead. The walk then re-phases off 325, landing next at 425.
         val d = 250.0
         val eps = 5.0
-        val gps = listOf(
-            LatLng(0.0, 0.0),
-            LatLng(metersToDeg(d), 0.0),
-            LatLng(metersToDeg(d), metersToDeg(eps)),
-            LatLng(0.0, metersToDeg(eps)),
-        )
+        val gps =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(metersToDeg(d), 0.0),
+                LatLng(metersToDeg(d), metersToDeg(eps)),
+                LatLng(0.0, metersToDeg(eps)),
+            )
         val cum = cumulativeDistancesM(gps)
-        val placed = placeChevrons(
-            gps,
-            cum,
-            tuning(spacingM = 100.0, collisionRadiusM = 12.0),
-        )
+        val placed =
+            placeChevrons(
+                gps,
+                cum,
+                tuning(spacingM = 100.0, collisionRadiusM = 12.0),
+            )
         assertEquals(listOf(50.0, 150.0, 250.0, 325.0, 425.0), placed.map { it.distanceM })
     }
 }

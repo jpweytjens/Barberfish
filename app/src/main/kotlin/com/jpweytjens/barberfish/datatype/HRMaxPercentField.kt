@@ -40,13 +40,15 @@ class HRMaxPercentField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_hr
-            percentState.toErrorFieldState(
-                LABEL,
-                iconRes,
-                FieldState.noSensor(LABEL, iconRes),
-            )?.let {
-                return it
-            }
+            percentState
+                .toErrorFieldState(
+                    LABEL,
+                    iconRes,
+                    FieldState.noSensor(LABEL, iconRes),
+                )
+                ?.let {
+                    return it
+                }
             val percent =
                 (percentState as StreamState.Streaming)
                     .dataPoint

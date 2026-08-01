@@ -69,19 +69,18 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             iconRes: Int = R.drawable.ic_avg_hr,
             secondaryIconRes: Int? = null,
             bpmValues: List<Int> = PreviewRide.avgHrBpm,
-        ): List<FieldState> =
-            bpmValues.map { bpm ->
-                val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
-                val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
-                FieldState(
-                    bpm.toString(),
-                    label = label,
-                    color = color,
-                    iconRes = iconRes,
-                    secondaryIconRes = secondaryIconRes,
-                    colorMode = cfg.colorMode,
-                )
-            }
+        ): List<FieldState> = bpmValues.map { bpm ->
+            val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
+            val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
+            FieldState(
+                bpm.toString(),
+                label = label,
+                color = color,
+                iconRes = iconRes,
+                secondaryIconRes = secondaryIconRes,
+                colorMode = cfg.colorMode,
+            )
+        }
     }
 
     override fun liveFlow(context: Context): Flow<FieldState> =
@@ -100,7 +99,7 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
                         zones,
                         cfg.colorMode,
                         "Avg HR",
-                        R.drawable.ic_avg_hr
+                        R.drawable.ic_avg_hr,
                     )
                 }
             }

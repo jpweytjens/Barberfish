@@ -19,7 +19,7 @@ private val BARBERFISH_GRADE_BANDS =
         -2.0 to FlatGrey, //          [-2, 2)   — neutral grey
         -6.0 to Color(0xFF5D99DE), // [-6, -2)  — light blue
         -10.0 to Color(0xFF1970B6), // [-10, -6) — blue
-        Double.NEGATIVE_INFINITY to Color(0xFF1B3CA7) // (-∞, -10) — navy
+        Double.NEGATIVE_INFINITY to Color(0xFF1B3CA7), // (-∞, -10) — navy
     )
 
 private val WAHOO_GRADE_BANDS =
@@ -139,7 +139,7 @@ private val TURBO_GRADE_BANDS =
         -3.0 to Color(0xFF30F0A9), // [-3, 0)  — mint
         -6.0 to Color(0xFF2BC7F0), // [-6, -3) — light blue
         -9.0 to Color(0xFF5783E9), // [-9, -6) — blue
-        Double.NEGATIVE_INFINITY to Color(0xFF401C4C) // (-∞, -9) — dark purple
+        Double.NEGATIVE_INFINITY to Color(0xFF401C4C), // (-∞, -9) — dark purple
     )
 private val TURBO_GRADE_BANDS_READABLE_DARK =
     listOf(
@@ -263,8 +263,8 @@ private fun gradeThresholdColors(
     }
 
 /**
- * One grade band. [lo] is inclusive, [hi] exclusive. A null end is open.
- * Bands are always returned ordered low to high and tile the axis without gaps.
+ * One grade band. [lo] is inclusive, [hi] exclusive. A null end is open. Bands are always returned
+ * ordered low to high and tile the axis without gaps.
  */
 internal data class GradeBand(val lo: Double?, val hi: Double?, val color: Color)
 
@@ -275,8 +275,8 @@ internal data class GradeBandStops(
 )
 
 /**
- * The band table for [palette]. Built from the same `*_GRADE_BANDS` lists the previous
- * `gradeColor` used, reversed into low-to-high order and widened into explicit ranges.
+ * The band table for [palette]. Built from the same `*_GRADE_BANDS` lists the previous `gradeColor`
+ * used, reversed into low-to-high order and widened into explicit ranges.
  *
  * The lowest band's open [GradeBand.lo] is not a real floor for one-sided palettes; callers
  * matching grades against it must guard with [gradeFloor] first (see [gradeColor]).
@@ -308,8 +308,8 @@ internal fun gradeBandStops(palette: GradePalette): GradeBandStops {
 
 /**
  * The palette's lowest explicit threshold (e.g. 0.0 for one-sided palettes,
- * [Double.NEGATIVE_INFINITY] for Turbo, which has no true floor). [gradeBands] always reports
- * an open low end on the lowest band, so `gradeColor` uses this to keep returning null below a
+ * [Double.NEGATIVE_INFINITY] for Turbo, which has no true floor). [gradeBands] always reports an
+ * open low end on the lowest band, so `gradeColor` uses this to keep returning null below a
  * one-sided palette's floor instead of matching the flattest band.
  */
 internal fun gradeFloor(
@@ -320,12 +320,12 @@ internal fun gradeFloor(
 
 /**
  * The band's own colour for [grade], or [neutral] when the grade falls inside the edges.
- * [climbEdge] null means no climb band is coloured; [descentEdge] null means no descent
- * band is. Implemented in terms of [gradeBands] so the two can never disagree.
+ * [climbEdge] null means no climb band is coloured; [descentEdge] null means no descent band is.
+ * Implemented in terms of [gradeBands] so the two can never disagree.
  *
- * Grades below the palette's [gradeFloor] stay [neutral], the same guard [gradeColor] applies:
- * the lowest band's open low end is not a real floor on a one-sided palette, so a descent edge
- * stored against one would otherwise hand descents the flattest climb band's colour.
+ * Grades below the palette's [gradeFloor] stay [neutral], the same guard [gradeColor] applies: the
+ * lowest band's open low end is not a real floor on a one-sided palette, so a descent edge stored
+ * against one would otherwise hand descents the flattest climb band's colour.
  */
 internal fun gradeBandColor(
     grade: Double,
@@ -336,15 +336,17 @@ internal fun gradeBandColor(
     readable: Boolean = true,
     isNightMode: Boolean = true,
 ): Color {
-    val coloured = when {
-        grade > 0.0 -> climbEdge != null && grade >= climbEdge
-        grade < 0.0 -> descentEdge != null && grade <= descentEdge
-        else -> false
-    }
+    val coloured =
+        when {
+            grade > 0.0 -> climbEdge != null && grade >= climbEdge
+            grade < 0.0 -> descentEdge != null && grade <= descentEdge
+            else -> false
+        }
     if (!coloured) return neutral
     if (grade < gradeFloor(palette, readable, isNightMode)) return neutral
-    val band = gradeBands(palette, readable, isNightMode).firstOrNull {
-        (it.lo == null || grade >= it.lo) && (it.hi == null || grade < it.hi)
-    }
+    val band =
+        gradeBands(palette, readable, isNightMode).firstOrNull {
+            (it.lo == null || grade >= it.lo) && (it.hi == null || grade < it.hi)
+        }
     return band?.color ?: neutral
 }

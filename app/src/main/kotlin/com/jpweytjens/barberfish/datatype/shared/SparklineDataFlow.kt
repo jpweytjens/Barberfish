@@ -166,12 +166,11 @@ internal fun sparklineBitmapFlow(
                 isPreview -> rvvClimbsFixture()
                 else -> emptyList()
             }
-        val climbRanges =
-            rawClimbRanges.mapNotNull { (startM, endM) ->
-                val startElev = elevationAt(elevPoints, startM) ?: return@mapNotNull null
-                val endElev = elevationAt(elevPoints, endM) ?: return@mapNotNull null
-                if (endElev > startElev) startM to endM else null
-            }
+        val climbRanges = rawClimbRanges.mapNotNull { (startM, endM) ->
+            val startElev = elevationAt(elevPoints, startM) ?: return@mapNotNull null
+            val endElev = elevationAt(elevPoints, endM) ?: return@mapNotNull null
+            if (endElev > startElev) startM to endM else null
+        }
         val reveal =
             resolveClimbReveal(sparkCfg.hudMode, climbRanges, elevPoints, sparklinePositionM)
         val windowOverride = reveal.windowOverride

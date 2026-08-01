@@ -88,8 +88,7 @@ private fun thresholdColorConfig(
 ): ColorConfig {
     val defaultText = if (isNightMode) Color.White else Color.Black
     val liveTint =
-        if (!liveIcon) defaultText
-        else if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY
+        if (!liveIcon) defaultText else if (isNightMode) ICON_TINT_TEAL else ICON_TINT_TEAL_DAY
     return when (colorMode) {
         ZoneColorMode.BACKGROUND -> {
             val bg = thresholdBackgroundColor(factor, isNightMode)
@@ -160,9 +159,11 @@ internal fun gradeColor(
     isNightMode: Boolean = true,
 ): Color? {
     if (percent < gradeFloor(palette, readable, isNightMode)) return null
-    return gradeBands(palette, readable, isNightMode).firstOrNull {
-        (it.lo == null || percent >= it.lo) && (it.hi == null || percent < it.hi)
-    }?.color
+    return gradeBands(palette, readable, isNightMode)
+        .firstOrNull {
+            (it.lo == null || percent >= it.lo) && (it.hi == null || percent < it.hi)
+        }
+        ?.color
 }
 
 data class ColorConfig(

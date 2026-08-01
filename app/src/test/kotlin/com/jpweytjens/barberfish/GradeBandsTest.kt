@@ -56,8 +56,14 @@ class GradeBandsTest {
     fun gradeColor_returns_null_below_zero_for_one_sided_palettes() {
         val oneSided = GradePalette.entries.filter { gradeBandStops(it).descent.isEmpty() }
         oneSided.forEach { palette ->
-            assertNotNull("$palette should color a flat/climbing grade", gradeColor(0.0, palette, readable = false))
-            assertNull("$palette must not color a descent", gradeColor(-0.1, palette, readable = false))
+            assertNotNull(
+                "$palette should color a flat/climbing grade",
+                gradeColor(0.0, palette, readable = false),
+            )
+            assertNull(
+                "$palette must not color a descent",
+                gradeColor(-0.1, palette, readable = false),
+            )
         }
     }
 
@@ -68,19 +74,29 @@ class GradeBandsTest {
 
     @Test
     fun grades_inside_the_edges_take_the_neutral() {
-        val c = gradeBandColor(
-            grade = 3.0, palette = GradePalette.KAROO,
-            climbEdge = 8.0, descentEdge = null, neutral = NEUTRAL, readable = false,
-        )
+        val c =
+            gradeBandColor(
+                grade = 3.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 8.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
         assertEquals(NEUTRAL, c)
     }
 
     @Test
     fun grades_outside_the_edges_take_their_own_band_colour() {
-        val c = gradeBandColor(
-            grade = 9.0, palette = GradePalette.KAROO,
-            climbEdge = 8.0, descentEdge = null, neutral = NEUTRAL, readable = false,
-        )
+        val c =
+            gradeBandColor(
+                grade = 9.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 8.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
         assertEquals(Color(0xFFF08868), c)
     }
 
@@ -89,28 +105,43 @@ class GradeBandsTest {
 
     @Test
     fun a_grade_on_the_climb_edge_takes_its_band_colour() {
-        val c = gradeBandColor(
-            grade = 8.0, palette = GradePalette.KAROO,
-            climbEdge = 8.0, descentEdge = null, neutral = NEUTRAL, readable = false,
-        )
+        val c =
+            gradeBandColor(
+                grade = 8.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 8.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
         assertEquals(Color(0xFFF08868), c)
     }
 
     @Test
     fun a_grade_on_the_descent_edge_takes_its_band_colour() {
-        val c = gradeBandColor(
-            grade = -6.0, palette = GradePalette.BARBERFISH,
-            climbEdge = null, descentEdge = -6.0, neutral = NEUTRAL, readable = false,
-        )
+        val c =
+            gradeBandColor(
+                grade = -6.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = null,
+                descentEdge = -6.0,
+                neutral = NEUTRAL,
+                readable = false,
+            )
         assertEquals(Color(0xFF5D99DE), c)
     }
 
     @Test
     fun a_null_edge_greys_that_whole_side() {
-        val c = gradeBandColor(
-            grade = 25.0, palette = GradePalette.KAROO,
-            climbEdge = null, descentEdge = null, neutral = NEUTRAL, readable = false,
-        )
+        val c =
+            gradeBandColor(
+                grade = 25.0,
+                palette = GradePalette.KAROO,
+                climbEdge = null,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
         assertEquals(NEUTRAL, c)
     }
 
@@ -122,10 +153,15 @@ class GradeBandsTest {
     fun a_descent_below_a_one_sided_palette_floor_stays_neutral() {
         val oneSided = GradePalette.entries.filter { gradeBandStops(it).descent.isEmpty() }
         oneSided.forEach { palette ->
-            val c = gradeBandColor(
-                grade = -5.0, palette = palette,
-                climbEdge = 2.0, descentEdge = -3.0, neutral = NEUTRAL, readable = false,
-            )
+            val c =
+                gradeBandColor(
+                    grade = -5.0,
+                    palette = palette,
+                    climbEdge = 2.0,
+                    descentEdge = -3.0,
+                    neutral = NEUTRAL,
+                    readable = false,
+                )
             assertEquals("$palette must not colour a descent", NEUTRAL, c)
             assertNull("$palette gradeColor agrees", gradeColor(-5.0, palette, readable = false))
         }
@@ -135,10 +171,15 @@ class GradeBandsTest {
     fun two_sided_palettes_still_colour_their_deepest_descents() {
         val twoSided = GradePalette.entries.filter { gradeBandStops(it).descent.isNotEmpty() }
         twoSided.forEach { palette ->
-            val c = gradeBandColor(
-                grade = -50.0, palette = palette,
-                climbEdge = 2.0, descentEdge = -3.0, neutral = NEUTRAL, readable = false,
-            )
+            val c =
+                gradeBandColor(
+                    grade = -50.0,
+                    palette = palette,
+                    climbEdge = 2.0,
+                    descentEdge = -3.0,
+                    neutral = NEUTRAL,
+                    readable = false,
+                )
             assertNotEquals("$palette must colour a deep descent", NEUTRAL, c)
         }
     }
@@ -155,8 +196,10 @@ class GradeBandsTest {
 
     @Test
     fun barberfish_keeps_karoo_climb_colours_above_two_percent() {
-        val bf = gradeBands(GradePalette.BARBERFISH, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
-        val karoo = gradeBands(GradePalette.KAROO, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
+        val bf =
+            gradeBands(GradePalette.BARBERFISH, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
+        val karoo =
+            gradeBands(GradePalette.KAROO, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
         assertEquals(karoo.map { it.color }, bf.map { it.color })
     }
 }

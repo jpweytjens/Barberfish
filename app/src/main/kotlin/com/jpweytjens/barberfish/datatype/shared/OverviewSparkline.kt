@@ -45,8 +45,10 @@ private const val OVERVIEW_PREVIEW_TICK_MS = 125L
  * too. `toY` reserves the same pad vertically for the same reason.
  */
 internal fun overviewToX(d: Float, startM: Float, spanM: Float, widthPx: Int): Float =
-    (OVERVIEW_PAD_PX + (d - startM) / spanM * (widthPx - 2 * OVERVIEW_PAD_PX))
-        .coerceIn(0f, widthPx.toFloat())
+    (OVERVIEW_PAD_PX + (d - startM) / spanM * (widthPx - 2 * OVERVIEW_PAD_PX)).coerceIn(
+        0f,
+        widthPx.toFloat(),
+    )
 
 /**
  * Draw the whole route as a single uncolored polyline with a position dot. No grade coloring, no
@@ -120,7 +122,7 @@ fun overviewPreviewBitmap(
         widthPx,
         heightPx,
         BarberfishYellow.toArgb(),
-        isNightMode
+        isNightMode,
     )
 }
 
@@ -144,7 +146,8 @@ fun overviewBitmapFlow(
     val sweepFlow: Flow<Float> =
         if (isPreview) {
             val fracPerTick =
-                OVERVIEW_PREVIEW_PX_PER_SEC * OVERVIEW_PREVIEW_TICK_MS / 1000f /
+                OVERVIEW_PREVIEW_PX_PER_SEC * OVERVIEW_PREVIEW_TICK_MS /
+                    1000f /
                     widthPx.coerceAtLeast(1).toFloat()
             flow {
                 var frac = 0f

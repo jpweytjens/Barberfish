@@ -140,20 +140,20 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                 val displayDist =
                                     ConvertType.DISTANCE.toDisplay(
                                             transitionKm.toDouble(),
-                                            hudState.profile
+                                            hudState.profile,
                                         )
                                         .toInt()
                                 val distUnit = ConvertType.DISTANCE.unit(hudState.profile)
                                 rv.setTextViewText(
                                     R.id.hud_transition_text,
-                                    "$displayDist$distUnit"
+                                    "$displayDist$distUnit",
                                 )
                                 val transitionColor = if (isNightMode) Color.WHITE else Color.BLACK
                                 rv.setTextColor(R.id.hud_transition_text, transitionColor)
                                 rv.setInt(
                                     R.id.hud_transition_icon,
                                     "setColorFilter",
-                                    transitionColor
+                                    transitionColor,
                                 )
                             }
                             frame.counterText != null -> {
@@ -184,7 +184,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                                     action = SparklineTapReceiver.ACTION
                                     putExtra(
                                         SparklineTapReceiver.EXTRA_SURFACE,
-                                        SparklineTapReceiver.SURFACE_HUD
+                                        SparklineTapReceiver.SURFACE_HUD,
                                     )
                                 }
                             val pi =
@@ -284,7 +284,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         profile,
                         zones,
                         slot.colorMode,
-                        isLastLap = false
+                        isLastLap = false,
                     )
                 }
             HUDSlotField.LastLapPower ->
@@ -298,7 +298,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         zones,
                         slot.colorMode,
                         isLastLap = true,
-                        lapNumber = lapNumberFrom(lapState)
+                        lapNumber = lapNumberFrom(lapState),
                     )
                 }
             HUDSlotField.PowerZone ->
@@ -308,7 +308,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         profile,
                         zones,
                         slot.colorMode,
-                        slot.zoneDisplayMode
+                        slot.zoneDisplayMode,
                     )
                 }
             HUDSlotField.MaxPower ->
@@ -323,7 +323,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         zones,
                         slot.colorMode,
                         "Avg HR",
-                        R.drawable.ic_avg_hr
+                        R.drawable.ic_avg_hr,
                     )
                 }
             HUDSlotField.LapAvgHR ->
@@ -335,7 +335,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         slot.colorMode,
                         "Lap Avg HR",
                         R.drawable.ic_lap,
-                        R.drawable.ic_avg_hr
+                        R.drawable.ic_avg_hr,
                     )
                 }
             HUDSlotField.LastLapAvgHR ->
@@ -365,7 +365,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         hrState,
                         profile,
                         zones,
-                        slot.colorMode
+                        slot.colorMode,
                     )
                 }
             HUDSlotField.MaxHR ->
@@ -379,7 +379,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         profile,
                         zones,
                         slot.colorMode,
-                        slot.zoneDisplayMode
+                        slot.zoneDisplayMode,
                     )
                 }
             HUDSlotField.Grade ->
@@ -389,9 +389,9 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         GradeFieldConfig(
                             slot.colorMode,
                             slot.gradePrecision,
-                            slot.gradeShowPercentSign
+                            slot.gradeShowPercentSign,
                         ),
-                        zones.gradePalette
+                        zones.gradePalette,
                     )
                 }
             HUDSlotField.Distance ->
@@ -415,7 +415,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     karooSystem,
                     slot.avgSpeedConfig,
                     profile,
-                    slot.field.includePaused
+                    slot.field.includePaused,
                 )
             is HUDSlotField.Time ->
                 if (slot.field.kind == TimeKind.LAST_LAP) {
@@ -467,7 +467,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         PowerField.previewStates(
                             PowerFieldConfig(slotCfg.powerSmoothing, slotCfg.colorMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.HR ->
                         HRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
@@ -481,13 +481,13 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         AvgSpeedField.previewStates(
                             slotCfg.avgSpeedConfig,
                             profile,
-                            field.includePaused
+                            field.includePaused,
                         )
                     HUDSlotField.AvgPower ->
                         AvgPowerField.previewStates(
                             AvgPowerFieldConfig(slotCfg.colorMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.NP ->
                         NPField.previewStates(NPFieldConfig(slotCfg.colorMode), profile, zones)
@@ -496,26 +496,26 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             LapPowerFieldConfig(slotCfg.colorMode),
                             profile,
                             zones,
-                            isLastLap = false
+                            isLastLap = false,
                         )
                     HUDSlotField.LastLapPower ->
                         LapPowerField.previewStates(
                             LapPowerFieldConfig(slotCfg.colorMode),
                             profile,
                             zones,
-                            isLastLap = true
+                            isLastLap = true,
                         )
                     HUDSlotField.PowerZone ->
                         PowerZoneField.previewStates(
                             PowerZoneFieldConfig(slotCfg.colorMode, slotCfg.zoneDisplayMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.MaxPower ->
                         MaxPowerField.previewStates(
                             MaxPowerFieldConfig(slotCfg.colorMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.AvgHR ->
                         AvgHRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
@@ -523,40 +523,40 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         LapAvgHRField.previewStates(
                             HRFieldConfig(slotCfg.colorMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.LastLapAvgHR ->
                         LastLapAvgHRField.previewStates(
                             HRFieldConfig(slotCfg.colorMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.HRMaxPercent ->
                         HRMaxPercentField.previewStates(
                             HRMaxPercentFieldConfig(slotCfg.colorMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.MaxHR ->
                         MaxHRField.previewStates(
                             MaxHRFieldConfig(slotCfg.colorMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.HRZone ->
                         HRZoneField.previewStates(
                             HRZoneFieldConfig(slotCfg.colorMode, slotCfg.zoneDisplayMode),
                             profile,
-                            zones
+                            zones,
                         )
                     HUDSlotField.Grade ->
                         GradeField.previewStates(
                             GradeFieldConfig(
                                 slotCfg.colorMode,
                                 slotCfg.gradePrecision,
-                                slotCfg.gradeShowPercentSign
+                                slotCfg.gradeShowPercentSign,
                             ),
-                            zones
+                            zones,
                         )
                     HUDSlotField.Distance -> ValueField.previewStates(ValueKind.DISTANCE, profile)
                     HUDSlotField.DistanceRemaining ->

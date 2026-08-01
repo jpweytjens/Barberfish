@@ -31,13 +31,15 @@ class HRField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState(
-                "HR",
-                R.drawable.ic_col_hr,
-                FieldState.noSensor("HR", R.drawable.ic_col_hr),
-            )?.let {
-                return it
-            }
+            state
+                .toErrorFieldState(
+                    "HR",
+                    R.drawable.ic_col_hr,
+                    FieldState.noSensor("HR", R.drawable.ic_col_hr),
+                )
+                ?.let {
+                    return it
+                }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
                     ?: return FieldState.notAvailable("HR", R.drawable.ic_col_hr)

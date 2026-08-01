@@ -355,17 +355,17 @@ internal fun renderElevationSparkline(
             val grade = (e2 - e1) / distDelta * 100.0
             // The silhouette is this strip's neutral: a segment inside the edges draws no
             // polygon at all and the silhouette painted in step 1 shows through.
-            val neutral =
-                if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY
-            val resolved = gradeBandColor(
-                grade = grade,
-                palette = palette,
-                climbEdge = climbEdge,
-                descentEdge = descentEdge,
-                neutral = neutral,
-                readable = readable,
-                isNightMode = isNightMode,
-            )
+            val neutral = if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY
+            val resolved =
+                gradeBandColor(
+                    grade = grade,
+                    palette = palette,
+                    climbEdge = climbEdge,
+                    descentEdge = descentEdge,
+                    neutral = neutral,
+                    readable = readable,
+                    isNightMode = isNightMode,
+                )
             val segColor = if (resolved == neutral) null else resolved.toArgb()
             if (segColor == null) {
                 flushRun()
@@ -573,27 +573,25 @@ internal fun resolveClimbReveal(
         SparklineMode.OFF -> ClimbReveal(visible = false, windowOverride = null)
         SparklineMode.ON -> ClimbReveal(visible = true, windowOverride = null)
         SparklineMode.CLIMBS -> {
-            val frames =
-                climbRanges.mapNotNull { (startM, endM) ->
-                    val startElev = elevationAt(elevationPoints, startM) ?: return@mapNotNull null
-                    val endElev = elevationAt(elevationPoints, endM) ?: return@mapNotNull null
-                    if (endElev <= startElev) return@mapNotNull null
-                    val lengthF = endM - startM
-                    val gradePct =
-                        if (lengthF > 0f) (endElev - startElev) / lengthF * 100.0 else 0.0
-                    val approachM = climbApproachM(pcsClimbScore(gradePct, lengthF.toDouble()))
-                    val leadM =
-                        (lengthF * CLIMB_LEAD_MARGIN_FRAC).coerceIn(
-                            CLIMB_FRAME_MARGIN_MIN_M,
-                            CLIMB_FRAME_MARGIN_MAX_M
-                        )
-                    val tailM =
-                        (lengthF * CLIMB_TAIL_MARGIN_FRAC).coerceIn(
-                            CLIMB_FRAME_MARGIN_MIN_M,
-                            CLIMB_FRAME_MARGIN_MAX_M
-                        )
-                    ClimbFrame(startM, endM, approachM, leadM, tailM)
-                }
+            val frames = climbRanges.mapNotNull { (startM, endM) ->
+                val startElev = elevationAt(elevationPoints, startM) ?: return@mapNotNull null
+                val endElev = elevationAt(elevationPoints, endM) ?: return@mapNotNull null
+                if (endElev <= startElev) return@mapNotNull null
+                val lengthF = endM - startM
+                val gradePct = if (lengthF > 0f) (endElev - startElev) / lengthF * 100.0 else 0.0
+                val approachM = climbApproachM(pcsClimbScore(gradePct, lengthF.toDouble()))
+                val leadM =
+                    (lengthF * CLIMB_LEAD_MARGIN_FRAC).coerceIn(
+                        CLIMB_FRAME_MARGIN_MIN_M,
+                        CLIMB_FRAME_MARGIN_MAX_M,
+                    )
+                val tailM =
+                    (lengthF * CLIMB_TAIL_MARGIN_FRAC).coerceIn(
+                        CLIMB_FRAME_MARGIN_MIN_M,
+                        CLIMB_FRAME_MARGIN_MAX_M,
+                    )
+                ClimbFrame(startM, endM, approachM, leadM, tailM)
+            }
             val total = frames.size
             // Active from one approach before the counter through the summit tail; nearest finish
             // wins.
@@ -623,7 +621,7 @@ internal fun resolveClimbReveal(
                     val windowStart = minOf(positionM, f.foot) - f.leadM
                     ClimbReveal(
                         visible = true,
-                        windowOverride = windowStart to (f.summit + f.tailM)
+                        windowOverride = windowStart to (f.summit + f.tailM),
                     )
                 }
             }
@@ -631,15 +629,15 @@ internal fun resolveClimbReveal(
     }
 
 /**
- * Position-tracking window for the default (non-climb) mode: [lookaheadM] wide, clamped to the route
- * bounds so the strip fills the full width, but never so tight that the rider ends up on a window
- * edge. An edge maps to x = 0 (or x = widthPx), so a rider sitting on one would draw the position
- * dot half outside the bitmap.
+ * Position-tracking window for the default (non-climb) mode: [lookaheadM] wide, clamped to the
+ * route bounds so the strip fills the full width, but never so tight that the rider ends up on a
+ * window edge. An edge maps to x = 0 (or x = widthPx), so a rider sitting on one would draw the
+ * position dot half outside the bitmap.
  *
- * The reserve is [markerEdgeMarginM], the route distance one dot radius covers, so at the route ends
- * the dot still reads as sitting on the edge and the empty strip in front of the route is no wider
- * than the dot itself. The climb frame in [resolveClimbReveal] reserves its own margins the same
- * way.
+ * The reserve is [markerEdgeMarginM], the route distance one dot radius covers, so at the route
+ * ends the dot still reads as sitting on the edge and the empty strip in front of the route is no
+ * wider than the dot itself. The climb frame in [resolveClimbReveal] reserves its own margins the
+ * same way.
  */
 internal fun sparklineWindow(
     firstDist: Float,
@@ -664,9 +662,9 @@ internal fun sparklineWindow(
  * packs the most pixels per metre.
  *
  * Pixels per metre there are `(1 + logWarpK) / totalBudget * widthPx`. At either route end the
- * window lies entirely on one side of the rider, so the budget integrates to
- * `lookaheadM * (1 + 2(1 - exp(-logWarpK / 2)))`, and the pad's own share of that budget is folded
- * back in so the result holds once the window has been widened by it.
+ * window lies entirely on one side of the rider, so the budget integrates to `lookaheadM * (1 +
+ * 2(1 - exp(-logWarpK / 2)))`, and the pad's own share of that budget is folded back in so the
+ * result holds once the window has been widened by it.
  *
  * That closed form lands within about a pixel of the mapper's discrete stepping (density is not
  * quite flat across the reserve, and the window at a route end is not quite `lookaheadM` wide), so

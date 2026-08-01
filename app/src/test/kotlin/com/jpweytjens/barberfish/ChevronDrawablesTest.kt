@@ -16,15 +16,14 @@ class ChevronDrawablesTest {
     // readable/night combination, plus the neutral buildGradeMapSpecs passes for a segment
     // inside the edges. A chevron sitting on that run is drawn in the same colour, so each
     // one needs its own pre-baked drawable.
-    private fun paintableColors(palette: GradePalette): Set<Color> =
-        buildSet {
-            add(FlatGrey)
-            listOf(false, true).forEach { readable ->
-                listOf(false, true).forEach { isNightMode ->
-                    gradeBands(palette, readable, isNightMode).forEach { add(it.color) }
-                }
+    private fun paintableColors(palette: GradePalette): Set<Color> = buildSet {
+        add(FlatGrey)
+        listOf(false, true).forEach { readable ->
+            listOf(false, true).forEach { isNightMode ->
+                gradeBands(palette, readable, isNightMode).forEach { add(it.color) }
             }
         }
+    }
 
     @Test
     fun every_paintable_colour_has_its_own_chevron_drawable() {

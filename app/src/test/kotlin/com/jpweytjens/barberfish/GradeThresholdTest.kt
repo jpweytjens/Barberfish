@@ -31,7 +31,7 @@ class GradeThresholdTest {
         assertEquals(
             "all palettes must be covered",
             GradePalette.entries.toSet(),
-            expectedStops.keys
+            expectedStops.keys,
         )
         expectedStops.forEach { (palette, expected) ->
             val (climb, descent) = expected
@@ -58,7 +58,7 @@ class GradeThresholdTest {
         assertEquals(
             "all palettes must be covered",
             GradePalette.entries.toSet(),
-            expected.keys
+            expected.keys,
         )
         expected.forEach { (palette, climbEdge) ->
             val (climb, descent) = SparklineConfig().gradeEdges(palette)

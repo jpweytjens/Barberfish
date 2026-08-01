@@ -45,7 +45,7 @@ enum class TimeKind(
     val typeId: String,
     val label: String,
     val iconRes: Int,
-    val secondaryIconRes: Int? = null
+    val secondaryIconRes: Int? = null,
 ) {
     TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
     RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),

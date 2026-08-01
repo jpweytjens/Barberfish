@@ -145,7 +145,12 @@ class GpsPolylineTest {
     @Test
     fun projectPoiAlongRoute_degenerate_route_returns_null() {
         val along =
-            projectPoiAlongRoute(LatLng(0.0, 0.0), listOf(LatLng(0.0, 0.0)), doubleArrayOf(0.0), 500.0)
+            projectPoiAlongRoute(
+                LatLng(0.0, 0.0),
+                listOf(LatLng(0.0, 0.0)),
+                doubleArrayOf(0.0),
+                500.0,
+            )
         assertNull(along)
     }
 

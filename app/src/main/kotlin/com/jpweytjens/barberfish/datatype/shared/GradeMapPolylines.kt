@@ -5,9 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.round
 
-/**
- * A single coloured fill polyline for a route gradient segment.
- */
+/** A single coloured fill polyline for a route gradient segment. */
 internal data class GradeMapPolylineSpec(
     val id: String,
     val encoded: String,
@@ -20,11 +18,11 @@ internal data class GradeMapPolylineSpec(
 )
 
 /**
- * A single chevron symbol placed along the route. Placement is route-wide, then filtered
- * onto the coloured gradient run it lands on. The bearing is the direction the chevron
- * points, taken as a chord across the bearing window (about 24 m on device); 10 m survives
- * only as the fallback when no window is configured.
- * [colorArgb] is the gradient-band colour of the polyline run the chevron sits on.
+ * A single chevron symbol placed along the route. Placement is route-wide, then filtered onto the
+ * coloured gradient run it lands on. The bearing is the direction the chevron points, taken as a
+ * chord across the bearing window (about 24 m on device); 10 m survives only as the fallback when
+ * no window is configured. [colorArgb] is the gradient-band colour of the polyline run the chevron
+ * sits on.
  */
 internal data class ClimbChevronSpec(
     val id: String,
@@ -47,8 +45,7 @@ internal data class LatLngBounds(
     val minLng: Double,
     val maxLng: Double,
 ) {
-    fun contains(lat: Double, lng: Double): Boolean =
-        lat in minLat..maxLat && lng in minLng..maxLng
+    fun contains(lat: Double, lng: Double): Boolean = lat in minLat..maxLat && lng in minLng..maxLng
 }
 
 /** Default chevron spacing when no zoom-adaptive step is supplied. */
@@ -63,8 +60,8 @@ internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
  * - run: consecutive cells resolving to the same colour, merged.
  * - chain: consecutive runs with no distance gap between them.
  *
- * Under full coverage every cell yields a colour, so every run abuts its
- * neighbours and the whole route is a single chain.
+ * Under full coverage every cell yields a colour, so every run abuts its neighbours and the whole
+ * route is a single chain.
  */
 internal data class GradeRun(val startM: Double, val endM: Double, val colorArgb: Int)
 
@@ -80,23 +77,23 @@ private const val MAX_CELLS = 1e6
 /**
  * Cell length: the grade baseline, or one stroke width on screen, whichever is larger.
  *
- * This is a legibility guard — it sets how much route one colour must own before the overlay
- * may change colour again, so a run is never drawn shorter than it is wide. The sparkline's
- * own `MIN_FILL_PX` answers a different question: it drops a fill narrower than a single
- * pixel, which is a rendering guard against a band that would come out invisible.
+ * This is a legibility guard — it sets how much route one colour must own before the overlay may
+ * change colour again, so a run is never drawn shorter than it is wide. The sparkline's own
+ * `MIN_FILL_PX` answers a different question: it drops a fill narrower than a single pixel, which
+ * is a rendering guard against a band that would come out invisible.
  */
 internal fun minRunLengthM(metresPerPixel: Double): Double =
     maxOf(GRADE_BASELINE_M, MIN_RUN_PX * metresPerPixel)
 
 /**
- * Tiles `[0, routeEndM]` into cells of [cellM], colours each by the band of its mean grade,
- * and merges adjacent cells that land in the same band. No run comes out shorter than
- * [cellM] except the tail, where the route is not a whole number of cells.
+ * Tiles `[0, routeEndM]` into cells of [cellM], colours each by the band of its mean grade, and
+ * merges adjacent cells that land in the same band. No run comes out shorter than [cellM] except
+ * the tail, where the route is not a whole number of cells.
  *
- * The mean grade is the chord `(elevAtM(end) - elevAtM(start)) / (end - start)`. A chord
- * rather than a fitted line: it meets the true profile at every cell boundary, where a fit
- * meets it nowhere. A mean rather than the cell's steepest segment: a short ramp inside an
- * otherwise gentle cell would otherwise repaint the whole cell at its own colour.
+ * The mean grade is the chord `(elevAtM(end) - elevAtM(start)) / (end - start)`. A chord rather
+ * than a fitted line: it meets the true profile at every cell boundary, where a fit meets it
+ * nowhere. A mean rather than the cell's steepest segment: a short ramp inside an otherwise gentle
+ * cell would otherwise repaint the whole cell at its own colour.
  */
 internal fun resampleRunsToCells(
     routeEndM: Double,
@@ -137,14 +134,16 @@ internal fun resampleRunsToCells(
         // profile can resolve: one elevation quantum, 0.1 m, over a 30 m cell is a third of a
         // per cent, thirty times coarser than what this discards.
         val meanGradePct = round(chordPct * 100.0) / 100.0
-        val color = gradeBandColor(
-            grade = meanGradePct,
-            palette = palette,
-            climbEdge = climbEdge,
-            descentEdge = descentEdge,
-            neutral = neutral,
-            readable = readable,
-        ).toArgb()
+        val color =
+            gradeBandColor(
+                    grade = meanGradePct,
+                    palette = palette,
+                    climbEdge = climbEdge,
+                    descentEdge = descentEdge,
+                    neutral = neutral,
+                    readable = readable,
+                )
+                .toArgb()
         val last = runs.lastOrNull()
         if (last != null && last.colorArgb == color) {
             runs[runs.lastIndex] = last.copy(endM = endM)
@@ -157,9 +156,9 @@ internal fun resampleRunsToCells(
 }
 
 /**
- * Linear-interpolated elevation at [distanceM] along [points], a distance-ascending profile.
- * Clamps to the first and last vertex outside the profile's own extent. [points] must hold at
- * least one vertex.
+ * Linear-interpolated elevation at [distanceM] along [points], a distance-ascending profile. Clamps
+ * to the first and last vertex outside the profile's own extent. [points] must hold at least one
+ * vertex.
  */
 internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): Double {
     val first = points.first()
@@ -180,31 +179,30 @@ internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): 
 }
 
 /**
- * Builds gradient polyline specs and chevron symbol specs along a route's elevation
- * profile, mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is
- * intentionally not used — the rider's mental model of "where it gets coloured" must
- * match the sparkline, and the sparkline is driven purely by the elevation polyline +
- * per-consumer simplification and grade edges. [tuning] is the already-resolved tuning:
- * callers hand it the output of `resolveGradeMapTuning`, so the sparkline-sync question is
- * settled before we are called and can never be answered differently here.
+ * Builds gradient polyline specs and chevron symbol specs along a route's elevation profile,
+ * mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is intentionally not used — the
+ * rider's mental model of "where it gets coloured" must match the sparkline, and the sparkline is
+ * driven purely by the elevation polyline + per-consumer simplification and grade edges. [tuning]
+ * is the already-resolved tuning: callers hand it the output of `resolveGradeMapTuning`, so the
+ * sparkline-sync question is settled before we are called and can never be answered differently
+ * here.
  *
  * Algorithm:
  * 1. Decode the GPS polyline and compute cumulative distance.
  * 2. Decode the elevation polyline and run Visvalingam–Whyatt simplification.
- * 3. Resample the simplified profile into fixed-length cells with [resampleRunsToCells].
- *    Every cell takes a colour from its mean grade: its grade band's when the mean is past
- *    that side's edge, the flat grey when it is not. Adjacent same-colour cells merge into
- *    runs, each emitting a single polyline spanning `[runStartM, runEndM]`. The runs tile
- *    the route, so our overlay covers Karoo's own route line everywhere, in both directions
- *    of travel, and none of them is too short to read.
- * 4. Place chevrons along the whole route with [placeChevrons], then colour each placement
- *    with the run containing it and drop the placements that sit on no run. Placement is a
- *    property of the route, not of the runs: a run shorter than the spacing carries a
- *    chevron only when a cadence position happens to fall inside it, so short runs are
- *    marked by their colour alone.
- * 5. If [chevronViewport] is non-null, drop any chevron whose lat/lng falls outside the
- *    viewport bounds. This keeps the emitted symbol count bounded regardless of route
- *    length — we only render what the rider can see.
+ * 3. Resample the simplified profile into fixed-length cells with [resampleRunsToCells]. Every cell
+ *    takes a colour from its mean grade: its grade band's when the mean is past that side's edge,
+ *    the flat grey when it is not. Adjacent same-colour cells merge into runs, each emitting a
+ *    single polyline spanning `[runStartM, runEndM]`. The runs tile the route, so our overlay
+ *    covers Karoo's own route line everywhere, in both directions of travel, and none of them is
+ *    too short to read.
+ * 4. Place chevrons along the whole route with [placeChevrons], then colour each placement with the
+ *    run containing it and drop the placements that sit on no run. Placement is a property of the
+ *    route, not of the runs: a run shorter than the spacing carries a chevron only when a cadence
+ *    position happens to fall inside it, so short runs are marked by their colour alone.
+ * 5. If [chevronViewport] is non-null, drop any chevron whose lat/lng falls outside the viewport
+ *    bounds. This keeps the emitted symbol count bounded regardless of route length — we only
+ *    render what the rider can see.
  *
  * Returns empty lists if either polyline is missing.
  */
@@ -239,17 +237,18 @@ internal fun buildGradeMapSpecs(
     // band of its mean grade, so the vertex spacing decides nothing about where a colour may
     // change. Every cell gets a colour, so the runs tile the route and no gap can open onto
     // the line underneath.
-    val runs = resampleRunsToCells(
-        routeEndM = elevPoints.last().first.toDouble(),
-        // No zoom reaches us yet, so the baseline floor is the cell length everywhere.
-        cellM = minRunLengthM(metresPerPixel = 0.0),
-        elevAtM = { distanceM -> elevationAtM(elevPoints, distanceM) },
-        palette = palette,
-        climbEdge = tuning.climbEdge,
-        descentEdge = tuning.descentEdge,
-        neutral = FlatGrey,
-        readable = readable,
-    )
+    val runs =
+        resampleRunsToCells(
+            routeEndM = elevPoints.last().first.toDouble(),
+            // No zoom reaches us yet, so the baseline floor is the cell length everywhere.
+            cellM = minRunLengthM(metresPerPixel = 0.0),
+            elevAtM = { distanceM -> elevationAtM(elevPoints, distanceM) },
+            palette = palette,
+            climbEdge = tuning.climbEdge,
+            descentEdge = tuning.descentEdge,
+            neutral = FlatGrey,
+            readable = readable,
+        )
 
     val polylines = mutableListOf<GradeMapPolylineSpec>()
     runs.forEachIndexed { runIdx, run ->
@@ -266,45 +265,50 @@ internal fun buildGradeMapSpecs(
         val drawEnd = run.endM - (if (atRouteEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
         val sub = extractSubPolyline(gps, cumDist, drawStart, drawEnd)
         if (sub.size >= 2) {
-            polylines += GradeMapPolylineSpec(
-                id = "barberfish-seg-$runIdx",
-                encoded = encodeGpsPolyline(sub),
-                colorArgb = run.colorArgb,
-                trimStart = atRouteStart,
-                trimEnd = atRouteEnd,
-            )
+            polylines +=
+                GradeMapPolylineSpec(
+                    id = "barberfish-seg-$runIdx",
+                    encoded = encodeGpsPolyline(sub),
+                    colorArgb = run.colorArgb,
+                    trimStart = atRouteStart,
+                    trimEnd = atRouteEnd,
+                )
         }
     }
     // Cap-trim shifts where the polylines are drawn, never where chevrons sit, so placement
     // runs against the untrimmed run bounds.
-    val chevrons = if (includeChevrons) {
-        val tuning = ChevronTuning(
-            spacingM = chevronSpacingM,
-            windowHalfM = chevronWindowHalfM,
-            collisionRadiusM = chevronMinSpacingM,
-            headingThresholdDeg = chevronHeadingThresholdDeg,
-        )
-        placeChevrons(gps, cumDist, tuning).mapIndexedNotNull { idx, placement ->
-            val run = runs.firstOrNull {
-                placement.distanceM >= it.startM && placement.distanceM < it.endM
-            } ?: return@mapIndexedNotNull null
-            ClimbChevronSpec(
-                // Indexed over every placement on the route, so an id stays put when a
-                // neighbouring run changes colour or the run list is re-cut.
-                id = "barberfish-chev-$idx",
-                lat = placement.lat,
-                lng = placement.lng,
-                bearingDeg = placement.bearingDeg,
-                colorArgb = run.colorArgb,
-            )
+    val chevrons =
+        if (includeChevrons) {
+            val tuning =
+                ChevronTuning(
+                    spacingM = chevronSpacingM,
+                    windowHalfM = chevronWindowHalfM,
+                    collisionRadiusM = chevronMinSpacingM,
+                    headingThresholdDeg = chevronHeadingThresholdDeg,
+                )
+            placeChevrons(gps, cumDist, tuning).mapIndexedNotNull { idx, placement ->
+                val run =
+                    runs.firstOrNull {
+                        placement.distanceM >= it.startM && placement.distanceM < it.endM
+                    } ?: return@mapIndexedNotNull null
+                ClimbChevronSpec(
+                    // Indexed over every placement on the route, so an id stays put when a
+                    // neighbouring run changes colour or the run list is re-cut.
+                    id = "barberfish-chev-$idx",
+                    lat = placement.lat,
+                    lng = placement.lng,
+                    bearingDeg = placement.bearingDeg,
+                    colorArgb = run.colorArgb,
+                )
+            }
+        } else {
+            emptyList()
         }
-    } else {
-        emptyList()
-    }
-    val filteredChevrons = if (chevronViewport != null) {
-        chevrons.filter { chevronViewport.contains(it.lat, it.lng) }
-    } else {
-        chevrons
-    }
+    val filteredChevrons =
+        if (chevronViewport != null) {
+            chevrons.filter { chevronViewport.contains(it.lat, it.lng) }
+        } else {
+            chevrons
+        }
     return GradeMapSpecs(polylines, filteredChevrons)
 }

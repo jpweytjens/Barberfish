@@ -143,7 +143,8 @@ class GradeMapChevronControllerTest {
         val controller = GradeMapChevronController()
         val fake = FakeEmitter()
         controller.emit(fake, listOf(spec("a", bearing = 42f, color = green)))
-        val icon = (fake.events.single() as ShowSymbols).symbols.single()
+        val icon =
+            (fake.events.single() as ShowSymbols).symbols.single()
                 as io.hammerhead.karooext.models.Symbol.Icon
         assertEquals("a", icon.id)
         assertEquals(50.0, icon.lat, 0.0)

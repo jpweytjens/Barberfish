@@ -54,7 +54,6 @@ import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
-import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -74,6 +73,7 @@ import com.jpweytjens.barberfish.datatype.shared.resolveClimbReveal
 import com.jpweytjens.barberfish.datatype.shared.rvvClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.ElevationZoom
@@ -143,7 +143,7 @@ internal fun HUDConfigSection(
     HelperText(
         if (sparklineConfig.hudMode != SparklineMode.OFF)
             "Tap a column or the elevation profile to configure it."
-        else "Tap a column to configure it.",
+        else "Tap a column to configure it."
     )
     HUDPreview(
         hudConfig = hudConfig,
@@ -390,12 +390,12 @@ private fun HUDPreview(
     ) {
         Row(Modifier.fillMaxSize()) {
             buildList {
-                    add(Triple(0, current.left.field, current.left.colorMode))
-                    add(Triple(1, current.middle.field, current.middle.colorMode))
-                    add(Triple(2, current.right.field, current.right.colorMode))
-                    if (hudConfig.columns == 4)
-                        add(Triple(3, current.fourth.field, current.fourth.colorMode))
-                }
+                add(Triple(0, current.left.field, current.left.colorMode))
+                add(Triple(1, current.middle.field, current.middle.colorMode))
+                add(Triple(2, current.right.field, current.right.colorMode))
+                if (hudConfig.columns == 4)
+                    add(Triple(3, current.fourth.field, current.fourth.colorMode))
+            }
                 .forEach { (idx, field, colorMode) ->
                     HUDPreviewCell(
                         field = field,
@@ -472,23 +472,26 @@ private fun HUDPreviewCell(
             if (reserveSparklineSpace) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val design = LocalDataFieldDesign.current
-        val sizeConfig = remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx, design) {
-            baseConfig.copy(
-                cellWidthPxOverride = widthPx.toFloat(),
-                showIcons = design.showIcons,
-            )
-        }
-        val bitmap = remember(field, colorMode, sizeConfig, slotHeightPx) {
-            val rv = barberfishFieldRemoteViews(
-                field = field,
-                alignment = ViewConfig.Alignment.RIGHT,
-                colorMode = colorMode,
-                sizeConfig = sizeConfig,
-                preview = true,
-                context = context,
-            )
-            remoteViewsToBitmap(rv, widthPx, slotHeightPx, context)
-        }
+        val sizeConfig =
+            remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx, design) {
+                baseConfig.copy(
+                    cellWidthPxOverride = widthPx.toFloat(),
+                    showIcons = design.showIcons,
+                )
+            }
+        val bitmap =
+            remember(field, colorMode, sizeConfig, slotHeightPx) {
+                val rv =
+                    barberfishFieldRemoteViews(
+                        field = field,
+                        alignment = ViewConfig.Alignment.RIGHT,
+                        colorMode = colorMode,
+                        sizeConfig = sizeConfig,
+                        preview = true,
+                        context = context,
+                    )
+                remoteViewsToBitmap(rv, widthPx, slotHeightPx, context)
+            }
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = null,
@@ -535,7 +538,7 @@ private fun HUDSlotFieldCard(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
-                .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
+                .border(1.dp, Grey200, RoundedCornerShape(6.dp))
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().background(Grey100).padding(12.dp),
@@ -681,14 +684,8 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                             "Avg Speed (Total)" to HUDSlotField.AvgSpeed(includePaused = true),
                             "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
                         ),
-                    "Cadence" to
-                        listOf(
-                            "Cadence" to HUDSlotField.Cadence,
-                        ),
-                    "Climbing" to
-                        listOf(
-                            "Grade" to HUDSlotField.Grade,
-                        ),
+                    "Cadence" to listOf("Cadence" to HUDSlotField.Cadence),
+                    "Climbing" to listOf("Grade" to HUDSlotField.Grade),
                     "Navigation" to
                         listOf(
                             "Distance" to HUDSlotField.Distance,
@@ -808,17 +805,19 @@ internal fun SparklineOptionsControls(
     if (config.hudMode != SparklineMode.CLIMBS) {
         ChoiceRow(
             label = "LOOKAHEAD",
-            options = listOf(5, 10, 20).map { km ->
-                val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
-                km to "$display ${ConvertType.DISTANCE.unit(profile)}"
-            },
+            options =
+                listOf(5, 10, 20).map { km ->
+                    val display = ConvertType.DISTANCE.toDisplay(km.toDouble(), profile).toInt()
+                    km to "$display ${ConvertType.DISTANCE.unit(profile)}"
+                },
             selected = config.lookaheadKm,
             onSelect = { onUpdate(config.copy(lookaheadKm = it)) },
             help = "Distance shown ahead of your position.",
         )
     }
     // Read through gradeEdges, the same resolution the renderers use, so the sentence names the
-    // grade the fill actually starts at. An edge of 0 colours that whole side, so it bounds nothing.
+    // grade the fill actually starts at. An edge of 0 colours that whole side, so it bounds
+    // nothing.
     val (climbEdge, descentEdge) = config.gradeEdges(zoneConfig.gradePalette)
     val hasDescentBands = gradeBandStops(zoneConfig.gradePalette).descent.isNotEmpty()
     val upperEdge = climbEdge?.takeIf { it > 0.0 }
@@ -919,7 +918,7 @@ internal fun SparklineCard(
                     modifier =
                         Modifier.fillMaxWidth()
                             .clip(RoundedCornerShape(6.dp))
-                            .background(if (isNight) Color.Black else Color.White),
+                            .background(if (isNight) Color.Black else Color.White)
                 ) {
                     val widthPx = (maxWidth.value * density).toInt().coerceAtLeast(1)
                     val sizeConfig =
@@ -930,8 +929,7 @@ internal fun SparklineCard(
                     // Compose sparkline.
                     val headerBitmap =
                         remember(widthPx, headerPx, isNight) {
-                            val rv =
-                                RemoteViews(context.packageName, R.layout.barberfish_sparkline)
+                            val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
                             applySparklineHeaderChrome(
                                 rv,
                                 context.getString(R.string.elevation_sparkline_name),

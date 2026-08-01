@@ -54,7 +54,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                         threshDisplay,
                         cfg.rangePercentBelow,
                         cfg.rangePercentAbove,
-                        cfg.colorMode
+                        cfg.colorMode,
                     )
                 }
             }
@@ -93,7 +93,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 threshDisplay,
                 cfg.rangePercentBelow,
                 cfg.rangePercentAbove,
-                cfg.colorMode
+                cfg.colorMode,
             )
         }
     }

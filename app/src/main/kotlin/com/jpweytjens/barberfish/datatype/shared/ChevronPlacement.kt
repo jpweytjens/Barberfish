@@ -7,9 +7,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * One chevron position along the route, before any grade colouring. [distanceM] is route
- * distance from the start; [bearingDeg] is the direction the chevron points, clockwise
- * from north.
+ * One chevron position along the route, before any grade colouring. [distanceM] is route distance
+ * from the start; [bearingDeg] is the direction the chevron points, clockwise from north.
  */
 internal data class ChevronPlacement(
     val distanceM: Double,
@@ -19,13 +18,12 @@ internal data class ChevronPlacement(
 )
 
 /**
- * Zoom-derived geometry for one placement pass. All distances are ground metres at the
- * zoom level being rendered.
+ * Zoom-derived geometry for one placement pass. All distances are ground metres at the zoom level
+ * being rendered.
  *
- * [headingThresholdDeg] left at its default 0.0 means the post-loop acceptance in
- * [placeChevrons] can never fire (no spread is below 0.0), so a caller that sets
- * [windowHalfM] without also setting [headingThresholdDeg] gets near-total suppression on
- * any curving route.
+ * [headingThresholdDeg] left at its default 0.0 means the post-loop acceptance in [placeChevrons]
+ * can never fire (no spread is below 0.0), so a caller that sets [windowHalfM] without also setting
+ * [headingThresholdDeg] gets near-total suppression on any curving route.
  */
 internal data class ChevronTuning(
     val spacingM: Double,
@@ -36,8 +34,7 @@ internal data class ChevronTuning(
 
 // Candidate offsets in spacings, tried in this order around each cursor position, so a
 // chevron slides off a bend rather than vanishing.
-private val CANDIDATE_OFFSETS =
-    doubleArrayOf(0.0, -0.25, 0.25, -0.125, 0.125, -0.375, 0.375)
+private val CANDIDATE_OFFSETS = doubleArrayOf(0.0, -0.25, 0.25, -0.125, 0.125, -0.375, 0.375)
 
 // A candidate whose local bearing spread is below this is taken at once, without trying
 // the remaining offsets.
@@ -50,17 +47,16 @@ private const val DEFAULT_BEARING_HALF_M = 10.0
 /**
  * Places direction chevrons along a route.
  *
- * A cursor starts half a spacing into the route and walks to its end. At each step seven
- * candidate positions are tried in [CANDIDATE_OFFSETS] order. A candidate is skipped when
- * it falls within [ChevronTuning.collisionRadiusM] of an already-placed chevron. Otherwise
- * its local bearing spread decides: below [EARLY_ACCEPT_SPREAD_DEG] it is taken
- * immediately, otherwise it is remembered only if it is the straightest so far. After the
- * seven, the straightest candidate is taken when its spread is below
- * [ChevronTuning.headingThresholdDeg], and nothing is placed when it is not.
+ * A cursor starts half a spacing into the route and walks to its end. At each step seven candidate
+ * positions are tried in [CANDIDATE_OFFSETS] order. A candidate is skipped when it falls within
+ * [ChevronTuning.collisionRadiusM] of an already-placed chevron. Otherwise its local bearing spread
+ * decides: below [EARLY_ACCEPT_SPREAD_DEG] it is taken immediately, otherwise it is remembered only
+ * if it is the straightest so far. After the seven, the straightest candidate is taken when its
+ * spread is below [ChevronTuning.headingThresholdDeg], and nothing is placed when it is not.
  *
- * On a placement the cursor re-phases to that position plus one spacing, so the cadence is
- * measured from what was actually placed rather than from a fixed grid. On a rejection the
- * cursor advances by one spacing and the grid phase is preserved.
+ * On a placement the cursor re-phases to that position plus one spacing, so the cadence is measured
+ * from what was actually placed rather than from a fixed grid. On a rejection the cursor advances
+ * by one spacing and the grid phase is preserved.
  *
  * Placement knows nothing about grade runs. Callers colour and filter the result.
  */
@@ -144,9 +140,9 @@ private fun placementAt(
 }
 
 /**
- * Spread in degrees between the largest and smallest edge bearing over the route segments
- * spanning `[centerM - halfM, centerM + halfM]`. Folded to `[0, 180]` so a span crossing
- * the 0/360 wraparound reports the shorter arc. A window inside a single segment reports 0.
+ * Spread in degrees between the largest and smallest edge bearing over the route segments spanning
+ * `[centerM - halfM, centerM + halfM]`. Folded to `[0, 180]` so a span crossing the 0/360
+ * wraparound reports the shorter arc. A window inside a single segment reports 0.
  */
 private fun bearingSpreadInWindow(
     gps: List<LatLng>,
@@ -186,8 +182,8 @@ private fun segmentIndexAt(cumDist: DoubleArray, distanceM: Double): Int {
 }
 
 /**
- * Initial bearing in degrees from [from] to [to], measured clockwise from North
- * (0 = N, 90 = E, 180 = S, 270 = W). Standard spherical forward-azimuth formula.
+ * Initial bearing in degrees from [from] to [to], measured clockwise from North (0 = N, 90 = E, 180
+ * = S, 270 = W). Standard spherical forward-azimuth formula.
  */
 private fun bearingDeg(from: LatLng, to: LatLng): Float {
     val lat1 = from.lat * PI / 180.0
@@ -205,25 +201,25 @@ private fun bearingDeg(from: LatLng, to: LatLng): Float {
 // ground resolution, so the on-screen rhythm holds as the map scales.
 
 /**
- * Spacing in metres between consecutive direction chevrons, tuned to sit close to the
- * native arrow cadence at typical zooms. On a Karoo 3 (xdpi 320.842) at zoom 15 and
- * latitude 44 this is about 220 m, roughly a quarter of the screen width.
+ * Spacing in metres between consecutive direction chevrons, tuned to sit close to the native arrow
+ * cadence at typical zooms. On a Karoo 3 (xdpi 320.842) at zoom 15 and latitude 44 this is about
+ * 220 m, roughly a quarter of the screen width.
  */
 internal fun nativeChevronSpacingM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
     xdpi * 0.4 * groundResolution(lat, zoomLevel)
 
 /**
- * Half-width in metres of the neighbourhood around a candidate position used both to
- * measure local bearing spread and as the chord for the chevron's rotation. Half the
- * collision radius, so `xdpi * 0.05 * groundResolution`.
+ * Half-width in metres of the neighbourhood around a candidate position used both to measure local
+ * bearing spread and as the chord for the chevron's rotation. Half the collision radius, so `xdpi *
+ * 0.05 * groundResolution`.
  */
 internal fun nativeChevronWindowHalfM(xdpi: Float, lat: Double, zoomLevel: Double): Double =
     xdpi * 0.05 * groundResolution(lat, zoomLevel)
 
 /**
- * Ground length in metres of a chevron icon [heightDp] tall at display [density] and the
- * given [zoomLevel]. Two chevrons closer than this overlap on screen, so it doubles as the
- * collision radius. Tracks our own icon, 17 dp tall at density 1.875.
+ * Ground length in metres of a chevron icon [heightDp] tall at display [density] and the given
+ * [zoomLevel]. Two chevrons closer than this overlap on screen, so it doubles as the collision
+ * radius. Tracks our own icon, 17 dp tall at density 1.875.
  */
 internal fun chevronIconLengthM(
     heightDp: Float,
@@ -233,9 +229,9 @@ internal fun chevronIconLengthM(
 ): Double = heightDp * density * groundResolution(lat, zoomLevel)
 
 /**
- * Maximum bearing spread in degrees allowed inside the local window for a chevron to be
- * placed. Spreads at or above this suppress the position because the route is curving too
- * sharply for a single rotation to indicate direction faithfully.
+ * Maximum bearing spread in degrees allowed inside the local window for a chevron to be placed.
+ * Spreads at or above this suppress the position because the route is curving too sharply for a
+ * single rotation to indicate direction faithfully.
  */
 internal fun nativeChevronHeadingThresholdDeg(zoomLevel: Double): Double =
     when {

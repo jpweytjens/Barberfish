@@ -15,12 +15,11 @@ internal const val PREVIEW_DELAY_MS = 1000L
 // than the human eye registers, and the debug sweep emits at the same rate.
 internal const val HUD_UPDATE_INTERVAL_MS = 1000L
 
-fun <T> cyclePreview(states: List<T>): Flow<T> =
-    flow {
-            var i = 0
-            while (true) {
-                emit(states[i++ % states.size])
-                delay(PREVIEW_DELAY_MS)
-            }
-        }
-        .flowOn(Dispatchers.IO)
+fun <T> cyclePreview(states: List<T>): Flow<T> = flow {
+    var i = 0
+    while (true) {
+        emit(states[i++ % states.size])
+        delay(PREVIEW_DELAY_MS)
+    }
+}
+    .flowOn(Dispatchers.IO)

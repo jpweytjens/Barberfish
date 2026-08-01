@@ -31,9 +31,10 @@ class DataFieldDesignConfigTest {
 
     @Test
     fun `tolerates unknown keys from future versions`() {
-        val decoded = json.decodeFromString<DataFieldDesignConfig>(
-            """{"showIcons":false,"labelSize":"LARGE","futureKey":42}""",
-        )
+        val decoded =
+            json.decodeFromString<DataFieldDesignConfig>(
+                """{"showIcons":false,"labelSize":"LARGE","futureKey":42}"""
+            )
         assertEquals(false, decoded.showIcons)
         assertEquals(LabelSize.LARGE, decoded.labelSize)
     }

@@ -47,16 +47,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Renders every registered field's preview the way the Karoo field picker does
- * (previewFlow → renderState → remoteViewsToBitmap) and writes one PNG per field
- * to the app's external files dir for adb pull:
+ * Renders every registered field's preview the way the Karoo field picker does (previewFlow →
+ * renderState → remoteViewsToBitmap) and writes one PNG per field to the app's external files dir
+ * for adb pull:
  *
- *   adb pull /sdcard/Android/data/com.jpweytjens.barberfish/files/previews
+ * adb pull /sdcard/Android/data/com.jpweytjens.barberfish/files/previews
  *
  * Drive via `scripts/render_previews.sh` (manual `am instrument` flow — never
- * `connectedDebugAndroidTest`, which uninstalls the app and wipes DataStore).
- * Renders are flattened onto black (Karoo dark theme) so white header text
- * stays visible in the PNGs.
+ * `connectedDebugAndroidTest`, which uninstalls the app and wipes DataStore). Renders are flattened
+ * onto black (Karoo dark theme) so white header text stays visible in the PNGs.
  */
 @RunWith(AndroidJUnit4::class)
 class AllFieldPreviewsRenderTest {
@@ -95,15 +94,14 @@ class AllFieldPreviewsRenderTest {
             // and grade all describe the same moment (3-entry duration lists wrap
             // to their mid-ride snapshot). Flows are collected concurrently so one
             // drop depth bounds the wall-clock, not the sum.
-            val samples =
-                runBlocking {
-                    types
-                        .map { type ->
-                            val config = if (type is HUDDataType) hudConfig else cellConfig
-                            async { collectSample(type, drops = 4, config, context) }
-                        }
-                        .awaitAll()
-                }
+            val samples = runBlocking {
+                types
+                    .map { type ->
+                        val config = if (type is HUDDataType) hudConfig else cellConfig
+                        async { collectSample(type, drops = 4, config, context) }
+                    }
+                    .awaitAll()
+            }
             for (sample in samples) {
                 val config = if (sample.type is HUDDataType) hudConfig else cellConfig
                 writePreviewPng(sample, sample.type.typeId, config, design, context, outDir)
@@ -129,9 +127,10 @@ class AllFieldPreviewsRenderTest {
             // not part of the preview cycle, so build the states directly.
             val statesDir = File(outDir, "states").apply { mkdirs() }
             val grade = types.filterIsInstance<GradeField>().single()
-            val gradeCfg =
-                runBlocking { context.streamGradeFieldConfig().first() }
-                    .copy(colorMode = ZoneColorMode.BACKGROUND)
+            val gradeCfg = runBlocking {
+                context.streamGradeFieldConfig().first()
+            }
+                .copy(colorMode = ZoneColorMode.BACKGROUND)
             val gradePalette = runBlocking { context.streamZoneConfig().first() }.gradePalette
             val gradeReadings =
                 listOf(
@@ -243,7 +242,9 @@ class AllFieldPreviewsRenderTest {
                         isNightMode = true,
                         targetCount = routeCfg.simplification.targetCount,
                     )
-                ) { "overview render produced no bitmap" }
+                ) {
+                    "overview render produced no bitmap"
+                }
             writePreviewPng(
                 Sample(overviewField, SparklineRender(ovBitmap, routeCfg.showHeader)),
                 "overview",
@@ -300,7 +301,8 @@ class AllFieldPreviewsRenderTest {
     }
 
     private fun flattenOntoBlack(rendered: Bitmap): Bitmap {
-        val flattened = Bitmap.createBitmap(rendered.width, rendered.height, Bitmap.Config.ARGB_8888)
+        val flattened =
+            Bitmap.createBitmap(rendered.width, rendered.height, Bitmap.Config.ARGB_8888)
         Canvas(flattened).apply {
             drawColor(Color.BLACK)
             drawBitmap(rendered, 0f, 0f, null)

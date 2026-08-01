@@ -169,18 +169,17 @@ enum class ElevationZoom(val label: String, val minRangeM: Float) {
 enum class SparklineMode {
     OFF,
     CLIMBS,
-    ON
+    ON,
 }
 
 /**
  * The (climb, descent) grade edges a stored pair of band-skip counts means, read off [palette]'s
  * own band stops.
  *
- * Counts stopped being portable when 4.x added the Barberfish palette: its climb bands have no
- * 0.0 entry (they jump straight from 2.0 to -2.0), so the same count resolves to a different
- * threshold on Barberfish than on the other six palettes, which all open a band at 0.0.
- * Persisting the threshold instead of the count keeps a stored config meaning what it meant when
- * it was written.
+ * Counts stopped being portable when 4.x added the Barberfish palette: its climb bands have no 0.0
+ * entry (they jump straight from 2.0 to -2.0), so the same count resolves to a different threshold
+ * on Barberfish than on the other six palettes, which all open a band at 0.0. Persisting the
+ * threshold instead of the count keeps a stored config meaning what it meant when it was written.
  *
  * A count of 0 ("Off") maps to an edge of 0.0 on both sides, keeping exactly what the count meant:
  * colour every climb from grade 0 up, colour every descent. Counts of 1 and up step outward through
@@ -293,9 +292,11 @@ fun SparklineConfig?.toFieldConfig(): SparklineConfig =
 fun Context.streamFieldSparklineConfig(): Flow<SparklineConfig> =
     dataStore.data
         .map { prefs ->
-            prefs[fieldSparklineConfigKey]?.let {
-                runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
-            }.toFieldConfig()
+            prefs[fieldSparklineConfigKey]
+                ?.let {
+                    runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
+                }
+                .toFieldConfig()
         }
         .distinctUntilChanged()
 
@@ -415,7 +416,7 @@ enum class SpeedSmoothingStream(val label: String, val typeId: String, val field
 enum class SpeedThresholdSource {
     FIXED,
     AVG_TOTAL,
-    AVG_MOVING
+    AVG_MOVING,
 }
 
 @Serializable
@@ -514,9 +515,9 @@ data class GradeMapConfig(
      *
      * WARNING: this is the overlay's own answer, not the effective one. It ignores
      * [syncWithSparkline], which defaults to true, so a synced overlay follows the field
-     * sparkline's edges instead. Render paths must take theirs from
-     * `resolveGradeMapTuning(map, sparkline, palette)`, which applies the sync the same way it
-     * already does for the other shared settings.
+     * sparkline's edges instead. Render paths must take theirs from `resolveGradeMapTuning(map,
+     * sparkline, palette)`, which applies the sync the same way it already does for the other
+     * shared settings.
      *
      * The descent edge here is the migrated count only, and the map has no descent count, so it
      * always resolves as 0. An unsynced overlay takes its descent edge from the field sparkline
@@ -700,10 +701,7 @@ suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) =
 
 // --- ETAConfig ---
 
-@Serializable
-data class ETAConfig(
-    val priorSpeedKph: Double = 25.0,
-)
+@Serializable data class ETAConfig(val priorSpeedKph: Double = 25.0)
 
 private val etaConfigKey = stringPreferencesKey("eta_config")
 
@@ -726,8 +724,7 @@ private val timeConfigKey = stringPreferencesKey("time_config")
 
 fun Context.streamTimeConfig(): Flow<TimeConfig> = streamConfig(timeConfigKey, TimeConfig())
 
-suspend fun Context.saveTimeConfig(config: TimeConfig) =
-    saveConfig(timeConfigKey, config)
+suspend fun Context.saveTimeConfig(config: TimeConfig) = saveConfig(timeConfigKey, config)
 
 // --- DataFieldDesignConfig ---
 // Mirrors Karoo OS "Data Field Design" options the SDK does not expose to extensions

@@ -7,8 +7,8 @@ import android.view.View
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
-import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
@@ -22,7 +22,11 @@ import kotlinx.coroutines.flow.map
 class ElevationSparklineField(private val karooSystem: KarooSystemService) :
     BarberfishBase<SparklineRender>("barberfish", "elevation-sparkline") {
 
-    private fun bitmapFlow(context: Context, config: ViewConfig, isPreview: Boolean): Flow<SparklineRender> {
+    private fun bitmapFlow(
+        context: Context,
+        config: ViewConfig,
+        isPreview: Boolean,
+    ): Flow<SparklineRender> {
         val cfgFlow = context.streamFieldSparklineConfig()
         return cfgFlow
             .map { it.showHeader }
@@ -47,7 +51,12 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
     override fun previewFlow(context: Context, config: ViewConfig): Flow<SparklineRender> =
         bitmapFlow(context, config, isPreview = true)
 
-    override fun renderState(state: SparklineRender, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews {
+    override fun renderState(
+        state: SparklineRender,
+        design: DataFieldDesignConfig,
+        config: ViewConfig,
+        context: Context,
+    ): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
         if (state.showHeader) {
             applySparklineHeaderChrome(

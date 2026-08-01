@@ -19,8 +19,13 @@ import kotlinx.coroutines.flow.map
 class RouteRemainingField(private val karooSystem: KarooSystemService) :
     BarberfishBase<SparklineRender>("barberfish", "route-remaining") {
 
-    private fun bitmapFlow(context: Context, config: ViewConfig, isPreview: Boolean): Flow<SparklineRender> {
-        return context.streamRouteRemainingConfig()
+    private fun bitmapFlow(
+        context: Context,
+        config: ViewConfig,
+        isPreview: Boolean,
+    ): Flow<SparklineRender> {
+        return context
+            .streamRouteRemainingConfig()
             .map { it.showHeader }
             .distinctUntilChanged()
             .flatMapLatest { showHeader ->
@@ -42,7 +47,12 @@ class RouteRemainingField(private val karooSystem: KarooSystemService) :
     override fun previewFlow(context: Context, config: ViewConfig): Flow<SparklineRender> =
         bitmapFlow(context, config, isPreview = true)
 
-    override fun renderState(state: SparklineRender, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews {
+    override fun renderState(
+        state: SparklineRender,
+        design: DataFieldDesignConfig,
+        config: ViewConfig,
+        context: Context,
+    ): RemoteViews {
         val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
         if (state.showHeader) {
             applySparklineHeaderChrome(

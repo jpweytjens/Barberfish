@@ -95,13 +95,15 @@ class CadenceField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode = ZoneColorMode.TEXT,
         ): FieldState {
             val label = cadenceLabel(smoothing)
-            state.toErrorFieldState(
-                label,
-                R.drawable.ic_cadence,
-                FieldState.noSensor(label, R.drawable.ic_cadence),
-            )?.let {
-                return it
-            }
+            state
+                .toErrorFieldState(
+                    label,
+                    R.drawable.ic_cadence,
+                    FieldState.noSensor(label, R.drawable.ic_cadence),
+                )
+                ?.let {
+                    return it
+                }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
                     ?: return FieldState.notAvailable(label, R.drawable.ic_cadence)

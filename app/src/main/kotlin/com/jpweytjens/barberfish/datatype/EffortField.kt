@@ -24,9 +24,8 @@ private const val LABEL = "Ride\nRemaining"
 private val ICON = R.drawable.ic_road
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class EffortField(
-    private val karooSystem: KarooSystemService,
-) : BarberfishDataType("barberfish", "remaining-effort") {
+class EffortField(private val karooSystem: KarooSystemService) :
+    BarberfishDataType("barberfish", "remaining-effort") {
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         karooSystem.streamUserProfile().flatMapLatest { profile ->
@@ -57,7 +56,7 @@ class EffortField(
         private fun effortFieldState(
             distText: String,
             ascentText: String,
-            climbFirst: Boolean
+            climbFirst: Boolean,
         ): FieldState {
             val climb = ASCENT_MARKER + ascentText
             return FieldState(

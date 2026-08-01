@@ -20,17 +20,24 @@ class FieldSparklineConfigTest {
 
     @Test
     fun `CLIMBS mode is coerced to ON`() {
-        assertEquals(SparklineMode.ON, SparklineConfig(mode = SparklineMode.CLIMBS).toFieldConfig().hudMode)
+        assertEquals(
+            SparklineMode.ON,
+            SparklineConfig(mode = SparklineMode.CLIMBS).toFieldConfig().hudMode,
+        )
     }
 
     @Test
     fun `OFF mode is coerced to ON`() {
-        assertEquals(SparklineMode.ON, SparklineConfig(mode = SparklineMode.OFF).toFieldConfig().hudMode)
+        assertEquals(
+            SparklineMode.ON,
+            SparklineConfig(mode = SparklineMode.OFF).toFieldConfig().hudMode,
+        )
     }
 
     @Test
     fun `coercing mode preserves the other options`() {
-        val stored = SparklineConfig(mode = SparklineMode.CLIMBS, lookaheadKm = 10, showClimbs = false)
+        val stored =
+            SparklineConfig(mode = SparklineMode.CLIMBS, lookaheadKm = 10, showClimbs = false)
         val field = stored.toFieldConfig()
         assertEquals(10, field.lookaheadKm)
         assertEquals(false, field.showClimbs)

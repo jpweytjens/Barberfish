@@ -70,7 +70,7 @@ class ZoneColoringTest {
         val lc = abs(apcaContrast(color, black))
         assertTrue(
             "$name hex=${color.value.toString(16).uppercase()} Lc=${"%.1f".format(lc)} < $threshold",
-            lc >= threshold
+            lc >= threshold,
         )
     }
 
@@ -274,7 +274,7 @@ class ZoneColoringTest {
         val lc = abs(apcaContrast(color, white))
         assertTrue(
             "$name hex=${color.value.toString(16).uppercase()} Lc=${"%.1f".format(lc)} < $threshold",
-            lc >= threshold
+            lc >= threshold,
         )
     }
 

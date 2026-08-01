@@ -59,7 +59,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-private const val CLIMB_OVERLAY_WIDTH = 8          // coloured fill width; tune via screencaps
+private const val CLIMB_OVERLAY_WIDTH = 8 // coloured fill width; tune via screencaps
 
 // Chevron icon height in dp — keep in sync with ic_climber_chevron*.xml. Drives the
 // collision-dedup spacing so chevrons never overlap regardless of zoom.
@@ -147,24 +147,25 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         val scope = CoroutineScope(Dispatchers.IO)
         val job: Job = scope.launch {
             // Branch A: config + nav (changes rarely — route load, settings edit).
-            val configNavFlow = combine(
-                applicationContext.streamGradeMapConfig(),
-                applicationContext.streamFieldSparklineConfig(),
-                applicationContext.streamZoneConfig(),
-                karooSystem.streamNavigationState(),
-            ) { gradeMapCfg, sparklineCfg, zoneCfg, navEvent ->
-                // Resolve sparkline-sync here so the signature() below hashes the
-                // effective tuning and a sparkline edit triggers a rebuild while synced.
-                val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
-                GradeMapConfigInputs(
-                    enabled = gradeMapCfg.enabled,
-                    showPolylines = gradeMapCfg.showPolylines,
-                    showChevrons = gradeMapCfg.showChevrons,
-                    palette = zoneCfg.gradePalette,
-                    tuning = eff,
-                    state = navEvent.state,
-                )
-            }
+            val configNavFlow =
+                combine(
+                    applicationContext.streamGradeMapConfig(),
+                    applicationContext.streamFieldSparklineConfig(),
+                    applicationContext.streamZoneConfig(),
+                    karooSystem.streamNavigationState(),
+                ) { gradeMapCfg, sparklineCfg, zoneCfg, navEvent ->
+                    // Resolve sparkline-sync here so the signature() below hashes the
+                    // effective tuning and a sparkline edit triggers a rebuild while synced.
+                    val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
+                    GradeMapConfigInputs(
+                        enabled = gradeMapCfg.enabled,
+                        showPolylines = gradeMapCfg.showPolylines,
+                        showChevrons = gradeMapCfg.showChevrons,
+                        palette = zoneCfg.gradePalette,
+                        tuning = eff,
+                        state = navEvent.state,
+                    )
+                }
             // Branch B: zoom + location (changes on every GPS tick / map interaction).
             // onStart seeds defaults so the combine fires immediately on route load even
             // before the first location fix.
@@ -172,20 +173,25 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             // The zoom is frozen per integer band before the combine, never inside it: the
             // band's provisional-seed rule must see one call per zoom emission, and a
             // location tick arriving with an unchanged zoom would otherwise spend it.
-            val zoomFlow = karooSystem.consumerFlow<OnMapZoomLevel>()
-                .map { it.zoomLevel }
-                .onStart { emit(SEED_ZOOM) }
-                .map { zoomBand.effectiveZoom(it) }
-                .distinctUntilChanged()
-            val viewportFlow = combine(
-                zoomFlow,
-                karooSystem.consumerFlow<OnLocationChanged>()
-                    .onStart { emit(OnLocationChanged(0.0, 0.0, null)) },
-            ) { zoom, loc ->
-                ViewportInputs(zoom, loc.lat, loc.lng)
-            }
+            val zoomFlow =
+                karooSystem
+                    .consumerFlow<OnMapZoomLevel>()
+                    .map { it.zoomLevel }
+                    .onStart { emit(SEED_ZOOM) }
+                    .map { zoomBand.effectiveZoom(it) }
+                    .distinctUntilChanged()
+            val viewportFlow =
+                combine(
+                    zoomFlow,
+                    karooSystem.consumerFlow<OnLocationChanged>().onStart {
+                        emit(OnLocationChanged(0.0, 0.0, null))
+                    },
+                ) { zoom, loc ->
+                    ViewportInputs(zoom, loc.lat, loc.lng)
+                }
 
-            configNavFlow.combine(viewportFlow) { cfg, vp -> cfg to vp }
+            configNavFlow
+                .combine(viewportFlow) { cfg, vp -> cfg to vp }
                 .distinctUntilChanged { prev, next ->
                     prev.first.signature() == next.first.signature() &&
                         prev.second.bucketedSignature() == next.second.bucketedSignature()
@@ -202,9 +208,15 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     // sparsest case — which is the safe direction to err. Once a fix lands
                     // it tightens to the true value.
                     val chevronStep = nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
-                    val chevronWindow = nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
+                    val chevronWindow =
+                        nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
                     val chevronCollision =
-                        chevronIconLengthM(CHEVRON_ICON_HEIGHT_DP, density, viewport.lat, viewport.zoomLevel)
+                        chevronIconLengthM(
+                            CHEVRON_ICON_HEIGHT_DP,
+                            density,
+                            viewport.lat,
+                            viewport.zoomLevel,
+                        )
                     val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
                     // Viewport filtering disabled for now — the rideapp's IPC reordering
                     // between HideSymbols and ShowSymbols causes chevrons to vanish when
@@ -215,47 +227,61 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     // the off-route rejoin path; our elevation polyline is pure route
                     // distance (0..routeDistance). Subtract rejoinDistance to align them.
                     val rejoinOffset = route.rejoinDistance ?: 0.0
-                    val climbRanges = route.climbs.map {
-                        (it.startDistance - rejoinOffset) to
-                            (it.startDistance + it.length - rejoinOffset)
-                    }
+                    val climbRanges =
+                        route.climbs.map {
+                            (it.startDistance - rejoinOffset) to
+                                (it.startDistance + it.length - rejoinOffset)
+                        }
                     // Round line-cap overhang per end = (width/2) px in ground metres.
                     // The overlay only re-emits on a band crossing, so this trim is fixed for
                     // the whole band while the rendered zoom moves across it. Centring on the
                     // band's midpoint bounds the error at about 1.41x either way instead of 2x.
-                    val capTrimM = (CLIMB_OVERLAY_WIDTH / 2.0) *
-                        groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
-                    val specs = buildGradeMapSpecs(
-                        routePolyline = route.routePolyline,
-                        routeElevationPolyline = route.routeElevationPolyline,
-                        palette = inputs.palette,
-                        readable = false,
-                        tuning = inputs.tuning,
-                        includeChevrons = inputs.showChevrons,
-                        chevronSpacingM = chevronStep,
-                        chevronWindowHalfM = chevronWindow,
-                        chevronHeadingThresholdDeg = headingThreshold,
-                        chevronMinSpacingM = chevronCollision,
-                        chevronViewport = bounds,
-                        capTrimM = capTrimM,
-                        reversed = route.reversed,
+                    val capTrimM =
+                        (CLIMB_OVERLAY_WIDTH / 2.0) *
+                            groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
+                    val specs =
+                        buildGradeMapSpecs(
+                            routePolyline = route.routePolyline,
+                            routeElevationPolyline = route.routeElevationPolyline,
+                            palette = inputs.palette,
+                            readable = false,
+                            tuning = inputs.tuning,
+                            includeChevrons = inputs.showChevrons,
+                            chevronSpacingM = chevronStep,
+                            chevronWindowHalfM = chevronWindow,
+                            chevronHeadingThresholdDeg = headingThreshold,
+                            chevronMinSpacingM = chevronCollision,
+                            chevronViewport = bounds,
+                            capTrimM = capTrimM,
+                            reversed = route.reversed,
+                        )
+                    Timber.d(
+                        "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
                     )
-                    Timber.d("grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})")
                     if (BuildConfig.DEBUG) {
                         val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
-                        Timber.d("grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}")
+                        Timber.d(
+                            "grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
+                        )
                         // Direction diagnostic. routePolyline always arrives in saved
                         // order, so gpsFirst/gpsLast are identical forward and reversed;
                         // segStart is what moves once the reversal is applied.
                         val gpsPts = decodeGpsPolyline(route.routePolyline)
-                        val segStart = specs.polylines.firstOrNull()
-                            ?.let { decodeGpsPolyline(it.encoded).firstOrNull() }
-                        Timber.d("grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}")
-                        val segLen = specs.polylines
-                            .map { decodeGpsPolyline(it.encoded) }
-                            .map { if (it.size < 2) 0.0 else cumulativeDistancesM(it).last() }
-                            .sorted()
-                        Timber.d("grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}")
+                        val segStart =
+                            specs.polylines.firstOrNull()?.let {
+                                decodeGpsPolyline(it.encoded).firstOrNull()
+                            }
+                        Timber.d(
+                            "grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}"
+                        )
+                        val segLen =
+                            specs.polylines
+                                .map { decodeGpsPolyline(it.encoded) }
+                                .map { if (it.size < 2) 0.0 else cumulativeDistancesM(it).last() }
+                                .sorted()
+                        Timber.d(
+                            "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
+                        )
                     }
                     if (inputs.showPolylines) {
                         polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
@@ -327,14 +353,17 @@ private data class ViewportInputs(
     val lat: Double,
     val lng: Double,
 ) {
-    /** Bucket lat at 0.05 deg (~5.5 km). Location's only use in the rebuild is the
-     *  cos(lat) term in the spacing math, which is insensitive below tens of km; lng
-     *  is unused (log line only), so it stays out of the signature entirely. Zoom is
-     *  already frozen per integer band at the flow source, so it needs no bucketing. */
-    fun bucketedSignature() = ViewportSignature(
-        zoomLevel = zoomLevel,
-        latBucket = (lat / 0.05).toLong(),
-    )
+    /**
+     * Bucket lat at 0.05 deg (~5.5 km). Location's only use in the rebuild is the cos(lat) term in
+     * the spacing math, which is insensitive below tens of km; lng is unused (log line only), so it
+     * stays out of the signature entirely. Zoom is already frozen per integer band at the flow
+     * source, so it needs no bucketing.
+     */
+    fun bucketedSignature() =
+        ViewportSignature(
+            zoomLevel = zoomLevel,
+            latBucket = (lat / 0.05).toLong(),
+        )
 }
 
 private data class ViewportSignature(

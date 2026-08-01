@@ -10,8 +10,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Pins the connected icon tint: teal per theme when the field's data is live, theme foreground
- * when it isn't (ride-clock fields before the ride starts) or when the field shows a placeholder.
+ * Pins the connected icon tint: teal per theme when the field's data is live, theme foreground when
+ * it isn't (ride-clock fields before the ride starts) or when the field shows a placeholder.
  */
 class IconTintTest {
 
@@ -26,9 +26,17 @@ class IconTintTest {
     @Test
     fun notLiveIcon_dropsToForeground() {
         val night =
-            FieldColor.Default.toColorConfig(ZoneColorMode.NONE, isNightMode = true, liveIcon = false)
+            FieldColor.Default.toColorConfig(
+                ZoneColorMode.NONE,
+                isNightMode = true,
+                liveIcon = false,
+            )
         val day =
-            FieldColor.Default.toColorConfig(ZoneColorMode.NONE, isNightMode = false, liveIcon = false)
+            FieldColor.Default.toColorConfig(
+                ZoneColorMode.NONE,
+                isNightMode = false,
+                liveIcon = false,
+            )
         assertEquals(Color.White, night.iconTint)
         assertEquals(Color.Black, day.iconTint)
     }

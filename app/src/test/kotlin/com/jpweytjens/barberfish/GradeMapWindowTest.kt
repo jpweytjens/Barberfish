@@ -23,9 +23,9 @@ class GradeMapWindowTest {
     private fun steadyElev(d: Double): Double = d * 0.06
 
     /**
-     * Alternating 200 m blocks of 10 per cent and 3 per cent. Against 200 m cells every cell
-     * covers exactly one block, so consecutive cells land in different bands (salmon, then
-     * mint) and no two of them coalesce — the run list is the cell list.
+     * Alternating 200 m blocks of 10 per cent and 3 per cent. Against 200 m cells every cell covers
+     * exactly one block, so consecutive cells land in different bands (salmon, then mint) and no
+     * two of them coalesce — the run list is the cell list.
      */
     private fun staircaseElev(d: Double): Double {
         var elev = 0.0
@@ -39,13 +39,12 @@ class GradeMapWindowTest {
     }
 
     /**
-     * A straight 8.00 per cent climb from 1234.5 m, as a simplified profile actually reaches
-     * the resampler: vertices about 90 m apart, distances and elevations quantised to 0.1 m
-     * and held as `Float`. 8 per cent is a band edge, so the band a cell lands in turns on
-     * which side of 8.0 its chord falls, and `Float` storage of the vertices alone is enough
-     * to put neighbouring cells on opposite sides. The base elevation is what makes it bite:
-     * the chord strays from 8.00 by 8e-5 per cent here, against 2e-5 from a zero base and
-     * 3e-4 at 5000 m.
+     * A straight 8.00 per cent climb from 1234.5 m, as a simplified profile actually reaches the
+     * resampler: vertices about 90 m apart, distances and elevations quantised to 0.1 m and held as
+     * `Float`. 8 per cent is a band edge, so the band a cell lands in turns on which side of 8.0
+     * its chord falls, and `Float` storage of the vertices alone is enough to put neighbouring
+     * cells on opposite sides. The base elevation is what makes it bite: the chord strays from 8.00
+     * by 8e-5 per cent here, against 2e-5 from a zero base and 3e-4 at 5000 m.
      */
     private val steadyEightFromAltitude: List<Pair<Float, Float>> =
         List(31) { i ->
@@ -74,8 +73,10 @@ class GradeMapWindowTest {
         // single run and leave nothing here to measure.
         assertTrue("fixture produced no full-length runs to measure", measurable.isNotEmpty())
         measurable.forEach {
-            assertTrue("run ${it.startM}-${it.endM} is shorter than the cell",
-                it.endM - it.startM >= 200.0)
+            assertTrue(
+                "run ${it.startM}-${it.endM} is shorter than the cell",
+                it.endM - it.startM >= 200.0,
+            )
         }
     }
 
@@ -100,11 +101,12 @@ class GradeMapWindowTest {
         // decides the band on every cell of a climb whose true grade is a whole per cent, and
         // the overlay stripes between salmon and yellow down a stretch the rider sees as one
         // steady gradient.
-        val runs = guard(
-            cellM = GRADE_BASELINE_M,
-            endM = steadyEightFromAltitude.last().first.toDouble(),
-            elev = { distanceM -> elevationAtM(steadyEightFromAltitude, distanceM) },
-        )
+        val runs =
+            guard(
+                cellM = GRADE_BASELINE_M,
+                endM = steadyEightFromAltitude.last().first.toDouble(),
+                elev = { distanceM -> elevationAtM(steadyEightFromAltitude, distanceM) },
+            )
         assertEquals(
             "a straight 8.00 per cent climb striped into ${runs.size} runs",
             1,

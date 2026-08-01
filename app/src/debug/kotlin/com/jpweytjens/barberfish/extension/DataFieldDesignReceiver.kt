@@ -52,8 +52,14 @@ class DataFieldDesignReceiver : BroadcastReceiver() {
 
 private fun parseBool(value: String): Boolean? =
     when (value.lowercase()) {
-        "on", "true", "1", "yes" -> true
-        "off", "false", "0", "no" -> false
+        "on",
+        "true",
+        "1",
+        "yes" -> true
+        "off",
+        "false",
+        "0",
+        "no" -> false
         else -> null
     }
 

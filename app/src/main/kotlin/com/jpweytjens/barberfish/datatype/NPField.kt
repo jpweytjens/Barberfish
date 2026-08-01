@@ -50,13 +50,15 @@ class NPField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState(
-                "NP",
-                R.drawable.ic_col_power,
-                FieldState.noSensor("NP", R.drawable.ic_col_power),
-            )?.let {
-                return it
-            }
+            state
+                .toErrorFieldState(
+                    "NP",
+                    R.drawable.ic_col_power,
+                    FieldState.noSensor("NP", R.drawable.ic_col_power),
+                )
+                ?.let {
+                    return it
+                }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
                     // Power is streaming but NP is undefined until its 30s window fills.

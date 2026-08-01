@@ -56,7 +56,7 @@ class GradeEdgeMigrationTest {
             edgesFromSkipBands(
                 skipBands = 3,
                 skipBandsDescent = 2,
-                palette = GradePalette.BARBERFISH
+                palette = GradePalette.BARBERFISH,
             )
         assertEquals(8.0, climb)
         assertEquals(-6.0, descent)

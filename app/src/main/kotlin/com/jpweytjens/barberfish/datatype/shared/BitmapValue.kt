@@ -16,8 +16,10 @@ import kotlin.math.roundToInt
 private const val MIN_BITMAP_HEIGHT_PX = 30
 private const val LETTER_SPACING = -0.04f
 
-/** Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent
- *  arrow icon (see [renderTwoRowValueBitmap]). */
+/**
+ * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow
+ * icon (see [renderTwoRowValueBitmap]).
+ */
 const val ASCENT_MARKER = "↗ "
 
 // Bitmap height as a fraction of the value font base sp. Sized to the
@@ -79,7 +81,8 @@ fun renderTwoRowValueBitmap(
     val bounds = Rect()
     // Height-fit: a digit fills most of one band (margin avoids top/bottom clipping).
     paintAt(100f).getTextBounds("0", 0, 1, bounds)
-    var fontPx = if (bounds.height() > 0) 100f * (bandPx * TWO_ROW_DIGIT_FILL) / bounds.height() else bandPx
+    var fontPx =
+        if (bounds.height() > 0) 100f * (bandPx * TWO_ROW_DIGIT_FILL) / bounds.height() else bandPx
     // Width-fit: shrink so the wider row fits the cell.
     run {
         val p = paintAt(fontPx)
@@ -198,14 +201,13 @@ fun renderValueBitmap(
 }
 
 /**
- * Render an all-caps header [text] into an `ARGB_8888` bitmap that reproduces the
- * native header TextView: `lines=[maxLines]`, font padding off, per-layout
- * [lineSpacingMult] (0.6 in 2-col 5-row cells, 0.7 elsewhere). The reservation is
- * the TextView height `lineH + (maxLines − 1) × round(lineH × mult)` with `lineH`
- * from `Paint.getFontMetricsInt`; shorter text centers in it (gravity
- * center_vertical) and [translationYPx] shifts the block (−3 px at 5-row Large).
- * See docs/sdk-findings.md § "Native header and value sizing".
- * `density = DENSITY_NONE` so RemoteViews renders 1:1.
+ * Render an all-caps header [text] into an `ARGB_8888` bitmap that reproduces the native header
+ * TextView: `lines=[maxLines]`, font padding off, per-layout [lineSpacingMult] (0.6 in 2-col 5-row
+ * cells, 0.7 elsewhere). The reservation is the TextView height `lineH + (maxLines − 1) ×
+ * round(lineH × mult)` with `lineH` from `Paint.getFontMetricsInt`; shorter text centers in it
+ * (gravity center_vertical) and [translationYPx] shifts the block (−3 px at 5-row Large). See
+ * docs/sdk-findings.md § "Native header and value sizing". `density = DENSITY_NONE` so RemoteViews
+ * renders 1:1.
  */
 fun renderHeaderBitmap(
     text: String,
@@ -217,31 +219,33 @@ fun renderHeaderBitmap(
     lineSpacingMult: Float,
     translationYPx: Int = 0,
 ): Bitmap {
-    val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
-        textSize = fontSizePx
-        this.color = color
-    }
+    val paint =
+        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+            textSize = fontSizePx
+            this.color = color
+        }
     val width = availableWidthPx.coerceAtLeast(1)
     val upper = text.uppercase()
-    val align = when (alignment) {
-        ViewConfig.Alignment.LEFT -> Layout.Alignment.ALIGN_NORMAL
-        ViewConfig.Alignment.CENTER -> Layout.Alignment.ALIGN_CENTER
-        ViewConfig.Alignment.RIGHT -> Layout.Alignment.ALIGN_OPPOSITE
-    }
+    val align =
+        when (alignment) {
+            ViewConfig.Alignment.LEFT -> Layout.Alignment.ALIGN_NORMAL
+            ViewConfig.Alignment.CENTER -> Layout.Alignment.ALIGN_CENTER
+            ViewConfig.Alignment.RIGHT -> Layout.Alignment.ALIGN_OPPOSITE
+        }
 
-    val layout = StaticLayout.Builder.obtain(upper, 0, upper.length, paint, width)
-        .setAlignment(align)
-        .setLineSpacing(0f, lineSpacingMult)
-        .setIncludePad(false)
-        .setMaxLines(maxLines)
-        .setEllipsize(TextUtils.TruncateAt.END)
-        .build()
+    val layout =
+        StaticLayout.Builder.obtain(upper, 0, upper.length, paint, width)
+            .setAlignment(align)
+            .setLineSpacing(0f, lineSpacingMult)
+            .setIncludePad(false)
+            .setMaxLines(maxLines)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .build()
 
     val fm = paint.fontMetricsInt
     val lineHeight = fm.descent - fm.ascent
-    val reservedHeight =
-        lineHeight + (maxLines - 1) * (lineHeight * lineSpacingMult).roundToInt()
+    val reservedHeight = lineHeight + (maxLines - 1) * (lineHeight * lineSpacingMult).roundToInt()
     val bitmapHeight = maxOf(reservedHeight, layout.height).coerceAtLeast(1)
 
     val bitmap = Bitmap.createBitmap(width, bitmapHeight, Bitmap.Config.ARGB_8888)

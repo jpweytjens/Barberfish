@@ -58,19 +58,20 @@ internal fun GradeMapPreview(
     gradePalette: GradePalette,
     modifier: Modifier = Modifier,
 ) {
-    val specs = remember(config, sparklineConfig, gradePalette) {
-        val eff = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
-        buildGradeMapSpecs(
-            routePolyline = ClimbPreviewFixture.routePolyline,
-            routeElevationPolyline = ClimbPreviewFixture.elevationPolyline,
-            palette = gradePalette,
-            readable = false,
-            tuning = eff,
-            // Always place chevrons; the toggle only changes their colour (grade vs native).
-            includeChevrons = true,
-            chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,
-        )
-    }
+    val specs =
+        remember(config, sparklineConfig, gradePalette) {
+            val eff = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
+            buildGradeMapSpecs(
+                routePolyline = ClimbPreviewFixture.routePolyline,
+                routeElevationPolyline = ClimbPreviewFixture.elevationPolyline,
+                palette = gradePalette,
+                readable = false,
+                tuning = eff,
+                // Always place chevrons; the toggle only changes their colour (grade vs native).
+                includeChevrons = true,
+                chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,
+            )
+        }
     val routePoints = remember { decodeGpsPolyline(ClimbPreviewFixture.routePolyline) }
     val segmentPoints = remember(specs) { specs.polylines.map { decodeGpsPolyline(it.encoded) } }
     val bounds = ClimbPreviewFixture.bounds
@@ -82,24 +83,25 @@ internal fun GradeMapPreview(
     val density = LocalDensity.current
     val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
     val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
-    val chevronBitmaps: Map<Int, ImageBitmap> = remember(specs, config.showChevrons, chevW, chevH) {
-        val argbs = if (config.showChevrons) {
-            specs.chevrons.map { it.colorArgb }.distinct()
-        } else {
-            listOf(LemonYellow.toArgb())
+    val chevronBitmaps: Map<Int, ImageBitmap> =
+        remember(specs, config.showChevrons, chevW, chevH) {
+            val argbs =
+                if (config.showChevrons) {
+                    specs.chevrons.map { it.colorArgb }.distinct()
+                } else {
+                    listOf(LemonYellow.toArgb())
+                }
+            argbs
+                .mapNotNull { argb ->
+                    val drawable =
+                        ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
+                            ?: return@mapNotNull null
+                    argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
+                }
+                .toMap()
         }
-        argbs.mapNotNull { argb ->
-            val drawable = ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
-                ?: return@mapNotNull null
-            argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
-        }.toMap()
-    }
 
-    Canvas(
-        modifier
-            .fillMaxWidth()
-            .aspectRatio(aspect),
-    ) {
+    Canvas(modifier.fillMaxWidth().aspectRatio(aspect)) {
         drawSyntheticMap()
 
         fun project(lat: Double, lng: Double): Offset {
@@ -122,11 +124,12 @@ internal fun GradeMapPreview(
         if (config.showPolylines) {
             specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
                 val px = points.map { project(it.lat, it.lng) }
-                val trimmed = trimEndsPx(
-                    px,
-                    startPx = if (spec.trimStart) routeWidth / 2f else 0f,
-                    endPx = if (spec.trimEnd) routeWidth / 2f else 0f,
-                )
+                val trimmed =
+                    trimEndsPx(
+                        px,
+                        startPx = if (spec.trimStart) routeWidth / 2f else 0f,
+                        endPx = if (spec.trimEnd) routeWidth / 2f else 0f,
+                    )
                 drawConnected(trimmed, Color(spec.colorArgb), routeWidth)
             }
         }
@@ -147,7 +150,8 @@ internal fun GradeMapPreview(
 }
 
 // Map palette. Feature hues are sampled from the Karoo map: forest/wood #a8bc9a,
-// water #6aabb8, road fill #ffffff over a #707070 casing. The base is shifted to an alpine meadow green and topo
+// water #6aabb8, road fill #ffffff over a #707070 casing. The base is shifted to an alpine meadow
+// green and topo
 // contour lines are added to evoke the reference (a Stelvio-style topo map). The Karoo map
 // stays light even in system dark mode (see docs/hud_sparkline.jpg) and the config screen
 // is always light, so the preview map is light in both modes.
@@ -176,7 +180,8 @@ private fun DrawScope.drawSyntheticMap() {
             moveTo(0f, 0.18f * h)
             cubicTo(0.2f * w, 0.26f * h, 0.26f * w, 0.55f * h, 0.16f * w, 0.78f * h)
             cubicTo(0.1f * w, 0.92f * h, 0.04f * w, 0.96f * h, 0f, h)
-            lineTo(0f, 0.18f * h); close()
+            lineTo(0f, 0.18f * h)
+            close()
         },
         MAP_SCREE,
     )
@@ -184,15 +189,21 @@ private fun DrawScope.drawSyntheticMap() {
     // Forest patches.
     drawPath(
         Path().apply {
-            moveTo(0.62f * w, 0f); lineTo(w, 0f); lineTo(w, 0.34f * h)
-            cubicTo(0.86f * w, 0.3f * h, 0.74f * w, 0.16f * h, 0.62f * w, 0f); close()
+            moveTo(0.62f * w, 0f)
+            lineTo(w, 0f)
+            lineTo(w, 0.34f * h)
+            cubicTo(0.86f * w, 0.3f * h, 0.74f * w, 0.16f * h, 0.62f * w, 0f)
+            close()
         },
         MAP_FOREST,
     )
     drawPath(
         Path().apply {
-            moveTo(0.74f * w, h); lineTo(w, h); lineTo(w, 0.66f * h)
-            cubicTo(0.9f * w, 0.74f * h, 0.8f * w, 0.86f * h, 0.74f * w, h); close()
+            moveTo(0.74f * w, h)
+            lineTo(w, h)
+            lineTo(w, 0.66f * h)
+            cubicTo(0.9f * w, 0.74f * h, 0.8f * w, 0.86f * h, 0.74f * w, h)
+            close()
         },
         MAP_FOREST,
     )
@@ -209,14 +220,20 @@ private fun DrawScope.drawSyntheticMap() {
             Path().apply {
                 moveTo(0f, y * h)
                 cubicTo(
-                    0.28f * w, (y - 0.012f) * h,
-                    (bias - 0.1f) * w, (y + dip) * h,
-                    bias * w, (y + dip) * h,
+                    0.28f * w,
+                    (y - 0.012f) * h,
+                    (bias - 0.1f) * w,
+                    (y + dip) * h,
+                    bias * w,
+                    (y + dip) * h,
                 )
                 cubicTo(
-                    (bias + 0.12f) * w, (y + dip) * h,
-                    0.78f * w, (y - 0.015f) * h,
-                    w, y * h,
+                    (bias + 0.12f) * w,
+                    (y + dip) * h,
+                    0.78f * w,
+                    (y - 0.015f) * h,
+                    w,
+                    y * h,
                 )
             },
             MAP_CONTOUR,
@@ -236,29 +253,38 @@ private fun DrawScope.drawSyntheticMap() {
     )
 
     // Dashed trails (offline.xml draws footways as dashed lines).
-    val trailStroke = Stroke(
-        width = 1.5.dp.toPx(),
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(7f, 7f)),
-    )
-    for (trail in listOf(
-        Path().apply {
-            moveTo(0.04f * w, 0.2f * h); cubicTo(0.22f * w, 0.34f * h, 0.16f * w, 0.6f * h, 0.26f * w, 0.82f * h)
-        },
-        Path().apply {
-            moveTo(w, 0.5f * h); cubicTo(0.84f * w, 0.56f * h, 0.78f * w, 0.74f * h, 0.66f * w, 0.9f * h)
-        },
-    )) {
+    val trailStroke =
+        Stroke(
+            width = 1.5.dp.toPx(),
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(7f, 7f)),
+        )
+    for (trail in
+        listOf(
+            Path().apply {
+                moveTo(0.04f * w, 0.2f * h)
+                cubicTo(0.22f * w, 0.34f * h, 0.16f * w, 0.6f * h, 0.26f * w, 0.82f * h)
+            },
+            Path().apply {
+                moveTo(w, 0.5f * h)
+                cubicTo(0.84f * w, 0.56f * h, 0.78f * w, 0.74f * h, 0.66f * w, 0.9f * h)
+            },
+        )) {
         drawPath(trail, MAP_TRAIL, style = trailStroke)
     }
 }
 
 private fun DrawScope.drawConnected(points: List<Offset>, color: Color, widthPx: Float) {
     if (points.size < 2) return
-    val path = Path().apply {
-        moveTo(points[0].x, points[0].y)
-        for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
-    }
-    drawPath(path, color, style = Stroke(width = widthPx, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    val path =
+        Path().apply {
+            moveTo(points[0].x, points[0].y)
+            for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+        }
+    drawPath(
+        path,
+        color,
+        style = Stroke(width = widthPx, cap = StrokeCap.Round, join = StrokeJoin.Round),
+    )
 }
 
 /** Removes [startPx] from the front and [endPx] from the back of a projected polyline. */

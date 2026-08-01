@@ -32,9 +32,10 @@ internal class GradeMapChevronController {
     fun emit(emitter: Emitter<MapEffect>, specs: List<ClimbChevronSpec>) {
         val current = specs.associateBy { it.id }
         val removed = previous.keys - current.keys
-        val changed = current.keys.filterTo(mutableSetOf()) { id ->
-            previous[id]?.let { it != current[id] } ?: false
-        }
+        val changed =
+            current.keys.filterTo(mutableSetOf()) { id ->
+                previous[id]?.let { it != current[id] } ?: false
+            }
         val reissued = recentlyRemoved.flatMapTo(mutableSetOf()) { it.first } - current.keys
         val hideIds = removed + changed + reissued
         if (hideIds.isNotEmpty()) {
@@ -42,21 +43,23 @@ internal class GradeMapChevronController {
         }
         val showSpecs = specs.filter { it.id !in previous || it.id in changed }
         if (showSpecs.isNotEmpty()) {
-            val icons =
-                showSpecs.map { spec ->
-                    Symbol.Icon(
-                        id = spec.id,
-                        lat = spec.lat,
-                        lng = spec.lng,
-                        iconRes = gradeChevronDrawable(spec.colorArgb),
-                        orientation = spec.bearingDeg,
-                    )
-                }
+            val icons = showSpecs.map { spec ->
+                Symbol.Icon(
+                    id = spec.id,
+                    lat = spec.lat,
+                    lng = spec.lng,
+                    iconRes = gradeChevronDrawable(spec.colorArgb),
+                    orientation = spec.bearingDeg,
+                )
+            }
             emitter.onNext(ShowSymbols(icons))
         }
-        recentlyRemoved = recentlyRemoved.mapNotNull { (ids, rounds) ->
-            if (rounds > 1) ids to rounds - 1 else null
-        } + if (removed.isNotEmpty()) listOf(removed to LOST_HIDE_REISSUE_ROUNDS) else emptyList()
+        recentlyRemoved =
+            recentlyRemoved.mapNotNull { (ids, rounds) ->
+                if (rounds > 1) ids to rounds - 1 else null
+            } +
+                if (removed.isNotEmpty()) listOf(removed to LOST_HIDE_REISSUE_ROUNDS)
+                else emptyList()
         previous = current
     }
 

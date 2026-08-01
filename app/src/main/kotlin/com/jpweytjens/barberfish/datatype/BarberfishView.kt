@@ -98,16 +98,19 @@ fun applySparklineHeaderChrome(
     iconRes: Int,
     config: ViewConfig,
     context: Context,
-) = applySparklineHeaderChrome(
-    rv,
-    label,
-    iconRes,
-    config.toViewSizeConfig(),
-    config.alignment,
-    context,
-)
+) =
+    applySparklineHeaderChrome(
+        rv,
+        label,
+        iconRes,
+        config.toViewSizeConfig(),
+        config.alignment,
+        context,
+    )
 
-/** Overload taking a [ViewSizeConfig] directly, for config-screen previews with no live ViewConfig. */
+/**
+ * Overload taking a [ViewSizeConfig] directly, for config-screen previews with no live ViewConfig.
+ */
 fun applySparklineHeaderChrome(
     rv: RemoteViews,
     label: String,
@@ -231,7 +234,7 @@ private fun makeFieldRemoteViews(
             colors,
             sizeConfig,
             density,
-            cellWidthPx
+            cellWidthPx,
         )
 
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
@@ -239,7 +242,8 @@ private fun makeFieldRemoteViews(
         if (field.secondary != null) {
             // Two stacked rows share the single-row value height (same footprint as the numeric
             // fields); the renderer splits it into two equal bands and sizes the font to fit. Each
-            // row gets an inline icon tinted to the value color: the route glyph before the distance
+            // row gets an inline icon tinted to the value color: the route glyph before the
+            // distance
             // and the ascent arrow before the climb (the row carrying the ASCENT_MARKER prefix).
             val tint = colors.valueText.toArgb()
             fun glyph(res: Int) =
@@ -290,7 +294,7 @@ private fun makeFieldRemoteViews(
         rv.setTextViewTextSize(
             R.id.stream_state_tv,
             TypedValue.COMPLEX_UNIT_SP,
-            stateFont.coerceAtMost(19).toFloat()
+            stateFont.coerceAtMost(19).toFloat(),
         )
         // Top: the reserved max-lines header band (labelLines is the layout's reserved
         // line count, not the rendered count), matching native's placeholder anchor
@@ -312,8 +316,8 @@ private fun makeFieldRemoteViews(
 /**
  * Applies the Barberfish field header (icon[s] + label) to [rv], sized from [sizeConfig]. Shared by
  * the numeric field layout and the graphical (sparkline) field layout, which use the same header
- * view ids. Returns the layout's reserved label line count, used to anchor the stream-state
- * overlay below the header band.
+ * view ids. Returns the layout's reserved label line count, used to anchor the stream-state overlay
+ * below the header band.
  */
 private fun applyHeaderChrome(
     rv: RemoteViews,
@@ -366,16 +370,17 @@ private fun applyHeaderChrome(
         labelFontSp = sizeConfig.headerFontSize.value
         labelLines = sizeConfig.labelMaxLines
     }
-    val headerBitmap = renderHeaderBitmap(
-        text = displayLabel,
-        fontSizePx = labelFontSp * density,
-        maxLines = labelLines,
-        availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
-        color = labelArgb,
-        alignment = alignment,
-        lineSpacingMult = sizeConfig.headerLineSpacingMult,
-        translationYPx = sizeConfig.headerTranslationPx,
-    )
+    val headerBitmap =
+        renderHeaderBitmap(
+            text = displayLabel,
+            fontSizePx = labelFontSp * density,
+            maxLines = labelLines,
+            availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
+            color = labelArgb,
+            alignment = alignment,
+            lineSpacingMult = sizeConfig.headerLineSpacingMult,
+            translationYPx = sizeConfig.headerTranslationPx,
+        )
     rv.setImageViewBitmap(R.id.field_label, headerBitmap)
     // Native header band = max(22dp, text block); centering field_label inside it
     // (field_header gravity=center_vertical) reproduces native's centered header.

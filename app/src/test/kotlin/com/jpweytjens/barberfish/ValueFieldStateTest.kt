@@ -10,9 +10,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * Pins the placeholder vocabulary of route-gated value fields: "No route" when the stream or
- * value is absent, "Off route" when the rider has left the loaded route, and the generic
- * "Not available" for the non-route-gated Distance field.
+ * Pins the placeholder vocabulary of route-gated value fields: "No route" when the stream or value
+ * is absent, "Off route" when the rider has left the loaded route, and the generic "Not available"
+ * for the non-route-gated Distance field.
  */
 class ValueFieldStateTest {
 
@@ -87,8 +87,7 @@ class ValueFieldStateTest {
 
     @Test
     fun `non-route kind keeps the generic not available`() {
-        val s =
-            ValueField.toFieldState(StreamState.NotAvailable, ValueKind.DISTANCE, metricProfile)
+        val s = ValueField.toFieldState(StreamState.NotAvailable, ValueKind.DISTANCE, metricProfile)
         assertEquals("Not available", s.primary)
     }
 }

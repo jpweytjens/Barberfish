@@ -36,7 +36,7 @@ internal class GradeMapController {
                     encodedPolyline = spec.encoded,
                     color = spec.colorArgb,
                     width = fillWidth,
-                ),
+                )
             )
         }
         previousIds = newIds

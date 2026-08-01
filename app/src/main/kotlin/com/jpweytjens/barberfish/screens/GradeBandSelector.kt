@@ -44,12 +44,13 @@ internal data class GradeCell(
     val exemplar: String,
     val band: GradeBand,
 ) {
-    val weight: Float get() = (hi - lo).toFloat()
+    val weight: Float
+        get() = (hi - lo).toFloat()
 }
 
 /**
- * Bands clamped to the axis. A palette with no descent bands starts at 0 rather
- * than the clamp, so missing descent coverage reads as absence.
+ * Bands clamped to the axis. A palette with no descent bands starts at 0 rather than the clamp, so
+ * missing descent coverage reads as absence.
  */
 internal fun gradeCells(bands: List<GradeBand>): List<GradeCell> {
     val hasDescent = bands.any { (it.hi ?: 1.0) <= 0.0 }
@@ -81,10 +82,9 @@ private fun exemplarLabel(mid: Double): String {
 }
 
 /**
- * The A1 proportional palette preview: a text-mode row, a fill-mode row, and a
- * tick axis carrying the band edges. Cell widths are proportional to grade span
- * on the shared clamped axis; each cell shows an exemplar reading, hidden when
- * the cell is too narrow for it.
+ * The A1 proportional palette preview: a text-mode row, a fill-mode row, and a tick axis carrying
+ * the band edges. Cell widths are proportional to grade span on the shared clamped axis; each cell
+ * shows an exemplar reading, hidden when the cell is too narrow for it.
  */
 @Composable
 internal fun ProportionalGradePreview(palette: GradePalette) {
@@ -94,7 +94,11 @@ internal fun ProportionalGradePreview(palette: GradePalette) {
     val fillCells = gradeCells(gradeBands(palette, readable = false))
     Column(modifier = Modifier.fillMaxWidth()) {
         PreviewStrip(cells = textCells, cellBg = { textRowBg }, cellText = { it.band.color })
-        PreviewStrip(cells = fillCells, cellBg = { it.band.color }, cellText = { bestTextOnBackground(it.band.color) })
+        PreviewStrip(
+            cells = fillCells,
+            cellBg = { it.band.color },
+            cellText = { bestTextOnBackground(it.band.color) },
+        )
         GradeTickAxis(stops = gradeTickStops(gradeBands(palette, readable = false)))
     }
 }
@@ -128,9 +132,10 @@ private fun CellLabel(text: String, color: Color) {
     val measurer = rememberTextMeasurer()
     val style = TextStyle(fontSize = 10.sp, fontWeight = FontWeight.Bold)
     BoxWithConstraints {
-        val textWidth = with(LocalDensity.current) {
-            measurer.measure(text, style).size.width.toDp()
-        }
+        val textWidth =
+            with(LocalDensity.current) {
+                measurer.measure(text, style).size.width.toDp()
+            }
         if (textWidth <= maxWidth - 4.dp) {
             Text(text = text, style = style, color = color)
         }
@@ -142,10 +147,8 @@ private fun GradeTickAxis(stops: List<Double>) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(18.dp)) {
         stops.forEach { stop ->
             Box(
-                modifier = Modifier
-                    .offset(x = maxWidth * axisFraction(stop))
-                    .width(0.dp)
-                    .fillMaxHeight(),
+                modifier =
+                    Modifier.offset(x = maxWidth * axisFraction(stop)).width(0.dp).fillMaxHeight(),
                 contentAlignment = Alignment.TopCenter,
             ) {
                 Column(
@@ -153,7 +156,8 @@ private fun GradeTickAxis(stops: List<Double>) {
                     modifier = Modifier.wrapContentWidth(unbounded = true),
                 ) {
                     Box(
-                        Modifier.width(1.dp).height(3.dp)
+                        Modifier.width(1.dp)
+                            .height(3.dp)
                             .background(MaterialTheme.colorScheme.outline)
                     )
                     Text(

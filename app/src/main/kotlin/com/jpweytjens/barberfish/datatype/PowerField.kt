@@ -65,13 +65,15 @@ class PowerField(private val karooSystem: KarooSystemService) :
         ): FieldState {
             val label =
                 if (smoothing == PowerSmoothingStream.S0) "Power" else "${smoothing.label} Power"
-            state.toErrorFieldState(
-                label,
-                R.drawable.ic_col_power,
-                FieldState.noSensor(label, R.drawable.ic_col_power),
-            )?.let {
-                return it
-            }
+            state
+                .toErrorFieldState(
+                    label,
+                    R.drawable.ic_col_power,
+                    FieldState.noSensor(label, R.drawable.ic_col_power),
+                )
+                ?.let {
+                    return it
+                }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[smoothing.fieldId]
                     ?: return FieldState.notAvailable(label, R.drawable.ic_col_power)

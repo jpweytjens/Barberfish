@@ -40,7 +40,8 @@ fun KarooSystemService.streamRideState(): Flow<RideState> = consumerFlow()
  * [consumerFlow] overload which may not begin emitting for this event.
  */
 fun KarooSystemService.streamGlobalPOIs(): Flow<OnGlobalPOIs> = callbackFlow {
-    val listenerId = addConsumer(OnGlobalPOIs.Params) { event: OnGlobalPOIs -> trySendBlocking(event) }
+    val listenerId =
+        addConsumer(OnGlobalPOIs.Params) { event: OnGlobalPOIs -> trySendBlocking(event) }
     awaitClose { removeConsumer(listenerId) }
 }
 

@@ -108,12 +108,10 @@ import com.jpweytjens.barberfish.datatype.PowerZoneField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
-import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
@@ -133,17 +131,18 @@ import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.withDesign
+import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
-import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
@@ -173,12 +172,12 @@ import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
-import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import com.jpweytjens.barberfish.extension.saveDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.saveETAConfig
 import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.saveGradeFieldConfig
+import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRZoneFieldConfig
@@ -197,12 +196,12 @@ import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
-import com.jpweytjens.barberfish.extension.streamGradeMapConfig
 import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.streamETAConfig
 import com.jpweytjens.barberfish.extension.streamEffortFieldConfig
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
+import com.jpweytjens.barberfish.extension.streamGradeMapConfig
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.streamHRZoneFieldConfig
@@ -212,7 +211,6 @@ import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamMaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamNPFieldConfig
-import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
 import com.jpweytjens.barberfish.extension.streamPowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.streamRouteRemainingConfig
@@ -245,7 +243,7 @@ class MainActivity : ComponentActivity() {
             }
         setContent {
             MaterialTheme(
-                colorScheme = lightColorScheme(primary = OceanBlue, onPrimary = Color.White),
+                colorScheme = lightColorScheme(primary = OceanBlue, onPrimary = Color.White)
             ) {
                 ConfigScreen()
             }
@@ -357,875 +355,922 @@ class MainActivity : ComponentActivity() {
         }
 
         CompositionLocalProvider(LocalDataFieldDesign provides dataFieldDesignConfig) {
-        Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
-            Column(
-                modifier =
-                    Modifier.fillMaxSize().padding(6.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                CollapsibleSection(
-                    title = "HUD",
-                    description = "Configure the heads-up display",
-                    icon = R.drawable.ic_section_hud,
-                    expanded = hudExpanded,
-                    onToggle = { hudExpanded = !hudExpanded },
+            Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
+                Column(
+                    modifier =
+                        Modifier.fillMaxSize().padding(6.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    HUDConfigSection(
-                        hudConfig = hudConfig,
-                        sparklineConfig = hudSparklineConfig,
-                        zoneConfig = zoneConfig,
-                        timeCfg = timeConfig,
-                        profile = userProfile,
-                        onUpdate = { updated ->
-                            hudConfig = updated
-                            lifecycleScope.launch { saveHUDConfig(updated) }
-                        },
-                        onSparklineUpdate = { updated ->
-                            hudSparklineConfig = updated
-                            lifecycleScope.launch { saveHudSparklineConfig(updated) }
-                        },
-                    )
-                } // end HUD
-
-                val powerPreviewStates =
-                    remember(powerFieldConfig, userProfile, zoneConfig) {
-                        PowerField.previewStates(powerFieldConfig, userProfile, zoneConfig)
-                    }
-                val hrPreviewStates =
-                    remember(hrFieldConfig, userProfile, zoneConfig) {
-                        HRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
-                    }
-                val avgHrPreviewStates =
-                    remember(avgHrFieldConfig, userProfile, zoneConfig) {
-                        AvgHRField.previewStates(avgHrFieldConfig, userProfile, zoneConfig)
-                    }
-                val lapAvgHrPreviewStates =
-                    remember(lapAvgHrFieldConfig, userProfile, zoneConfig) {
-                        LapAvgHRField.previewStates(lapAvgHrFieldConfig, userProfile, zoneConfig)
-                    }
-                val lastLapAvgHrPreviewStates =
-                    remember(lastLapAvgHrFieldConfig, userProfile, zoneConfig) {
-                        LastLapAvgHRField.previewStates(
-                            lastLapAvgHrFieldConfig,
-                            userProfile,
-                            zoneConfig
-                        )
-                    }
-                val hrMaxPercentPreviewStates =
-                    remember(hrMaxPercentFieldConfig, userProfile, zoneConfig) {
-                        HRMaxPercentField.previewStates(
-                            hrMaxPercentFieldConfig,
-                            userProfile,
-                            zoneConfig
-                        )
-                    }
-                val maxHrPreviewStates =
-                    remember(maxHrFieldConfig, userProfile, zoneConfig) {
-                        MaxHRField.previewStates(maxHrFieldConfig, userProfile, zoneConfig)
-                    }
-                val hrZonePreviewStates =
-                    remember(hrZoneFieldConfig, userProfile, zoneConfig) {
-                        HRZoneField.previewStates(hrZoneFieldConfig, userProfile, zoneConfig)
-                    }
-                val speedPreviewStates =
-                    remember(speedFieldConfig, userProfile) {
-                        SpeedField.previewStates(speedFieldConfig, userProfile)
-                    }
-                val cadencePreviewStates =
-                    remember(cadenceFieldConfig) { CadenceField.previewStates(cadenceFieldConfig) }
-                val avgPowerPreviewStates =
-                    remember(avgPowerFieldConfig, userProfile, zoneConfig) {
-                        AvgPowerField.previewStates(avgPowerFieldConfig, userProfile, zoneConfig)
-                    }
-                val npPreviewStates =
-                    remember(npFieldConfig, userProfile, zoneConfig) {
-                        NPField.previewStates(npFieldConfig, userProfile, zoneConfig)
-                    }
-                val lapPowerPreviewStates =
-                    remember(lapPowerFieldConfig, userProfile, zoneConfig) {
-                        LapPowerField.previewStates(
-                            lapPowerFieldConfig,
-                            userProfile,
-                            zoneConfig,
-                            isLastLap = false
-                        )
-                    }
-                val lastLapPowerPreviewStates =
-                    remember(lastLapPowerFieldConfig, userProfile, zoneConfig) {
-                        LapPowerField.previewStates(
-                            lastLapPowerFieldConfig,
-                            userProfile,
-                            zoneConfig,
-                            isLastLap = true
-                        )
-                    }
-                val powerZonePreviewStates =
-                    remember(powerZoneFieldConfig, userProfile, zoneConfig) {
-                        PowerZoneField.previewStates(powerZoneFieldConfig, userProfile, zoneConfig)
-                    }
-                val maxPowerPreviewStates =
-                    remember(maxPowerFieldConfig, userProfile, zoneConfig) {
-                        MaxPowerField.previewStates(maxPowerFieldConfig, userProfile, zoneConfig)
-                    }
-                val gradePreviewStates =
-                    remember(gradeFieldConfig, zoneConfig) {
-                        GradeField.previewStates(gradeFieldConfig, zoneConfig)
-                    }
-                val effortPreviewStates =
-                    remember(effortFieldConfig, userProfile) {
-                        EffortField.previewStates(userProfile, effortFieldConfig.climbFirst)
-                    }
-
-                CollapsibleSection(
-                    title = "Data fields",
-                    description = "Configure standalone data fields",
-                    icon = R.drawable.ic_section_fields,
-                    expanded = fieldsExpanded,
-                    onToggle = { fieldsExpanded = !fieldsExpanded },
-                ) {
-                    var selectedDataField by remember { mutableStateOf<String?>(null) }
-
-                    ControlLabel("POWER")
-                    FieldCard(
-                        title = "POWER",
-                        description = "Current power output",
-                        previewFields = powerPreviewStates,
-                        colorMode = powerFieldConfig.colorMode,
-                        selected = selectedDataField == "POWER",
-                        onSelect = {
-                            selectedDataField = if (selectedDataField == "POWER") null else "POWER"
-                        },
+                    CollapsibleSection(
+                        title = "HUD",
+                        description = "Configure the heads-up display",
+                        icon = R.drawable.ic_section_hud,
+                        expanded = hudExpanded,
+                        onToggle = { hudExpanded = !hudExpanded },
                     ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = PowerSmoothingStream.entries,
-                            selected = powerFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_col_power,
-                            onSelected = { stream ->
-                                powerFieldConfig = powerFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
-                            },
-                        )
-                        ZoneColorSlider(
-                            selected = powerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                powerFieldConfig = powerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "AVG POWER",
-                        description = "Average power with zone coloring.",
-                        previewFields = avgPowerPreviewStates,
-                        colorMode = avgPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "AVG POWER",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG POWER") null else "AVG POWER"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = avgPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                avgPowerFieldConfig = avgPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveAvgPowerFieldConfig(avgPowerFieldConfig)
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "NORMALIZED POWER",
-                        description = "Normalized power with zone coloring.",
-                        previewFields = npPreviewStates,
-                        colorMode = npFieldConfig.colorMode,
-                        selected = selectedDataField == "NP",
-                        onSelect = {
-                            selectedDataField = if (selectedDataField == "NP") null else "NP"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = npFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAP AVG POWER",
-                        description = "Average power this lap with zone coloring.",
-                        previewFields = lapPowerPreviewStates,
-                        colorMode = lapPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "LAP AVG POWER",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "LAP AVG POWER") null else "LAP AVG POWER"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lapPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lapPowerFieldConfig = lapPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveLapPowerFieldConfig(isLastLap = false, lapPowerFieldConfig)
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAST LAP AVG POWER",
-                        description = "Average power from the previous lap with zone coloring.",
-                        previewFields = lastLapPowerPreviewStates,
-                        colorMode = lastLapPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "LAST LAP AVG POWER",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "LAST LAP AVG POWER") null
-                                else "LAST LAP AVG POWER"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lastLapPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lastLapPowerFieldConfig =
-                                    lastLapPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveLapPowerFieldConfig(
-                                        isLastLap = true,
-                                        lastLapPowerFieldConfig
-                                    )
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "POWER ZONE",
-                        description = "Current power zone, with zone coloring.",
-                        previewFields = powerZonePreviewStates,
-                        colorMode = powerZoneFieldConfig.colorMode,
-                        selected = selectedDataField == "POWER ZONE",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "POWER ZONE") null else "POWER ZONE"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = powerZoneFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                powerZoneFieldConfig = powerZoneFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    savePowerZoneFieldConfig(powerZoneFieldConfig)
-                                }
-                            },
-                        )
-                        ZoneDisplaySlider(
-                            selected = powerZoneFieldConfig.zoneDisplayMode,
-                            onSelected = { mode ->
-                                powerZoneFieldConfig =
-                                    powerZoneFieldConfig.copy(zoneDisplayMode = mode)
-                                lifecycleScope.launch {
-                                    savePowerZoneFieldConfig(powerZoneFieldConfig)
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "MAX POWER",
-                        description = "Maximum power reached this ride, with zone coloring.",
-                        previewFields = maxPowerPreviewStates,
-                        colorMode = maxPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "MAX POWER",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "MAX POWER") null else "MAX POWER"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = maxPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                maxPowerFieldConfig = maxPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveMaxPowerFieldConfig(maxPowerFieldConfig)
-                                }
-                            },
-                        )
-                    }
-
-                    ControlLabel("HEART RATE", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "HEART RATE",
-                        description = "Current heart rate",
-                        previewFields = hrPreviewStates,
-                        colorMode = hrFieldConfig.colorMode,
-                        selected = selectedDataField == "HEART RATE",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "HEART RATE") null else "HEART RATE"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = hrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(config = hrFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "AVG HR",
-                        description = "Average heart rate with zone coloring.",
-                        previewFields = avgHrPreviewStates,
-                        colorMode = avgHrFieldConfig.colorMode,
-                        selected = selectedDataField == "AVG HR",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG HR") null else "AVG HR"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = avgHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                avgHrFieldConfig = avgHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveHRFieldConfig(HRFieldKind.AVG, avgHrFieldConfig)
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAP AVG HR",
-                        description = "Average heart rate this lap with zone coloring.",
-                        previewFields = lapAvgHrPreviewStates,
-                        colorMode = lapAvgHrFieldConfig.colorMode,
-                        selected = selectedDataField == "LAP AVG HR",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "LAP AVG HR") null else "LAP AVG HR"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lapAvgHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lapAvgHrFieldConfig = lapAvgHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveHRFieldConfig(HRFieldKind.LAP_AVG, lapAvgHrFieldConfig)
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAST LAP AVG HR",
-                        description =
-                            "Average heart rate from the previous lap with zone coloring.",
-                        previewFields = lastLapAvgHrPreviewStates,
-                        colorMode = lastLapAvgHrFieldConfig.colorMode,
-                        selected = selectedDataField == "LAST LAP AVG HR",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "LAST LAP AVG HR") null
-                                else "LAST LAP AVG HR"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lastLapAvgHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lastLapAvgHrFieldConfig =
-                                    lastLapAvgHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveHRFieldConfig(
-                                        HRFieldKind.LAST_LAP_AVG,
-                                        lastLapAvgHrFieldConfig
-                                    )
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "%MAX HR",
-                        description =
-                            "Current heart rate as a percentage of max HR, with zone coloring.",
-                        previewFields = hrMaxPercentPreviewStates,
-                        colorMode = hrMaxPercentFieldConfig.colorMode,
-                        selected = selectedDataField == "%MAX HR",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "%MAX HR") null else "%MAX HR"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = hrMaxPercentFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                hrMaxPercentFieldConfig =
-                                    hrMaxPercentFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveHRMaxPercentFieldConfig(hrMaxPercentFieldConfig)
-                                }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "MAX HR",
-                        description = "Maximum heart rate reached this ride, with zone coloring.",
-                        previewFields = maxHrPreviewStates,
-                        colorMode = maxHrFieldConfig.colorMode,
-                        selected = selectedDataField == "MAX HR",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "MAX HR") null else "MAX HR"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = maxHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                maxHrFieldConfig = maxHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveMaxHRFieldConfig(maxHrFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "HR ZONE",
-                        description = "Current heart rate zone, with zone coloring.",
-                        previewFields = hrZonePreviewStates,
-                        colorMode = hrZoneFieldConfig.colorMode,
-                        selected = selectedDataField == "HR ZONE",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "HR ZONE") null else "HR ZONE"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = hrZoneFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                hrZoneFieldConfig = hrZoneFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRZoneFieldConfig(hrZoneFieldConfig) }
-                            },
-                        )
-                        ZoneDisplaySlider(
-                            selected = hrZoneFieldConfig.zoneDisplayMode,
-                            onSelected = { mode ->
-                                hrZoneFieldConfig = hrZoneFieldConfig.copy(zoneDisplayMode = mode)
-                                lifecycleScope.launch { saveHRZoneFieldConfig(hrZoneFieldConfig) }
-                            },
-                        )
-                    }
-
-                    ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "SPEED",
-                        description = "Current speed",
-                        previewFields = speedPreviewStates,
-                        colorMode = speedFieldConfig.colorMode,
-                        selected = selectedDataField == "SPEED",
-                        onSelect = {
-                            selectedDataField = if (selectedDataField == "SPEED") null else "SPEED"
-                        },
-                    ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = SpeedSmoothingStream.entries,
-                            selected = speedFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_col_speed,
-                            onSelected = { stream ->
-                                speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
-                            },
-                        )
-                        ZoneColorSlider(
-                            selected = speedFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                speedFieldConfig = speedFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
-                            },
-                        )
-                        SpeedThresholdControls(
-                            config = speedFieldConfig,
+                        HUDConfigSection(
+                            hudConfig = hudConfig,
+                            sparklineConfig = hudSparklineConfig,
+                            zoneConfig = zoneConfig,
+                            timeCfg = timeConfig,
                             profile = userProfile,
-                            onConfigChange = { cfg ->
-                                speedFieldConfig = cfg
-                                lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
+                            onUpdate = { updated ->
+                                hudConfig = updated
+                                lifecycleScope.launch { saveHUDConfig(updated) }
+                            },
+                            onSparklineUpdate = { updated ->
+                                hudSparklineConfig = updated
+                                lifecycleScope.launch { saveHudSparklineConfig(updated) }
                             },
                         )
-                    }
+                    } // end HUD
 
-                    val avgTotalPreviewStates =
-                        remember(avgTotalConfig, userProfile) {
-                            AvgSpeedField.previewStates(
-                                avgTotalConfig,
+                    val powerPreviewStates =
+                        remember(powerFieldConfig, userProfile, zoneConfig) {
+                            PowerField.previewStates(powerFieldConfig, userProfile, zoneConfig)
+                        }
+                    val hrPreviewStates =
+                        remember(hrFieldConfig, userProfile, zoneConfig) {
+                            HRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                        }
+                    val avgHrPreviewStates =
+                        remember(avgHrFieldConfig, userProfile, zoneConfig) {
+                            AvgHRField.previewStates(avgHrFieldConfig, userProfile, zoneConfig)
+                        }
+                    val lapAvgHrPreviewStates =
+                        remember(lapAvgHrFieldConfig, userProfile, zoneConfig) {
+                            LapAvgHRField.previewStates(
+                                lapAvgHrFieldConfig,
                                 userProfile,
-                                includePaused = true
+                                zoneConfig,
                             )
                         }
-
-                    FieldCard(
-                        title = "AVG SPEED (TOTAL)",
-                        description = "Average speed including paused time.",
-                        previewFields = avgTotalPreviewStates,
-                        colorMode = avgTotalConfig.colorMode,
-                        selected = selectedDataField == "AVG SPEED (TOTAL)",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG SPEED (TOTAL)") null
-                                else "AVG SPEED (TOTAL)"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = avgTotalConfig.colorMode,
-                            onSelected = { mode ->
-                                avgTotalConfig = avgTotalConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
-                                }
-                            },
-                        )
-                        AvgSpeedThresholdControls(
-                            config = avgTotalConfig,
-                            profile = userProfile,
-                            onConfigChange = { cfg ->
-                                avgTotalConfig = cfg
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = true, cfg)
-                                }
-                            },
-                        )
-                    }
-
-                    val avgMovingPreviewStates =
-                        remember(avgMovingConfig, userProfile) {
-                            AvgSpeedField.previewStates(
-                                avgMovingConfig,
+                    val lastLapAvgHrPreviewStates =
+                        remember(lastLapAvgHrFieldConfig, userProfile, zoneConfig) {
+                            LastLapAvgHRField.previewStates(
+                                lastLapAvgHrFieldConfig,
                                 userProfile,
-                                includePaused = false
+                                zoneConfig,
                             )
                         }
+                    val hrMaxPercentPreviewStates =
+                        remember(hrMaxPercentFieldConfig, userProfile, zoneConfig) {
+                            HRMaxPercentField.previewStates(
+                                hrMaxPercentFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val maxHrPreviewStates =
+                        remember(maxHrFieldConfig, userProfile, zoneConfig) {
+                            MaxHRField.previewStates(maxHrFieldConfig, userProfile, zoneConfig)
+                        }
+                    val hrZonePreviewStates =
+                        remember(hrZoneFieldConfig, userProfile, zoneConfig) {
+                            HRZoneField.previewStates(hrZoneFieldConfig, userProfile, zoneConfig)
+                        }
+                    val speedPreviewStates =
+                        remember(speedFieldConfig, userProfile) {
+                            SpeedField.previewStates(speedFieldConfig, userProfile)
+                        }
+                    val cadencePreviewStates =
+                        remember(cadenceFieldConfig) {
+                            CadenceField.previewStates(cadenceFieldConfig)
+                        }
+                    val avgPowerPreviewStates =
+                        remember(avgPowerFieldConfig, userProfile, zoneConfig) {
+                            AvgPowerField.previewStates(
+                                avgPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val npPreviewStates =
+                        remember(npFieldConfig, userProfile, zoneConfig) {
+                            NPField.previewStates(npFieldConfig, userProfile, zoneConfig)
+                        }
+                    val lapPowerPreviewStates =
+                        remember(lapPowerFieldConfig, userProfile, zoneConfig) {
+                            LapPowerField.previewStates(
+                                lapPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                                isLastLap = false,
+                            )
+                        }
+                    val lastLapPowerPreviewStates =
+                        remember(lastLapPowerFieldConfig, userProfile, zoneConfig) {
+                            LapPowerField.previewStates(
+                                lastLapPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                                isLastLap = true,
+                            )
+                        }
+                    val powerZonePreviewStates =
+                        remember(powerZoneFieldConfig, userProfile, zoneConfig) {
+                            PowerZoneField.previewStates(
+                                powerZoneFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val maxPowerPreviewStates =
+                        remember(maxPowerFieldConfig, userProfile, zoneConfig) {
+                            MaxPowerField.previewStates(
+                                maxPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val gradePreviewStates =
+                        remember(gradeFieldConfig, zoneConfig) {
+                            GradeField.previewStates(gradeFieldConfig, zoneConfig)
+                        }
+                    val effortPreviewStates =
+                        remember(effortFieldConfig, userProfile) {
+                            EffortField.previewStates(userProfile, effortFieldConfig.climbFirst)
+                        }
 
-                    FieldCard(
-                        title = "AVG SPEED (MOVING)",
-                        description = "Average speed excluding paused time.",
-                        previewFields = avgMovingPreviewStates,
-                        colorMode = avgMovingConfig.colorMode,
-                        selected = selectedDataField == "AVG SPEED (MOVING)",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG SPEED (MOVING)") null
-                                else "AVG SPEED (MOVING)"
-                        },
+                    CollapsibleSection(
+                        title = "Data fields",
+                        description = "Configure standalone data fields",
+                        icon = R.drawable.ic_section_fields,
+                        expanded = fieldsExpanded,
+                        onToggle = { fieldsExpanded = !fieldsExpanded },
                     ) {
-                        ZoneColorSlider(
-                            selected = avgMovingConfig.colorMode,
-                            onSelected = { mode ->
-                                avgMovingConfig = avgMovingConfig.copy(colorMode = mode)
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
-                                }
-                            },
-                        )
-                        AvgSpeedThresholdControls(
-                            config = avgMovingConfig,
-                            profile = userProfile,
-                            onConfigChange = { cfg ->
-                                avgMovingConfig = cfg
-                                lifecycleScope.launch {
-                                    saveAvgSpeedConfig(includePaused = false, cfg)
-                                }
-                            },
-                        )
-                    }
+                        var selectedDataField by remember { mutableStateOf<String?>(null) }
 
-                    ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "CADENCE",
-                        description = "Current cadence with threshold coloring.",
-                        previewFields = cadencePreviewStates,
-                        colorMode = cadenceFieldConfig.colorMode,
-                        selected = selectedDataField == "CADENCE",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "CADENCE") null else "CADENCE"
-                        },
-                    ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = CadenceSmoothingStream.entries,
-                            selected = cadenceFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_cadence,
-                            onSelected = { stream ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                        ZoneColorSlider(
-                            selected = cadenceFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                        CadenceThresholdControls(
-                            config = cadenceFieldConfig.threshold,
-                            onConfigChange = { cfg ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                    }
-
-                    ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "GRADE",
-                        description = "Road gradient with color coding.",
-                        previewFields = gradePreviewStates,
-                        colorMode = gradeFieldConfig.colorMode,
-                        selected = selectedDataField == "GRADE",
-                        onSelect = {
-                            selectedDataField = if (selectedDataField == "GRADE") null else "GRADE"
-                        },
-                    ) {
-                        ZoneColorSlider(
-                            selected = gradeFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
-                            },
-                        )
-                        ChoiceRow(
-                            label = "DECIMALS",
-                            options =
-                                listOf(
-                                    ZoneDisplayMode.INTEGER to "Integer",
-                                    ZoneDisplayMode.FLOAT to "Decimal",
-                                ),
-                            selected = gradeFieldConfig.precision,
-                            onSelect = { mode ->
-                                gradeFieldConfig = gradeFieldConfig.copy(precision = mode)
-                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
-                            },
-                        )
-                        BoolToggleRow(
-                            label = "PERCENT SIGN",
-                            value = gradeFieldConfig.showPercentSign,
-                            onChange = { on ->
-                                gradeFieldConfig = gradeFieldConfig.copy(showPercentSign = on)
-                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
-                            },
-                        )
-                    }
-
-                    ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "RIDE REMAINING",
-                        description = "Distance and ascent remaining, stacked.",
-                        previewFields = effortPreviewStates,
-                        colorMode = ZoneColorMode.NONE,
-                        selected = selectedDataField == "RIDE REMAINING",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "RIDE REMAINING") null
-                                else "RIDE REMAINING"
-                        },
-                    ) {
-                        ControlLabel("STACK ORDER")
-                        SegmentedRow(
-                            options = listOf(false to "Distance", true to "Climb"),
-                            selected = effortFieldConfig.climbFirst,
+                        ControlLabel("POWER")
+                        FieldCard(
+                            title = "POWER",
+                            description = "Current power output",
+                            previewFields = powerPreviewStates,
+                            colorMode = powerFieldConfig.colorMode,
+                            selected = selectedDataField == "POWER",
                             onSelect = {
-                                effortFieldConfig = effortFieldConfig.copy(climbFirst = it)
-                                lifecycleScope.launch { saveEffortFieldConfig(effortFieldConfig) }
+                                selectedDataField =
+                                    if (selectedDataField == "POWER") null else "POWER"
+                            },
+                        ) {
+                            ControlLabel("SMOOTHING")
+                            SmoothingSlider(
+                                options = PowerSmoothingStream.entries,
+                                selected = powerFieldConfig.smoothing,
+                                label = { it.label },
+                                thumbIcon = R.drawable.ic_col_power,
+                                onSelected = { stream ->
+                                    powerFieldConfig = powerFieldConfig.copy(smoothing = stream)
+                                    lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = powerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    powerFieldConfig = powerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "AVG POWER",
+                            description = "Average power with zone coloring.",
+                            previewFields = avgPowerPreviewStates,
+                            colorMode = avgPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "AVG POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG POWER") null else "AVG POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgPowerFieldConfig = avgPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveAvgPowerFieldConfig(avgPowerFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "NORMALIZED POWER",
+                            description = "Normalized power with zone coloring.",
+                            previewFields = npPreviewStates,
+                            colorMode = npFieldConfig.colorMode,
+                            selected = selectedDataField == "NP",
+                            onSelect = {
+                                selectedDataField = if (selectedDataField == "NP") null else "NP"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = npFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    npFieldConfig = npFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAP AVG POWER",
+                            description = "Average power this lap with zone coloring.",
+                            previewFields = lapPowerPreviewStates,
+                            colorMode = lapPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "LAP AVG POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAP AVG POWER") null
+                                    else "LAP AVG POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lapPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lapPowerFieldConfig = lapPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveLapPowerFieldConfig(
+                                            isLastLap = false,
+                                            lapPowerFieldConfig,
+                                        )
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAST LAP AVG POWER",
+                            description = "Average power from the previous lap with zone coloring.",
+                            previewFields = lastLapPowerPreviewStates,
+                            colorMode = lastLapPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "LAST LAP AVG POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAST LAP AVG POWER") null
+                                    else "LAST LAP AVG POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lastLapPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lastLapPowerFieldConfig =
+                                        lastLapPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveLapPowerFieldConfig(
+                                            isLastLap = true,
+                                            lastLapPowerFieldConfig,
+                                        )
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "POWER ZONE",
+                            description = "Current power zone, with zone coloring.",
+                            previewFields = powerZonePreviewStates,
+                            colorMode = powerZoneFieldConfig.colorMode,
+                            selected = selectedDataField == "POWER ZONE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "POWER ZONE") null else "POWER ZONE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = powerZoneFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    powerZoneFieldConfig =
+                                        powerZoneFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        savePowerZoneFieldConfig(powerZoneFieldConfig)
+                                    }
+                                },
+                            )
+                            ZoneDisplaySlider(
+                                selected = powerZoneFieldConfig.zoneDisplayMode,
+                                onSelected = { mode ->
+                                    powerZoneFieldConfig =
+                                        powerZoneFieldConfig.copy(zoneDisplayMode = mode)
+                                    lifecycleScope.launch {
+                                        savePowerZoneFieldConfig(powerZoneFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "MAX POWER",
+                            description = "Maximum power reached this ride, with zone coloring.",
+                            previewFields = maxPowerPreviewStates,
+                            colorMode = maxPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "MAX POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "MAX POWER") null else "MAX POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = maxPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    maxPowerFieldConfig = maxPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveMaxPowerFieldConfig(maxPowerFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("HEART RATE", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "HEART RATE",
+                            description = "Current heart rate",
+                            previewFields = hrPreviewStates,
+                            colorMode = hrFieldConfig.colorMode,
+                            selected = selectedDataField == "HEART RATE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "HEART RATE") null else "HEART RATE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = hrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(config = hrFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "AVG HR",
+                            description = "Average heart rate with zone coloring.",
+                            previewFields = avgHrPreviewStates,
+                            colorMode = avgHrFieldConfig.colorMode,
+                            selected = selectedDataField == "AVG HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG HR") null else "AVG HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgHrFieldConfig = avgHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(HRFieldKind.AVG, avgHrFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAP AVG HR",
+                            description = "Average heart rate this lap with zone coloring.",
+                            previewFields = lapAvgHrPreviewStates,
+                            colorMode = lapAvgHrFieldConfig.colorMode,
+                            selected = selectedDataField == "LAP AVG HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAP AVG HR") null else "LAP AVG HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lapAvgHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lapAvgHrFieldConfig = lapAvgHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(HRFieldKind.LAP_AVG, lapAvgHrFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAST LAP AVG HR",
+                            description =
+                                "Average heart rate from the previous lap with zone coloring.",
+                            previewFields = lastLapAvgHrPreviewStates,
+                            colorMode = lastLapAvgHrFieldConfig.colorMode,
+                            selected = selectedDataField == "LAST LAP AVG HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAST LAP AVG HR") null
+                                    else "LAST LAP AVG HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lastLapAvgHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lastLapAvgHrFieldConfig =
+                                        lastLapAvgHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(
+                                            HRFieldKind.LAST_LAP_AVG,
+                                            lastLapAvgHrFieldConfig,
+                                        )
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "%MAX HR",
+                            description =
+                                "Current heart rate as a percentage of max HR, with zone coloring.",
+                            previewFields = hrMaxPercentPreviewStates,
+                            colorMode = hrMaxPercentFieldConfig.colorMode,
+                            selected = selectedDataField == "%MAX HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "%MAX HR") null else "%MAX HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = hrMaxPercentFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    hrMaxPercentFieldConfig =
+                                        hrMaxPercentFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRMaxPercentFieldConfig(hrMaxPercentFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "MAX HR",
+                            description =
+                                "Maximum heart rate reached this ride, with zone coloring.",
+                            previewFields = maxHrPreviewStates,
+                            colorMode = maxHrFieldConfig.colorMode,
+                            selected = selectedDataField == "MAX HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "MAX HR") null else "MAX HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = maxHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    maxHrFieldConfig = maxHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveMaxHRFieldConfig(maxHrFieldConfig) }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "HR ZONE",
+                            description = "Current heart rate zone, with zone coloring.",
+                            previewFields = hrZonePreviewStates,
+                            colorMode = hrZoneFieldConfig.colorMode,
+                            selected = selectedDataField == "HR ZONE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "HR ZONE") null else "HR ZONE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = hrZoneFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    hrZoneFieldConfig = hrZoneFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRZoneFieldConfig(hrZoneFieldConfig)
+                                    }
+                                },
+                            )
+                            ZoneDisplaySlider(
+                                selected = hrZoneFieldConfig.zoneDisplayMode,
+                                onSelected = { mode ->
+                                    hrZoneFieldConfig =
+                                        hrZoneFieldConfig.copy(zoneDisplayMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRZoneFieldConfig(hrZoneFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "SPEED",
+                            description = "Current speed",
+                            previewFields = speedPreviewStates,
+                            colorMode = speedFieldConfig.colorMode,
+                            selected = selectedDataField == "SPEED",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "SPEED") null else "SPEED"
+                            },
+                        ) {
+                            ControlLabel("SMOOTHING")
+                            SmoothingSlider(
+                                options = SpeedSmoothingStream.entries,
+                                selected = speedFieldConfig.smoothing,
+                                label = { it.label },
+                                thumbIcon = R.drawable.ic_col_speed,
+                                onSelected = { stream ->
+                                    speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
+                                    lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = speedFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    speedFieldConfig = speedFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                                },
+                            )
+                            SpeedThresholdControls(
+                                config = speedFieldConfig,
+                                profile = userProfile,
+                                onConfigChange = { cfg ->
+                                    speedFieldConfig = cfg
+                                    lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
+                                },
+                            )
+                        }
+
+                        val avgTotalPreviewStates =
+                            remember(avgTotalConfig, userProfile) {
+                                AvgSpeedField.previewStates(
+                                    avgTotalConfig,
+                                    userProfile,
+                                    includePaused = true,
+                                )
+                            }
+
+                        FieldCard(
+                            title = "AVG SPEED (TOTAL)",
+                            description = "Average speed including paused time.",
+                            previewFields = avgTotalPreviewStates,
+                            colorMode = avgTotalConfig.colorMode,
+                            selected = selectedDataField == "AVG SPEED (TOTAL)",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG SPEED (TOTAL)") null
+                                    else "AVG SPEED (TOTAL)"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgTotalConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgTotalConfig = avgTotalConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                                    }
+                                },
+                            )
+                            AvgSpeedThresholdControls(
+                                config = avgTotalConfig,
+                                profile = userProfile,
+                                onConfigChange = { cfg ->
+                                    avgTotalConfig = cfg
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = true, cfg)
+                                    }
+                                },
+                            )
+                        }
+
+                        val avgMovingPreviewStates =
+                            remember(avgMovingConfig, userProfile) {
+                                AvgSpeedField.previewStates(
+                                    avgMovingConfig,
+                                    userProfile,
+                                    includePaused = false,
+                                )
+                            }
+
+                        FieldCard(
+                            title = "AVG SPEED (MOVING)",
+                            description = "Average speed excluding paused time.",
+                            previewFields = avgMovingPreviewStates,
+                            colorMode = avgMovingConfig.colorMode,
+                            selected = selectedDataField == "AVG SPEED (MOVING)",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG SPEED (MOVING)") null
+                                    else "AVG SPEED (MOVING)"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgMovingConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgMovingConfig = avgMovingConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                                    }
+                                },
+                            )
+                            AvgSpeedThresholdControls(
+                                config = avgMovingConfig,
+                                profile = userProfile,
+                                onConfigChange = { cfg ->
+                                    avgMovingConfig = cfg
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = false, cfg)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "CADENCE",
+                            description = "Current cadence with threshold coloring.",
+                            previewFields = cadencePreviewStates,
+                            colorMode = cadenceFieldConfig.colorMode,
+                            selected = selectedDataField == "CADENCE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "CADENCE") null else "CADENCE"
+                            },
+                        ) {
+                            ControlLabel("SMOOTHING")
+                            SmoothingSlider(
+                                options = CadenceSmoothingStream.entries,
+                                selected = cadenceFieldConfig.smoothing,
+                                label = { it.label },
+                                thumbIcon = R.drawable.ic_cadence,
+                                onSelected = { stream ->
+                                    cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
+                                    lifecycleScope.launch {
+                                        saveCadenceFieldConfig(cadenceFieldConfig)
+                                    }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = cadenceFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    cadenceFieldConfig = cadenceFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveCadenceFieldConfig(cadenceFieldConfig)
+                                    }
+                                },
+                            )
+                            CadenceThresholdControls(
+                                config = cadenceFieldConfig.threshold,
+                                onConfigChange = { cfg ->
+                                    cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
+                                    lifecycleScope.launch {
+                                        saveCadenceFieldConfig(cadenceFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "GRADE",
+                            description = "Road gradient with color coding.",
+                            previewFields = gradePreviewStates,
+                            colorMode = gradeFieldConfig.colorMode,
+                            selected = selectedDataField == "GRADE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "GRADE") null else "GRADE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = gradeFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                                },
+                            )
+                            ChoiceRow(
+                                label = "DECIMALS",
+                                options =
+                                    listOf(
+                                        ZoneDisplayMode.INTEGER to "Integer",
+                                        ZoneDisplayMode.FLOAT to "Decimal",
+                                    ),
+                                selected = gradeFieldConfig.precision,
+                                onSelect = { mode ->
+                                    gradeFieldConfig = gradeFieldConfig.copy(precision = mode)
+                                    lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                                },
+                            )
+                            BoolToggleRow(
+                                label = "PERCENT SIGN",
+                                value = gradeFieldConfig.showPercentSign,
+                                onChange = { on ->
+                                    gradeFieldConfig = gradeFieldConfig.copy(showPercentSign = on)
+                                    lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                                },
+                            )
+                        }
+
+                        ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "RIDE REMAINING",
+                            description = "Distance and ascent remaining, stacked.",
+                            previewFields = effortPreviewStates,
+                            colorMode = ZoneColorMode.NONE,
+                            selected = selectedDataField == "RIDE REMAINING",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "RIDE REMAINING") null
+                                    else "RIDE REMAINING"
+                            },
+                        ) {
+                            ControlLabel("STACK ORDER")
+                            SegmentedRow(
+                                options = listOf(false to "Distance", true to "Climb"),
+                                selected = effortFieldConfig.climbFirst,
+                                onSelect = {
+                                    effortFieldConfig = effortFieldConfig.copy(climbFirst = it)
+                                    lifecycleScope.launch {
+                                        saveEffortFieldConfig(effortFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        RouteRemainingCard(
+                            config = routeRemainingConfig,
+                            selected = selectedDataField == "OVERVIEW",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "OVERVIEW") null else "OVERVIEW"
+                            },
+                            onUpdate = { updated ->
+                                routeRemainingConfig = updated
+                                lifecycleScope.launch { saveRouteRemainingConfig(updated) }
+                            },
+                        )
+                    } // end Fields
+
+                    CollapsibleSection(
+                        title = "Climbing",
+                        description = "Configure the elevation profile and grade map",
+                        icon = R.drawable.ic_grade,
+                        expanded = climbingExpanded,
+                        onToggle = { climbingExpanded = !climbingExpanded },
+                    ) {
+                        var sparklineExpanded by remember { mutableStateOf(false) }
+                        SparklineCard(
+                            config = fieldSparklineConfig,
+                            zoneConfig = zoneConfig,
+                            profile = userProfile,
+                            selected = sparklineExpanded,
+                            onSelect = { sparklineExpanded = !sparklineExpanded },
+                            onUpdate = { updated ->
+                                fieldSparklineConfig = updated
+                                lifecycleScope.launch { saveFieldSparklineConfig(updated) }
+                            },
+                        )
+                        var gradeMapExpanded by remember { mutableStateOf(false) }
+                        GradeMapCard(
+                            config = gradeMapConfig,
+                            sparklineConfig = fieldSparklineConfig,
+                            gradePalette = zoneConfig.gradePalette,
+                            selected = gradeMapExpanded,
+                            onSelect = { gradeMapExpanded = !gradeMapExpanded },
+                            onUpdate = { updated ->
+                                gradeMapConfig = updated
+                                lifecycleScope.launch { saveGradeMapConfig(updated) }
+                            },
+                        )
+                    } // end Climbing
+
+                    CollapsibleSection(
+                        title = "ETA",
+                        description = "Configure time of arrival estimation",
+                        icon = R.drawable.ic_time_to_dest,
+                        expanded = etaExpanded,
+                        onToggle = { etaExpanded = !etaExpanded },
+                    ) {
+                        ControlLabel("PRIOR SPEED")
+                        HelperText(
+                            "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
+                                "Set to 0 to disable."
+                        )
+                        ETAPriorSpeedInput(
+                            priorSpeedKph = etaConfig.priorSpeedKph,
+                            profile = userProfile,
+                            onValueChange = { kph ->
+                                etaConfig = ETAConfig(priorSpeedKph = kph)
+                                lifecycleScope.launch { saveETAConfig(etaConfig) }
                             },
                         )
                     }
 
-                    RouteRemainingCard(
-                        config = routeRemainingConfig,
-                        selected = selectedDataField == "OVERVIEW",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "OVERVIEW") null
-                                else "OVERVIEW"
-                        },
-                        onUpdate = { updated ->
-                            routeRemainingConfig = updated
-                            lifecycleScope.launch { saveRouteRemainingConfig(updated) }
-                        },
-                    )
-                } // end Fields
+                    CollapsibleSection(
+                        title = "Global",
+                        description =
+                            "Color palettes and time format shared across all data fields",
+                        icon = R.drawable.ic_section_global,
+                        expanded = globalExpanded,
+                        onToggle = { globalExpanded = !globalExpanded },
+                    ) {
+                        ControlLabel("TIME FIELDS")
+                        TimeFormatPills(
+                            selected = timeConfig.format,
+                            onSelected = { format ->
+                                timeConfig = TimeConfig(format)
+                                lifecycleScope.launch { saveTimeConfig(timeConfig) }
+                            },
+                        )
+                        TimeFormatPreview(format = timeConfig.format)
 
-                CollapsibleSection(
-                    title = "Climbing",
-                    description = "Configure the elevation profile and grade map",
-                    icon = R.drawable.ic_grade,
-                    expanded = climbingExpanded,
-                    onToggle = { climbingExpanded = !climbingExpanded },
-                ) {
-                    var sparklineExpanded by remember { mutableStateOf(false) }
-                    SparklineCard(
-                        config = fieldSparklineConfig,
-                        zoneConfig = zoneConfig,
-                        profile = userProfile,
-                        selected = sparklineExpanded,
-                        onSelect = { sparklineExpanded = !sparklineExpanded },
-                        onUpdate = { updated ->
-                            fieldSparklineConfig = updated
-                            lifecycleScope.launch { saveFieldSparklineConfig(updated) }
-                        },
-                    )
-                    var gradeMapExpanded by remember { mutableStateOf(false) }
-                    GradeMapCard(
-                        config = gradeMapConfig,
-                        sparklineConfig = fieldSparklineConfig,
-                        gradePalette = zoneConfig.gradePalette,
-                        selected = gradeMapExpanded,
-                        onSelect = { gradeMapExpanded = !gradeMapExpanded },
-                        onUpdate = { updated ->
-                            gradeMapConfig = updated
-                            lifecycleScope.launch { saveGradeMapConfig(updated) }
-                        },
-                    )
-                } // end Climbing
+                        ControlLabel("ZONE COLORS")
+                        EnumDropdown(
+                            title = "Power zones",
+                            entries = ZonePalette.entries,
+                            selected = zoneConfig.powerPalette,
+                            label = ::zonePaletteLabel,
+                            onSelected = { palette ->
+                                zoneConfig = zoneConfig.copy(powerPalette = palette)
+                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                            },
+                        )
+                        ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
 
-                CollapsibleSection(
-                    title = "ETA",
-                    description = "Configure time of arrival estimation",
-                    icon = R.drawable.ic_time_to_dest,
-                    expanded = etaExpanded,
-                    onToggle = { etaExpanded = !etaExpanded },
+                        EnumDropdown(
+                            title = "HR zones",
+                            entries = ZonePalette.entries,
+                            selected = zoneConfig.hrPalette,
+                            label = ::zonePaletteLabel,
+                            onSelected = { palette ->
+                                zoneConfig = zoneConfig.copy(hrPalette = palette)
+                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                            },
+                        )
+                        ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
+
+                        EnumDropdown(
+                            title = "Grade",
+                            entries = GradePalette.entries,
+                            selected = zoneConfig.gradePalette,
+                            label = { it.label },
+                            onSelected = { palette ->
+                                zoneConfig = zoneConfig.copy(gradePalette = palette)
+                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                            },
+                        )
+                        GradePalettePreview(palette = zoneConfig.gradePalette)
+                    } // end Global
+                    CollapsibleSection(
+                        title = "Data Field Design",
+                        description =
+                            "Match Karoo's icon and label-size settings for Barberfish fields",
+                        icon = R.drawable.ic_section_grid,
+                        expanded = designExpanded,
+                        onToggle = { designExpanded = !designExpanded },
+                    ) {
+                        BoolToggleRow(
+                            label = "DATA ICONS",
+                            value = dataFieldDesignConfig.showIcons,
+                            onChange = { on ->
+                                dataFieldDesignConfig = dataFieldDesignConfig.copy(showIcons = on)
+                                lifecycleScope.launch {
+                                    saveDataFieldDesignConfig(dataFieldDesignConfig)
+                                }
+                            },
+                            help = "Show the icon in each field header.",
+                            trackColor = Grey100,
+                        )
+
+                        ControlLabel("LABEL SIZE")
+                        HelperText("Header label size on dense (2-column) pages.")
+                        SegmentedRow(
+                            options = LabelSize.entries.map { it to it.label },
+                            selected = dataFieldDesignConfig.labelSize,
+                            onSelect = { size ->
+                                dataFieldDesignConfig = dataFieldDesignConfig.copy(labelSize = size)
+                                lifecycleScope.launch {
+                                    saveDataFieldDesignConfig(dataFieldDesignConfig)
+                                }
+                            },
+                            trackColor = Grey100,
+                        )
+                    } // end Data Field Design
+                    Spacer(modifier = Modifier.height(72.dp))
+                }
+                Box(
+                    modifier =
+                        Modifier.align(Alignment.BottomStart)
+                            .padding(bottom = 16.dp)
+                            .offset(x = (-8).dp)
+                            .size(width = 62.dp, height = 50.dp)
+                            .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
+                            .background(BackButtonTint)
+                            .clickable { finish() },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    ControlLabel("PRIOR SPEED")
-                    HelperText(
-                        "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
-                            "Set to 0 to disable.",
-                    )
-                    ETAPriorSpeedInput(
-                        priorSpeedKph = etaConfig.priorSpeedKph,
-                        profile = userProfile,
-                        onValueChange = { kph ->
-                            etaConfig = ETAConfig(priorSpeedKph = kph)
-                            lifecycleScope.launch { saveETAConfig(etaConfig) }
-                        },
+                    Icon(
+                        painter = painterResource(R.drawable.ic_arrow_back),
+                        contentDescription = "Back",
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.Black,
                     )
                 }
-
-                CollapsibleSection(
-                    title = "Global",
-                    description = "Color palettes and time format shared across all data fields",
-                    icon = R.drawable.ic_section_global,
-                    expanded = globalExpanded,
-                    onToggle = { globalExpanded = !globalExpanded },
-                ) {
-                    ControlLabel("TIME FIELDS")
-                    TimeFormatPills(
-                        selected = timeConfig.format,
-                        onSelected = { format ->
-                            timeConfig = TimeConfig(format)
-                            lifecycleScope.launch { saveTimeConfig(timeConfig) }
-                        },
-                    )
-                    TimeFormatPreview(format = timeConfig.format)
-
-                    ControlLabel("ZONE COLORS")
-                    EnumDropdown(
-                        title = "Power zones",
-                        entries = ZonePalette.entries,
-                        selected = zoneConfig.powerPalette,
-                        label = ::zonePaletteLabel,
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(powerPalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
-
-                    EnumDropdown(
-                        title = "HR zones",
-                        entries = ZonePalette.entries,
-                        selected = zoneConfig.hrPalette,
-                        label = ::zonePaletteLabel,
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(hrPalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
-
-                    EnumDropdown(
-                        title = "Grade",
-                        entries = GradePalette.entries,
-                        selected = zoneConfig.gradePalette,
-                        label = { it.label },
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(gradePalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradePalettePreview(palette = zoneConfig.gradePalette)
-                } // end Global
-                CollapsibleSection(
-                    title = "Data Field Design",
-                    description = "Match Karoo's icon and label-size settings for Barberfish fields",
-                    icon = R.drawable.ic_section_grid,
-                    expanded = designExpanded,
-                    onToggle = { designExpanded = !designExpanded },
-                ) {
-                    BoolToggleRow(
-                        label = "DATA ICONS",
-                        value = dataFieldDesignConfig.showIcons,
-                        onChange = { on ->
-                            dataFieldDesignConfig = dataFieldDesignConfig.copy(showIcons = on)
-                            lifecycleScope.launch { saveDataFieldDesignConfig(dataFieldDesignConfig) }
-                        },
-                        help = "Show the icon in each field header.",
-                        trackColor = Grey100,
-                    )
-
-                    ControlLabel("LABEL SIZE")
-                    HelperText("Header label size on dense (2-column) pages.")
-                    SegmentedRow(
-                        options = LabelSize.entries.map { it to it.label },
-                        selected = dataFieldDesignConfig.labelSize,
-                        onSelect = { size ->
-                            dataFieldDesignConfig = dataFieldDesignConfig.copy(labelSize = size)
-                            lifecycleScope.launch { saveDataFieldDesignConfig(dataFieldDesignConfig) }
-                        },
-                        trackColor = Grey100,
-                    )
-                } // end Data Field Design
-                Spacer(modifier = Modifier.height(72.dp))
-            }
-            Box(
-                modifier =
-                    Modifier.align(Alignment.BottomStart)
-                        .padding(bottom = 16.dp)
-                        .offset(x = (-8).dp)
-                        .size(width = 62.dp, height = 50.dp)
-                        .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
-                        .background(BackButtonTint)
-                        .clickable { finish() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow_back),
-                    contentDescription = "Back",
-                    modifier = Modifier.size(18.dp),
-                    tint = Color.Black,
-                )
-            }
-        } // end Box
+            } // end Box
         }
     }
 }
@@ -1331,7 +1376,7 @@ internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
         modifier = modifier,
         fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
-        color = TextDark
+        color = TextDark,
     )
 }
 
@@ -1342,7 +1387,7 @@ internal fun SubControlLabel(text: String, modifier: Modifier = Modifier) {
         modifier = modifier,
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
-        color = TextDark
+        color = TextDark,
     )
 }
 
@@ -1378,7 +1423,12 @@ internal fun <T> ChoiceRow(
     trackColor: Color = Color.White,
 ) {
     if (help != null) LabeledHelper(label) { HelperText(help) } else ControlLabel(label)
-    SegmentedRow(options = options, selected = selected, onSelect = onSelect, trackColor = trackColor)
+    SegmentedRow(
+        options = options,
+        selected = selected,
+        onSelect = onSelect,
+        trackColor = trackColor,
+    )
 }
 
 @Composable
@@ -1575,11 +1625,10 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
     val widthPx = (FIELD_PREVIEW_WIDTH.value * densityValue).toInt()
     val heightPx = (FIELD_PREVIEW_HEIGHT.value * densityValue).toInt()
     val design = LocalDataFieldDesign.current
-    val sizeConfig = remember(widthPx, design) {
-        ViewSizeConfig.STANDARD.copy(
-            cellWidthPxOverride = widthPx.toFloat(),
-        ).withDesign(design)
-    }
+    val sizeConfig =
+        remember(widthPx, design) {
+            ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat()).withDesign(design)
+        }
     var index by remember { mutableIntStateOf(0) }
     LaunchedEffect(previewFields) {
         index = 0
@@ -1650,8 +1699,7 @@ private fun OverviewPreviewBox(targetCount: Int, showHeader: Boolean) {
             val sizeConfig = ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat())
             val headerPx = if (showHeader) sparklineHeaderPx(sizeConfig, density) else 0
             val imgH = (heightPx - headerPx).coerceAtLeast(1)
-            val spark =
-                overviewPreviewBitmap(widthPx, imgH, isNight, targetCount, positionFraction)
+            val spark = overviewPreviewBitmap(widthPx, imgH, isNight, targetCount, positionFraction)
             val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
             if (showHeader) {
                 applySparklineHeaderChrome(
@@ -1736,7 +1784,7 @@ internal fun ExpandableCard(
         modifier =
             Modifier.fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
-                .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
+                .border(1.dp, Grey200, RoundedCornerShape(6.dp))
     ) {
         var everSelected by remember { mutableStateOf(selected) }
         if (selected) everSelected = true
@@ -1966,7 +2014,7 @@ private fun TimeFormatPreview(format: TimeFormat) {
             Modifier.fillMaxWidth()
                 .background(
                     if (isSystemInDarkTheme()) Color.Black else Color.White,
-                    RoundedCornerShape(6.dp)
+                    RoundedCornerShape(6.dp),
                 )
                 .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
@@ -1975,7 +2023,7 @@ private fun TimeFormatPreview(format: TimeFormat) {
             text = formatTime(5025L, format),
             style =
                 MaterialTheme.typography.displaySmall.copy(
-                    color = if (isSystemInDarkTheme()) Color.White else Color.Black,
+                    color = if (isSystemInDarkTheme()) Color.White else Color.Black
                 ),
             textAlign = TextAlign.Center,
         )

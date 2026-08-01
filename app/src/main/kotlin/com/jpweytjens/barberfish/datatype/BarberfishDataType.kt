@@ -29,7 +29,12 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
 
     abstract fun previewFlow(context: Context, config: ViewConfig): Flow<T>
 
-    abstract fun renderState(state: T, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews
+    abstract fun renderState(
+        state: T,
+        design: DataFieldDesignConfig,
+        config: ViewConfig,
+        context: Context,
+    ): RemoteViews
 
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
         val density = context.resources.displayMetrics.density
@@ -38,13 +43,19 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
         // headerSp omitted here: it depends on DataFieldDesignConfig (label size), which is
         // combined into the render flow below — logging toViewSizeConfig() with defaults would
         // misreport the live header size. See renderState for the design-aware sizing.
-        Log.d("Barberfish", "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId")
+        Log.d(
+            "Barberfish",
+            "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId",
+        )
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
         val scope = CoroutineScope(Dispatchers.IO + Job())
         emitter.setCancellable { scope.cancel() }
         scope.launch {
-            val flow = if (config.preview) previewFlow(context, config) else liveFlow(context, config)
-            combine(flow, context.streamDataFieldDesignConfig()) { state, design -> state to design }
+            val flow =
+                if (config.preview) previewFlow(context, config) else liveFlow(context, config)
+            combine(flow, context.streamDataFieldDesignConfig()) { state, design ->
+                    state to design
+                }
                 .collect { (state, design) ->
                     emitter.updateView(renderState(state, design, config, context))
                 }

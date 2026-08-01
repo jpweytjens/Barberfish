@@ -24,6 +24,7 @@ private const val FIVE_ROWS = 12
 // layouts are 33 px label at both settings. See docs/sdk-findings.md
 // § "Native header and value sizing".
 internal fun twoColLabelSp(large: Boolean): Float = if (large) 17.6f else 15.5f
+
 internal fun twoColValueBase(large: Boolean): Int = if (large) 41 else 47
 
 // Per-layout label sp mirrors the native field-header sizes measured on-device;
@@ -74,8 +75,7 @@ fun ViewConfig.toViewSizeConfig(
     val headerLineSpacingMult =
         if (colSpan == ONE_COL || (colSpan == TWO_COLS && !fiveRowTwoCol)) 0.7f else 0.6f
     // Native shifts the 5-row 2-col label up 3 px at Label Size Large.
-    val headerTranslationPx =
-        if (fiveRowTwoCol && design.labelSize == LabelSize.LARGE) -3 else 0
+    val headerTranslationPx = if (fiveRowTwoCol && design.labelSize == LabelSize.LARGE) -3 else 0
     val valueFontBase = textSizeEff.coerceAtLeast(20)
     val valueBitmapHeightDp = (VALUE_BITMAP_HEIGHT_RATIO * valueFontBase).toInt().coerceAtLeast(16)
     // Matches the small upward translation observed in native narrow-cell

@@ -25,8 +25,12 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
     final override fun previewFlow(context: Context, config: ViewConfig): Flow<HUDState> =
         previewFlow(context)
 
-    override fun renderState(state: HUDState, design: DataFieldDesignConfig, config: ViewConfig, context: Context): RemoteViews =
-        buildHudRemoteViews(state, design, config, context)
+    override fun renderState(
+        state: HUDState,
+        design: DataFieldDesignConfig,
+        config: ViewConfig,
+        context: Context,
+    ): RemoteViews = buildHudRemoteViews(state, design, config, context)
 
     protected fun buildHudRemoteViews(
         state: HUDState,
@@ -65,12 +69,12 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
             rv.setBoolean(R.id.hud_root, "setClipToOutline", true)
         }
         buildList {
-                add(Triple(R.id.hud_slot_left, state.left.field, state.left.colorMode))
-                add(Triple(R.id.hud_slot_middle, state.middle.field, state.middle.colorMode))
-                add(Triple(R.id.hud_slot_right, state.right.field, state.right.colorMode))
-                if (state.columns == 4)
-                    add(Triple(R.id.hud_slot_fourth, state.fourth.field, state.fourth.colorMode))
-            }
+            add(Triple(R.id.hud_slot_left, state.left.field, state.left.colorMode))
+            add(Triple(R.id.hud_slot_middle, state.middle.field, state.middle.colorMode))
+            add(Triple(R.id.hud_slot_right, state.right.field, state.right.colorMode))
+            if (state.columns == 4)
+                add(Triple(R.id.hud_slot_fourth, state.fourth.field, state.fourth.colorMode))
+        }
             .forEach { (slotId, field, colorMode) ->
                 rv.removeAllViews(slotId)
                 rv.addView(

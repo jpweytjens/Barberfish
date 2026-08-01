@@ -8,21 +8,21 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
-import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
+import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
+import java.io.File
+import java.io.FileOutputStream
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
-import java.io.FileOutputStream
 
 /**
- * Smoke test for the docs preview pipeline: render a field the same way the
- * config screen does (barberfishFieldRemoteViews + remoteViewsToBitmap) and
- * write PNGs to the app's external files dir for adb pull:
+ * Smoke test for the docs preview pipeline: render a field the same way the config screen does
+ * (barberfishFieldRemoteViews + remoteViewsToBitmap) and write PNGs to the app's external files dir
+ * for adb pull:
  *
- *   adb pull /sdcard/Android/data/com.jpweytjens.barberfish/files/previews
+ * adb pull /sdcard/Android/data/com.jpweytjens.barberfish/files/previews
  */
 @RunWith(AndroidJUnit4::class)
 class FieldPreviewRenderSmokeTest {
@@ -39,7 +39,8 @@ class FieldPreviewRenderSmokeTest {
             FieldState(
                 primary = "213",
                 label = "3s Power",
-                color = FieldColor.Zone(zone = 5, total = 7, palette = ZonePalette.KAROO, isHr = false),
+                color =
+                    FieldColor.Zone(zone = 5, total = 7, palette = ZonePalette.KAROO, isHr = false),
                 iconRes = R.drawable.ic_col_power,
             )
         val cases =
