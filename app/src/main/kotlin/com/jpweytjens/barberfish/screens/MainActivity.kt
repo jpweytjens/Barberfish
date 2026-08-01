@@ -128,7 +128,6 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
-import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
@@ -1919,76 +1918,11 @@ private fun ZonePalettePreview(palette: ZonePalette, isHr: Boolean) {
 
 @Composable
 private fun GradePalettePreview(palette: GradePalette) {
-    // Lower bounds of each band. Each band runs from thresholds[i] to thresholds[i+1] (or +∞ for
-    // the last).
-    val thresholds: List<Double> =
-        when (palette) {
-            GradePalette.BARBERFISH ->
-                listOf(
-                    Double.NEGATIVE_INFINITY, -10.0, -6.0, -2.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0,
-                )
-            GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
-            GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
-            GradePalette.KAROO -> listOf(0.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0)
-            GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
-            GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
-            GradePalette.TURBO ->
-                listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
-        }
-    val labels =
-        thresholds.mapIndexed { i, t ->
-            if (t == Double.NEGATIVE_INFINITY) "<${formatGradePct(thresholds[i + 1])}"
-            else formatGradePct(t)
-        }
-    val isNightMode = isSystemInDarkTheme()
-    val textColors =
-        thresholds.map {
-            gradeColor(it, palette, readable = true, isNightMode = isNightMode) ?: Color.Transparent
-        }
-    val fillColors =
-        thresholds.map { gradeColor(it, palette, readable = false) ?: Color.Transparent }
-    DualRowPalettePreview(labels = labels, textRowColors = textColors, fillRowColors = fillColors)
-    GradeRangeBar(thresholds = thresholds)
-    Caption(gradeBandSummary(thresholds))
-}
-
-// Thin scale under the dual preview showing min / 0 / max anchor labels.
-// Mid "0%" is only shown when the palette spans negative grades (Turbo).
-@Composable
-private fun GradeRangeBar(thresholds: List<Double>) {
-    val numericLowers = thresholds.filterNot { it == Double.NEGATIVE_INFINITY }
-    val hasNegativeInf = thresholds.first() == Double.NEGATIVE_INFINITY
-    val minVal = numericLowers.first()
-    val maxVal = numericLowers.last()
-    val minLabel =
-        if (hasNegativeInf) "<${formatGradePct(minVal)}%" else "${formatGradePct(minVal)}%"
-    val maxLabel = "≥${formatGradePct(maxVal)}%"
-    val zeroIdx = thresholds.indexOf(0.0)
-    val showZero = hasNegativeInf && zeroIdx > 0 && zeroIdx < thresholds.size - 1
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 3.dp)) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Caption(minLabel)
-            if (showZero) {
-                Spacer(modifier = Modifier.weight(zeroIdx.toFloat()))
-                Caption("0%")
-                Spacer(modifier = Modifier.weight((thresholds.size - zeroIdx).toFloat()))
-            } else {
-                Spacer(modifier = Modifier.weight(1f))
-            }
-            Caption(maxLabel)
-        }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Caption("Text mode (top) · Fill mode (bottom)")
+        Spacer(modifier = Modifier.height(2.dp))
+        ProportionalGradePreview(palette)
     }
-}
-
-private fun gradeBandSummary(thresholds: List<Double>): String {
-    val nBands = thresholds.size
-    val numericLowers = thresholds.filterNot { it == Double.NEGATIVE_INFINITY }
-    val diffs = (1 until numericLowers.size).map { numericLowers[it] - numericLowers[it - 1] }
-    val uniformStep =
-        diffs.firstOrNull()?.takeIf { first -> diffs.all { kotlin.math.abs(it - first) < 0.01 } }
-    val stepDesc =
-        if (uniformStep != null) "${formatGradePct(uniformStep)}% steps" else "uneven steps"
-    return "$nBands bands · $stepDesc"
 }
 
 @Composable
@@ -2021,9 +1955,7 @@ private fun RowScope.PreviewSwatch(label: String, bg: Color, text: Color) {
         modifier = Modifier.weight(1f).fillMaxHeight().background(bg),
         contentAlignment = Alignment.Center,
     ) {
-        // "<-12" is the one label that overflows a 10-band cell; keep the rest at full size.
-        val fontSize = if (label.length > 3) 8.sp else 10.sp
-        Text(text = label, fontSize = fontSize, color = text, fontWeight = FontWeight.Bold)
+        Text(text = label, fontSize = 10.sp, color = text, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -2347,4 +2279,4 @@ private fun NullableCadenceThresholdInput(
     )
 }
 
-private fun formatGradePct(d: Double) = "%.0f".format(d)
+internal fun formatGradePct(d: Double) = "%.0f".format(d)
