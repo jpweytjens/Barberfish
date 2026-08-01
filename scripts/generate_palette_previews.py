@@ -179,12 +179,14 @@ def _exemplar(mid: float) -> str:
     return str(int(rounded))
 
 
-def _grade_cells(entries: list[tuple[float, str]]) -> list[tuple[float, float, str]]:
-    """(lo, hi, hex) cells on the clamped axis, ascending.
+def _grade_cells(entries: list[tuple[float, str]]) -> list[tuple[float, float, str, int]]:
+    """(lo, hi, hex, band_index) cells on the clamped axis, ascending.
 
     ``entries`` ascending ``(lo_threshold, hex)``; the open low end arrives as
     ``float("-inf")``. A palette with no descent bands starts at 0 rather than
-    the clamp, so missing coverage reads as absence.
+    the clamp, so missing coverage reads as absence. Each cell carries the index
+    of the band it came from, so colour lookups stay aligned even if clamping
+    ever drops a band.
     """
     first_lo = entries[0][0]
     floor_lo = (
@@ -200,35 +202,33 @@ def _grade_cells(entries: list[tuple[float, str]]) -> list[tuple[float, float, s
         hi = entries[i + 1][0] if i + 1 < len(entries) else GRADE_AXIS_MAX
         hi_c = min(hi, GRADE_AXIS_MAX)
         if hi_c > lo_c:
-            cells.append((lo_c, hi_c, hex_))
+            cells.append((lo_c, hi_c, hex_, i))
     return cells
 
 
 def render_grade_palette_svg(
-    cells: list[tuple[float, float, str]],
+    cells: list[tuple[float, float, str, int]],
     text_dark_hexes: list[str],
     text_light_hexes: list[str],
 ) -> str:
     """Three A1 rows (day text, night text, fill) plus one edge-tick axis."""
     width = H_PADDING * 2 + GRADE_ROW_W
     height = V_PADDING * 2 + 3 * CELL_H + 2 * ROW_GAP + TICK_H
-    x0 = _grade_x(cells[0][0])
-    x1 = _grade_x(cells[-1][1])
 
     def row(y: int, cell_fill, text_color) -> str:
         parts = []
-        for i, (lo, hi, hex_) in enumerate(cells):
+        for lo, hi, hex_, band in cells:
             xa, xb = _grade_x(lo), _grade_x(hi)
             parts.append(
                 f'<rect x="{xa:.1f}" y="{y}" width="{xb - xa:.1f}" '
-                f'height="{CELL_H}" fill="{cell_fill(i, hex_)}" />'
+                f'height="{CELL_H}" fill="{cell_fill(band, hex_)}" />'
             )
             label = _exemplar((lo + hi) / 2.0)
             if (xb - xa) >= len(label) * 8 + 6:
                 parts.append(
                     f'<text x="{(xa + xb) / 2:.1f}" y="{y + CELL_H / 2 + 4:.1f}" '
                     f'font-family="{FONT_FAMILY}" font-size="{FONT_SIZE}" '
-                    f'font-weight="{FONT_WEIGHT}" fill="{text_color(i, hex_)}" '
+                    f'font-weight="{FONT_WEIGHT}" fill="{text_color(band, hex_)}" '
                     f'text-anchor="middle">{_esc(label)}</text>'
                 )
         return "\n".join(parts)
@@ -239,12 +239,12 @@ def render_grade_palette_svg(
     tick_y = row3_y + CELL_H
 
     rows = [
-        row(row1_y, lambda i, h: DATAFIELD_BG_LIGHT, lambda i, h: text_light_hexes[i]),
-        row(row2_y, lambda i, h: DATAFIELD_BG_DARK, lambda i, h: text_dark_hexes[i]),
-        row(row3_y, lambda i, h: h, lambda i, h: best_text_on_background(h)),
+        row(row1_y, lambda _b, _h: DATAFIELD_BG_LIGHT, lambda b, _h: text_light_hexes[b]),
+        row(row2_y, lambda _b, _h: DATAFIELD_BG_DARK, lambda b, _h: text_dark_hexes[b]),
+        row(row3_y, lambda _b, h: h, lambda _b, h: best_text_on_background(h)),
     ]
 
-    stops = [lo for lo, _, _ in cells[1:]]
+    stops = [lo for lo, _, _, _ in cells[1:]]
     if cells[0][0] >= 0.0:
         stops = [cells[0][0]] + stops
     ticks = []
