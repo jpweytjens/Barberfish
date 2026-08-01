@@ -22,6 +22,7 @@ uv run scripts/generate_palette_previews.py
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from palettes import (
@@ -60,6 +61,7 @@ HR_PALETTE_ORDER: list[tuple[str, str]] = [
 # "single variant" (HSLUV is perceptually designed; Turbo, Karoo bands
 # resolve via the power palette / their own readable lists post-rename).
 GRADE_PALETTE_ORDER: list[tuple[str, str]] = [
+    ("barberfish", "BARBERFISH_GRADE_BANDS"),
     ("karoo",  "KAROO_GRADE_BANDS"),
     ("wahoo",  "WAHOO_GRADE_BANDS"),
     ("garmin", "GARMIN_GRADE_BANDS"),
@@ -67,20 +69,6 @@ GRADE_PALETTE_ORDER: list[tuple[str, str]] = [
     ("hsluv",  "HSLUV_GRADE_BANDS"),
     ("turbo",  "TURBO_GRADE_BANDS"),
 ]
-
-# README-style band labels — descent → neutral → steep — applied after the
-# Kotlin band list is reversed (Kotlin orders steep → descent).
-GRADE_LABELS_README = {
-    "karoo":  ["[0, 2)", "[2, 5)", "[5, 8)", "[8, 11)", "[11, 14)", "[14, 20)", "[20, ∞)"],
-    "wahoo":  ["[0, 4)", "[4, 8)", "[8, 12)", "[12, 20)", "[20, ∞)"],
-    "garmin": ["[0, 3)", "[3, 6)", "[6, 9)", "[9, 12)", "[12, ∞)"],
-    "zwift":  ["[0, 3)", "[3, 6)", "[6, 9)", "[9, ∞)"],
-    "hsluv":  ["[0, 3)", "[3, 6)", "[6, 9)", "[9, 12)", "[12, 15)", "[15, 18)", "[18, ∞)"],
-    "turbo":  [
-        "(-∞, -9)", "[-9, -6)", "[-6, -3)", "[-3, 0)",
-        "[0, 3)", "[3, 6)", "[6, 9)", "[9, 12)", "[12, 15)", "[15, ∞)",
-    ],
-}
 
 
 # ---------------------------------------------------------------------------
@@ -95,6 +83,11 @@ V_PADDING = 0
 FONT_FAMILY = "-apple-system, system-ui, sans-serif"
 FONT_SIZE = 13
 FONT_WEIGHT = 600
+
+GRADE_AXIS_MIN = -15.0
+GRADE_AXIS_MAX = 25.0
+GRADE_ROW_W = 720   # fixed content width so every grade row aligns across palettes
+TICK_H = 18
 
 
 def _esc(text: str) -> str:
@@ -174,6 +167,103 @@ def render_palette_svg(
     return f"{header}\n{row1}\n{row2}\n{row3}\n</svg>\n"
 
 
+def _grade_x(grade: float) -> float:
+    """Axis position in px for a grade on the shared clamped axis."""
+    frac = (grade - GRADE_AXIS_MIN) / (GRADE_AXIS_MAX - GRADE_AXIS_MIN)
+    return H_PADDING + frac * GRADE_ROW_W
+
+
+def _exemplar(mid: float) -> str:
+    """Round half away from zero, so -12.5 reads -13 and 22.5 reads 23."""
+    rounded = math.floor(mid + 0.5) if mid >= 0.0 else math.ceil(mid - 0.5)
+    return str(int(rounded))
+
+
+def _grade_cells(entries: list[tuple[float, str]]) -> list[tuple[float, float, str]]:
+    """(lo, hi, hex) cells on the clamped axis, ascending.
+
+    ``entries`` ascending ``(lo_threshold, hex)``; the open low end arrives as
+    ``float("-inf")``. A palette with no descent bands starts at 0 rather than
+    the clamp, so missing coverage reads as absence.
+    """
+    first_lo = entries[0][0]
+    floor_lo = (
+        GRADE_AXIS_MIN
+        if first_lo == float("-inf") or first_lo < 0.0
+        else max(first_lo, 0.0)
+    )
+    cells = []
+    for i, (lo, hex_) in enumerate(entries):
+        lo_c = max(lo if lo != float("-inf") else GRADE_AXIS_MIN, GRADE_AXIS_MIN)
+        if i == 0:
+            lo_c = floor_lo
+        hi = entries[i + 1][0] if i + 1 < len(entries) else GRADE_AXIS_MAX
+        hi_c = min(hi, GRADE_AXIS_MAX)
+        if hi_c > lo_c:
+            cells.append((lo_c, hi_c, hex_))
+    return cells
+
+
+def render_grade_palette_svg(
+    cells: list[tuple[float, float, str]],
+    text_dark_hexes: list[str],
+    text_light_hexes: list[str],
+) -> str:
+    """Three A1 rows (day text, night text, fill) plus one edge-tick axis."""
+    width = H_PADDING * 2 + GRADE_ROW_W
+    height = V_PADDING * 2 + 3 * CELL_H + 2 * ROW_GAP + TICK_H
+    x0 = _grade_x(cells[0][0])
+    x1 = _grade_x(cells[-1][1])
+
+    def row(y: int, cell_fill, text_color) -> str:
+        parts = []
+        for i, (lo, hi, hex_) in enumerate(cells):
+            xa, xb = _grade_x(lo), _grade_x(hi)
+            parts.append(
+                f'<rect x="{xa:.1f}" y="{y}" width="{xb - xa:.1f}" '
+                f'height="{CELL_H}" fill="{cell_fill(i, hex_)}" />'
+            )
+            label = _exemplar((lo + hi) / 2.0)
+            if (xb - xa) >= len(label) * 8 + 6:
+                parts.append(
+                    f'<text x="{(xa + xb) / 2:.1f}" y="{y + CELL_H / 2 + 4:.1f}" '
+                    f'font-family="{FONT_FAMILY}" font-size="{FONT_SIZE}" '
+                    f'font-weight="{FONT_WEIGHT}" fill="{text_color(i, hex_)}" '
+                    f'text-anchor="middle">{_esc(label)}</text>'
+                )
+        return "\n".join(parts)
+
+    row1_y = V_PADDING
+    row2_y = row1_y + CELL_H + ROW_GAP
+    row3_y = row2_y + CELL_H + ROW_GAP
+    tick_y = row3_y + CELL_H
+
+    rows = [
+        row(row1_y, lambda i, h: DATAFIELD_BG_LIGHT, lambda i, h: text_light_hexes[i]),
+        row(row2_y, lambda i, h: DATAFIELD_BG_DARK, lambda i, h: text_dark_hexes[i]),
+        row(row3_y, lambda i, h: h, lambda i, h: best_text_on_background(h)),
+    ]
+
+    stops = [lo for lo, _, _ in cells[1:]]
+    if cells[0][0] >= 0.0:
+        stops = [cells[0][0]] + stops
+    ticks = []
+    for stop in stops:
+        x = _grade_x(stop)
+        ticks.append(f'<line x1="{x:.1f}" y1="{tick_y}" x2="{x:.1f}" y2="{tick_y + 3}" stroke="#999" />')
+        label = f"{stop:g}"
+        ticks.append(
+            f'<text x="{x:.1f}" y="{tick_y + 14}" font-family="{FONT_FAMILY}" '
+            f'font-size="10" fill="#777" text-anchor="middle">{_esc(label)}</text>'
+        )
+
+    header = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'width="{width}" height="{height}" viewBox="0 0 {width} {height}">'
+    )
+    return header + "\n" + "\n".join(rows) + "\n" + "\n".join(ticks) + "\n</svg>\n"
+
+
 # ---------------------------------------------------------------------------
 # Text-palette resolution (prefers cached Kotlin values; falls back on-the-fly)
 # ---------------------------------------------------------------------------
@@ -248,16 +338,15 @@ def _write_zone_palettes(
 def _write_grade_palettes(out_dir: Path) -> list[Path]:
     written: list[Path] = []
     for slug, kotlin_name in GRADE_PALETTE_ORDER:
-        # Kotlin bands are ordered steep → descent; README renders descent → steep.
-        entries = list(reversed(GRADE_BANDS_BY_KOTLIN_NAME[kotlin_name]))
+        # Kotlin bands are ordered steep → descent; the axis renders descent → steep.
+        entries = [
+            (thr, hex_) for thr, hex_ in reversed(GRADE_BANDS_BY_KOTLIN_NAME[kotlin_name])
+        ]
+        cells = _grade_cells(entries)
         fills = [hex_ for _, hex_ in entries]
         text_dark = list(reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_DARK)))
         text_light = list(reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_LIGHT)))
-        labels = GRADE_LABELS_README[slug]
-        assert len(labels) == len(fills), (
-            f"{slug}: README labels ({len(labels)}) must match band count ({len(fills)})"
-        )
-        svg = render_palette_svg(fills, text_dark, text_light, labels)
+        svg = render_grade_palette_svg(cells, text_dark, text_light)
         path = out_dir / f"palette-grade-{slug}.svg"
         path.write_text(svg, encoding="utf-8")
         written.append(path)
