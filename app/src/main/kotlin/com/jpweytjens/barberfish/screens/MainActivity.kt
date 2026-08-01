@@ -1316,7 +1316,10 @@ private fun GradeMapCard(
             )
 
             if (config.syncWithSparkline) {
-                HelperText("Following the elevation profile's emphasis and simplification.")
+                HelperText(
+                    "Starts from the elevation profile's emphasis and simplification, then " +
+                        "coarsens further as you zoom out."
+                )
             } else {
                 // Read through gradeEdges, the same resolution the overlay renders from, so the
                 // sentence names the grade the fill actually starts at.

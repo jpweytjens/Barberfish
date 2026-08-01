@@ -189,13 +189,16 @@ internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): 
  *
  * Algorithm:
  * 1. Decode the GPS polyline and compute cumulative distance.
- * 2. Decode the elevation polyline and run Visvalingam–Whyatt simplification.
- * 3. Resample the simplified profile into fixed-length cells with [resampleRunsToCells]. Every cell
- *    takes a colour from its mean grade: its grade band's when the mean is past that side's edge,
- *    the flat grey when it is not. Adjacent same-colour cells merge into runs, each emitting a
- *    single polyline spanning `[runStartM, runEndM]`. The runs tile the route, so our overlay
- *    covers Karoo's own route line everywhere, in both directions of travel, and none of them is
- *    too short to read.
+ * 2. Decode the elevation polyline and run Visvalingam–Whyatt simplification at
+ *    [effectiveMinAreaM2], which scales up from the base [EffectiveGradeMapTuning.simplification]
+ *    as [metresPerPixel] grows (zooming out), so the profile coarsens instead of flooding the
+ *    overlay with detail no zoom level can render.
+ * 3. Resample the simplified profile into fixed-length cells with [resampleRunsToCells], sized by
+ *    [minRunLengthM] from the same [metresPerPixel]. Every cell takes a colour from its mean grade:
+ *    its grade band's when the mean is past that side's edge, the flat grey when it is not.
+ *    Adjacent same-colour cells merge into runs, each emitting a single polyline spanning
+ *    `[runStartM, runEndM]`. The runs tile the route, so our overlay covers Karoo's own route line
+ *    everywhere, in both directions of travel, and none of them is too short to read.
  * 4. Place chevrons along the whole route with [placeChevrons], then colour each placement with the
  *    run containing it and drop the placements that sit on no run. Placement is a property of the
  *    route, not of the runs: a run shorter than the spacing carries a chevron only when a cadence
@@ -220,6 +223,7 @@ internal fun buildGradeMapSpecs(
     chevronViewport: LatLngBounds? = null,
     capTrimM: Double = 0.0,
     reversed: Boolean = false,
+    metresPerPixel: Double = 0.0,
 ): GradeMapSpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
         return GradeMapSpecs(emptyList(), emptyList())
@@ -230,7 +234,8 @@ internal fun buildGradeMapSpecs(
     val cumDist = cumulativeDistancesM(gps)
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
     if (rawElev.isEmpty()) return GradeMapSpecs(emptyList(), emptyList())
-    val elevPoints = visvalingamWhyatt(rawElev, tuning.simplification.minAreaM2)
+    val elevPoints =
+        visvalingamWhyatt(rawElev, effectiveMinAreaM2(tuning.simplification, metresPerPixel))
     if (elevPoints.size < 2) return GradeMapSpecs(emptyList(), emptyList())
 
     // The runs have one derivation: the profile is resampled into cells and each takes the
@@ -240,8 +245,9 @@ internal fun buildGradeMapSpecs(
     val runs =
         resampleRunsToCells(
             routeEndM = elevPoints.last().first.toDouble(),
-            // No zoom reaches us yet, so the baseline floor is the cell length everywhere.
-            cellM = minRunLengthM(metresPerPixel = 0.0),
+            // Below 2.5 m/px (MIN_RUN_PX * metresPerPixel < GRADE_BASELINE_M) the 30 m floor
+            // binds and this is unchanged from zoomed-in; it only grows zoomed out.
+            cellM = minRunLengthM(metresPerPixel),
             elevAtM = { distanceM -> elevationAtM(elevPoints, distanceM) },
             palette = palette,
             climbEdge = tuning.climbEdge,

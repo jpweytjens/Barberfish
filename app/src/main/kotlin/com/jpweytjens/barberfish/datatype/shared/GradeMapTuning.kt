@@ -4,6 +4,7 @@ import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import kotlin.math.pow
 
 /** Emphasis/simplification/edges actually used to render the climb overlay. */
 data class EffectiveGradeMapTuning(
@@ -46,3 +47,21 @@ fun resolveGradeMapTuning(
             map.descentEdge ?: sparklineDescentEdge,
         )
     }
+
+// Metres per screen pixel measured at REFERENCE_ZOOM, three independent scale-bar anchors
+// agreeing within 0.008 zoom; the doubling law below verified across zoom 12.13-15.13 with
+// max deviation 0.55%.
+internal const val REFERENCE_ZOOM = 14.98
+internal const val REFERENCE_M_PER_PX = 1.54
+
+/** Metres per screen pixel at [zoom], anchored on the measured reference. */
+internal fun metresPerPixel(zoom: Double): Double =
+    REFERENCE_M_PER_PX * 2.0.pow(REFERENCE_ZOOM - zoom)
+
+/**
+ * Visvalingam area threshold for the map at the current zoom. Area is metres of distance times
+ * metres of elevation, and only the distance axis scales with zoom, so the threshold scales
+ * linearly with [metresPerPixel] rather than quadratically.
+ */
+internal fun effectiveMinAreaM2(base: ElevationSimplification, metresPerPixel: Double): Float =
+    (base.minAreaM2 * maxOf(1.0, metresPerPixel / REFERENCE_M_PER_PX)).toFloat()

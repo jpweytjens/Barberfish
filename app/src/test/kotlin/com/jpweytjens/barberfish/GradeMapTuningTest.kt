@@ -1,6 +1,9 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
+import com.jpweytjens.barberfish.datatype.shared.REFERENCE_ZOOM
+import com.jpweytjens.barberfish.datatype.shared.effectiveMinAreaM2
+import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeMapConfig
@@ -11,6 +14,7 @@ import io.hammerhead.karooext.models.OnNavigationState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GradeMapTuningTest {
@@ -173,5 +177,18 @@ class GradeMapTuningTest {
         val b = signatureFor(SparklineConfig(skipBands = 1, skipBandsDescent = 1))
 
         assertNotEquals(a, b)
+    }
+
+    @Test
+    fun `simplification scales with the zoom band`() {
+        val base = ElevationSimplification.HEAVY
+        assertEquals(base.minAreaM2, effectiveMinAreaM2(base, metresPerPixel = 1.5), 0.01f)
+        assertTrue(effectiveMinAreaM2(base, metresPerPixel = 24.0) > base.minAreaM2)
+    }
+
+    @Test
+    fun `metres per pixel doubles with each zoom step out`() {
+        assertEquals(3.08, metresPerPixel(zoom = REFERENCE_ZOOM - 1.0), 0.01)
+        assertEquals(1.54, metresPerPixel(zoom = REFERENCE_ZOOM), 0.01)
     }
 }

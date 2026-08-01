@@ -36,6 +36,7 @@ import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.groundResolution
+import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
@@ -254,6 +255,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             chevronViewport = bounds,
                             capTrimM = capTrimM,
                             reversed = route.reversed,
+                            metresPerPixel = metresPerPixel(viewport.zoomLevel),
                         )
                     Timber.d(
                         "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
