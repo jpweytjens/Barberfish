@@ -1,4 +1,13 @@
 [[repos]]
+repo = "local"
+hooks = [
+  # Spotless (ktfmt 0.64, kotlinlang style) is the one source of formatting
+  # truth. The brew ktfmt CLI disagrees with it even at the same version, so
+  # the hook goes through gradle. Fix failures with: ./gradlew spotlessApply
+  { id = "spotless", name = "spotless check", language = "system", entry = "./gradlew -q spotlessCheck", files = '\.kt$', pass_filenames = false },
+]
+
+[[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
 rev = "v0.16.0"
 hooks = [
