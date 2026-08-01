@@ -1925,7 +1925,7 @@ private fun GradePalettePreview(palette: GradePalette) {
         when (palette) {
             GradePalette.BARBERFISH ->
                 listOf(
-                    Double.NEGATIVE_INFINITY, -12.0, -6.0, -2.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0,
+                    Double.NEGATIVE_INFINITY, -10.0, -6.0, -2.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0,
                 )
             GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
             GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)

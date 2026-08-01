@@ -83,7 +83,7 @@ class GradeMapTuningTest {
 
     // The GRADE MAP card sets the climb side only. Switching to Independent must not silently
     // widen the descent side to every descent, which is what the overlay's own (absent) descent
-    // count resolves to. Barberfish descent stops are -2/-6/-12.
+    // count resolves to. Barberfish descent stops are -2/-6/-10.
 
     @Test
     fun `the descent edge survives the switch to independent`() {
@@ -99,8 +99,8 @@ class GradeMapTuningTest {
                 palette,
             )
 
-        assertEquals(-12.0, synced.descentEdge)
-        assertEquals(-12.0, independent.descentEdge)
+        assertEquals(-10.0, synced.descentEdge)
+        assertEquals(-10.0, independent.descentEdge)
         // Only the climb side parts company.
         assertEquals(2.0, synced.climbEdge)
         assertEquals(8.0, independent.climbEdge)

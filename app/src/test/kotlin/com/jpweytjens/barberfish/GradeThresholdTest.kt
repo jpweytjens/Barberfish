@@ -17,7 +17,7 @@ class GradeThresholdTest {
     private val expectedStops =
         mapOf(
             GradePalette.BARBERFISH to
-                (listOf(2.0, 5.0, 8.0, 11.0, 14.0, 20.0) to listOf(-2.0, -6.0, -12.0)),
+                (listOf(2.0, 5.0, 8.0, 11.0, 14.0, 20.0) to listOf(-2.0, -6.0, -10.0)),
             GradePalette.WAHOO to (listOf(4.0, 8.0, 12.0, 20.0) to emptyList<Double>()),
             GradePalette.GARMIN to (listOf(3.0, 6.0, 9.0, 12.0) to emptyList<Double>()),
             GradePalette.HSLUV to (listOf(3.0, 6.0, 9.0, 12.0, 15.0, 18.0) to emptyList<Double>()),
