@@ -58,7 +58,7 @@ screencaps/
 docs/superpowers/
 
 # Local pre-commit deny-scan (see CLAUDE.md)
-/.githooks/pre-commit
+/.githooks/pre-commit-local
 
 # Local development roadmap (not for publishing)
 /ROADMAP.md

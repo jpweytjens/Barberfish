@@ -1,0 +1,25 @@
+#!/bin/sh
+# Committed wrapper. Two stages:
+#
+# 1. .githooks/pre-commit-local — optional, gitignored, machine-local checks.
+#    Re-create it after a fresh clone (see CLAUDE.md); this wrapper runs it
+#    whenever it exists.
+# 2. prek (https://github.com/j178/prek) — runs the hooks in prek.toml
+#    (ruff check --fix, ruff format) against the staged files.
+#
+# Activate once per clone:
+#   git config core.hooksPath .githooks
+
+hook_dir="$(dirname "$0")"
+
+if [ -x "$hook_dir/pre-commit-local" ]; then
+  "$hook_dir/pre-commit-local" || exit 1
+fi
+
+if command -v prek >/dev/null 2>&1; then
+  prek run || exit 1
+else
+  echo "pre-commit: prek not installed; skipping lint hooks (brew install prek)" >&2
+fi
+
+exit 0
