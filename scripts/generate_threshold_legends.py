@@ -74,7 +74,9 @@ def range_color(kph: float) -> tuple:
     return lerp(RDYLGN_GREEN, DANGER_ORANGE, math.sqrt(proximity))
 
 
-def strip_svg(kphs: list[float], color_at, markers: dict[int, str], grad_id: str) -> str:
+def strip_svg(
+    kphs: list[float], color_at, markers: dict[int, str], grad_id: str
+) -> str:
     width = CELL_W * len(kphs)
     # Uniform sample spacing makes the speed axis linear: the gradient spans
     # half a step beyond the first and last sample positions, so each printed

@@ -26,12 +26,11 @@ uv run scripts/preview_bg_text_picks.py
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from palettes import (
     BLACK,
-    DATAFIELD_BG_DARK as DATAFIELD_BG,
     GRADE_BANDS_BY_KOTLIN_NAME,
     HR_PALETTES,
     HR_ZONE_LABELS,
@@ -41,7 +40,9 @@ from palettes import (
     apca_contrast,
     best_text_on_background,
 )
-
+from palettes import (
+    DATAFIELD_BG_DARK as DATAFIELD_BG,
+)
 
 # ---------------------------------------------------------------------------
 # Grade palette display labels — derived from thresholds in FieldColors.kt
@@ -86,15 +87,11 @@ THRESHOLD_FACTORS = [i / 10 for i in range(-10, 11)]  # -1.0 .. +1.0 step 0.1
 
 def _hex_to_rgb(h: str) -> tuple[float, float, float]:
     h = h.lstrip("#")
-    return tuple(int(h[i:i + 2], 16) / 255.0 for i in (0, 2, 4))  # type: ignore[return-value]
+    return tuple(int(h[i : i + 2], 16) / 255.0 for i in (0, 2, 4))  # type: ignore[return-value]
 
 
 def _rgb_to_hex(r: float, g: float, b: float) -> str:
-    return "#{:02X}{:02X}{:02X}".format(
-        max(0, min(255, round(r * 255))),
-        max(0, min(255, round(g * 255))),
-        max(0, min(255, round(b * 255))),
-    )
+    return f"#{max(0, min(255, round(r * 255))):02X}{max(0, min(255, round(g * 255))):02X}{max(0, min(255, round(b * 255))):02X}"
 
 
 def _lerp_hex(a_hex: str, b_hex: str, t: float) -> str:
@@ -150,13 +147,16 @@ def _danger_palettes() -> dict[str, list[tuple[str, str]]]:
     samples = [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
     return {
         "DangerZone outside (0 → 1, ORANGE → RED)": [
-            (f"{t:.1f}", _danger_color(outside=t, border=0.0, has_safe=True)) for t in samples
+            (f"{t:.1f}", _danger_color(outside=t, border=0.0, has_safe=True))
+            for t in samples
         ],
         "DangerZone border (safe zone, 0 → 1, GREEN → ORANGE)": [
-            (f"{t:.1f}", _danger_color(outside=0.0, border=t, has_safe=True)) for t in samples
+            (f"{t:.1f}", _danger_color(outside=0.0, border=t, has_safe=True))
+            for t in samples
         ],
         "DangerZone border (one-sided, 0 → 1, WHITE → ORANGE)": [
-            (f"{t:.1f}", _danger_color(outside=0.0, border=t, has_safe=False)) for t in samples
+            (f"{t:.1f}", _danger_color(outside=0.0, border=t, has_safe=False))
+            for t in samples
         ],
     }
 
@@ -177,20 +177,20 @@ def _zone_sections(
 
 def bg_view_sections() -> list[Section]:
     return [
-        ("Power zones",         _zone_sections(POWER_PALETTES, POWER_ZONE_LABELS)),
-        ("HR zones",            _zone_sections(HR_PALETTES, HR_ZONE_LABELS)),
-        ("Grade bands",         list(GRADE_PALETTES.items())),
-        ("Threshold gradient",  list(_threshold_palettes_bg().items())),
+        ("Power zones", _zone_sections(POWER_PALETTES, POWER_ZONE_LABELS)),
+        ("HR zones", _zone_sections(HR_PALETTES, HR_ZONE_LABELS)),
+        ("Grade bands", list(GRADE_PALETTES.items())),
+        ("Threshold gradient", list(_threshold_palettes_bg().items())),
         ("DangerZone gradient", list(_danger_palettes().items())),
     ]
 
 
 def text_view_sections() -> list[Section]:
     return [
-        ("Power zones",         _zone_sections(POWER_PALETTES, POWER_ZONE_LABELS)),
-        ("HR zones",            _zone_sections(HR_PALETTES, HR_ZONE_LABELS)),
-        ("Grade bands",         list(GRADE_PALETTES.items())),
-        ("Threshold gradient",  list(_threshold_palettes_text().items())),
+        ("Power zones", _zone_sections(POWER_PALETTES, POWER_ZONE_LABELS)),
+        ("HR zones", _zone_sections(HR_PALETTES, HR_ZONE_LABELS)),
+        ("Grade bands", list(GRADE_PALETTES.items())),
+        ("Threshold gradient", list(_threshold_palettes_text().items())),
         ("DangerZone gradient", list(_danger_palettes().items())),
     ]
 
@@ -234,31 +234,31 @@ SECTION_HEADER_H = 24
 
 
 def _esc(text: str) -> str:
-    return (
-        text.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _swatch_svg(x: float, y: float, bg: str, text: str, col_label: str) -> str:
     lc = apca_contrast(text, bg)
-    return "\n".join([
-        f'<rect x="{x:.1f}" y="{y:.1f}" width="{SWATCH_W}" height="{SWATCH_H}" '
-        f'fill="{bg}" stroke="#444" stroke-width="0.5" />',
-        f'<text x="{x + SWATCH_W / 2:.1f}" y="{y - 6:.1f}" '
-        f'font-family="-apple-system, system-ui, sans-serif" font-size="11" '
-        f'fill="#222" text-anchor="middle">{_esc(col_label)}</text>',
-        f'<text x="{x + SWATCH_W / 2:.1f}" y="{y + SWATCH_H / 2 - 4:.1f}" '
-        f'font-family="-apple-system, system-ui, monospace" font-size="14" '
-        f'font-weight="600" fill="{text}" text-anchor="middle">{bg.upper() if bg != DATAFIELD_BG else text.upper()}</text>',
-        f'<text x="{x + SWATCH_W / 2:.1f}" y="{y + SWATCH_H / 2 + 14:.1f}" '
-        f'font-family="-apple-system, system-ui, sans-serif" font-size="12" '
-        f'fill="{text}" text-anchor="middle">Lc={lc:+.1f}</text>',
-    ])
+    return "\n".join(
+        [
+            f'<rect x="{x:.1f}" y="{y:.1f}" width="{SWATCH_W}" height="{SWATCH_H}" '
+            f'fill="{bg}" stroke="#444" stroke-width="0.5" />',
+            f'<text x="{x + SWATCH_W / 2:.1f}" y="{y - 6:.1f}" '
+            f'font-family="-apple-system, system-ui, sans-serif" font-size="11" '
+            f'fill="#222" text-anchor="middle">{_esc(col_label)}</text>',
+            f'<text x="{x + SWATCH_W / 2:.1f}" y="{y + SWATCH_H / 2 - 4:.1f}" '
+            f'font-family="-apple-system, system-ui, monospace" font-size="14" '
+            f'font-weight="600" fill="{text}" text-anchor="middle">{bg.upper() if bg != DATAFIELD_BG else text.upper()}</text>',
+            f'<text x="{x + SWATCH_W / 2:.1f}" y="{y + SWATCH_H / 2 + 14:.1f}" '
+            f'font-family="-apple-system, system-ui, sans-serif" font-size="12" '
+            f'fill="{text}" text-anchor="middle">Lc={lc:+.1f}</text>',
+        ]
+    )
 
 
-def _row_svg(y: float, label: str, entries: list[tuple[str, str]], transform: Transform) -> str:
+def _row_svg(
+    y: float, label: str, entries: list[tuple[str, str]], transform: Transform
+) -> str:
     parts = [
         f'<text x="{H_MARGIN}" y="{y + SWATCH_H / 2 + 4:.1f}" '
         f'font-family="-apple-system, system-ui, sans-serif" font-size="13" '
@@ -289,7 +289,9 @@ def _section_svg(
     return "\n".join(parts), row_y
 
 
-def render_svg(title: str, subtitle: str, sections: list[Section], transform: Transform) -> str:
+def render_svg(
+    title: str, subtitle: str, sections: list[Section], transform: Transform
+) -> str:
     max_cols = max(
         (len(entries) for _, rows in sections for _, entries in rows),
         default=1,
@@ -362,7 +364,9 @@ def main() -> None:
 
     for filename, title, subtitle, sections, transform in outputs:
         path = out_dir / filename
-        path.write_text(render_svg(title, subtitle, sections, transform), encoding="utf-8")
+        path.write_text(
+            render_svg(title, subtitle, sections, transform), encoding="utf-8"
+        )
         print(f"wrote {path}")
 
 

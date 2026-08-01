@@ -106,7 +106,11 @@ def is_readable(
 
 def best_text_on_background(bg_hex: str) -> str:
     """Return whichever of WHITE / BLACK has the higher APCA |Lc| against ``bg_hex``."""
-    return WHITE if abs(apca_contrast(WHITE, bg_hex)) >= abs(apca_contrast(BLACK, bg_hex)) else BLACK
+    return (
+        WHITE
+        if abs(apca_contrast(WHITE, bg_hex)) >= abs(apca_contrast(BLACK, bg_hex))
+        else BLACK
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +124,7 @@ def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
 
 
 def _rgb_to_hex(r: float, g: float, b: float) -> str:
-    return "#{:02X}{:02X}{:02X}".format(int(r * 255), int(g * 255), int(b * 255))
+    return f"#{int(r * 255):02X}{int(g * 255):02X}{int(b * 255):02X}"
 
 
 def _rgb_to_hsl(r: float, g: float, b: float) -> tuple[float, float, float]:
@@ -549,9 +553,7 @@ def base_palette_names(kind: Literal["Power", "Hr"]) -> list[str]:
     return [
         n
         for n in _ALL_PALETTES
-        if kind in n
-        and "Readable" not in n
-        and "hsluv" not in n.lower()
+        if kind in n and "Readable" not in n and "hsluv" not in n.lower()
     ]
 
 

@@ -36,25 +36,24 @@ from palettes import (
     best_text_on_background,
 )
 
-
 # ---------------------------------------------------------------------------
 # README palette order — (slug, kotlin_power_name)
 # ---------------------------------------------------------------------------
 
 POWER_PALETTE_ORDER: list[tuple[str, str]] = [
-    ("karoo",     "karooPowerColors"),
-    ("wahoo",     "wahooPowerColors"),
-    ("zwift",     "zwiftPowerColors"),
+    ("karoo", "karooPowerColors"),
+    ("wahoo", "wahooPowerColors"),
+    ("zwift", "zwiftPowerColors"),
     ("intervals", "intervalsPowerColors"),
-    ("hsluv",     "hsluvPowerColors"),
+    ("hsluv", "hsluvPowerColors"),
 ]
 
 HR_PALETTE_ORDER: list[tuple[str, str]] = [
-    ("karoo",     "karooHrColors"),
-    ("wahoo",     "wahooHrColors"),
-    ("zwift",     "zwiftHrColors"),
+    ("karoo", "karooHrColors"),
+    ("wahoo", "wahooHrColors"),
+    ("zwift", "zwiftHrColors"),
     ("intervals", "intervalsHrColors"),
-    ("hsluv",     "hsluvHrColors"),
+    ("hsluv", "hsluvHrColors"),
 ]
 
 # Grade palette readable variants are keyed by *_GRADE_BANDS. None means
@@ -62,12 +61,12 @@ HR_PALETTE_ORDER: list[tuple[str, str]] = [
 # resolve via the power palette / their own readable lists post-rename).
 GRADE_PALETTE_ORDER: list[tuple[str, str]] = [
     ("barberfish", "BARBERFISH_GRADE_BANDS"),
-    ("karoo",  "KAROO_GRADE_BANDS"),
-    ("wahoo",  "WAHOO_GRADE_BANDS"),
+    ("karoo", "KAROO_GRADE_BANDS"),
+    ("wahoo", "WAHOO_GRADE_BANDS"),
     ("garmin", "GARMIN_GRADE_BANDS"),
-    ("zwift",  "ZWIFT_GRADE_BANDS"),
-    ("hsluv",  "HSLUV_GRADE_BANDS"),
-    ("turbo",  "TURBO_GRADE_BANDS"),
+    ("zwift", "ZWIFT_GRADE_BANDS"),
+    ("hsluv", "HSLUV_GRADE_BANDS"),
+    ("turbo", "TURBO_GRADE_BANDS"),
 ]
 
 
@@ -86,16 +85,12 @@ FONT_WEIGHT = 600
 
 GRADE_AXIS_MIN = -15.0
 GRADE_AXIS_MAX = 25.0
-GRADE_ROW_W = 720   # fixed content width so every grade row aligns across palettes
+GRADE_ROW_W = 720  # fixed content width so every grade row aligns across palettes
 TICK_H = 18
 
 
 def _esc(text: str) -> str:
-    return (
-        text.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _cell_width_for(labels: list[str]) -> int:
@@ -114,7 +109,9 @@ def _row_svg(
     parts: list[str] = []
     for i, (bg, text, label) in enumerate(zip(bg_per_cell, text_per_cell, labels)):
         x = H_PADDING + i * cell_w
-        parts.append(f'<rect x="{x}" y="{y}" width="{cell_w}" height="{CELL_H}" fill="{bg}" />')
+        parts.append(
+            f'<rect x="{x}" y="{y}" width="{cell_w}" height="{CELL_H}" fill="{bg}" />'
+        )
         parts.append(
             f'<text x="{x + cell_w / 2:.1f}" y="{y + CELL_H / 2 + 4:.1f}" '
             f'font-family="{FONT_FAMILY}" font-size="{FONT_SIZE}" '
@@ -137,26 +134,26 @@ def render_palette_svg(
     Row 3: fill mode       — palette color as fill with APCA-picked text.
     """
     n = len(fill_hexes)
-    assert len(text_dark_hexes) == n and len(text_light_hexes) == n and len(labels) == n, (
-        "all input lists must have equal length"
-    )
+    assert (
+        len(text_dark_hexes) == n and len(text_light_hexes) == n and len(labels) == n
+    ), "all input lists must have equal length"
     cell_w = _cell_width_for(labels)
     width = H_PADDING * 2 + n * cell_w
     height = V_PADDING * 2 + 3 * CELL_H + 2 * ROW_GAP
 
     row1_y = V_PADDING
-    row1 = _row_svg(
-        row1_y, cell_w, [DATAFIELD_BG_LIGHT] * n, text_light_hexes, labels
-    )
+    row1 = _row_svg(row1_y, cell_w, [DATAFIELD_BG_LIGHT] * n, text_light_hexes, labels)
 
     row2_y = row1_y + CELL_H + ROW_GAP
-    row2 = _row_svg(
-        row2_y, cell_w, [DATAFIELD_BG_DARK] * n, text_dark_hexes, labels
-    )
+    row2 = _row_svg(row2_y, cell_w, [DATAFIELD_BG_DARK] * n, text_dark_hexes, labels)
 
     row3_y = row2_y + CELL_H + ROW_GAP
     row3 = _row_svg(
-        row3_y, cell_w, fill_hexes, [best_text_on_background(h) for h in fill_hexes], labels
+        row3_y,
+        cell_w,
+        fill_hexes,
+        [best_text_on_background(h) for h in fill_hexes],
+        labels,
     )
 
     header = (
@@ -179,7 +176,9 @@ def _exemplar(mid: float) -> str:
     return str(int(rounded))
 
 
-def _grade_cells(entries: list[tuple[float, str]]) -> list[tuple[float, float, str, int]]:
+def _grade_cells(
+    entries: list[tuple[float, str]],
+) -> list[tuple[float, float, str, int]]:
     """(lo, hi, hex, band_index) cells on the clamped axis, ascending.
 
     ``entries`` ascending ``(lo_threshold, hex)``; the open low end arrives as
@@ -239,7 +238,9 @@ def render_grade_palette_svg(
     tick_y = row3_y + CELL_H
 
     rows = [
-        row(row1_y, lambda _b, _h: DATAFIELD_BG_LIGHT, lambda b, _h: text_light_hexes[b]),
+        row(
+            row1_y, lambda _b, _h: DATAFIELD_BG_LIGHT, lambda b, _h: text_light_hexes[b]
+        ),
         row(row2_y, lambda _b, _h: DATAFIELD_BG_DARK, lambda b, _h: text_dark_hexes[b]),
         row(row3_y, lambda _b, h: h, lambda _b, h: best_text_on_background(h)),
     ]
@@ -250,7 +251,9 @@ def render_grade_palette_svg(
     ticks = []
     for stop in stops:
         x = _grade_x(stop)
-        ticks.append(f'<line x1="{x:.1f}" y1="{tick_y}" x2="{x:.1f}" y2="{tick_y + 3}" stroke="#999" />')
+        ticks.append(
+            f'<line x1="{x:.1f}" y1="{tick_y}" x2="{x:.1f}" y2="{tick_y + 3}" stroke="#999" />'
+        )
         label = f"{stop:g}"
         ticks.append(
             f'<text x="{x:.1f}" y="{tick_y + 14}" font-family="{FONT_FAMILY}" '
@@ -340,12 +343,17 @@ def _write_grade_palettes(out_dir: Path) -> list[Path]:
     for slug, kotlin_name in GRADE_PALETTE_ORDER:
         # Kotlin bands are ordered steep → descent; the axis renders descent → steep.
         entries = [
-            (thr, hex_) for thr, hex_ in reversed(GRADE_BANDS_BY_KOTLIN_NAME[kotlin_name])
+            (thr, hex_)
+            for thr, hex_ in reversed(GRADE_BANDS_BY_KOTLIN_NAME[kotlin_name])
         ]
         cells = _grade_cells(entries)
         fills = [hex_ for _, hex_ in entries]
-        text_dark = list(reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_DARK)))
-        text_light = list(reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_LIGHT)))
+        text_dark = list(
+            reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_DARK))
+        )
+        text_light = list(
+            reversed(_grade_text_bands(kotlin_name, fills[::-1], DATAFIELD_BG_LIGHT))
+        )
         svg = render_grade_palette_svg(cells, text_dark, text_light)
         path = out_dir / f"palette-grade-{slug}.svg"
         path.write_text(svg, encoding="utf-8")
@@ -358,8 +366,12 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[Path] = []
-    written.extend(_write_zone_palettes(out_dir, POWER_PALETTE_ORDER, POWER_ZONE_LABELS, "power"))
-    written.extend(_write_zone_palettes(out_dir, HR_PALETTE_ORDER, HR_ZONE_LABELS, "hr"))
+    written.extend(
+        _write_zone_palettes(out_dir, POWER_PALETTE_ORDER, POWER_ZONE_LABELS, "power")
+    )
+    written.extend(
+        _write_zone_palettes(out_dir, HR_PALETTE_ORDER, HR_ZONE_LABELS, "hr")
+    )
     written.extend(_write_grade_palettes(out_dir))
 
     for path in written:

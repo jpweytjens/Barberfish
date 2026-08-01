@@ -33,9 +33,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 _ROOT = Path(__file__).parent.parent
-_SHARED_KT = (
-    _ROOT / "app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared"
-)
+_SHARED_KT = _ROOT / "app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared"
 FIELD_COLORS_KT = _SHARED_KT / "FieldColors.kt"
 GRADE_BANDS_KT = _SHARED_KT / "GradeBands.kt"
 ZONE_COLORING_KT = _SHARED_KT / "ZoneColoring.kt"
@@ -236,10 +234,7 @@ def sync_drawables(colors: list[str]) -> tuple[int, int]:
         Count of (written, removed) drawables.
     """
     target_names = {f"ic_climber_chevron_{c}.xml" for c in colors}
-    existing = {
-        p.name
-        for p in DRAWABLE_DIR.glob("ic_climber_chevron_*.xml")
-    }
+    existing = {p.name for p in DRAWABLE_DIR.glob("ic_climber_chevron_*.xml")}
 
     written = 0
     for rrggbb in colors:
@@ -280,8 +275,7 @@ def write_lookup(colors: list[str]) -> None:
         Lowercase six-character RGB hex strings.
     """
     cases = "\n".join(
-        f"        0xFF{c}.toInt() -> R.drawable.ic_climber_chevron_{c}"
-        for c in colors
+        f"        0xFF{c}.toInt() -> R.drawable.ic_climber_chevron_{c}" for c in colors
     )
     CHEVRON_DRAWABLES_KT.write_text(_LOOKUP_TEMPLATE.format(cases=cases))
 

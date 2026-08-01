@@ -73,8 +73,8 @@ BORDER_LUMINANCE_HI = 110
 GAP_GREY_LO = 50
 GAP_GREY_HI = 100
 GAP_ROW_GREY_PCT = 0.80
-GAP_MIN_ROWS = 3        # ignore noise blips shorter than this
-CELL_MIN_RUN_PX = 30    # ignore detected cell runs shorter than this
+GAP_MIN_ROWS = 3  # ignore noise blips shorter than this
+CELL_MIN_RUN_PX = 30  # ignore detected cell runs shorter than this
 
 # Approximate icon-zone width on the LEFT of a header. The header icon is
 # square at `headerIconSize` dp; we exclude the leftmost portion of the
@@ -115,8 +115,8 @@ TWO_LINE_RATIO = 1.4
 PROBE_R_MIN = 140
 PROBE_G_MAX = 90
 PROBE_B_MIN = 140
-PROBE_MAX_TOP_OFFSET_PX = 8   # probe must start within this many px of cell top
-PROBE_MAX_HEIGHT_PX = 60      # probe must be ≤ this tall (1-line header height)
+PROBE_MAX_TOP_OFFSET_PX = 8  # probe must start within this many px of cell top
+PROBE_MAX_HEIGHT_PX = 60  # probe must be ≤ this tall (1-line header height)
 
 PAGE_RE = re.compile(r"^(\d+)x(\d+)([nb]?)$")
 
@@ -150,19 +150,19 @@ def native_value_size_sp(col_span: int, row_span: int) -> float:
     worst-case test of whether our centering region can host it.
     """
     if col_span >= 60 and row_span >= 30:
-        return 96.0   # 1×1 / 1×2: huge value, rideapp stretches
+        return 96.0  # 1×1 / 1×2: huge value, rideapp stretches
     if col_span >= 60 and row_span >= 15:
-        return 80.0   # 1-col 3- or 4-row: midpoint of 69-96
+        return 80.0  # 1-col 3- or 4-row: midpoint of 69-96
     if col_span >= 60 and row_span >= 12:
-        return 55.0   # 1-col 5-row
+        return 55.0  # 1-col 5-row
     if col_span >= 30 and row_span >= 15:
-        return 50.0   # 2-col 4-row (3x2, 4x2)
+        return 50.0  # 2-col 4-row (3x2, 4x2)
     if col_span >= 30 and row_span >= 20:
-        return 50.0   # 2-col 3-row (3x2 if rowSpan=20)
+        return 50.0  # 2-col 3-row (3x2 if rowSpan=20)
     if col_span >= 30 and row_span >= 30:
-        return 50.0   # 2-col 2-row (2x2)
+        return 50.0  # 2-col 2-row (2x2)
     if col_span >= 30 and row_span >= 12:
-        return 47.0   # 2-col 5-row (5x2)
+        return 47.0  # 2-col 5-row (5x2)
     return 47.0  # safe default
 
 
@@ -252,9 +252,7 @@ def parse_dumpsys(path: Path) -> list[DumpView]:
     return out
 
 
-def match_visible_cells(
-    page: Page, dump: list[DumpView]
-) -> list[DumpView]:
+def match_visible_cells(page: Page, dump: list[DumpView]) -> list[DumpView]:
     """Return the rows×cols `dataElementRoot` entries that correspond to the
     visible page, sorted by (y0, x0).
 
@@ -272,7 +270,8 @@ def match_visible_cells(
     target_h = max(c.bounds[3] - c.bounds[1] for c in page.cells) - 2
 
     candidates = [
-        v for v in dump
+        v
+        for v in dump
         if v.id == "dataElementRoot"
         and abs(v.w - target_w) <= 8
         and abs(v.h - target_h) <= 12
@@ -289,16 +288,14 @@ def match_visible_cells(
     return unique[: page.rows * page.cols]
 
 
-def cell_descendants(
-    cell: DumpView, dump: list[DumpView]
-) -> dict[str, DumpView]:
+def cell_descendants(cell: DumpView, dump: list[DumpView]) -> dict[str, DumpView]:
     """Return the named children of `cell` keyed by view-id, walking the
     indent tree until we exit the cell's subtree."""
     out: dict[str, DumpView] = {}
     if cell not in dump:
         return out
     start = dump.index(cell)
-    for v in dump[start + 1:]:
+    for v in dump[start + 1 :]:
         if v.indent <= cell.indent:
             break
         if v.id and v.id not in out:
@@ -331,7 +328,7 @@ class Cell:
     dump_cell_y1: int | None = None
     dump_header_y0: int | None = None
     dump_header_y1: int | None = None
-    dump_value_y0: int | None = None    # dataTextView (native) / field_value (BF)
+    dump_value_y0: int | None = None  # dataTextView (native) / field_value (BF)
     dump_value_y1: int | None = None
     # Barberfish-only:
     dump_field_root_y0: int | None = None
@@ -487,9 +484,7 @@ def _runs(mask: np.ndarray) -> list[tuple[int, int]]:
     return out
 
 
-def _gap_midpoints(
-    grey_pct: np.ndarray, min_rows: int = GAP_MIN_ROWS
-) -> list[int]:
+def _gap_midpoints(grey_pct: np.ndarray, min_rows: int = GAP_MIN_ROWS) -> list[int]:
     """Return the midpoint of each contiguous run of grey-divider rows.
 
     A "row" here is a 1-D index along whichever axis we're scanning. Filters
@@ -531,9 +526,7 @@ def detect_borders(
     # for further filtering: `detect_content_area`'s "first 15 dark rows"
     # heuristic finds dark stretches AFTER cells with bright text, so it
     # would drop the topmost cell on text-heavy pages (e.g. 4x1, 5x1).
-    row_runs = [
-        r for r in _runs(is_cell_row) if (r[1] - r[0]) >= CELL_MIN_RUN_PX
-    ]
+    row_runs = [r for r in _runs(is_cell_row) if (r[1] - r[0]) >= CELL_MIN_RUN_PX]
     if not row_runs:
         return None
 
@@ -547,9 +540,7 @@ def detect_borders(
     y_lo, y_hi = row_breaks[0], row_breaks[-1]
     col_grey_pct = grey_mask[y_lo:y_hi, :].mean(axis=0)
     is_cell_col = col_grey_pct < CELL_ROW_GREY_MAX_PCT
-    col_runs = [
-        r for r in _runs(is_cell_col) if (r[1] - r[0]) >= CELL_MIN_RUN_PX
-    ]
+    col_runs = [r for r in _runs(is_cell_col) if (r[1] - r[0]) >= CELL_MIN_RUN_PX]
     if not col_runs:
         return None
 
@@ -644,7 +635,12 @@ def find_bands(
                 xs = np.where(cols)[0]
                 if len(xs):
                     bands.append(
-                        (top, bot, int(xs[0]) + icon_inset_px, int(xs[-1]) + icon_inset_px)
+                        (
+                            top,
+                            bot,
+                            int(xs[0]) + icon_inset_px,
+                            int(xs[-1]) + icon_inset_px,
+                        )
                     )
             in_band = False
     if in_band:
@@ -722,22 +718,24 @@ def measure_cell(cell: Cell, gray: np.ndarray, rgb: np.ndarray | None = None) ->
     # Header pass — exclude leftmost icon zone so the icon glyph doesn't get
     # merged into the label band.
     header_bands = [
-        b for b in find_bands(sub, icon_inset_px=ICON_INSET_PX)
+        b
+        for b in find_bands(sub, icon_inset_px=ICON_INSET_PX)
         if b[1] - b[0] >= MIN_BAND_HEIGHT
     ]
     if header_bands:
         top, bot, _, _ = header_bands[0]
         cell.header_top = top + y0 + inset
         cell.header_bottom = bot + y0 + inset
-        cell.header_lines = header_lines_from_band(bot - top, cell.col_span, cell.row_span)
+        cell.header_lines = header_lines_from_band(
+            bot - top, cell.col_span, cell.row_span
+        )
 
     # Value pass — full width, since values have no icon. Pick the bottommost
     # qualifying band that sits BELOW the detected header (or any qualifying
     # band if no header was found). Border-based cell detection already
     # excludes the nav strip, so we don't need to filter cell-bottom edges.
     value_bands = [
-        b for b in find_bands(sub, icon_inset_px=0)
-        if b[1] - b[0] >= MIN_BAND_HEIGHT
+        b for b in find_bands(sub, icon_inset_px=0) if b[1] - b[0] >= MIN_BAND_HEIGHT
     ]
     header_bot_local = (cell.header_bottom - y0 - inset) if cell.header_bottom else 0
     below_header = [b for b in value_bands if b[0] >= header_bot_local]
@@ -908,7 +906,9 @@ def pair_native_barberfish(pages: list[Page]):
             for r in sorted(rows):
                 row_cells = rows[r]
                 native = next((c for c in row_cells if c.side == "native"), None)
-                barberfish = next((c for c in row_cells if c.side == "barberfish"), None)
+                barberfish = next(
+                    (c for c in row_cells if c.side == "barberfish"), None
+                )
                 if native is not None and barberfish is not None:
                     yield f"{p.name} row {r}", native, barberfish
         elif p.cols == 1:
@@ -924,7 +924,11 @@ def pair_native_barberfish(pages: list[Page]):
             native = best([c for c in p.cells if c.side == "native"])
             barberfish = best([c for c in p.cells if c.side == "barberfish"])
             if native is not None and barberfish is not None:
-                yield f"{p.name} (n r{native.row} vs b r{barberfish.row})", native, barberfish
+                yield (
+                    f"{p.name} (n r{native.row} vs b r{barberfish.row})",
+                    native,
+                    barberfish,
+                )
 
 
 def fmt_delta(a: int | None, b: int | None) -> tuple[str, int | None]:
@@ -977,14 +981,26 @@ def write_summary(pages: list[Page], path: Path) -> None:
     lines.append(f"Tolerance: ±{TOLERANCE_PX} px")
     lines.append("")
     lines.append("Comparison rules (per the user-specified protocol):")
-    lines.append("- Header tops/bots: PASS/FAIL only when both sides have the same line count.")
-    lines.append(f"- Value tops: PASS/FAIL only when both value fonts match within ±{FONT_MATCH_SP} sp.")
+    lines.append(
+        "- Header tops/bots: PASS/FAIL only when both sides have the same line count."
+    )
+    lines.append(
+        f"- Value tops: PASS/FAIL only when both value fonts match within ±{FONT_MATCH_SP} sp."
+    )
     lines.append("- Value baselines: PASS/FAIL whenever both bands are detected.")
     lines.append("")
-    lines.append("Note: `value_size_sp` is derived FROM the band height, so screenshots alone")
-    lines.append("cannot distinguish 'clipped native-sp render' from 'intentional smaller sp'.")
-    lines.append("If `meta` says fonts match but Δvalue_top differs from Δvalue_baseline by")
-    lines.append("more than a few px, suspect clipping and inspect the annotated screencap.")
+    lines.append(
+        "Note: `value_size_sp` is derived FROM the band height, so screenshots alone"
+    )
+    lines.append(
+        "cannot distinguish 'clipped native-sp render' from 'intentional smaller sp'."
+    )
+    lines.append(
+        "If `meta` says fonts match but Δvalue_top differs from Δvalue_baseline by"
+    )
+    lines.append(
+        "more than a few px, suspect clipping and inspect the annotated screencap."
+    )
     lines.append("")
     lines.append("Δ = native − Barberfish (in pixels). Negative Δvalue_baseline means")
     lines.append("Barberfish baseline sits BELOW native.")
@@ -1008,12 +1024,16 @@ def write_summary(pages: list[Page], path: Path) -> None:
         n_y0, b_y0 = n.bounds[1], b.bounds[1]
         n_y1, b_y1 = n.bounds[3], b.bounds[3]
 
-        def offset(c_y0: int, c_y1: int, v: int | None, *, from_bottom: bool) -> int | None:
+        def offset(
+            c_y0: int, c_y1: int, v: int | None, *, from_bottom: bool
+        ) -> int | None:
             if v is None:
                 return None
             return (c_y1 - v) if from_bottom else (v - c_y0)
 
-        def fmt_pair(nv: int | None, bv: int | None, *, from_bottom: bool) -> tuple[str, int | None]:
+        def fmt_pair(
+            nv: int | None, bv: int | None, *, from_bottom: bool
+        ) -> tuple[str, int | None]:
             if not cross_row:
                 return fmt_delta(nv, bv)
             return fmt_delta(
@@ -1030,20 +1050,20 @@ def write_summary(pages: list[Page], path: Path) -> None:
 
         if fonts_match(n, b):
             vt_str, _ = fmt_pair(n.value_top, b.value_top, from_bottom=False)
-            vb_str, vb_d = fmt_pair(n.value_baseline, b.value_baseline, from_bottom=True)
+            vb_str, vb_d = fmt_pair(
+                n.value_baseline, b.value_baseline, from_bottom=True
+            )
         else:
             vt_str = fmt_na("font mismatch")
-            vb_str, vb_d = fmt_pair(n.value_baseline, b.value_baseline, from_bottom=True)
+            vb_str, vb_d = fmt_pair(
+                n.value_baseline, b.value_baseline, from_bottom=True
+            )
 
         pair_rows.append((label, meta, ht_str, hb_str, vt_str, vb_str))
 
         # Only feed deltas back into the (HISTORICAL) auto-tune table when the
         # pair is actually comparable: same line count AND same value font.
-        if (
-            vb_d is not None
-            and lines_match(n, b)
-            and fonts_match(n, b)
-        ):
+        if vb_d is not None and lines_match(n, b) and fonts_match(n, b):
             page_name = label.split()[0]
             m = PAGE_RE.match(page_name)
             if m:
@@ -1051,7 +1071,9 @@ def write_summary(pages: list[Page], path: Path) -> None:
                 key = page_grid_spans(rows, cols)
                 deltas_by_layout[key].append(vb_d)
 
-    lines.append("| Pair | meta | Δheader_top | Δheader_bot | Δvalue_top | Δvalue_baseline |")
+    lines.append(
+        "| Pair | meta | Δheader_top | Δheader_bot | Δvalue_top | Δvalue_baseline |"
+    )
     lines.append("|---|---|---|---|---|---|")
     for label, meta, ht, hb, vt, vb in pair_rows:
         lines.append(f"| {label} | {meta} | {ht} | {hb} | {vt} | {vb} |")
@@ -1115,15 +1137,25 @@ def write_summary(pages: list[Page], path: Path) -> None:
     lines.append("|---|---|---|---|")
     layouts = sorted({(cs, rs) for (cs, rs, _) in groups_cell})
     for cs, rs in layouts:
-        nat = [c.top_to_header_top for c in groups_cell.get((cs, rs, "native"), []) if c.top_to_header_top is not None]
-        bf = [c.top_to_header_top for c in groups_cell.get((cs, rs, "barberfish"), []) if c.top_to_header_top is not None]
+        nat = [
+            c.top_to_header_top
+            for c in groups_cell.get((cs, rs, "native"), [])
+            if c.top_to_header_top is not None
+        ]
+        bf = [
+            c.top_to_header_top
+            for c in groups_cell.get((cs, rs, "barberfish"), [])
+            if c.top_to_header_top is not None
+        ]
         if not nat or not bf:
             continue
         nat_mu = sum(nat) / len(nat)
         bf_mu = sum(bf) / len(bf)
         delta = nat_mu - bf_mu
         flag = " ⚠️" if abs(delta) > TOLERANCE_PX else ""
-        lines.append(f"| ({cs}, {rs}) | {nat_mu:.1f} | {bf_mu:.1f} | {delta:+.1f}{flag} |")
+        lines.append(
+            f"| ({cs}, {rs}) | {nat_mu:.1f} | {bf_mu:.1f} | {delta:+.1f}{flag} |"
+        )
     lines.append("")
 
     lines.append("### Value-band consistency (grouped by sp bucket)")
@@ -1132,7 +1164,9 @@ def write_summary(pages: list[Page], path: Path) -> None:
     lines.append("SAME font size should land at the same baseline. We bucket by 5 sp")
     lines.append("so a 24.4 sp and a 25.2 sp cell sit in the same row.")
     lines.append("")
-    lines.append("| (colSpan, rowSpan, side) | sp bucket | n | val_band_h μ±σ | baseline→bottom μ±σ |")
+    lines.append(
+        "| (colSpan, rowSpan, side) | sp bucket | n | val_band_h μ±σ | baseline→bottom μ±σ |"
+    )
     lines.append("|---|---|---|---|---|")
     SP_BUCKET = 5.0
     groups_sp: dict[tuple[int, int, str, int], list[Cell]] = defaultdict(list)
@@ -1146,7 +1180,11 @@ def write_summary(pages: list[Page], path: Path) -> None:
         cs, rs, side, bucket = key
         cells = groups_sp[key]
         bh = [c.value_band_height for c in cells if c.value_band_height is not None]
-        vb = [c.value_baseline_to_bottom for c in cells if c.value_baseline_to_bottom is not None]
+        vb = [
+            c.value_baseline_to_bottom
+            for c in cells
+            if c.value_baseline_to_bottom is not None
+        ]
         lines.append(
             f"| ({cs}, {rs}, '{side}') | ~{bucket} sp | {len(cells)} | "
             f"{stat(bh)} | {stat(vb)} |"
@@ -1160,7 +1198,9 @@ def write_summary(pages: list[Page], path: Path) -> None:
     lines.append("For Barberfish bitmap rendering, baseline = `val_y0 + val_h`.")
     lines.append("For native TextView, baseline ≈ `val_y0 + 0.833 × val_h`.")
     lines.append("")
-    lines.append("| page | r | c | side | cell h | box h | val h | val sp | val_y0 | base_y_meas |")
+    lines.append(
+        "| page | r | c | side | cell h | box h | val h | val sp | val_y0 | base_y_meas |"
+    )
     lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for p in pages:
         for c in p.cells:
@@ -1209,9 +1249,15 @@ def annotate(page: Page, out: Path) -> None:
         if c.value_top is not None:
             draw.line([x0, c.value_top, x1, c.value_top], fill=col_value_top, width=2)
         if c.header_bottom is not None:
-            draw.line([x0, c.header_bottom, x1, c.header_bottom], fill=col_header, width=2)
+            draw.line(
+                [x0, c.header_bottom, x1, c.header_bottom], fill=col_header, width=2
+            )
         if c.value_baseline is not None:
-            draw.line([x0, c.value_baseline, x1, c.value_baseline], fill=col_value_bot, width=2)
+            draw.line(
+                [x0, c.value_baseline, x1, c.value_baseline],
+                fill=col_value_bot,
+                width=2,
+            )
     img.save(out, "JPEG", quality=85)
 
 
@@ -1254,9 +1300,15 @@ def attach_dump_bounds(page: Page) -> None:
         if (fh := children.get("field_header")) is not None:
             cell.dump_header_y0, cell.dump_header_y1 = shift(fh.y0), shift(fh.y1)
         if (fr := children.get("field_root")) is not None:
-            cell.dump_field_root_y0, cell.dump_field_root_y1 = shift(fr.y0), shift(fr.y1)
+            cell.dump_field_root_y0, cell.dump_field_root_y1 = (
+                shift(fr.y0),
+                shift(fr.y1),
+            )
         if (bb := children.get("baseline_box")) is not None:
-            cell.dump_baseline_box_y0, cell.dump_baseline_box_y1 = shift(bb.y0), shift(bb.y1)
+            cell.dump_baseline_box_y0, cell.dump_baseline_box_y1 = (
+                shift(bb.y0),
+                shift(bb.y1),
+            )
         if (fv := children.get("field_value")) is not None:
             cell.dump_value_y0, cell.dump_value_y1 = shift(fv.y0), shift(fv.y1)
         elif (dt := children.get("dataTextView")) is not None:
@@ -1280,8 +1332,13 @@ def main(probe: bool = False) -> None:
             row = i // p.cols
             col = i % p.cols
             cell = Cell(
-                p.name, row, col, "unknown", b,
-                col_span=col_span, row_span=row_span,
+                p.name,
+                row,
+                col,
+                "unknown",
+                b,
+                col_span=col_span,
+                row_span=row_span,
                 note=note,
             )
             measure_cell(cell, p.gray, rgb=rgb_arg)
@@ -1302,7 +1359,9 @@ def main(probe: bool = False) -> None:
         print()
         print(f"WARNING: border detection failed for {len(used_uniform)} page(s):")
         print(f"  {', '.join(used_uniform)}")
-        print("Re-capture with Karoo OS data boundaries enabled for clean grid detection.")
+        print(
+            "Re-capture with Karoo OS data boundaries enabled for clean grid detection."
+        )
 
 
 if __name__ == "__main__":
