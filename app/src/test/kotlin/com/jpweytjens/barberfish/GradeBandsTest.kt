@@ -202,4 +202,69 @@ class GradeBandsTest {
             gradeBands(GradePalette.KAROO, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
         assertEquals(karoo.map { it.color }, bf.map { it.color })
     }
+
+    // Exactly 0.0 is neither a climb nor a descent, so the edge comparisons never see it. An edge
+    // of 0.0 only ever comes from "Off" (no palette has a 0.0 stop), and Off means the whole side
+    // is on, edge included — so 0.0 takes its containing band, same as the map's inclusive edges.
+    // FlatGrey equals this file's NEUTRAL, so the Barberfish cases pass a sentinel neutral.
+
+    @Test
+    fun an_exact_zero_grade_takes_its_containing_band_when_climbs_are_off() {
+        val sentinel = Color(0xFF123456)
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = 0.0,
+                descentEdge = 0.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(Color(0xFFC4C4C4), c)
+    }
+
+    @Test
+    fun an_exact_zero_grade_takes_the_flattest_band_on_a_zero_opening_palette() {
+        val flattest = gradeBands(GradePalette.KAROO, readable = false).first().color
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 0.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
+        assertEquals(flattest, c)
+    }
+
+    @Test
+    fun an_exact_zero_grade_is_coloured_by_a_zero_descent_edge_alone() {
+        val sentinel = Color(0xFF123456)
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = 2.0,
+                descentEdge = 0.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(Color(0xFFC4C4C4), c)
+    }
+
+    @Test
+    fun an_exact_zero_grade_stays_neutral_inside_nonzero_edges() {
+        val sentinel = Color(0xFF123456)
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = 2.0,
+                descentEdge = -2.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(sentinel, c)
+    }
 }

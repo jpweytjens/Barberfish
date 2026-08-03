@@ -340,7 +340,12 @@ internal fun gradeBandColor(
         when {
             grade > 0.0 -> climbEdge != null && grade >= climbEdge
             grade < 0.0 -> descentEdge != null && grade <= descentEdge
-            else -> false
+            // Exactly 0.0 is neither side, so the comparisons above never see it. An edge of 0.0
+            // only ever means "Off" (no palette has a 0.0 stop), and the edges are inclusive, so
+            // a fully-on side colours 0.0 too: it takes its containing band below.
+            else ->
+                (climbEdge != null && climbEdge <= 0.0) ||
+                    (descentEdge != null && descentEdge >= 0.0)
         }
     if (!coloured) return neutral
     if (grade < gradeFloor(palette, readable, isNightMode)) return neutral
