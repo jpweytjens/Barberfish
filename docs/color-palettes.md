@@ -44,20 +44,23 @@ either theme.
 
 | Palette    | Grade bands                            |
 | ---------- | -------------------------------------- |
-| Barberfish | ![](palettes/palette-grade-barberfish.svg) |
 | Karoo      | ![](palettes/palette-grade-karoo.svg)  |
+| Barberfish | ![](palettes/palette-grade-barberfish.svg) |
+| Turbo      | ![](palettes/palette-grade-turbo.svg)  |
 | Wahoo      | ![](palettes/palette-grade-wahoo.svg)  |
 | Garmin     | ![](palettes/palette-grade-garmin.svg) |
-| Zwift      | ![](palettes/palette-grade-zwift.svg)  |
 | HSLuv      | ![](palettes/palette-grade-hsluv.svg)  |
-| Turbo      | ![](palettes/palette-grade-turbo.svg)  |
+| Zwift      | ![](palettes/palette-grade-zwift.svg)  |
 
 Barberfish is the default grade palette. It keeps the Karoo climb ramp above 2
-per cent, folds terrain between -2 and 2 into neutral grey, and adds three
-blue descent bands at -2, -6 and -10. The descent thresholds mirror the climb
-side: measured ride data from the [GoldenCheetah OpenData](https://osf.io/6hfpz/)
-corpus shows grade occupancy puts -10 at the same within-side time share as
-+8, so descents and climbs carry matching visual resolution.
+per cent, folds terrain between -2 and 2 into a quiet green-grey, and adds
+three teal-to-slate descent bands at -2, -6 and -10. Flat and descent share a
+colour family so the whole downhill side reads as one limb, while the flat
+band stays muted enough that only real grades draw attention. The descent
+thresholds mirror the climb side: measured ride data from the
+[GoldenCheetah OpenData](https://osf.io/6hfpz/) corpus shows grade occupancy
+puts -10 at the same within-side time share as +8, so descents and climbs
+carry matching visual resolution.
 
 ## Text mode: auto contrast-tuning
 
