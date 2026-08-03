@@ -13,32 +13,33 @@ internal fun gradeChevronDrawable(colorArgb: Int): Int =
         0xFF00aa86.toInt() -> R.drawable.ic_climber_chevron_00aa86
         0xFF02c500.toInt() -> R.drawable.ic_climber_chevron_02c500
         0xFF04fe00.toInt() -> R.drawable.ic_climber_chevron_04fe00
-        0xFF1970b6.toInt() -> R.drawable.ic_climber_chevron_1970b6
         0xFF1a8c3a.toInt() -> R.drawable.ic_climber_chevron_1a8c3a
-        0xFF1b3ca7.toInt() -> R.drawable.ic_climber_chevron_1b3ca7
+        0xFF1c6e86.toInt() -> R.drawable.ic_climber_chevron_1c6e86
         0xFF22aa48.toInt() -> R.drawable.ic_climber_chevron_22aa48
         0xFF25c187.toInt() -> R.drawable.ic_climber_chevron_25c187
-        0xFF2698f5.toInt() -> R.drawable.ic_climber_chevron_2698f5
         0xFF27b9e0.toInt() -> R.drawable.ic_climber_chevron_27b9e0
         0xFF2bc7f0.toInt() -> R.drawable.ic_climber_chevron_2bc7f0
+        0xFF2da0c2.toInt() -> R.drawable.ic_climber_chevron_2da0c2
         0xFF30f0a9.toInt() -> R.drawable.ic_climber_chevron_30f0a9
+        0xFF384778.toInt() -> R.drawable.ic_climber_chevron_384778
         0xFF39a7d6.toInt() -> R.drawable.ic_climber_chevron_39a7d6
         0xFF3bc16f.toInt() -> R.drawable.ic_climber_chevron_3bc16f
         0xFF401c4c.toInt() -> R.drawable.ic_climber_chevron_401c4c
         0xFF40d078.toInt() -> R.drawable.ic_climber_chevron_40d078
+        0xFF50a39c.toInt() -> R.drawable.ic_climber_chevron_50a39c
         0xFF540000.toInt() -> R.drawable.ic_climber_chevron_540000
         0xFF5783e9.toInt() -> R.drawable.ic_climber_chevron_5783e9
-        0xFF5d99de.toInt() -> R.drawable.ic_climber_chevron_5d99de
         0xFF6ebe43.toInt() -> R.drawable.ic_climber_chevron_6ebe43
         0xFF7092ec.toInt() -> R.drawable.ic_climber_chevron_7092ec
         0xFF71a500.toInt() -> R.drawable.ic_climber_chevron_71a500
-        0xFF7b8df5.toInt() -> R.drawable.ic_climber_chevron_7b8df5
+        0xFF8392cf.toInt() -> R.drawable.ic_climber_chevron_8392cf
         0xFF84bb38.toInt() -> R.drawable.ic_climber_chevron_84bb38
         0xFF8e1201.toInt() -> R.drawable.ic_climber_chevron_8e1201
         0xFF9020a0.toInt() -> R.drawable.ic_climber_chevron_9020a0
+        0xFF91b3a4.toInt() -> R.drawable.ic_climber_chevron_91b3a4
+        0xFF92b4a5.toInt() -> R.drawable.ic_climber_chevron_92b4a5
         0xFF9395a1.toInt() -> R.drawable.ic_climber_chevron_9395a1
         0xFFaa0200.toInt() -> R.drawable.ic_climber_chevron_aa0200
-        0xFFababab.toInt() -> R.drawable.ic_climber_chevron_ababab
         0xFFb0f94d.toInt() -> R.drawable.ic_climber_chevron_b0f94d
         0xFFb1b100.toInt() -> R.drawable.ic_climber_chevron_b1b100
         0xFFb7ae2f.toInt() -> R.drawable.ic_climber_chevron_b7ae2f

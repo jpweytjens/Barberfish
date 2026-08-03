@@ -6,8 +6,8 @@ import com.jpweytjens.barberfish.extension.GradePalette
 // Grade color bands — sorted descending, highest threshold first
 
 // Barberfish grade bands — two-sided. The climb side above 2% carries the same
-// hexes as the Karoo power palette's zones 2–7; -2% to 2% is a neutral grey, and
-// descents deepen from light blue to navy.
+// hexes as the Karoo power palette's zones 2–7; -2% to 2% is a quiet green-grey,
+// kin to the descent limb, which deepens from teal to slate.
 private val BARBERFISH_GRADE_BANDS =
     listOf(
         20.0 to Color(0xFF9020A0), // [20, ∞)   — purple
@@ -16,10 +16,10 @@ private val BARBERFISH_GRADE_BANDS =
         8.0 to Color(0xFFF08868), //  [8, 11)  — salmon
         5.0 to Color(0xFFF0D800), //  [5, 8)   — yellow
         2.0 to Color(0xFF40D078), //  [2, 5)   — mint green
-        -2.0 to FlatGrey, //          [-2, 2)   — neutral grey
-        -6.0 to Color(0xFF5D99DE), // [-6, -2)  — light blue
-        -10.0 to Color(0xFF1970B6), // [-10, -6) — blue
-        Double.NEGATIVE_INFINITY to Color(0xFF1B3CA7), // (-∞, -10) — navy
+        -2.0 to Color(0xFF92B4A5), // [-2, 2)   — flat green-grey
+        -6.0 to Color(0xFF50A39C), // [-6, -2)  — teal
+        -10.0 to Color(0xFF1C6E86), // [-10, -6) — deep teal
+        Double.NEGATIVE_INFINITY to Color(0xFF384778), // (-∞, -10) — slate
     )
 
 private val WAHOO_GRADE_BANDS =
@@ -84,10 +84,10 @@ private val BARBERFISH_GRADE_BANDS_READABLE_DARK =
         8.0 to Color(0xFFF08868),
         5.0 to Color(0xFFF0D800),
         2.0 to Color(0xFF40D078),
-        -2.0 to FlatGrey,
-        -6.0 to Color(0xFF5D99DE),
-        -10.0 to Color(0xFF2698F5), // was #1970B6
-        Double.NEGATIVE_INFINITY to Color(0xFF7B8DF5), // was #1B3CA7
+        -2.0 to Color(0xFF92B4A5),
+        -6.0 to Color(0xFF50A39C),
+        -10.0 to Color(0xFF2DA0C2), // was #1C6E86
+        Double.NEGATIVE_INFINITY to Color(0xFF8392CF), // was #384778
     )
 private val ZWIFT_GRADE_BANDS_READABLE_DARK =
     listOf(
@@ -163,10 +163,10 @@ private val BARBERFISH_GRADE_BANDS_READABLE_LIGHT =
         8.0 to Color(0xFFF08868),
         5.0 to Color(0xFFC0AC00), // was #F0D800
         2.0 to Color(0xFF3BC16F), // was #40D078
-        -2.0 to Color(0xFFABABAB), // was #C4C4C4
-        -6.0 to Color(0xFF5D99DE),
-        -10.0 to Color(0xFF1970B6),
-        Double.NEGATIVE_INFINITY to Color(0xFF1B3CA7),
+        -2.0 to Color(0xFF91B3A4), // was #92B4A5
+        -6.0 to Color(0xFF50A39C),
+        -10.0 to Color(0xFF1C6E86),
+        Double.NEGATIVE_INFINITY to Color(0xFF384778),
     )
 private val ZWIFT_GRADE_BANDS_READABLE_LIGHT =
     listOf(

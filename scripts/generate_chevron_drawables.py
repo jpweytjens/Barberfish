@@ -102,6 +102,10 @@ _NAMED_COLOR = re.compile(r"val\s+(\w+)\s*=\s*Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)
 # `LemonYellow` is the route-yellow filler the climber overlay paints on below-threshold
 # segments inside a climb — chevrons there need a matching drawable too.
 _FILLER_REF = re.compile(r"val\s+LemonYellow\s*=\s*Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
+# `FlatGrey` is the map overlay's neutral for segments inside the edges. It is paintable
+# on every palette whether or not any band table references it, so its chevron is always
+# needed.
+_NEUTRAL_REF = re.compile(r"val\s+FlatGrey\s*=\s*Color\(0x[Ff]{2}([0-9A-Fa-f]{6})\)")
 
 
 def extract_filler_color(field_colors: str) -> str:
@@ -120,6 +124,25 @@ def extract_filler_color(field_colors: str) -> str:
     match = _FILLER_REF.search(field_colors)
     if match is None:
         raise SystemExit("LemonYellow not found in FieldColors.kt")
+    return match.group(1).lower()
+
+
+def extract_neutral_color(field_colors: str) -> str:
+    """Return the RGB hex of `FlatGrey`, the map overlay's neutral colour.
+
+    Parameters
+    ----------
+    field_colors : str
+        Contents of `FieldColors.kt`.
+
+    Returns
+    -------
+    str
+        Lowercase six-character hex string.
+    """
+    match = _NEUTRAL_REF.search(field_colors)
+    if match is None:
+        raise SystemExit("FlatGrey not found in FieldColors.kt")
     return match.group(1).lower()
 
 
@@ -288,6 +311,7 @@ def main() -> None:
     colors = sorted(
         set(extract_palette_colors(grade_bands, arrays, named))
         | {extract_filler_color(field_colors)}
+        | {extract_neutral_color(field_colors)}
     )
     written, removed = sync_drawables(colors)
     write_lookup(colors)

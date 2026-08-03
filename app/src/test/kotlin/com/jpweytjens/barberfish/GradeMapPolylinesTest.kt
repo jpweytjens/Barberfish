@@ -397,7 +397,8 @@ class GradeMapPolylinesTest {
     fun descent_takes_its_band_colour_on_a_two_sided_palette() {
         // Barberfish colours both sides, so the -5% dip takes its own descent band rather
         // than the neutral KAROO gives it. The cell across the summit at 100 m means out
-        // level, so the neutral sits between the climb and the descent.
+        // level and the climb side is fully on, so it takes the flat band's own colour,
+        // sitting between the climb and the descent.
         val dipPolyline =
             encodeElevationManually(
                 listOf(
@@ -416,7 +417,7 @@ class GradeMapPolylinesTest {
                 )
                 .polylines
         assertEquals(3, specs.size)
-        assertEquals(FlatGrey.toArgb(), specs[1].colorArgb)
+        assertEquals(gradeColor(0.0, GradePalette.BARBERFISH, false)!!.toArgb(), specs[1].colorArgb)
         assertEquals(
             gradeColor(-5.0, GradePalette.BARBERFISH, false)!!.toArgb(),
             specs[2].colorArgb,

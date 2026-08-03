@@ -128,7 +128,7 @@ class GradeBandsTest {
                 neutral = NEUTRAL,
                 readable = false,
             )
-        assertEquals(Color(0xFF5D99DE), c)
+        assertEquals(Color(0xFF50A39C), c)
     }
 
     @Test
@@ -190,7 +190,7 @@ class GradeBandsTest {
         assertEquals(10, bands.size)
         val flat = bands.single { it.lo == -2.0 }
         assertEquals(2.0, flat.hi)
-        assertEquals(Color(0xFFC4C4C4), flat.color)
+        assertEquals(Color(0xFF92B4A5), flat.color)
         assertEquals(3, bands.count { (it.hi ?: Double.POSITIVE_INFINITY) <= 0.0 })
     }
 
@@ -206,7 +206,8 @@ class GradeBandsTest {
     // Exactly 0.0 is neither a climb nor a descent, so the edge comparisons never see it. An edge
     // of 0.0 only ever comes from "Off" (no palette has a 0.0 stop), and Off means the whole side
     // is on, edge included — so 0.0 takes its containing band, same as the map's inclusive edges.
-    // FlatGrey equals this file's NEUTRAL, so the Barberfish cases pass a sentinel neutral.
+    // The Barberfish cases pass a sentinel neutral so the containing-band assertion cannot
+    // be satisfied by the neutral leaking through.
 
     @Test
     fun an_exact_zero_grade_takes_its_containing_band_when_climbs_are_off() {
@@ -220,7 +221,7 @@ class GradeBandsTest {
                 neutral = sentinel,
                 readable = false,
             )
-        assertEquals(Color(0xFFC4C4C4), c)
+        assertEquals(Color(0xFF92B4A5), c)
     }
 
     @Test
@@ -250,7 +251,7 @@ class GradeBandsTest {
                 neutral = sentinel,
                 readable = false,
             )
-        assertEquals(Color(0xFFC4C4C4), c)
+        assertEquals(Color(0xFF92B4A5), c)
     }
 
     @Test
