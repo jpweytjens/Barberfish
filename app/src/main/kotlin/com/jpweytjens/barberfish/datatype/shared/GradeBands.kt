@@ -307,6 +307,22 @@ internal fun gradeBandStops(palette: GradePalette): GradeBandStops {
 }
 
 /**
+ * The map overlay's neutral for [palette]: what a run inside the emphasis edges paints. A palette
+ * with a band strictly containing zero (only Barberfish) uses that band's colour, so its flat band
+ * and the map neutral stay one colour; every other palette keeps the shared [FlatGrey].
+ */
+internal fun mapNeutral(
+    palette: GradePalette,
+    readable: Boolean = true,
+    isNightMode: Boolean = true,
+): Color =
+    gradeBands(palette, readable, isNightMode)
+        // lo must be a real threshold: a one-sided palette's lowest band has an open low
+        // end that is not a floor (see gradeBands' KDoc), and it must not match here.
+        .firstOrNull { it.lo != null && it.lo < 0.0 && (it.hi ?: Double.POSITIVE_INFINITY) > 0.0 }
+        ?.color ?: FlatGrey
+
+/**
  * The palette's lowest explicit threshold (e.g. 0.0 for one-sided palettes,
  * [Double.NEGATIVE_INFINITY] for Turbo, which has no true floor). [gradeBands] always reports an
  * open low end on the lowest band, so `gradeColor` uses this to keep returning null below a

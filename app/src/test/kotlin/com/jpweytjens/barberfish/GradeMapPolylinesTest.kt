@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -422,6 +423,41 @@ class GradeMapPolylinesTest {
             gradeColor(-5.0, GradePalette.BARBERFISH, false)!!.toArgb(),
             specs[2].colorArgb,
         )
+    }
+
+    @Test
+    fun neutral_runs_take_the_flat_band_colour_on_barberfish() {
+        // At a normal emphasis (climb 2, descent -10) the 0% summit cell, the -5% dip and
+        // the 1.67% straddle cell all sit inside the edges. On Barberfish they must paint
+        // the palette's own flat colour, not the shared FlatGrey the other palettes keep.
+        val dipPolyline =
+            encodeElevationManually(
+                listOf(
+                    0f to 100f,
+                    100f to 110f, // +10% → climb band
+                    200f to 105f, // -5%  → inside the descent edge
+                    300f to 120f, // +15% → climb band
+                )
+            )
+        val specs =
+            buildGradeMapSpecs(
+                    routePolyline = routePolyline,
+                    routeElevationPolyline = dipPolyline,
+                    palette = GradePalette.BARBERFISH,
+                    readable = false,
+                    tuning =
+                        EffectiveGradeMapTuning(
+                            skipBands = 1,
+                            simplification = ElevationSimplification.NONE,
+                            climbEdge = 2.0,
+                            descentEdge = -10.0,
+                        ),
+                )
+                .polylines
+        assertEquals(3, specs.size)
+        val flat = gradeColor(0.0, GradePalette.BARBERFISH, false)!!.toArgb()
+        assertEquals(flat, specs[1].colorArgb)
+        assertNotEquals(FlatGrey.toArgb(), specs[1].colorArgb)
     }
 
     @Test

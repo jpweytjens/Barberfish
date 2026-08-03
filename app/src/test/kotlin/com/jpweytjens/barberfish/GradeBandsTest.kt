@@ -1,10 +1,12 @@
 package com.jpweytjens.barberfish
 
 import androidx.compose.ui.graphics.Color
+import com.jpweytjens.barberfish.datatype.shared.FlatGrey
 import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.GradePalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -252,6 +254,23 @@ class GradeBandsTest {
                 readable = false,
             )
         assertEquals(Color(0xFF92B4A5), c)
+    }
+
+    // The map paints every cell, so what "uncoloured" looks like is itself a palette
+    // decision. Barberfish keeps its flat band and the map neutral one colour; palettes
+    // without a band strictly containing zero keep the shared grey.
+
+    @Test
+    fun map_neutral_is_the_flat_band_for_barberfish_and_flatgrey_elsewhere() {
+        assertEquals(
+            gradeBands(GradePalette.BARBERFISH, readable = false).single { it.lo == -2.0 }.color,
+            mapNeutral(GradePalette.BARBERFISH, readable = false),
+        )
+        GradePalette.entries
+            .filter { it != GradePalette.BARBERFISH }
+            .forEach { palette ->
+                assertEquals("$palette", FlatGrey, mapNeutral(palette, readable = false))
+            }
     }
 
     @Test

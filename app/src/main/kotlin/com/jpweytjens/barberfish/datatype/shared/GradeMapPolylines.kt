@@ -252,7 +252,7 @@ internal fun buildGradeMapSpecs(
             palette = palette,
             climbEdge = tuning.climbEdge,
             descentEdge = tuning.descentEdge,
-            neutral = FlatGrey,
+            neutral = mapNeutral(palette, readable),
             readable = readable,
         )
 
