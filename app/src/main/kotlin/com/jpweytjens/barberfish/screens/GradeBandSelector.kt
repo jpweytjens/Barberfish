@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jpweytjens.barberfish.datatype.shared.GradeBand
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
+import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.ceil
@@ -100,6 +101,47 @@ internal fun ProportionalGradePreview(palette: GradePalette) {
             cellText = { bestTextOnBackground(it.band.color) },
         )
         GradeTickAxis(stops = gradeTickStops(gradeBands(palette, readable = false)))
+    }
+}
+
+/**
+ * The proportional band bar: every band of [palette] on the shared clamped axis, painted as the
+ * surface being configured will paint it, so bands outside the edges show that surface's [neutral].
+ */
+@Composable
+internal fun GradeBandBar(
+    palette: GradePalette,
+    climbEdge: Double?,
+    descentEdge: Double?,
+    neutral: Color,
+    modifier: Modifier = Modifier,
+) {
+    val bands = gradeBands(palette, readable = false)
+    val cells = gradeCells(bands)
+    Column(modifier = modifier.fillMaxWidth()) {
+        val lead = (cells.first().lo - GRADE_AXIS_MIN).toFloat()
+        Row(modifier = Modifier.fillMaxWidth().height(20.dp)) {
+            if (lead > 0f) Spacer(modifier = Modifier.weight(lead))
+            cells.forEach { cell ->
+                val mid = (cell.lo + cell.hi) / 2.0
+                Box(
+                    modifier =
+                        Modifier.weight(cell.weight)
+                            .fillMaxHeight()
+                            .background(
+                                gradeBandColor(
+                                    grade = mid,
+                                    palette = palette,
+                                    climbEdge = climbEdge,
+                                    descentEdge = descentEdge,
+                                    neutral = neutral,
+                                    readable = false,
+                                )
+                            )
+                )
+            }
+        }
+        GradeTickAxis(stops = gradeTickStops(bands))
     }
 }
 

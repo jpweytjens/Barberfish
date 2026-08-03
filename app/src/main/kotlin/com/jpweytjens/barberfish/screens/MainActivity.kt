@@ -127,9 +127,11 @@ import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
+import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.withDesign
 import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
@@ -1306,6 +1308,16 @@ private fun GradeMapCard(
                 config = config,
                 sparklineConfig = sparklineConfig,
                 gradePalette = gradePalette,
+            )
+
+            // The same resolved edges the overlay renders from, so the bar shows exactly
+            // which bands the map paints and which fall back to the map neutral.
+            val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
+            GradeBandBar(
+                palette = gradePalette,
+                climbEdge = effTuning.climbEdge,
+                descentEdge = effTuning.descentEdge,
+                neutral = mapNeutral(gradePalette, readable = false),
             )
 
             ControlLabel("TUNING")
