@@ -814,27 +814,22 @@ internal fun SparklineOptionsControls(
             help = "Distance shown ahead of your position.",
         )
     }
-    // Read through gradeEdges, the same resolution the renderers use, so the bar and thumbs
+    // Read through gradeEdges, the same resolution the renderers use, so the bar and handles
     // show exactly which bands the profile colours.
     val (climbEdge, descentEdge) = config.gradeEdges(zoneConfig.gradePalette)
     LabeledHelper("EMPHASIS") {
         HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
     }
-    // The profile adds no colour inside the edges (its faint silhouette shows through), so its
-    // neutral is the card background: an excluded band reads as no colour added.
-    GradeBandBar(
-        palette = zoneConfig.gradePalette,
-        climbEdge = climbEdge,
-        descentEdge = descentEdge,
-        neutral = Grey200,
-    )
-    GradeEdgeSliders(
+    // The profile paints no grade fill inside the edges (its faint silhouette shows through),
+    // so the filtered region renders as an outlined groove rather than a colour.
+    GradeBandSlider(
         palette = zoneConfig.gradePalette,
         climbEdge = climbEdge,
         descentEdge = descentEdge,
         onEdgesChange = { climb, descent ->
             onUpdate(config.copy(climbEdge = climb, descentEdge = descent))
         },
+        neutral = null,
     )
     ChoiceRow(
         label = "SIMPLIFICATION",
