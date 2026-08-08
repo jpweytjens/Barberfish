@@ -208,8 +208,8 @@ internal fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
  * paints inside the edges; null means it paints nothing (the Profile), rendered as an outlined
  * groove. [enabled] false draws no handles and attaches no gesture: pure display for the map card's
  * Sync branch. One-sided palettes have no descent handle and pass [descentEdge] through
- * [onEdgesChange] unchanged. [ground] is the card body behind the bar; the handle halo and the
- * coincidence chevrons read from it.
+ * [onEdgesChange] unchanged. [ground] is the card body behind the bar; the handle halo reads from
+ * it.
  */
 @Composable
 internal fun GradeBandSlider(

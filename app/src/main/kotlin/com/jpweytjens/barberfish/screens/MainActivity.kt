@@ -1339,7 +1339,7 @@ private fun GradeMapCard(
                 // until something deliberately writes GradeMapConfig.descentEdge. The handles
                 // sit at the grades the fill actually starts at, and dragging the climb handle
                 // must NOT pin the descent side: descent is written back only when the descent
-                // handle itself moved (2026-08-08 Task 1 review finding).
+                // handle itself moved.
                 val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
                 LabeledHelper("EMPHASIS") {
                     HelperText(
