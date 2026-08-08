@@ -1,17 +1,22 @@
 package com.jpweytjens.barberfish
 
+import com.jpweytjens.barberfish.datatype.shared.FlatGrey
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.screens.GRADE_AXIS_MAX
 import com.jpweytjens.barberfish.screens.GRADE_AXIS_MIN
 import com.jpweytjens.barberfish.screens.GRADE_EDGE_OFF
 import com.jpweytjens.barberfish.screens.axisFraction
+import com.jpweytjens.barberfish.screens.barRuns
 import com.jpweytjens.barberfish.screens.climbEdgeStops
 import com.jpweytjens.barberfish.screens.descentEdgeStops
 import com.jpweytjens.barberfish.screens.gradeCells
 import com.jpweytjens.barberfish.screens.gradeTickStops
 import com.jpweytjens.barberfish.screens.nearestEdgeStop
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GradeCellGeometryTest {
@@ -86,5 +91,30 @@ class GradeCellGeometryTest {
         assertEquals(0.0, nearestEdgeStop(climbEdgeStops(GradePalette.KAROO), 0.0).edge, 0.0)
         // Barberfish has no zero stop: a stored 0.0 still snaps to the innermost stop.
         assertEquals(2.0, nearestEdgeStop(climbEdgeStops(GradePalette.BARBERFISH), 0.0).edge, 0.0)
+    }
+
+    @Test
+    fun bar_runs_merge_the_filtered_middle_into_one_neutral_run() {
+        val sage = mapNeutral(GradePalette.BARBERFISH, readable = false)
+        val runs =
+            barRuns(GradePalette.BARBERFISH, climbEdge = 14.0, descentEdge = -6.0, neutral = sage)
+        // slate, deep teal, one merged neutral run (-6..14), red, purple
+        assertEquals(listOf(5.0f, 4.0f, 20.0f, 6.0f, 5.0f), runs.map { it.weight })
+        assertEquals(sage, runs[2].color)
+    }
+
+    @Test
+    fun null_neutral_yields_a_groove_run() {
+        val runs =
+            barRuns(GradePalette.BARBERFISH, climbEdge = 14.0, descentEdge = -6.0, neutral = null)
+        assertNull(runs[2].color)
+        assertEquals(5, runs.size)
+    }
+
+    @Test
+    fun fully_on_karoo_has_no_neutral_run() {
+        val runs =
+            barRuns(GradePalette.KAROO, climbEdge = 0.0, descentEdge = null, neutral = FlatGrey)
+        assertTrue(runs.none { it.color == FlatGrey || it.color == null })
     }
 }
