@@ -246,6 +246,7 @@ internal fun GradeBandSlider(
     // its own updates cause; these keep its captures current.
     val currentClimbSel by rememberUpdatedState(climbSel)
     val currentDescentSel by rememberUpdatedState(descentSel)
+    val currentClimbEdge by rememberUpdatedState(climbEdge)
     val currentDescentEdge by rememberUpdatedState(descentEdge)
     val currentOnEdgesChange by rememberUpdatedState(onEdgesChange)
 
@@ -262,15 +263,16 @@ internal fun GradeBandSlider(
                         val stops = descentStops ?: return
                         val hit = stops.minBy { abs(it.axisGrade - grade) }
                         if (hit.edge != currentDescentSel?.edge) {
-                            currentOnEdgesChange(currentClimbSel.edge, hit.edge)
+                            // The climb side didn't move: report its raw incoming edge
+                            // unchanged, not the snapped display value, so a caller can tell
+                            // "unmoved" from "moved to a value that happens to match a stop".
+                            currentOnEdgesChange(currentClimbEdge ?: currentClimbSel.edge, hit.edge)
                         }
                     } else {
                         val hit = climbStops.minBy { abs(it.axisGrade - grade) }
                         if (hit.edge != currentClimbSel.edge) {
-                            currentOnEdgesChange(
-                                hit.edge,
-                                currentDescentSel?.edge ?: currentDescentEdge,
-                            )
+                            // Same for the descent side here: pass its raw edge through.
+                            currentOnEdgesChange(hit.edge, currentDescentEdge)
                         }
                     }
                 }
