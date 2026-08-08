@@ -215,7 +215,7 @@ data class SparklineConfig(
     val skipBands: Int = 1,
     val skipBandsDescent: Int = 0,
     // Grade thresholds at and beyond which a side takes its band colour, written by the profile
-    // card's GradeEdgeSliders. Null means unset, so an absent key falls through to the migrated
+    // card's GradeBandSlider. Null means unset, so an absent key falls through to the migrated
     // legacy counts instead of masking them; a side is turned off by parking its edge past the
     // palette's last stop (the sliders store GRADE_EDGE_OFF), not by storing null.
     val climbEdge: Double? = null,
@@ -493,7 +493,7 @@ data class GradeMapConfig(
     // Legacy band-skip count, superseded by climbEdge/descentEdge. Read through `gradeEdges`.
     // The map never had a descent count, so its descent edge migrates as if the count were 0.
     val skipBands: Int = 1,
-    // Written by the GRADE MAP card's GradeEdgeSliders when tuning is independent; a parked
+    // Written by the GRADE MAP card's GradeBandSlider when tuning is independent; a parked
     // side stores GRADE_EDGE_OFF. Null means unset and falls through to the migrated legacy
     // count above.
     val climbEdge: Double? = null,
