@@ -287,4 +287,24 @@ class GradeBandsTest {
             )
         assertEquals(sentinel, c)
     }
+
+    @Test
+    fun edge_zero_is_fully_on() {
+        val bands = gradeBands(GradePalette.TURBO, readable = false)
+        val lime = bands.first { it.lo == 0.0 }.color
+        val mint = bands.first { it.hi == 0.0 }.color
+        assertEquals(
+            lime,
+            gradeBandColor(1.5, GradePalette.TURBO, 0.0, null, NEUTRAL, readable = false),
+        )
+        assertEquals(
+            mint,
+            gradeBandColor(-1.5, GradePalette.TURBO, null, 0.0, NEUTRAL, readable = false),
+        )
+        // Exactly 0.0 belongs to the fully-on side's containing band.
+        assertEquals(
+            lime,
+            gradeBandColor(0.0, GradePalette.TURBO, 0.0, null, NEUTRAL, readable = false),
+        )
+    }
 }

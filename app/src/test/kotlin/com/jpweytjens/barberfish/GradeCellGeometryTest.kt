@@ -4,9 +4,13 @@ import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.screens.GRADE_AXIS_MAX
 import com.jpweytjens.barberfish.screens.GRADE_AXIS_MIN
+import com.jpweytjens.barberfish.screens.GRADE_EDGE_OFF
 import com.jpweytjens.barberfish.screens.axisFraction
+import com.jpweytjens.barberfish.screens.climbEdgeStops
+import com.jpweytjens.barberfish.screens.descentEdgeStops
 import com.jpweytjens.barberfish.screens.gradeCells
 import com.jpweytjens.barberfish.screens.gradeTickStops
+import com.jpweytjens.barberfish.screens.nearestEdgeStop
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -57,5 +61,30 @@ class GradeCellGeometryTest {
         assertEquals(0.0f, axisFraction(GRADE_AXIS_MIN), 0.0001f)
         assertEquals(1.0f, axisFraction(GRADE_AXIS_MAX), 0.0001f)
         assertEquals(0.375f, axisFraction(0.0), 0.0001f)
+    }
+
+    @Test
+    fun zero_stop_exists_exactly_where_zero_is_a_band_edge() {
+        // One-sided palettes floor at 0: climb side gains the stop.
+        assertEquals(0.0, climbEdgeStops(GradePalette.KAROO).first().axisGrade, 0.0)
+        // Turbo's bands meet at a 0 edge: both sides gain it.
+        assertEquals(0.0, climbEdgeStops(GradePalette.TURBO).first().axisGrade, 0.0)
+        assertEquals(0.0, descentEdgeStops(GradePalette.TURBO).last().axisGrade, 0.0)
+        // Barberfish's flat band straddles zero: no 0 stop on either side.
+        assertEquals(2.0, climbEdgeStops(GradePalette.BARBERFISH).first().axisGrade, 0.0)
+        assertEquals(-2.0, descentEdgeStops(GradePalette.BARBERFISH).last().axisGrade, 0.0)
+    }
+
+    @Test
+    fun off_stays_parked_at_the_axis_ends() {
+        assertEquals(GRADE_EDGE_OFF, climbEdgeStops(GradePalette.TURBO).last().edge, 0.0)
+        assertEquals(-GRADE_EDGE_OFF, descentEdgeStops(GradePalette.TURBO).first().edge, 0.0)
+    }
+
+    @Test
+    fun stored_zero_lands_on_the_zero_stop_where_one_exists() {
+        assertEquals(0.0, nearestEdgeStop(climbEdgeStops(GradePalette.KAROO), 0.0).edge, 0.0)
+        // Barberfish has no zero stop: a stored 0.0 still snaps to the innermost stop.
+        assertEquals(2.0, nearestEdgeStop(climbEdgeStops(GradePalette.BARBERFISH), 0.0).edge, 0.0)
     }
 }

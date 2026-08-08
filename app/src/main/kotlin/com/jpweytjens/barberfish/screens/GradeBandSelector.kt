@@ -40,6 +40,7 @@ import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
+import com.jpweytjens.barberfish.datatype.shared.gradeFloor
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -162,22 +163,39 @@ internal fun GradeBandBar(
 internal const val GRADE_EDGE_OFF = Double.MAX_VALUE
 
 /** One snap position: where the thumb sits on the axis and the edge selecting it stores. */
-private data class EdgeStop(val axisGrade: Double, val edge: Double)
+internal data class EdgeStop(val axisGrade: Double, val edge: Double)
 
-// The climb slider's positions: the palette's climb stops, then Off at the axis end.
-private fun climbEdgeStops(palette: GradePalette): List<EdgeStop> =
-    gradeBandStops(palette).climb.map { EdgeStop(it, it) } +
+// The palette's true zero boundary, if it has one: a band starting at 0 (Turbo's flattest
+// climb band) or a floor at 0 (the one-sided palettes). There an edge of 0.0 means no
+// filtering on that side, so the handle gets a stop for it. A band merely straddling zero
+// (Barberfish's flat band) has no zero boundary: it is the neutral, never a highlight.
+private fun hasClimbZeroStop(palette: GradePalette): Boolean =
+    gradeBands(palette, readable = false).any { it.lo == 0.0 } ||
+        gradeFloor(palette, readable = false) == 0.0
+
+private fun hasDescentZeroStop(palette: GradePalette): Boolean =
+    gradeBands(palette, readable = false).any { band ->
+        band.hi == 0.0 && (band.lo ?: Double.NEGATIVE_INFINITY) < 0.0
+    }
+
+// The climb slider's positions: fully-on at 0 where the palette has a real zero edge, then
+// the palette's climb stops, then Off at the axis end.
+internal fun climbEdgeStops(palette: GradePalette): List<EdgeStop> =
+    (if (hasClimbZeroStop(palette)) listOf(EdgeStop(0.0, 0.0)) else emptyList()) +
+        gradeBandStops(palette).climb.map { EdgeStop(it, it) } +
         EdgeStop(GRADE_AXIS_MAX, GRADE_EDGE_OFF)
 
-// The descent slider's positions: Off at the axis end, then the palette's descent stops.
-private fun descentEdgeStops(palette: GradePalette): List<EdgeStop> =
+// The descent slider's positions: Off at the axis end, the palette's descent stops, then
+// fully-on at 0 where the palette has a real zero edge.
+internal fun descentEdgeStops(palette: GradePalette): List<EdgeStop> =
     listOf(EdgeStop(GRADE_AXIS_MIN, -GRADE_EDGE_OFF)) +
-        gradeBandStops(palette).descent.sorted().map { EdgeStop(it, it) }
+        gradeBandStops(palette).descent.sorted().map { EdgeStop(it, it) } +
+        (if (hasDescentZeroStop(palette)) listOf(EdgeStop(0.0, 0.0)) else emptyList())
 
 // The position a stored edge lands on: nearest stop by axis distance, so a stale edge (a
-// retired stop, a legacy 0.0, a parked sentinel) snaps rather than strands the thumb. A null
-// edge means that side colours nothing, which is the Off position.
-private fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
+// retired stop, a parked sentinel) snaps rather than strands the thumb. A null edge means
+// that side colours nothing, which is the Off position.
+internal fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
     if (edge == null) return stops.first { abs(it.edge) == GRADE_EDGE_OFF }
     val clamped = edge.coerceIn(GRADE_AXIS_MIN, GRADE_AXIS_MAX)
     return stops.minBy { abs(it.axisGrade - clamped) }

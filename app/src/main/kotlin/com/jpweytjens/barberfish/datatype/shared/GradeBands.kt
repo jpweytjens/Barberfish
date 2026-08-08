@@ -357,8 +357,8 @@ internal fun gradeBandColor(
             grade > 0.0 -> climbEdge != null && grade >= climbEdge
             grade < 0.0 -> descentEdge != null && grade <= descentEdge
             // Exactly 0.0 is neither side, so the comparisons above never see it. An edge of 0.0
-            // only ever means "Off" (no palette has a 0.0 stop), and the edges are inclusive, so
-            // a fully-on side colours 0.0 too: it takes its containing band below.
+            // is the fully-on position on palettes with a zero edge, and the existing
+            // inclusive-edge logic already colours 0.0 correctly for it.
             else ->
                 (climbEdge != null && climbEdge <= 0.0) ||
                     (descentEdge != null && descentEdge >= 0.0)
