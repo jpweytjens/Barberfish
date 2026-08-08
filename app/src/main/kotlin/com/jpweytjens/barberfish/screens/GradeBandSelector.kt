@@ -1,6 +1,8 @@
 package com.jpweytjens.barberfish.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -11,25 +13,37 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jpweytjens.barberfish.datatype.shared.GradeBand
+import com.jpweytjens.barberfish.datatype.shared.Grey400
+import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
+import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.extension.GradePalette
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 
@@ -143,6 +157,186 @@ internal fun GradeBandBar(
         }
         GradeTickAxis(stops = gradeTickStops(bands))
     }
+}
+
+// An edge parked past every stop, so that side colours nothing. Double.MAX_VALUE rather than
+// POSITIVE_INFINITY because the edge is persisted and JSON has no infinity literal.
+internal const val GRADE_EDGE_OFF = Double.MAX_VALUE
+
+/** One snap position: where the thumb sits on the axis and the edge selecting it stores. */
+private data class EdgeStop(val axisGrade: Double, val edge: Double)
+
+// The climb slider's positions: the palette's climb stops, then Off at the axis end.
+private fun climbEdgeStops(palette: GradePalette): List<EdgeStop> =
+    gradeBandStops(palette).climb.map { EdgeStop(it, it) } +
+        EdgeStop(GRADE_AXIS_MAX, GRADE_EDGE_OFF)
+
+// The descent slider's positions: Off at the axis end, then the palette's descent stops.
+private fun descentEdgeStops(palette: GradePalette): List<EdgeStop> =
+    listOf(EdgeStop(GRADE_AXIS_MIN, -GRADE_EDGE_OFF)) +
+        gradeBandStops(palette).descent.sorted().map { EdgeStop(it, it) }
+
+// The position a stored edge lands on: nearest stop by axis distance, so a stale edge (a
+// retired stop, a legacy 0.0, a parked sentinel) snaps rather than strands the thumb. A null
+// edge means that side colours nothing, which is the Off position.
+private fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
+    if (edge == null) return stops.first { abs(it.edge) == GRADE_EDGE_OFF }
+    val clamped = edge.coerceIn(GRADE_AXIS_MIN, GRADE_AXIS_MAX)
+    return stops.minBy { abs(it.axisGrade - clamped) }
+}
+
+/**
+ * Two single-thumb sliders on the shared clamped axis: descent over -15..-2, climb over +2..+25,
+ * the flat band between them a gap with no control. Each track fills from its extreme end inward
+ * toward the thumb, so filled always means coloured and dragging toward flat includes more bands.
+ * Thumbs snap to [palette]'s stops; the far end of a track is that side's Off. One-sided palettes
+ * hide the descent slider and pass [descentEdge] through [onEdgesChange] unchanged.
+ */
+@Composable
+internal fun GradeEdgeSliders(
+    palette: GradePalette,
+    climbEdge: Double?,
+    descentEdge: Double?,
+    onEdgesChange: (climbEdge: Double, descentEdge: Double?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+    val thumbSizeDp = 40.dp
+    val dotSizeDp = 10.dp
+    val trackHeightDp = 18.dp
+    val climbStops = climbEdgeStops(palette)
+    val descentStops = descentEdgeStops(palette).takeIf { it.size > 1 }
+    val climbSel = nearestEdgeStop(climbStops, climbEdge)
+    val descentSel = descentStops?.let { nearestEdgeStop(it, descentEdge) }
+
+    // The gesture handler is keyed on the palette only, so a drag survives the recompositions
+    // its own updates cause; these keep its captures current.
+    val currentClimbSel by rememberUpdatedState(climbSel)
+    val currentDescentSel by rememberUpdatedState(descentSel)
+    val currentDescentEdge by rememberUpdatedState(descentEdge)
+    val currentOnEdgesChange by rememberUpdatedState(onEdgesChange)
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        BoxWithConstraints(
+            modifier =
+                Modifier.fillMaxWidth().height(thumbSizeDp).pointerInput(palette) {
+                    val widthPx = size.width.toFloat()
+                    fun gradeAt(x: Float) =
+                        GRADE_AXIS_MIN + (x / widthPx) * (GRADE_AXIS_MAX - GRADE_AXIS_MIN)
+                    fun select(onDescentSide: Boolean, x: Float) {
+                        val grade = gradeAt(x)
+                        if (onDescentSide) {
+                            val stops = descentStops ?: return
+                            val hit = stops.minBy { abs(it.axisGrade - grade) }
+                            if (hit.edge != currentDescentSel?.edge) {
+                                currentOnEdgesChange(currentClimbSel.edge, hit.edge)
+                            }
+                        } else {
+                            val hit = climbStops.minBy { abs(it.axisGrade - grade) }
+                            if (hit.edge != currentClimbSel.edge) {
+                                currentOnEdgesChange(
+                                    hit.edge,
+                                    currentDescentSel?.edge ?: currentDescentEdge,
+                                )
+                            }
+                        }
+                    }
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        // The side is locked at the press, so a drag across the flat gap keeps
+                        // adjusting the thumb it grabbed.
+                        val onDescentSide = descentStops != null && gradeAt(down.position.x) < 0.0
+                        select(onDescentSide, down.position.x)
+                        var event = awaitPointerEvent()
+                        while (event.changes.any { it.pressed }) {
+                            val change = event.changes.firstOrNull() ?: break
+                            change.consume()
+                            select(onDescentSide, change.position.x)
+                            event = awaitPointerEvent()
+                        }
+                    }
+                }
+        ) {
+            val widthPx = constraints.maxWidth.toFloat()
+            val thumbSizePx = with(density) { thumbSizeDp.toPx() }
+            val dotSizePx = with(density) { dotSizeDp.toPx() }
+            fun xOf(grade: Double) = axisFraction(grade) * widthPx
+
+            @Composable
+            fun TrackPill(fromX: Float, toX: Float, color: Color) {
+                Box(
+                    modifier =
+                        Modifier.align(Alignment.CenterStart)
+                            .offset { IntOffset(fromX.toInt(), 0) }
+                            .width(with(density) { (toX - fromX).toDp() })
+                            .height(trackHeightDp)
+                            .clip(RoundedCornerShape(50))
+                            .background(color)
+                )
+            }
+
+            @Composable
+            fun Thumb(sel: EdgeStop) {
+                val cx = xOf(sel.axisGrade).coerceIn(thumbSizePx / 2, widthPx - thumbSizePx / 2)
+                Box(
+                    modifier =
+                        Modifier.size(thumbSizeDp)
+                            .align(Alignment.CenterStart)
+                            .offset { IntOffset((cx - thumbSizePx / 2).toInt(), 0) }
+                            .clip(CircleShape)
+                            .background(Grey400)
+                )
+            }
+
+            // White pill per side, dots at the snap positions, then the inward fill over the
+            // dots it has passed: a covered dot reads as an included band.
+            if (descentStops != null) {
+                TrackPill(fromX = xOf(GRADE_AXIS_MIN), toX = xOf(-2.0), color = Color.White)
+            }
+            TrackPill(fromX = xOf(2.0), toX = xOf(GRADE_AXIS_MAX), color = Color.White)
+            (climbStops + descentStops.orEmpty()).forEach { stop ->
+                val cx = xOf(stop.axisGrade).coerceIn(dotSizePx / 2, widthPx - dotSizePx / 2)
+                Box(
+                    modifier =
+                        Modifier.size(dotSizeDp)
+                            .align(Alignment.CenterStart)
+                            .offset { IntOffset((cx - dotSizePx / 2).toInt(), 0) }
+                            .clip(CircleShape)
+                            .background(Grey400)
+                )
+            }
+            if (descentSel != null && abs(descentSel.edge) != GRADE_EDGE_OFF) {
+                TrackPill(
+                    fromX = xOf(GRADE_AXIS_MIN),
+                    toX = xOf(descentSel.axisGrade),
+                    color = Grey400,
+                )
+            }
+            if (abs(climbSel.edge) != GRADE_EDGE_OFF) {
+                TrackPill(
+                    fromX = xOf(climbSel.axisGrade),
+                    toX = xOf(GRADE_AXIS_MAX),
+                    color = Grey400,
+                )
+            }
+            if (descentSel != null) Thumb(descentSel)
+            Thumb(climbSel)
+        }
+        Row(modifier = Modifier.fillMaxWidth()) {
+            if (descentSel != null) {
+                EdgeLabel(sel = descentSel, prefix = "<=")
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            EdgeLabel(sel = climbSel, prefix = ">=")
+        }
+    }
+}
+
+@Composable
+private fun EdgeLabel(sel: EdgeStop, prefix: String) {
+    val text =
+        if (abs(sel.edge) == GRADE_EDGE_OFF) "Off" else "$prefix ${formatGradePct(sel.edge)}%"
+    Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
 }
 
 @Composable
