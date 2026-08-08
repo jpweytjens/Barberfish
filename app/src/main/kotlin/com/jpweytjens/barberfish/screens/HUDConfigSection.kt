@@ -65,7 +65,6 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesClimbsFixture
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.colDeRatesPoisFixture
-import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
@@ -815,42 +814,28 @@ internal fun SparklineOptionsControls(
             help = "Distance shown ahead of your position.",
         )
     }
-    // Read through gradeEdges, the same resolution the renderers use, so the sentence names the
-    // grade the fill actually starts at. An edge of 0 colours that whole side, so it bounds
-    // nothing.
+    // Read through gradeEdges, the same resolution the renderers use, so the bar and thumbs
+    // show exactly which bands the profile colours.
     val (climbEdge, descentEdge) = config.gradeEdges(zoneConfig.gradePalette)
-    val hasDescentBands = gradeBandStops(zoneConfig.gradePalette).descent.isNotEmpty()
-    val upperEdge = climbEdge?.takeIf { it > 0.0 }
-    val lowerEdge = descentEdge?.takeIf { it < 0.0 }
-    val readout =
-        when {
-            hasDescentBands && (upperEdge != null || lowerEdge != null) -> {
-                val upper = if (upperEdge != null) "%.0f".format(upperEdge) else "0"
-                val lower = if (lowerEdge != null) "%.0f".format(lowerEdge) else "0"
-                "Grades between $lower% and $upper% stay uncoloured."
-            }
-            !hasDescentBands && upperEdge != null ->
-                "Grades below ${"%.0f".format(upperEdge)}% stay uncoloured."
-            else -> null
-        }
     LabeledHelper("EMPHASIS") {
         HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
-        if (readout != null) HelperText(readout)
     }
-    SubControlLabel(if (hasDescentBands) "CLIMBS" else "BANDS")
-    SegmentedRow(
-        options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-        selected = config.skipBands,
-        onSelect = { onUpdate(config.copy(skipBands = it)) },
+    // The profile adds no colour inside the edges (its faint silhouette shows through), so its
+    // neutral is the card background: an excluded band reads as no colour added.
+    GradeBandBar(
+        palette = zoneConfig.gradePalette,
+        climbEdge = climbEdge,
+        descentEdge = descentEdge,
+        neutral = Grey200,
     )
-    if (hasDescentBands) {
-        SubControlLabel("DESCENTS")
-        SegmentedRow(
-            options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-            selected = config.skipBandsDescent,
-            onSelect = { onUpdate(config.copy(skipBandsDescent = it)) },
-        )
-    }
+    GradeEdgeSliders(
+        palette = zoneConfig.gradePalette,
+        climbEdge = climbEdge,
+        descentEdge = descentEdge,
+        onEdgesChange = { climb, descent ->
+            onUpdate(config.copy(climbEdge = climb, descentEdge = descent))
+        },
+    )
     ChoiceRow(
         label = "SIMPLIFICATION",
         options = ElevationSimplification.entries.map { it to it.label },

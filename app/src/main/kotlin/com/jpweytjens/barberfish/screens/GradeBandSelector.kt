@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -187,10 +185,10 @@ private fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
 
 /**
  * Two single-thumb sliders on the shared clamped axis: descent over -15..-2, climb over +2..+25,
- * the flat band between them a gap with no control. Each track fills from its extreme end inward
- * toward the thumb, so filled always means coloured and dragging toward flat includes more bands.
- * Thumbs snap to [palette]'s stops; the far end of a track is that side's Off. One-sided palettes
- * hide the descent slider and pass [descentEdge] through [onEdgesChange] unchanged.
+ * the flat band between them a gap with no control. The sliders carry no state display of their
+ * own; the [GradeBandBar] above them shows which bands the edges colour. Thumbs snap to [palette]'s
+ * stops; the far end of a track is that side's Off. One-sided palettes hide the descent slider and
+ * pass [descentEdge] through [onEdgesChange] unchanged.
  */
 @Composable
 internal fun GradeEdgeSliders(
@@ -201,9 +199,18 @@ internal fun GradeEdgeSliders(
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    val thumbSizeDp = 40.dp
-    val dotSizeDp = 10.dp
+    // Material 3 slider vocabulary: a narrow vertical bar for the thumb and hairline vertical
+    // ticks at the snap positions, sized to match the band bar's own tick axis so the two read
+    // as one instrument. The whole row is the gesture surface, so the touch target is not the
+    // thumb. Track caps extend a touch past the end ticks; the tick positions themselves stay
+    // on the shared axis.
+    val rowHeightDp = 40.dp
+    val thumbWidthDp = 4.dp
+    val thumbHeightDp = 28.dp
+    val tickWidthDp = 1.dp
+    val tickHeightDp = 12.dp
     val trackHeightDp = 18.dp
+    val capPadDp = 4.dp
     val climbStops = climbEdgeStops(palette)
     val descentStops = descentEdgeStops(palette).takeIf { it.size > 1 }
     val climbSel = nearestEdgeStop(climbStops, climbEdge)
@@ -219,7 +226,7 @@ internal fun GradeEdgeSliders(
     Column(modifier = modifier.fillMaxWidth()) {
         BoxWithConstraints(
             modifier =
-                Modifier.fillMaxWidth().height(thumbSizeDp).pointerInput(palette) {
+                Modifier.fillMaxWidth().height(rowHeightDp).pointerInput(palette) {
                     val widthPx = size.width.toFloat()
                     fun gradeAt(x: Float) =
                         GRADE_AXIS_MIN + (x / widthPx) * (GRADE_AXIS_MAX - GRADE_AXIS_MIN)
@@ -258,8 +265,9 @@ internal fun GradeEdgeSliders(
                 }
         ) {
             val widthPx = constraints.maxWidth.toFloat()
-            val thumbSizePx = with(density) { thumbSizeDp.toPx() }
-            val dotSizePx = with(density) { dotSizeDp.toPx() }
+            val thumbWidthPx = with(density) { thumbWidthDp.toPx() }
+            val tickWidthPx = with(density) { tickWidthDp.toPx() }
+            val capPadPx = with(density) { capPadDp.toPx() }
             fun xOf(grade: Double) = axisFraction(grade) * widthPx
 
             @Composable
@@ -275,68 +283,63 @@ internal fun GradeEdgeSliders(
                 )
             }
 
+            // A centred vertical bar at [cx]: the thumb, or a snap tick when sized down.
             @Composable
-            fun Thumb(sel: EdgeStop) {
-                val cx = xOf(sel.axisGrade).coerceIn(thumbSizePx / 2, widthPx - thumbSizePx / 2)
+            fun VerticalBar(
+                cx: Float,
+                barWidth: Float,
+                height: androidx.compose.ui.unit.Dp,
+                color: Color,
+            ) {
                 Box(
                     modifier =
-                        Modifier.size(thumbSizeDp)
+                        Modifier.width(with(density) { barWidth.toDp() })
+                            .height(height)
                             .align(Alignment.CenterStart)
-                            .offset { IntOffset((cx - thumbSizePx / 2).toInt(), 0) }
-                            .clip(CircleShape)
-                            .background(Grey400)
+                            .offset { IntOffset((cx - barWidth / 2).toInt(), 0) }
+                            .clip(RoundedCornerShape(50))
+                            .background(color)
                 )
             }
 
-            // White pill per side, dots at the snap positions, then the inward fill over the
-            // dots it has passed: a covered dot reads as an included band.
+            // White pill per side with tick lines at the snap positions, which line up with
+            // the band boundaries in the bar above. The bar carries the state.
             if (descentStops != null) {
-                TrackPill(fromX = xOf(GRADE_AXIS_MIN), toX = xOf(-2.0), color = Color.White)
+                TrackPill(
+                    fromX = xOf(GRADE_AXIS_MIN) - capPadPx,
+                    toX = xOf(-2.0) + capPadPx,
+                    color = Color.White,
+                )
             }
-            TrackPill(fromX = xOf(2.0), toX = xOf(GRADE_AXIS_MAX), color = Color.White)
+            TrackPill(
+                fromX = xOf(2.0) - capPadPx,
+                toX = xOf(GRADE_AXIS_MAX) + capPadPx,
+                color = Color.White,
+            )
             (climbStops + descentStops.orEmpty()).forEach { stop ->
-                val cx = xOf(stop.axisGrade).coerceIn(dotSizePx / 2, widthPx - dotSizePx / 2)
-                Box(
-                    modifier =
-                        Modifier.size(dotSizeDp)
-                            .align(Alignment.CenterStart)
-                            .offset { IntOffset((cx - dotSizePx / 2).toInt(), 0) }
-                            .clip(CircleShape)
-                            .background(Grey400)
-                )
-            }
-            if (descentSel != null && abs(descentSel.edge) != GRADE_EDGE_OFF) {
-                TrackPill(
-                    fromX = xOf(GRADE_AXIS_MIN),
-                    toX = xOf(descentSel.axisGrade),
+                VerticalBar(
+                    cx = xOf(stop.axisGrade),
+                    barWidth = tickWidthPx,
+                    height = tickHeightDp,
                     color = Grey400,
                 )
             }
-            if (abs(climbSel.edge) != GRADE_EDGE_OFF) {
-                TrackPill(
-                    fromX = xOf(climbSel.axisGrade),
-                    toX = xOf(GRADE_AXIS_MAX),
-                    color = Grey400,
-                )
-            }
-            if (descentSel != null) Thumb(descentSel)
-            Thumb(climbSel)
-        }
-        Row(modifier = Modifier.fillMaxWidth()) {
             if (descentSel != null) {
-                EdgeLabel(sel = descentSel, prefix = "<=")
+                VerticalBar(
+                    cx = xOf(descentSel.axisGrade),
+                    barWidth = thumbWidthPx,
+                    height = thumbHeightDp,
+                    color = TextDark,
+                )
             }
-            Spacer(modifier = Modifier.weight(1f))
-            EdgeLabel(sel = climbSel, prefix = ">=")
+            VerticalBar(
+                cx = xOf(climbSel.axisGrade),
+                barWidth = thumbWidthPx,
+                height = thumbHeightDp,
+                color = TextDark,
+            )
         }
     }
-}
-
-@Composable
-private fun EdgeLabel(sel: EdgeStop, prefix: String) {
-    val text =
-        if (abs(sel.edge) == GRADE_EDGE_OFF) "Off" else "$prefix ${formatGradePct(sel.edge)}%"
-    Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
 }
 
 @Composable

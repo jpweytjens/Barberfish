@@ -125,7 +125,6 @@ import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
-import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
@@ -1334,27 +1333,18 @@ private fun GradeMapCard(
                 )
             } else {
                 // Read through gradeEdges, the same resolution the overlay renders from, so the
-                // sentence names the grade the fill actually starts at.
-                val climbEdge = config.gradeEdges(gradePalette).first?.takeIf { it > 0.0 }
-                val emphasisReadout =
-                    if (climbEdge != null) {
-                        "Grades below ${"%.0f".format(climbEdge)}% stay uncoloured."
-                    } else {
-                        null
-                    }
+                // thumbs sit at the grades the fill actually starts at.
+                val (climbEdge, descentEdge) = config.gradeEdges(gradePalette)
                 LabeledHelper("EMPHASIS") {
                     HelperText("Filter out gentle grades so meaningful climbs stand out.")
-                    if (emphasisReadout != null) HelperText(emphasisReadout)
-                    // This card sets the climb side only; the descent side keeps following the
-                    // profile, so say so rather than leave the overlay's descents unexplained.
-                    if (gradeBandStops(gradePalette).descent.isNotEmpty()) {
-                        HelperText("Descents follow the elevation profile.")
-                    }
                 }
-                SegmentedRow(
-                    options = listOf(0 to "Off", 1 to "1", 2 to "2", 3 to "3"),
-                    selected = config.skipBands,
-                    onSelect = { onUpdate(config.copy(skipBands = it)) },
+                GradeEdgeSliders(
+                    palette = gradePalette,
+                    climbEdge = climbEdge,
+                    descentEdge = descentEdge,
+                    onEdgesChange = { climb, descent ->
+                        onUpdate(config.copy(climbEdge = climb, descentEdge = descent))
+                    },
                 )
 
                 LabeledHelper("SIMPLIFICATION") {
