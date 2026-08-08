@@ -1309,16 +1309,6 @@ private fun GradeMapCard(
                 gradePalette = gradePalette,
             )
 
-            // The same resolved edges the overlay renders from, so the bar shows exactly
-            // which bands the map paints and which fall back to the map neutral.
-            val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
-            GradeBandBar(
-                palette = gradePalette,
-                climbEdge = effTuning.climbEdge,
-                descentEdge = effTuning.descentEdge,
-                neutral = mapNeutral(gradePalette, readable = false),
-            )
-
             ControlLabel("TUNING")
             SegmentedRow(
                 options = listOf(true to "Sync", false to "Independent"),
@@ -1331,20 +1321,46 @@ private fun GradeMapCard(
                     "Starts from the elevation profile's emphasis and simplification, then " +
                         "coarsens further as you zoom out."
                 )
-            } else {
-                // Read through gradeEdges, the same resolution the overlay renders from, so the
-                // thumbs sit at the grades the fill actually starts at.
-                val (climbEdge, descentEdge) = config.gradeEdges(gradePalette)
-                LabeledHelper("EMPHASIS") {
-                    HelperText("Filter out gentle grades so meaningful climbs stand out.")
-                }
-                GradeEdgeSliders(
+                // Display only: the edges are the sparkline's, resolved exactly as the overlay
+                // renders them, so the bar shows which bands the map paints and which fall
+                // back to the map neutral.
+                val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
+                GradeBandSlider(
                     palette = gradePalette,
-                    climbEdge = climbEdge,
-                    descentEdge = descentEdge,
+                    climbEdge = effTuning.climbEdge,
+                    descentEdge = effTuning.descentEdge,
+                    onEdgesChange = { _, _ -> },
+                    neutral = mapNeutral(gradePalette, readable = false),
+                    enabled = false,
+                )
+            } else {
+                // Effective edges, not the map's own resolution: per resolveGradeMapTuning's
+                // contract the unsynced overlay keeps following the sparkline's descent edge
+                // until something deliberately writes GradeMapConfig.descentEdge. The handles
+                // sit at the grades the fill actually starts at, and dragging the climb handle
+                // must NOT pin the descent side: descent is written back only when the descent
+                // handle itself moved (2026-08-08 Task 1 review finding).
+                val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
+                LabeledHelper("EMPHASIS") {
+                    HelperText(
+                        "Filter out gentle grades so meaningful climbs and descents stand out."
+                    )
+                }
+                GradeBandSlider(
+                    palette = gradePalette,
+                    climbEdge = effTuning.climbEdge,
+                    descentEdge = effTuning.descentEdge,
                     onEdgesChange = { climb, descent ->
-                        onUpdate(config.copy(climbEdge = climb, descentEdge = descent))
+                        onUpdate(
+                            config.copy(
+                                climbEdge = climb,
+                                descentEdge =
+                                    if (descent != effTuning.descentEdge) descent
+                                    else config.descentEdge,
+                            )
+                        )
                     },
+                    neutral = mapNeutral(gradePalette, readable = false),
                 )
 
                 LabeledHelper("SIMPLIFICATION") {
