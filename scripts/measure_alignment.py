@@ -143,7 +143,7 @@ def native_label_size_px(col_span: int, row_span: int) -> int:
 
 
 def native_value_size_sp(col_span: int, row_span: int) -> float:
-    """Native rideapp value font size in sp (CLAUDE.md "Native font sizing").
+    """Native value font size in sp (docs/sdk-findings.md "Native header and value sizing").
 
     Used as the "is the box big enough to fit native font?" reference. For
     1-col layouts the rideapp uses a range; we pick the upper bound as the

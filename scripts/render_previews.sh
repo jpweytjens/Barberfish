@@ -3,7 +3,7 @@
 #
 # Uses the manual instrument flow — never `connectedDebugAndroidTest`, which
 # uninstalls the app, wipes DataStore, and leaves the appstore broker with a
-# dead binding (see CLAUDE.md § "ADB install pitfall").
+# dead binding.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
