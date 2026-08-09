@@ -1402,17 +1402,6 @@ internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun SubControlLabel(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text,
-        modifier = modifier,
-        fontSize = 10.sp,
-        fontWeight = FontWeight.Bold,
-        color = TextDark,
-    )
-}
-
-@Composable
 internal fun HelperText(text: String, modifier: Modifier = Modifier) {
     Text(text, modifier = modifier, fontSize = 12.sp, lineHeight = 14.sp, color = Grey500)
 }
