@@ -216,7 +216,7 @@ Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value`
 
 ### Per-layout vertical translation
 
-Mirrors the small upward translation observed in native narrow-cell layouts (see `docs/sdk-findings.md` § "Native label font sizes"). Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so only one extra XML variant per alignment is needed.
+Mirrors the small upward translation observed in native narrow-cell layouts (see `docs/sdk-findings.md` § "Native header and value sizing"). Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so only one extra XML variant per alignment is needed.
 
 The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is not used. `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
 

@@ -28,7 +28,7 @@ internal fun twoColLabelSp(large: Boolean): Float = if (large) 17.6f else 15.5f
 internal fun twoColValueBase(large: Boolean): Int = if (large) 41 else 47
 
 // Per-layout label sp mirrors the native field-header sizes measured on-device;
-// see `docs/sdk-findings.md` § "Native label font sizes".
+// see `docs/sdk-findings.md` § "Native header and value sizing".
 fun ViewConfig.toViewSizeConfig(
     colSpanOverride: Int? = null,
     textSizeOverride: Int? = null,

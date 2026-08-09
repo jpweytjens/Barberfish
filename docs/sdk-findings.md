@@ -332,7 +332,7 @@ The ideal SDK fix is one of:
    owns the polyline.
 
 This was investigated during the climb overlay work. See
-`app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ClimbPolylines.kt`
+`app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/GradeMapPolylines.kt`
 for the extraction pipeline that hits this limitation.
 
 ---
