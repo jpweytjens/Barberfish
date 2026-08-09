@@ -4,30 +4,13 @@
 /.idea
 .DS_Store
 /build
-/captures
-.externalNativeBuild
-.cxx
+.kotlin/
 ### Kotlin ###
 # Compiled class file
 *.class
 
 # Log file
 *.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -37,6 +20,7 @@ replay_pid*
 __pycache__/
 *.py[cod]
 .venv/
+.ruff_cache/
 
 ### Claude ###
 .claude/
@@ -68,6 +52,3 @@ scripts/output/
 # Brainstorming visual-companion mockups (local only)
 .superpowers/
 docs/native-header-internals.md
-
-# Serena MCP server state (local only)
-.serena/
