@@ -126,7 +126,7 @@ Presets:
 | `ViewSizeConfig.STANDARD` | Default values; overridden by `toViewSizeConfig()` at runtime |
 | `ViewSizeConfig.HUD_THREE`| On-device HUD 3-column slots (colSpan=20)                     |
 | `ViewSizeConfig.HUD_FOUR` | On-device HUD 4-column slots (colSpan=15)                     |
-| `PREVIEW_HUD_THREE/FOUR`  | Config-screen HUD previews (smaller fonts)                    |
+| `PREVIEW_HUD_THREE/FOUR`  | Config-screen HUD previews (same sizing, `labelMaxLines = 2`) |
 
 ---
 
@@ -177,7 +177,7 @@ fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 
 ```
 ViewConfig.textSize  (SDK, sp, layout-aware)
-  │  or textSizeOverride (HUD slots: 42 for 3-col, 37 for 4-col)
+  │  or textSizeOverride (HUD slots: 42 for 3-col, 32 for 4-col)
   ▼
 ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig()
 ViewSizeConfig.wrapThresholdSp            ← derived from colSpan
