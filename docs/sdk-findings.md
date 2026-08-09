@@ -159,8 +159,7 @@ algorithm at precision = 1 (verified by decoding and overlaying onto the map).
 
 Device: Karoo 3, density = 1.875 (300 dpi / 160). Established by on-device
 screencap sweeps (`scripts/walk_layouts.sh` + `scripts/measure_alignment.py`)
-across both Label Size settings, plus behavioral analysis of the rideapp
-(notes local-only in `docs/native-header-internals.md`).
+across both Label Size settings, plus behavioral analysis of the rideapp.
 
 The rideapp sizes each data cell per `(colSpan, rowSpan)` in the 60-unit grid
 and per the rider's Label Size setting (Small or Large). All sizes below are

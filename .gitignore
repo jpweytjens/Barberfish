@@ -51,4 +51,3 @@ docs/superpowers/
 scripts/output/
 # Brainstorming visual-companion mockups (local only)
 .superpowers/
-docs/native-header-internals.md
