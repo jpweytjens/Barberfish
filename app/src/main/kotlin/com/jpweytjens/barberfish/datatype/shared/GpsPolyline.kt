@@ -13,59 +13,15 @@ private const val EARTH_RADIUS_M = 6_371_000.0
 // --- Map viewport geometry ------------------------------------------------------
 //
 // The Karoo map renders 512 px tiles, so ground resolution in metres per pixel is
-// cos(lat) * 40_075_016.686 / (512 * 2^zoom). Karoo 3 display: 480 × 800 px.
+// cos(lat) * 40_075_016.686 / (512 * 2^zoom).
 
 private const val VTM_TILE_SIZE = 512
 private const val EARTH_CIRCUMFERENCE_M = 40_075_016.686
-private const val KAROO3_SCREEN_WIDTH_PX = 480
-private const val KAROO3_SCREEN_HEIGHT_PX = 800
 
 /** Metres per pixel at [lat] degrees latitude and the given VTM [zoomLevel]. */
 internal fun groundResolution(lat: Double, zoomLevel: Double): Double {
     val scale = 2.0.pow(zoomLevel)
     return cos(lat * PI / 180.0) * EARTH_CIRCUMFERENCE_M / (VTM_TILE_SIZE * scale)
-}
-
-/**
- * Computes an axis-aligned viewport bounding box centred on [lat]/[lng] at a given Karoo map
- * [zoomLevel] (range 8.0–18.0, see `OnMapZoomLevel`). Uses the VTM ground resolution and the Karoo
- * 3 screen size for accurate bounds.
- *
- * The bounds are widened by [paddingFactor] on each side so chevrons near the edge don't pop in/out
- * on small pans.
- */
-internal fun mapViewportBounds(
-    lat: Double,
-    lng: Double,
-    zoomLevel: Double,
-    paddingFactor: Double = 1.5,
-): LatLngBounds {
-    val mpp = groundResolution(lat, zoomLevel)
-    // Half-extent in metres, then convert to degrees.
-    val halfWidthM = mpp * KAROO3_SCREEN_WIDTH_PX / 2.0 * paddingFactor
-    val halfHeightM = mpp * KAROO3_SCREEN_HEIGHT_PX / 2.0 * paddingFactor
-    // 1° lat ≈ 111_320 m; 1° lng ≈ 111_320 * cos(lat)
-    val metersPerDegreeLat = 111_320.0
-    val metersPerDegreeLng = 111_320.0 * cos(lat * PI / 180.0)
-    return LatLngBounds(
-        minLat = lat - halfHeightM / metersPerDegreeLat,
-        maxLat = lat + halfHeightM / metersPerDegreeLat,
-        minLng = lng - halfWidthM / metersPerDegreeLng,
-        maxLng = lng + halfWidthM / metersPerDegreeLng,
-    )
-}
-
-/**
- * Map diagonal in metres for the Karoo 3 display at [lat]/[lng] and the given VTM [zoomLevel]. Uses
- * the exact ground resolution to compute the pixel-to-metre mapping, then Pythagoras on the screen
- * dimensions.
- */
-internal fun mapDiagonalMeters(lat: Double, lng: Double, zoomLevel: Double): Double {
-    val mpp = groundResolution(lat, zoomLevel)
-    return mpp *
-        sqrt(
-            (KAROO3_SCREEN_WIDTH_PX.toDouble()).pow(2) + (KAROO3_SCREEN_HEIGHT_PX.toDouble()).pow(2)
-        )
 }
 
 /**
