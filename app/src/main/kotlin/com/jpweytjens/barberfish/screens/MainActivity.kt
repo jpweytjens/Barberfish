@@ -1187,7 +1187,7 @@ class MainActivity : ComponentActivity() {
                     CollapsibleSection(
                         title = "ETA",
                         description = "Time of arrival estimation",
-                        icon = R.drawable.ic_time_to_dest,
+                        icon = R.drawable.ic_finish_flag,
                         expanded = etaExpanded,
                         onToggle = { etaExpanded = !etaExpanded },
                     ) {
