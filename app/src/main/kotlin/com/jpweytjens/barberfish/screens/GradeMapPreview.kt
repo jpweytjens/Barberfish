@@ -119,7 +119,15 @@ internal fun GradeMapPreview(
         drawConnected(routePx, MAP_ROAD_FILL, 6.dp.toPx())
 
         val routeWidth = 5.dp.toPx()
-        drawConnected(routePx, LemonYellow, routeWidth)
+        // On the device the native line's round cap overhangs the route ends inside its own
+        // casing; at preview widths the same overhang reads as a naked yellow blob past the
+        // coloured extent. Pull the underlay's ends in like the overlay chains, so its cap
+        // lands on the true endpoint too.
+        drawConnected(
+            trimEndsPx(routePx, routeWidth / 2f, routeWidth / 2f),
+            LemonYellow,
+            routeWidth,
+        )
 
         // Grade-coloured segments overlay the native yellow line only when polylines are on.
         // Pull each contiguous chain's outer ends in by half the stroke so the round cap
