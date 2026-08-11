@@ -409,7 +409,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "HUD",
-                        description = "Configure the heads-up display",
+                        description = "Slots and layout for the heads-up display",
                         icon = R.drawable.ic_section_hud,
                         expanded = hudExpanded,
                         onToggle = { hudExpanded = !hudExpanded },
@@ -540,7 +540,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "Data fields",
-                        description = "Configure standalone data fields",
+                        description = "Per-field settings for the standalone fields",
                         icon = R.drawable.ic_section_fields,
                         expanded = fieldsExpanded,
                         onToggle = { fieldsExpanded = !fieldsExpanded },
@@ -1153,7 +1153,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "Climbing",
-                        description = "Configure the elevation profile and grade map",
+                        description = "The elevation profile and the grade map overlay",
                         icon = R.drawable.ic_grade,
                         expanded = climbingExpanded,
                         onToggle = { climbingExpanded = !climbingExpanded },
@@ -1186,7 +1186,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "ETA",
-                        description = "Configure time of arrival estimation",
+                        description = "Time of arrival estimation",
                         icon = R.drawable.ic_time_to_dest,
                         expanded = etaExpanded,
                         onToggle = { etaExpanded = !etaExpanded },
