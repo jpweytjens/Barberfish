@@ -54,7 +54,7 @@ jobs:
         run: |
           VERSION="${{ steps.detect_version.outputs.VERSION }}"
           curl -fsSL https://raw.githubusercontent.com/jpweytjens/Betafish/master/CHANGELOG.md > betafish-changelog.md
-          notes=$(awk "/^## $VERSION/{found=1; next} found && /^## /{exit} found{print}" betafish-changelog.md)
+          notes=$(awk "/^## $VERSION/{found=1; next} found && /^## /{exit} found{print}" betafish-changelog.md | sed -e '/./,$!d')
 
           if [[ -z "$(echo "$notes" | tr -d '[:space:]')" ]]; then
             echo "::error::No \"## $VERSION\" section in Betafish's CHANGELOG.md. Push the changelog entry to Betafish first, then re-run."
