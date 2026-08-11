@@ -1208,7 +1208,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "Time",
-                        description = "How time and duration fields format their values",
+                        description = "Format for time and duration fields",
                         icon = R.drawable.ic_stopwatch,
                         expanded = timeExpanded,
                         onToggle = { timeExpanded = !timeExpanded },
