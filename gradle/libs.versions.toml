@@ -5,7 +5,7 @@ targetSdk = "34"
 kotlin = "2.0.20"
 
 [plugins]
-android-application = { id = "com.android.application", version = "8.7.3" }
+android-application = { id = "com.android.application", version = "8.13.2" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
