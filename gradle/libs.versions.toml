@@ -1,6 +1,6 @@
 [versions]
 compileSdk = "36"
-minSdk = "23"
+minSdk = "26"
 targetSdk = "34"
 kotlin = "2.0.20"
 
