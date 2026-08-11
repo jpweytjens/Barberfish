@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
@@ -34,8 +35,10 @@ import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 // Fixed preview "zoom": the fixture's macro band runs are curated to stay comfortably
 // longer than this spacing, so at MEDIUM and HEAVY simplification every coloured run
@@ -165,73 +168,72 @@ private val MAP_ROAD_CASING = Color(0xFF707070)
 private val MAP_ROAD_FILL = Color(0xFFFFFFFF)
 
 // Schematic alpine-topo backdrop drawn entirely in Compose: a meadow-green fill with a
-// scree patch, forest, a valley stream, dashed trails, and stacked contour lines, so the
-// route reads as a hairpin climb on a topo map without being any real place. Deterministic;
-// fractions of the (square) canvas.
+// scree patch, corner forests, a stream from the col, stacked contour lines, and an
+// alpine lake below the pass, so the route reads as an up-and-over pass on a topo map
+// without being any real place. Deterministic; fractions of the (square) canvas.
 private fun DrawScope.drawSyntheticMap() {
     val w = size.width
     val h = size.height
 
     drawRect(MAP_BG)
 
-    // Scree/rock field on the left flank.
+    // Scree/rock field on the upper-left climb flank, below the col.
     drawPath(
         Path().apply {
-            moveTo(0f, 0.18f * h)
-            cubicTo(0.2f * w, 0.26f * h, 0.26f * w, 0.55f * h, 0.16f * w, 0.78f * h)
-            cubicTo(0.1f * w, 0.92f * h, 0.04f * w, 0.96f * h, 0f, h)
-            lineTo(0f, 0.18f * h)
+            moveTo(0f, 0.06f * h)
+            cubicTo(0.14f * w, 0.10f * h, 0.22f * w, 0.28f * h, 0.14f * w, 0.44f * h)
+            cubicTo(0.08f * w, 0.54f * h, 0.03f * w, 0.56f * h, 0f, 0.58f * h)
+            lineTo(0f, 0.06f * h)
             close()
         },
         MAP_SCREE,
     )
 
-    // Forest patches.
+    // Forest patches tucked into the corners, clear of the road.
     drawPath(
         Path().apply {
-            moveTo(0.62f * w, 0f)
+            moveTo(0.88f * w, 0f)
             lineTo(w, 0f)
-            lineTo(w, 0.34f * h)
-            cubicTo(0.86f * w, 0.3f * h, 0.74f * w, 0.16f * h, 0.62f * w, 0f)
+            lineTo(w, 0.20f * h)
+            cubicTo(0.96f * w, 0.16f * h, 0.92f * w, 0.08f * h, 0.88f * w, 0f)
             close()
         },
         MAP_FOREST,
     )
     drawPath(
         Path().apply {
-            moveTo(0.74f * w, h)
-            lineTo(w, h)
-            lineTo(w, 0.66f * h)
-            cubicTo(0.9f * w, 0.74f * h, 0.8f * w, 0.86f * h, 0.74f * w, h)
+            moveTo(0f, 0.74f * h)
+            cubicTo(0.06f * w, 0.80f * h, 0.10f * w, 0.90f * h, 0.14f * w, h)
+            lineTo(0f, h)
             close()
         },
         MAP_FOREST,
     )
 
-    // A few contour lines bowing into the central valley the hairpins climb. Kept sparse
+    // A few contour lines bowing into the valley between the two flanks. Kept sparse
     // and within the square so they read as topo without crowding the route.
     val contourStroke = Stroke(width = 1.dp.toPx())
     val n = 8
     for (i in 0 until n) {
         val y = (i + 0.5f) / n * 0.92f + 0.04f
-        val dip = 0.04f + 0.012f * ((i + 1) % 3)
-        val bias = 0.5f + 0.04f * ((i % 4) - 1.5f)
+        val dip = 0.05f + 0.012f * ((i + 1) % 3)
+        val bias = 0.55f + 0.03f * ((i % 4) - 1.5f)
         drawPath(
             Path().apply {
                 moveTo(0f, y * h)
                 cubicTo(
-                    0.28f * w,
-                    (y - 0.012f) * h,
-                    (bias - 0.1f) * w,
+                    0.22f * w,
+                    (y - 0.018f) * h,
+                    (bias - 0.14f) * w,
                     (y + dip) * h,
                     bias * w,
                     (y + dip) * h,
                 )
                 cubicTo(
-                    (bias + 0.12f) * w,
+                    (bias + 0.14f) * w,
                     (y + dip) * h,
-                    0.78f * w,
-                    (y - 0.015f) * h,
+                    0.82f * w,
+                    (y - 0.018f) * h,
                     w,
                     y * h,
                 )
@@ -241,16 +243,18 @@ private fun DrawScope.drawSyntheticMap() {
         )
     }
 
-    // Valley stream snaking up the corridor.
+    // Stream from the col valley down to the lake snout.
     drawPath(
         Path().apply {
-            moveTo(0.34f * w, h)
-            cubicTo(0.3f * w, 0.8f * h, 0.42f * w, 0.66f * h, 0.36f * w, 0.5f * h)
-            cubicTo(0.32f * w, 0.36f * h, 0.4f * w, 0.2f * h, 0.34f * w, 0f)
+            moveTo(0.53f * w, 0.10f * h)
+            cubicTo(0.60f * w, 0.30f * h, 0.52f * w, 0.52f * h, 0.60f * w, 0.68f * h)
+            cubicTo(0.66f * w, 0.78f * h, 0.72f * w, 0.82f * h, 0.74f * w, 0.87f * h)
         },
         MAP_WATER,
         style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
     )
+
+    drawBarberfishLake(w, h)
 
     // Dashed trails (offline.xml draws footways as dashed lines).
     val trailStroke =
@@ -261,16 +265,79 @@ private fun DrawScope.drawSyntheticMap() {
     for (trail in
         listOf(
             Path().apply {
-                moveTo(0.04f * w, 0.2f * h)
-                cubicTo(0.22f * w, 0.34f * h, 0.16f * w, 0.6f * h, 0.26f * w, 0.82f * h)
+                moveTo(0.04f * w, 0.30f * h)
+                cubicTo(0.16f * w, 0.44f * h, 0.10f * w, 0.62f * h, 0.20f * w, 0.80f * h)
             },
             Path().apply {
-                moveTo(w, 0.5f * h)
-                cubicTo(0.84f * w, 0.56f * h, 0.78f * w, 0.74f * h, 0.66f * w, 0.9f * h)
+                moveTo(w, 0.30f * h)
+                cubicTo(0.94f * w, 0.42f * h, 0.96f * w, 0.58f * h, 0.90f * w, 0.72f * h)
             },
         )) {
         drawPath(trail, MAP_TRAIL, style = trailStroke)
     }
+}
+
+// Alpine lake below the pass, its shoreline a barberfish (blacknose butterflyfish)
+// silhouette with a small islet as the eye. Local coordinates (x right, y up), nose
+// at -x, unit length 1.0 nose-to-tail; scaled by the lake length and rotated so the
+// snout points at the route's end. Reads as a lake first; not a real place.
+private val FISH_OUTLINE =
+    listOf(
+        -0.50f to -0.02f, // snout tip
+        -0.42f to 0.06f,
+        -0.30f to 0.17f, // steep forehead
+        -0.12f to 0.26f,
+        0.05f to 0.28f, // dorsal peak
+        0.20f to 0.22f,
+        0.30f to 0.10f, // upper peduncle
+        0.36f to 0.06f,
+        0.47f to 0.09f, // small truncate tail
+        0.50f to 0.00f,
+        0.47f to -0.09f,
+        0.36f to -0.06f,
+        0.28f to -0.13f,
+        0.22f to -0.22f, // anal fin corner
+        0.05f to -0.26f,
+        -0.15f to -0.22f,
+        -0.30f to -0.13f,
+        -0.44f to -0.06f,
+    )
+
+private const val LAKE_ROTATION_DEG = 188.0
+
+private fun DrawScope.drawBarberfishLake(w: Float, h: Float) {
+    val cx = 0.63f * w
+    val cy = 0.89f * h
+    val len = 0.23f * w
+    val cosT = cos(Math.toRadians(LAKE_ROTATION_DEG)).toFloat()
+    val sinT = sin(Math.toRadians(LAKE_ROTATION_DEG)).toFloat()
+    // Rotate in local y-up coordinates, then flip to canvas y-down.
+    fun local(fx: Float, fy: Float): Offset {
+        val rx = fx * cosT - fy * sinT
+        val ry = fx * sinT + fy * cosT
+        return Offset(cx + rx * len, cy - ry * len)
+    }
+    drawPath(
+        Path().apply {
+            val first = local(FISH_OUTLINE[0].first, FISH_OUTLINE[0].second)
+            moveTo(first.x, first.y)
+            for ((fx, fy) in FISH_OUTLINE.drop(1)) {
+                val p = local(fx, fy)
+                lineTo(p.x, p.y)
+            }
+            close()
+        },
+        MAP_WATER,
+    )
+    // Islet eye: small ellipse, stretched 1.3x horizontally. The 188-degree rotation is
+    // near enough to 180 that an axis-aligned oval passes for the rotated ellipse.
+    val eye = local(-0.30f, 0.07f)
+    val eyeR = 0.035f * len
+    drawOval(
+        MAP_BG,
+        topLeft = Offset(eye.x - eyeR * 1.3f, eye.y - eyeR),
+        size = Size(eyeR * 2.6f, eyeR * 2f),
+    )
 }
 
 private fun DrawScope.drawConnected(points: List<Offset>, color: Color, widthPx: Float) {
