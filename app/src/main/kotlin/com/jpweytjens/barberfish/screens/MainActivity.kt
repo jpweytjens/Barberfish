@@ -311,7 +311,8 @@ class MainActivity : ComponentActivity() {
         var hudExpanded by remember { mutableStateOf(false) }
         var climbingExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
-        var globalExpanded by remember { mutableStateOf(false) }
+        var palettesExpanded by remember { mutableStateOf(false) }
+        var timeExpanded by remember { mutableStateOf(false) }
         var designExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
@@ -1162,24 +1163,12 @@ class MainActivity : ComponentActivity() {
                     }
 
                     CollapsibleSection(
-                        title = "Global",
-                        description =
-                            "Color palettes and time format shared across all data fields",
-                        icon = R.drawable.ic_section_global,
-                        expanded = globalExpanded,
-                        onToggle = { globalExpanded = !globalExpanded },
+                        title = "Palettes",
+                        description = "Zone and grade color palettes",
+                        icon = R.drawable.ic_section_palette,
+                        expanded = palettesExpanded,
+                        onToggle = { palettesExpanded = !palettesExpanded },
                     ) {
-                        ControlLabel("TIME FIELDS")
-                        TimeFormatPills(
-                            selected = timeConfig.format,
-                            onSelected = { format ->
-                                timeConfig = TimeConfig(format)
-                                lifecycleScope.launch { saveTimeConfig(timeConfig) }
-                            },
-                        )
-                        TimeFormatPreview(format = timeConfig.format)
-
-                        ControlLabel("ZONE COLORS")
                         EnumDropdown(
                             title = "Power zones",
                             entries = ZonePalette.entries,
@@ -1215,7 +1204,24 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                         GradePalettePreview(palette = zoneConfig.gradePalette)
-                    } // end Global
+                    } // end Palettes
+
+                    CollapsibleSection(
+                        title = "Time",
+                        description = "How time and duration fields format their values",
+                        icon = R.drawable.ic_stopwatch,
+                        expanded = timeExpanded,
+                        onToggle = { timeExpanded = !timeExpanded },
+                    ) {
+                        TimeFormatPills(
+                            selected = timeConfig.format,
+                            onSelected = { format ->
+                                timeConfig = TimeConfig(format)
+                                lifecycleScope.launch { saveTimeConfig(timeConfig) }
+                            },
+                        )
+                        TimeFormatPreview(format = timeConfig.format)
+                    } // end Time
                     CollapsibleSection(
                         title = "Data Field Design",
                         description =
