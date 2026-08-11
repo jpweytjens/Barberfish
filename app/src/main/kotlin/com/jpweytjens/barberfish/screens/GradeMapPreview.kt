@@ -37,11 +37,11 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import kotlin.math.hypot
 import kotlin.math.roundToInt
 
-// Fixed preview "zoom": tight enough that every coloured run in the fixture contains a
-// cadence position at MILD/MEDIUM/HEAVY simplification, wide enough that chevrons don't
-// overlap at the middle-section crop. At ElevationSimplification.NONE the fixture cuts into
-// far more, much shorter runs and most of those are bare (no cadence position lands inside
-// them) — the same as how the field renders on the device, which carries no such guarantee
+// Fixed preview "zoom": the fixture's macro band runs are curated to stay comfortably
+// longer than this spacing, so at MEDIUM and HEAVY simplification every coloured run
+// contains a cadence position and shows a chevron. At NONE and MILD the texture tiers
+// cut in far shorter runs and some go bare (no cadence position lands inside them) —
+// the same as how the field renders on the device, which carries no per-run guarantee
 // either.
 private const val PREVIEW_CHEVRON_SPACING_M = 150.0
 
