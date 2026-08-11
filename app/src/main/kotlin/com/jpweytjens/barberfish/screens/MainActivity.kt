@@ -364,6 +364,50 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     CollapsibleSection(
+                        title = "Palettes",
+                        description = "Zone and grade color palettes",
+                        icon = R.drawable.ic_section_palette,
+                        expanded = palettesExpanded,
+                        onToggle = { palettesExpanded = !palettesExpanded },
+                    ) {
+                        EnumDropdown(
+                            title = "Power zones",
+                            entries = ZonePalette.entries,
+                            selected = zoneConfig.powerPalette,
+                            label = ::zonePaletteLabel,
+                            onSelected = { palette ->
+                                zoneConfig = zoneConfig.copy(powerPalette = palette)
+                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                            },
+                        )
+                        ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
+
+                        EnumDropdown(
+                            title = "HR zones",
+                            entries = ZonePalette.entries,
+                            selected = zoneConfig.hrPalette,
+                            label = ::zonePaletteLabel,
+                            onSelected = { palette ->
+                                zoneConfig = zoneConfig.copy(hrPalette = palette)
+                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                            },
+                        )
+                        ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
+
+                        EnumDropdown(
+                            title = "Grade",
+                            entries = GradePalette.entries,
+                            selected = zoneConfig.gradePalette,
+                            label = { it.label },
+                            onSelected = { palette ->
+                                zoneConfig = zoneConfig.copy(gradePalette = palette)
+                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
+                            },
+                        )
+                        GradePalettePreview(palette = zoneConfig.gradePalette)
+                    } // end Palettes
+
+                    CollapsibleSection(
                         title = "HUD",
                         description = "Configure the heads-up display",
                         icon = R.drawable.ic_section_hud,
@@ -1161,50 +1205,6 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                     }
-
-                    CollapsibleSection(
-                        title = "Palettes",
-                        description = "Zone and grade color palettes",
-                        icon = R.drawable.ic_section_palette,
-                        expanded = palettesExpanded,
-                        onToggle = { palettesExpanded = !palettesExpanded },
-                    ) {
-                        EnumDropdown(
-                            title = "Power zones",
-                            entries = ZonePalette.entries,
-                            selected = zoneConfig.powerPalette,
-                            label = ::zonePaletteLabel,
-                            onSelected = { palette ->
-                                zoneConfig = zoneConfig.copy(powerPalette = palette)
-                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                            },
-                        )
-                        ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
-
-                        EnumDropdown(
-                            title = "HR zones",
-                            entries = ZonePalette.entries,
-                            selected = zoneConfig.hrPalette,
-                            label = ::zonePaletteLabel,
-                            onSelected = { palette ->
-                                zoneConfig = zoneConfig.copy(hrPalette = palette)
-                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                            },
-                        )
-                        ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
-
-                        EnumDropdown(
-                            title = "Grade",
-                            entries = GradePalette.entries,
-                            selected = zoneConfig.gradePalette,
-                            label = { it.label },
-                            onSelected = { palette ->
-                                zoneConfig = zoneConfig.copy(gradePalette = palette)
-                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                            },
-                        )
-                        GradePalettePreview(palette = zoneConfig.gradePalette)
-                    } // end Palettes
 
                     CollapsibleSection(
                         title = "Time",
