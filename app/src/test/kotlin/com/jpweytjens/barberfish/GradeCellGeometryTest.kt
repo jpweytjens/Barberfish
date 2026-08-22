@@ -4,6 +4,7 @@ import com.jpweytjens.barberfish.datatype.shared.FlatGrey
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.GradePalette
+import com.jpweytjens.barberfish.screens.EdgeStop
 import com.jpweytjens.barberfish.screens.GRADE_AXIS_MAX
 import com.jpweytjens.barberfish.screens.GRADE_AXIS_MIN
 import com.jpweytjens.barberfish.screens.GRADE_EDGE_OFF
@@ -14,6 +15,8 @@ import com.jpweytjens.barberfish.screens.descentEdgeStops
 import com.jpweytjens.barberfish.screens.gradeCells
 import com.jpweytjens.barberfish.screens.gradeTickStops
 import com.jpweytjens.barberfish.screens.nearestEdgeStop
+import com.jpweytjens.barberfish.screens.reachableClimbStops
+import com.jpweytjens.barberfish.screens.reachableDescentStops
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -116,5 +119,23 @@ class GradeCellGeometryTest {
         val runs =
             barRuns(GradePalette.KAROO, climbEdge = 0.0, descentEdge = null, neutral = FlatGrey)
         assertTrue(runs.none { it.color == FlatGrey || it.color == null })
+    }
+
+    @Test
+    fun reachable_stops_are_bounded_by_the_other_handle() {
+        val climbAll = climbEdgeStops(GradePalette.BARBERFISH)
+        val descentAll = descentEdgeStops(GradePalette.BARBERFISH)
+        // Today's stops all sit on their own side, so nothing is filtered out: the meet
+        // constraint only bites once crossover stops exist.
+        val climbInner = nearestEdgeStop(climbAll, 2.0)
+        assertEquals(descentAll, reachableDescentStops(descentAll, climbInner))
+        val descentInner = nearestEdgeStop(descentAll, -2.0)
+        assertEquals(climbAll, reachableClimbStops(climbAll, descentInner))
+        // A null descent selection (one-sided palette) filters nothing either.
+        assertEquals(climbAll, reachableClimbStops(climbAll, null))
+        // The bound itself: a synthetic stop past the other handle is dropped, a stop at the
+        // handle survives (handles may meet, never cross).
+        val crossed = descentAll + EdgeStop(3.0, 3.0)
+        assertEquals(descentAll, reachableDescentStops(crossed, climbInner))
     }
 }

@@ -203,6 +203,19 @@ internal fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
 }
 
 /**
+ * The stops a side may reach without passing the other handle. Handles may meet (a shared position
+ * colours everything, the two half-lines overlap) but never cross. Off sits at the axis end caps,
+ * always on its own side of any selection, so it always survives.
+ */
+internal fun reachableClimbStops(stops: List<EdgeStop>, descentSel: EdgeStop?): List<EdgeStop> =
+    if (descentSel == null) stops else stops.filter { it.axisGrade >= descentSel.axisGrade }
+
+internal fun reachableDescentStops(stops: List<EdgeStop>, climbSel: EdgeStop): List<EdgeStop> =
+    stops.filter {
+        it.axisGrade <= climbSel.axisGrade
+    }
+
+/**
  * The merged emphasis instrument: the band bar is the slider. Handles sit on the bar, snap to the
  * palette's stops, and park at the end caps for Off. [neutral] is what the surface being configured
  * paints inside the edges; null means it paints nothing (the Profile), rendered as an outlined
@@ -235,10 +248,15 @@ internal fun GradeBandSlider(
 
     val bands = gradeBands(palette, readable = false)
     val cells = gradeCells(bands)
-    val climbStops = climbEdgeStops(palette)
-    val descentStops = descentEdgeStops(palette).takeIf { it.size > 1 }
-    val climbSel = nearestEdgeStop(climbStops, climbEdge)
+    // Climb resolves first, from the full stop list, then bounds the descent side: a crossed
+    // stored pair (hand-edited DataStore, version skew) normalizes into a legal meet instead
+    // of crossed handles. Climb-first is arbitrary but deterministic.
+    val climbStopsAll = climbEdgeStops(palette)
+    val descentStopsAll = descentEdgeStops(palette).takeIf { it.size > 1 }
+    val climbSel = nearestEdgeStop(climbStopsAll, climbEdge)
+    val descentStops = descentStopsAll?.let { reachableDescentStops(it, climbSel) }
     val descentSel = descentStops?.let { nearestEdgeStop(it, descentEdge) }
+    val climbStops = reachableClimbStops(climbStopsAll, descentSel)
     val coincident = descentSel != null && descentSel.axisGrade == climbSel.axisGrade
     val runs = barRuns(palette, climbSel.edge, descentSel?.edge, neutral)
 
@@ -249,6 +267,8 @@ internal fun GradeBandSlider(
     val currentClimbEdge by rememberUpdatedState(climbEdge)
     val currentDescentEdge by rememberUpdatedState(descentEdge)
     val currentOnEdgesChange by rememberUpdatedState(onEdgesChange)
+    val currentClimbStops by rememberUpdatedState(climbStops)
+    val currentDescentStops by rememberUpdatedState(descentStops)
 
     val gesture =
         if (!enabled) Modifier
@@ -260,7 +280,7 @@ internal fun GradeBandSlider(
                 fun select(onDescentSide: Boolean, x: Float) {
                     val grade = gradeAt(x)
                     if (onDescentSide) {
-                        val stops = descentStops ?: return
+                        val stops = currentDescentStops ?: return
                         val hit = stops.minBy { abs(it.axisGrade - grade) }
                         if (hit.edge != currentDescentSel?.edge) {
                             // The climb side didn't move: report its raw incoming edge
@@ -269,7 +289,7 @@ internal fun GradeBandSlider(
                             currentOnEdgesChange(currentClimbEdge ?: currentClimbSel.edge, hit.edge)
                         }
                     } else {
-                        val hit = climbStops.minBy { abs(it.axisGrade - grade) }
+                        val hit = currentClimbStops.minBy { abs(it.axisGrade - grade) }
                         if (hit.edge != currentClimbSel.edge) {
                             // Same for the descent side here: pass its raw edge through.
                             currentOnEdgesChange(hit.edge, currentDescentEdge)
@@ -288,12 +308,12 @@ internal fun GradeBandSlider(
                     val ambiguous =
                         descSel != null &&
                             descSel.axisGrade == currentClimbSel.axisGrade &&
-                            climbStops.minBy { abs(it.axisGrade - grade) }.axisGrade ==
+                            currentClimbStops.minBy { abs(it.axisGrade - grade) }.axisGrade ==
                                 currentClimbSel.axisGrade &&
-                            descentStops?.minBy { abs(it.axisGrade - grade) }?.axisGrade ==
+                            currentDescentStops?.minBy { abs(it.axisGrade - grade) }?.axisGrade ==
                                 currentClimbSel.axisGrade
                     var onDescentSide: Boolean? =
-                        if (ambiguous) null else descentStops != null && grade < 0.0
+                        if (ambiguous) null else currentDescentStops != null && grade < 0.0
                     onDescentSide?.let { select(it, down.position.x) }
                     var event = awaitPointerEvent()
                     while (event.changes.any { it.pressed }) {
