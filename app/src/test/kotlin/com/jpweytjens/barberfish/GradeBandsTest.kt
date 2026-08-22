@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
+import com.jpweytjens.barberfish.datatype.shared.zeroStraddlingBand
 import com.jpweytjens.barberfish.extension.GradePalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -306,5 +307,21 @@ class GradeBandsTest {
             lime,
             gradeBandColor(0.0, GradePalette.TURBO, 0.0, null, NEUTRAL, readable = false),
         )
+    }
+
+    // One lookup answers "does this palette have a designed rest state": mapNeutral paints its
+    // colour, and the selector's crossover stops sit at its far edges, so they cannot disagree.
+
+    @Test
+    fun the_zero_straddling_band_is_barberfish_flat_and_absent_elsewhere() {
+        val flat = zeroStraddlingBand(GradePalette.BARBERFISH, readable = false)
+        assertEquals(-2.0, flat?.lo)
+        assertEquals(2.0, flat?.hi)
+        assertEquals(Color(0xFF92B4A5), flat?.color)
+        GradePalette.entries
+            .filter { it != GradePalette.BARBERFISH }
+            .forEach { palette ->
+                assertNull("$palette", zeroStraddlingBand(palette, readable = false))
+            }
     }
 }
