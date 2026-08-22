@@ -80,7 +80,7 @@ The HUD strip and the Profile field carry the same settings, kept separately per
 | Setting | Options | Effect |
 | --- | --- | --- |
 | Lookahead | 5 / 10 / 20 km | Distance shown ahead of your position. Tapping the profile cycles it. |
-| Emphasis | Handles on the palette bar | Color starts at each handle's grade; gentler grades stay uncolored so meaningful climbs stand out. Parking a handle at the end of the bar turns that side off. Climb and descent handles are separate when the palette colors descents. |
+| Emphasis | Handles on the palette bar | Color starts at each handle's grade; gentler grades stay uncolored so meaningful climbs stand out. Parking a handle at the end of the bar turns that side off. On palettes with a flat band spanning zero, dragging a handle past the flat band colors it too, so every color in the palette can be shown. Climb and descent handles are separate when the palette colors descents. |
 | Simplification | Off / Mild / Medium / Max | Merges small elevation wiggles into larger same-color blocks. |
 | X-warp | Off / Mild / Medium / Max | Fisheye magnification around the dot: nearby road gets more pixels, distant road fewer. |
 | Y-zoom | Close / Normal / Wide | Zoom on elevation changes. Close amplifies minor bumps, Wide smooths them out. |
