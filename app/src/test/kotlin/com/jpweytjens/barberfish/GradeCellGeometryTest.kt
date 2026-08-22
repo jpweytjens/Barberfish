@@ -79,9 +79,10 @@ class GradeCellGeometryTest {
         // Turbo's bands meet at a 0 edge: both sides gain it.
         assertEquals(0.0, climbEdgeStops(GradePalette.TURBO).first().axisGrade, 0.0)
         assertEquals(0.0, descentEdgeStops(GradePalette.TURBO).last().axisGrade, 0.0)
-        // Barberfish's flat band straddles zero: no 0 stop on either side.
-        assertEquals(2.0, climbEdgeStops(GradePalette.BARBERFISH).first().axisGrade, 0.0)
-        assertEquals(-2.0, descentEdgeStops(GradePalette.BARBERFISH).last().axisGrade, 0.0)
+        // Barberfish's flat band straddles zero: no 0 stop on either side, the crossover
+        // stops at its far edges instead.
+        assertTrue(climbEdgeStops(GradePalette.BARBERFISH).none { it.axisGrade == 0.0 })
+        assertTrue(descentEdgeStops(GradePalette.BARBERFISH).none { it.axisGrade == 0.0 })
     }
 
     @Test
@@ -190,5 +191,53 @@ class GradeCellGeometryTest {
     fun press_on_a_one_sided_palette_is_always_climb() {
         val climbStops = climbEdgeStops(GradePalette.KAROO)
         assertEquals(false, pressSide(-8.0, climbStops.first(), null, climbStops, null))
+    }
+
+    @Test
+    fun crossover_stops_sit_at_the_flat_bands_far_edges() {
+        val climb = climbEdgeStops(GradePalette.BARBERFISH)
+        assertEquals(EdgeStop(-2.0, -2.0), climb.first())
+        assertEquals(
+            listOf(-2.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0, 25.0),
+            climb.map { it.axisGrade },
+        )
+        val descent = descentEdgeStops(GradePalette.BARBERFISH)
+        assertEquals(EdgeStop(2.0, 2.0), descent.last())
+        assertEquals(listOf(-15.0, -10.0, -6.0, -2.0, 2.0), descent.map { it.axisGrade })
+    }
+
+    @Test
+    fun zero_edge_palettes_gain_no_crossover_stops() {
+        assertEquals(
+            listOf(0.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0, 25.0),
+            climbEdgeStops(GradePalette.KAROO).map { it.axisGrade },
+        )
+        assertEquals(
+            listOf(-15.0, -9.0, -6.0, -3.0, 0.0),
+            descentEdgeStops(GradePalette.TURBO).map { it.axisGrade },
+        )
+    }
+
+    @Test
+    fun a_stored_zero_tie_snaps_toward_off() {
+        // 0.0 sits exactly between the crossover and the innermost stop on both sides; the
+        // conservative pick (nearer Off) colours less and keeps migrated configs stable.
+        assertEquals(2.0, nearestEdgeStop(climbEdgeStops(GradePalette.BARBERFISH), 0.0).edge, 0.0)
+        assertEquals(
+            -2.0,
+            nearestEdgeStop(descentEdgeStops(GradePalette.BARBERFISH), 0.0).edge,
+            0.0,
+        )
+    }
+
+    @Test
+    fun a_crossed_stored_pair_resolves_into_a_meet() {
+        // climb stored at -2, descent stored at +2: climb resolves first, the descent side is
+        // bounded by it, and the pair displays as a meet at -2 instead of crossed handles.
+        val climbSel = nearestEdgeStop(climbEdgeStops(GradePalette.BARBERFISH), -2.0)
+        val descentStops =
+            reachableDescentStops(descentEdgeStops(GradePalette.BARBERFISH), climbSel)
+        assertTrue(descentStops.none { it.axisGrade > climbSel.axisGrade })
+        assertEquals(-2.0, nearestEdgeStop(descentStops, 2.0).axisGrade, 0.0)
     }
 }
