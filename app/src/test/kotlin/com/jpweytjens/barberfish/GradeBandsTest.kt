@@ -435,4 +435,47 @@ class GradeBandsTest {
             )
         assertEquals(sentinel, c)
     }
+
+    // Stored edges survive a palette switch un-snapped, so a crossover edge from Barberfish
+    // can reach gradeBandColor under a palette with no crossover. The clamp keeps it from
+    // colouring across zero there: the old sign-split behaviour, byte for byte.
+
+    @Test
+    fun stale_crossover_edges_do_not_leak_across_zero() {
+        val sentinel = Color(0xFF123456)
+        // Descent edge +2 under Karoo: (0, 2] stays neutral.
+        listOf(0.5, 2.0).forEach { grade ->
+            val c =
+                gradeBandColor(
+                    grade = grade,
+                    palette = GradePalette.KAROO,
+                    climbEdge = null,
+                    descentEdge = 2.0,
+                    neutral = sentinel,
+                    readable = false,
+                )
+            assertEquals("grade $grade", sentinel, c)
+        }
+        // Climb edge -2 under Turbo: [-2, 0) stays neutral, the positive side still colours.
+        val negative =
+            gradeBandColor(
+                grade = -1.0,
+                palette = GradePalette.TURBO,
+                climbEdge = -2.0,
+                descentEdge = null,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(sentinel, negative)
+        val positive =
+            gradeBandColor(
+                grade = 1.0,
+                palette = GradePalette.TURBO,
+                climbEdge = -2.0,
+                descentEdge = null,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertNotEquals(sentinel, positive)
+    }
 }

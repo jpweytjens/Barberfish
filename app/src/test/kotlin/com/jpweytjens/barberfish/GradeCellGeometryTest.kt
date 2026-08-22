@@ -127,8 +127,9 @@ class GradeCellGeometryTest {
     fun reachable_stops_are_bounded_by_the_other_handle() {
         val climbAll = climbEdgeStops(GradePalette.BARBERFISH)
         val descentAll = descentEdgeStops(GradePalette.BARBERFISH)
-        // Today's stops all sit on their own side, so nothing is filtered out: the meet
-        // constraint only bites once crossover stops exist.
+        // The selections sit at the innermost stops, so the far-edge crossover stops
+        // survive exactly as meets: the filters drop only stops strictly past the other
+        // handle.
         val climbInner = nearestEdgeStop(climbAll, 2.0)
         assertEquals(descentAll, reachableDescentStops(descentAll, climbInner))
         val descentInner = nearestEdgeStop(descentAll, -2.0)
@@ -239,5 +240,13 @@ class GradeCellGeometryTest {
             reachableDescentStops(descentEdgeStops(GradePalette.BARBERFISH), climbSel)
         assertTrue(descentStops.none { it.axisGrade > climbSel.axisGrade })
         assertEquals(-2.0, nearestEdgeStop(descentStops, 2.0).axisGrade, 0.0)
+    }
+
+    @Test
+    fun off_survives_the_tightest_reachable_filter() {
+        // nearestEdgeStop looks Off up unconditionally, so the filters must never drop it.
+        val climbSel = nearestEdgeStop(climbEdgeStops(GradePalette.BARBERFISH), -2.0)
+        val reachable = reachableDescentStops(descentEdgeStops(GradePalette.BARBERFISH), climbSel)
+        assertTrue(reachable.any { it.edge == -GRADE_EDGE_OFF })
     }
 }

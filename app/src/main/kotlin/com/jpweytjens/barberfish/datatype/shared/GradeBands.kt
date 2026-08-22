@@ -368,8 +368,16 @@ internal fun gradeBandColor(
     // hi) reaches across zero, so each side is a plain half-line. The Off sentinels stay
     // inert (no real grade reaches +-Double.MAX_VALUE), and exactly 0.0 needs no special
     // case: it is coloured iff an edge at or across zero claims it.
-    val coloured =
-        (climbEdge != null && grade >= climbEdge) || (descentEdge != null && grade <= descentEdge)
+    //
+    // Stored edges are palette-independent and go stale on a palette switch, so a crossover
+    // edge from a zero-straddling palette must not reach across zero anywhere else. Clamp
+    // each side to this palette's own fully-on limit: a no-op for every edge this palette's
+    // stops can produce, and exactly the old sign-split behaviour for stale cross-zero
+    // values.
+    val flat = zeroStraddlingBand(palette, readable, isNightMode)
+    val climb = climbEdge?.coerceAtLeast(flat?.lo ?: 0.0)
+    val descent = descentEdge?.coerceAtMost(flat?.hi ?: 0.0)
+    val coloured = (climb != null && grade >= climb) || (descent != null && grade <= descent)
     if (!coloured) return neutral
     if (grade < gradeFloor(palette, readable, isNightMode)) return neutral
     val band =
