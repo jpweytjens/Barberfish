@@ -354,3 +354,30 @@ length 115810 m.
 
 Still unverified: whether `rejoinDistance` and `Symbol.POI.distancesAlongRoute`
 follow saved order or ride order.
+
+---
+
+## Map symbol lifecycle: what survives what
+
+Confirmed empirically on a Karoo 3 (rideapp 4.x, 2026-08-22) by force-stopping
+the extension mid-ride and comparing painted symbols against emissions:
+
+- Drawn extension symbols and polylines survive extension process death and
+  `startMap` cancel/restart cycles. The rideapp keeps them painted; a fresh
+  `startMap` that does not re-mint an id leaves that symbol on the map until
+  ride end with nothing able to hide it.
+- Ride end clears all extension symbols. Ghosting across rides does not occur.
+- `startMap` is not cancelled by paging between ride pages. It is cancelled
+  when the rideapp loses the foreground (and a new `startMap` arrives on
+  return) and at ride end.
+- `ShowPolyline` with an existing id replaces that polyline in place.
+- `HideSymbols` for an id emitted just before `ShowSymbols` for the same id
+  can be processed after it, permanently blanking the symbol. Large paired
+  hide/show batches (about 160 ids and up) lost every chevron reproducibly.
+  Never hide an id in the same emission that shows it; only hide ids nothing
+  is about to show.
+
+`GradeMapChevronController.assumeStale` and the persisted
+`GradeMapDrawnIdSpans` exist because of the first and last points: a fresh
+`startMap` folds the previous generation's id range into its first diff
+instead of emitting an up-front hide.
