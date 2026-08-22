@@ -15,6 +15,7 @@ import com.jpweytjens.barberfish.screens.descentEdgeStops
 import com.jpweytjens.barberfish.screens.gradeCells
 import com.jpweytjens.barberfish.screens.gradeTickStops
 import com.jpweytjens.barberfish.screens.nearestEdgeStop
+import com.jpweytjens.barberfish.screens.pressSide
 import com.jpweytjens.barberfish.screens.reachableClimbStops
 import com.jpweytjens.barberfish.screens.reachableDescentStops
 import org.junit.Assert.assertEquals
@@ -137,5 +138,57 @@ class GradeCellGeometryTest {
         // handle survives (handles may meet, never cross).
         val crossed = descentAll + EdgeStop(3.0, 3.0)
         assertEquals(descentAll, reachableDescentStops(crossed, climbInner))
+    }
+
+    // pressSide with hand-built stops, so these hold before and after crossover stops exist.
+    // Climb at -2 (crossover), descent at -6: the press must grab by proximity, not sign.
+
+    @Test
+    fun press_grabs_the_side_whose_snap_target_is_nearest() {
+        val climbStops =
+            listOf(
+                EdgeStop(-2.0, -2.0),
+                EdgeStop(2.0, 2.0),
+                EdgeStop(GRADE_AXIS_MAX, GRADE_EDGE_OFF),
+            )
+        val descentStops =
+            listOf(
+                EdgeStop(GRADE_AXIS_MIN, -GRADE_EDGE_OFF),
+                EdgeStop(-10.0, -10.0),
+                EdgeStop(-6.0, -6.0),
+                EdgeStop(-2.0, -2.0),
+            )
+        val climbSel = climbStops[0]
+        val descentSel = descentStops[2]
+        // -5 is nearest the -6 descent stop: descent side, despite the climb handle at -2.
+        assertEquals(true, pressSide(-5.0, climbSel, descentSel, climbStops, descentStops))
+        // -3 ties between the -2 stops on both sides; the nearer handle (climb, at -2) wins.
+        assertEquals(false, pressSide(-3.0, climbSel, descentSel, climbStops, descentStops))
+        // A press in climb territory stays climb.
+        assertEquals(false, pressSide(1.0, climbSel, descentSel, climbStops, descentStops))
+    }
+
+    @Test
+    fun press_on_coincident_handles_defers_to_movement() {
+        val climbStops =
+            listOf(EdgeStop(0.0, 0.0), EdgeStop(3.0, 3.0), EdgeStop(GRADE_AXIS_MAX, GRADE_EDGE_OFF))
+        val descentStops =
+            listOf(
+                EdgeStop(GRADE_AXIS_MIN, -GRADE_EDGE_OFF),
+                EdgeStop(-3.0, -3.0),
+                EdgeStop(0.0, 0.0),
+            )
+        val shared = EdgeStop(0.0, 0.0)
+        // On the shared stop both sides tie completely: no side is named.
+        assertNull(pressSide(0.0, shared, shared, climbStops, descentStops))
+        // Away from it, tap-to-set still names the side that can reach the press.
+        assertEquals(false, pressSide(2.0, shared, shared, climbStops, descentStops))
+        assertEquals(true, pressSide(-2.0, shared, shared, climbStops, descentStops))
+    }
+
+    @Test
+    fun press_on_a_one_sided_palette_is_always_climb() {
+        val climbStops = climbEdgeStops(GradePalette.KAROO)
+        assertEquals(false, pressSide(-8.0, climbStops.first(), null, climbStops, null))
     }
 }

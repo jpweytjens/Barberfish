@@ -216,6 +216,29 @@ internal fun reachableDescentStops(stops: List<EdgeStop>, climbSel: EdgeStop): L
     }
 
 /**
+ * The side a press grabs: false climb, true descent, null undecided (the first horizontal movement
+ * names it). The side whose nearest reachable stop is closest to the press wins, which keeps
+ * tap-to-set working wherever only one side can reach; on a stop tie the nearer handle wins, so a
+ * press beside a handle grabs it; on a full tie (coincident handles) no side is named.
+ */
+internal fun pressSide(
+    grade: Double,
+    climbSel: EdgeStop,
+    descentSel: EdgeStop?,
+    climbStops: List<EdgeStop>,
+    descentStops: List<EdgeStop>?,
+): Boolean? {
+    if (descentSel == null || descentStops == null) return false
+    val climbHit = abs(climbStops.minBy { abs(it.axisGrade - grade) }.axisGrade - grade)
+    val descentHit = abs(descentStops.minBy { abs(it.axisGrade - grade) }.axisGrade - grade)
+    if (descentHit != climbHit) return descentHit < climbHit
+    val climbHandle = abs(climbSel.axisGrade - grade)
+    val descentHandle = abs(descentSel.axisGrade - grade)
+    if (descentHandle != climbHandle) return descentHandle < climbHandle
+    return null
+}
+
+/**
  * The merged emphasis instrument: the band bar is the slider. Handles sit on the bar, snap to the
  * palette's stops, and park at the end caps for Off. [neutral] is what the surface being configured
  * paints inside the edges; null means it paints nothing (the Profile), rendered as an outlined
@@ -299,21 +322,18 @@ internal fun GradeBandSlider(
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
                     val grade = gradeAt(down.position.x)
-                    // Coincident handles (both at the shared 0 stop) make a press that would
-                    // snap both sides to that stop ambiguous: it cannot name its handle, so
-                    // the first horizontal movement does. Any other press locks its side by
-                    // sign at the press, so a drag across the flat gap keeps adjusting the
-                    // handle it grabbed.
-                    val descSel = currentDescentSel
-                    val ambiguous =
-                        descSel != null &&
-                            descSel.axisGrade == currentClimbSel.axisGrade &&
-                            currentClimbStops.minBy { abs(it.axisGrade - grade) }.axisGrade ==
-                                currentClimbSel.axisGrade &&
-                            currentDescentStops?.minBy { abs(it.axisGrade - grade) }?.axisGrade ==
-                                currentClimbSel.axisGrade
+                    // A press names the side whose snap target is nearest; null means the
+                    // sides tie (coincident handles) and the first horizontal movement
+                    // decides. Any other press locks its side, so a drag across the flat gap
+                    // keeps adjusting the handle it grabbed.
                     var onDescentSide: Boolean? =
-                        if (ambiguous) null else currentDescentStops != null && grade < 0.0
+                        pressSide(
+                            grade = grade,
+                            climbSel = currentClimbSel,
+                            descentSel = currentDescentSel,
+                            climbStops = currentClimbStops,
+                            descentStops = currentDescentStops,
+                        )
                     onDescentSide?.let { select(it, down.position.x) }
                     var event = awaitPointerEvent()
                     while (event.changes.any { it.pressed }) {
