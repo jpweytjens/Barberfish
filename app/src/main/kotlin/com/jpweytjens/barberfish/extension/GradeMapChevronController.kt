@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
+import com.jpweytjens.barberfish.datatype.shared.gradeMapChevronId
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.HideSymbols
 import io.hammerhead.karooext.models.MapEffect
@@ -37,7 +38,13 @@ internal class GradeMapChevronController {
                 previous[id]?.let { it != current[id] } ?: false
             }
         val reissued = recentlyRemoved.flatMapTo(mutableSetOf()) { it.first } - current.keys
-        val hideIds = removed + changed + reissued
+        // Redrawn stale ids ([assumeStale] sentinels) are re-shown without a preceding hide:
+        // ShowSymbols replaces an existing id in place, while a hide in the same batch races
+        // the show in the rideapp's async symbol processing and blanks the chevron
+        // (observed on-device, 2026-08-22).
+        val redrawnStale =
+            current.keys.filterTo(mutableSetOf()) { id -> previous[id]?.lat?.isNaN() == true }
+        val hideIds = removed + (changed - redrawnStale) + reissued
         if (hideIds.isNotEmpty()) {
             emitter.onNext(HideSymbols(hideIds.toList()))
         }
@@ -70,6 +77,26 @@ internal class GradeMapChevronController {
         }
         previous = emptyMap()
         recentlyRemoved = emptyList()
+    }
+
+    /**
+     * Seeds the controller as if a previous startMap generation had already drawn the positional id
+     * range `0 until span`. The rideapp keeps drawn symbols across extension process death and
+     * startMap restarts, and a fresh controller knows none of them; the persisted span bounds what
+     * could remain. Seeding — rather than emitting hides here — lets the first [emit] fold the
+     * stale ids into its own diff: unclaimed ids take the removed path (hidden, then reissued),
+     * redrawn ids are re-shown in place with no preceding hide. No early hide exists for the
+     * rideapp's async symbol processing to reorder after the shows.
+     *
+     * The sentinel's NaN coordinates mark the id as stale in [emit] and compare unequal to every
+     * real spec, so a redrawn id always lands in the show set.
+     */
+    fun assumeStale(span: Int) {
+        previous =
+            (0 until span).associate { index ->
+                val id = gradeMapChevronId(index)
+                id to ClimbChevronSpec(id, Double.NaN, Double.NaN, 0f, 0)
+            }
     }
 
     private companion object {

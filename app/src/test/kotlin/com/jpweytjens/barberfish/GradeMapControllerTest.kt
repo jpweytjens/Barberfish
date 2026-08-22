@@ -96,6 +96,39 @@ class GradeMapControllerTest {
     }
 
     @Test
+    fun assumeStale_first_emit_hides_the_unclaimed_range() {
+        val controller = GradeMapController()
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.emit(fake, listOf(GradeMapPolylineSpec("barberfish-seg-0", "xyz", red)), fillW)
+        // The stale hide travels inside the emission's own hide batch, never as a separate
+        // early effect the rideapp could reorder after the shows.
+        val hidden = fake.events.filterIsInstance<HidePolyline>().map { it.id }
+        assertEquals(listOf("barberfish-seg-1"), hidden)
+        val shown = fake.events.filterIsInstance<ShowPolyline>().map { it.id }
+        assertEquals(listOf("barberfish-seg-0"), shown)
+    }
+
+    @Test
+    fun assumeStale_zero_span_changes_nothing() {
+        val controller = GradeMapController()
+        val fake = FakeEmitter()
+        controller.assumeStale(0)
+        controller.emit(fake, emptyList(), fillW)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun assumeStale_clearAll_hides_the_range() {
+        val controller = GradeMapController()
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.clearAll(fake)
+        val hidden = fake.events.filterIsInstance<HidePolyline>().map { it.id }.toSet()
+        assertEquals(setOf("barberfish-seg-0", "barberfish-seg-1"), hidden)
+    }
+
+    @Test
     fun clearAll_hides_all_previous_ids_then_empty_emit_is_noop() {
         val controller = GradeMapController()
         val fake = FakeEmitter()

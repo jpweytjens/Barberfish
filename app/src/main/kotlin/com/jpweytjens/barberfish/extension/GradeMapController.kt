@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
+import com.jpweytjens.barberfish.datatype.shared.gradeMapSegmentId
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.MapEffect
@@ -45,5 +46,17 @@ internal class GradeMapController {
     fun clearAll(emitter: Emitter<MapEffect>) {
         previousIds.forEach { emitter.onNext(HidePolyline(it)) }
         previousIds = emptySet()
+    }
+
+    /**
+     * Seeds the controller as if a previous startMap generation had already drawn the positional id
+     * range `0 until span`. The rideapp keeps drawn symbols across extension process death and
+     * startMap restarts, and a fresh controller knows none of them; the persisted span bounds what
+     * could remain. Seeding — rather than emitting hides here — lets the first [emit] hide the
+     * unclaimed ids inside its own hide batch and re-show the rest, so no early hide can be
+     * reordered after the shows by the rideapp's async symbol processing.
+     */
+    fun assumeStale(span: Int) {
+        previousIds = (0 until span).mapTo(mutableSetOf()) { gradeMapSegmentId(it) }
     }
 }

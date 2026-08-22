@@ -694,6 +694,42 @@ class GradeMapPolylinesTest {
         assertEquals(none.map { it.lat to it.lng }, trimmed.map { it.lat to it.lng })
     }
 
+    @Test
+    fun id_spans_cover_every_minted_id() {
+        // Chevron ids keep their route-wide placement index, so placements dropped for
+        // sitting on no run leave gaps and the emitted count undercounts the highest id.
+        // The reported spans must cover every minted id — they are what a fresh startMap
+        // hides to clear a dead predecessor's symbols.
+        val overlay =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+            )
+        val segIds = (0 until overlay.segmentIdSpan).map { "barberfish-seg-$it" }
+        assertTrue(overlay.polylines.all { it.id in segIds })
+        val chevIds = (0 until overlay.chevronIdSpan).map { "barberfish-chev-$it" }
+        assertTrue(overlay.chevrons.all { it.id in chevIds })
+        // The fixture drops every placement past the 300 m of runs on the 3336 m route.
+        assertTrue(overlay.chevronIdSpan > overlay.chevrons.size)
+    }
+
+    @Test
+    fun chevron_id_span_is_zero_when_chevrons_excluded() {
+        val overlay =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                includeChevrons = false,
+            )
+        assertEquals(0, overlay.chevronIdSpan)
+    }
+
     // Route and elevation polylines whose distance axes deliberately disagree: the elevation
     // axis spans 2% more than the GPS polyline's arclength, standing in for the chord-cutting
     // shortfall a real GPS polyline accumulates across curves. 34 equator points ≈ 36.7 km,

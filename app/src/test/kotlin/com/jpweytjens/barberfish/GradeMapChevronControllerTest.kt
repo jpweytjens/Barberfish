@@ -124,6 +124,55 @@ class GradeMapChevronControllerTest {
     }
 
     @Test
+    fun assumeStale_first_emit_hides_unclaimed_and_reshows_redrawn_in_place() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(3)
+        controller.emit(fake, listOf(spec("barberfish-chev-1")))
+        // Unclaimed stale ids are hidden; a redrawn stale id is re-shown WITHOUT a
+        // preceding hide — a hide in the same batch races the show in the rideapp's
+        // async symbol processing and blanks the chevron (observed on-device).
+        assertEquals(
+            setOf("barberfish-chev-0", "barberfish-chev-2"),
+            fake.hiddenIds().toSet(),
+        )
+        assertEquals(listOf("barberfish-chev-1"), fake.shownIds())
+        assertTrue(fake.events[0] is HideSymbols)
+        assertTrue(fake.events[1] is ShowSymbols)
+    }
+
+    @Test
+    fun assumeStale_zero_span_changes_nothing() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(0)
+        controller.emit(fake, emptyList())
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun assumeStale_clearAll_hides_the_range() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.clearAll(fake)
+        assertEquals(setOf("barberfish-chev-0", "barberfish-chev-1"), fake.hiddenIds().toSet())
+    }
+
+    @Test
+    fun assumeStale_hides_are_reissued_like_any_removed_set() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.emit(fake, listOf(spec("barberfish-chev-0")))
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("barberfish-chev-0")))
+        // chev-1 was hidden on the first emit; the lost-hide workaround re-issues it.
+        assertEquals(listOf("barberfish-chev-1"), fake.hiddenIds())
+        assertTrue(fake.shownIds().isEmpty())
+    }
+
+    @Test
     fun clearAll_hides_previous_and_recently_removed_then_empty_emit_is_noop() {
         val controller = GradeMapChevronController()
         val fake = FakeEmitter()

@@ -55,6 +55,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
@@ -147,6 +148,22 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         val density = applicationContext.resources.displayMetrics.density
         val scope = CoroutineScope(Dispatchers.IO)
         val job: Job = scope.launch {
+            // The rideapp keeps drawn map symbols across extension process death and startMap
+            // restarts, and this generation's controllers know nothing about them. Seed the
+            // controllers with the id ranges the last emission minted, so their first diff
+            // hides whatever a dead predecessor left painted.
+            var drawnIdSpans = applicationContext.streamGradeMapDrawnIdSpans().first()
+            polylineController.assumeStale(drawnIdSpans.segments)
+            chevronController.assumeStale(drawnIdSpans.chevrons)
+            // Invariant: the persisted spans always cover the painted ids, whatever instant
+            // the process dies. Raised to the ceiling of old and new before a draw, settled
+            // to the exact spans after it, zeroed after a clear.
+            suspend fun persistDrawnIdSpans(spans: GradeMapDrawnIdSpans) {
+                if (spans != drawnIdSpans) {
+                    applicationContext.saveGradeMapDrawnIdSpans(spans)
+                    drawnIdSpans = spans
+                }
+            }
             // Branch A: config + nav (changes rarely — route load, settings edit).
             val configNavFlow =
                 combine(
@@ -202,6 +219,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     if (!inputs.enabled || route == null) {
                         polylineController.clearAll(emitter)
                         chevronController.clearAll(emitter)
+                        persistDrawnIdSpans(GradeMapDrawnIdSpans())
                         return@collect
                     }
                     // Spacing/window are zoom-driven; latitude only scales the cos(lat)
@@ -285,6 +303,17 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
                         )
                     }
+                    val newSpans =
+                        GradeMapDrawnIdSpans(
+                            segments = if (inputs.showPolylines) specs.segmentIdSpan else 0,
+                            chevrons = specs.chevronIdSpan,
+                        )
+                    persistDrawnIdSpans(
+                        GradeMapDrawnIdSpans(
+                            segments = maxOf(drawnIdSpans.segments, newSpans.segments),
+                            chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
+                        )
+                    )
                     if (inputs.showPolylines) {
                         polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
                     } else {
@@ -292,6 +321,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         polylineController.clearAll(emitter)
                     }
                     chevronController.emit(emitter, specs.chevrons)
+                    persistDrawnIdSpans(newSpans)
                 }
         }
         emitter.setCancellable {

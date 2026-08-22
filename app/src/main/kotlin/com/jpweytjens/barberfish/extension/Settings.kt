@@ -530,6 +530,22 @@ fun Context.streamGradeMapConfig(): Flow<GradeMapConfig> =
 suspend fun Context.saveGradeMapConfig(config: GradeMapConfig) =
     saveConfig(gradeMapConfigKey, config)
 
+/**
+ * Id spans the last grade map emission minted, per symbol kind. The rideapp keeps drawn map symbols
+ * across extension process death and startMap restarts, so a fresh startMap hides `0 until span` of
+ * each kind before drawing — clearing whatever a dead predecessor left. Written before each
+ * emission so a death between write and draw errs towards over-hiding, which is a no-op.
+ */
+@Serializable data class GradeMapDrawnIdSpans(val segments: Int = 0, val chevrons: Int = 0)
+
+private val gradeMapDrawnIdSpansKey = stringPreferencesKey("grade_map_drawn_id_spans")
+
+fun Context.streamGradeMapDrawnIdSpans(): Flow<GradeMapDrawnIdSpans> =
+    streamConfig(gradeMapDrawnIdSpansKey, GradeMapDrawnIdSpans())
+
+suspend fun Context.saveGradeMapDrawnIdSpans(spans: GradeMapDrawnIdSpans) =
+    saveConfig(gradeMapDrawnIdSpansKey, spans)
+
 // --- CadenceFieldConfig ---
 
 @Serializable

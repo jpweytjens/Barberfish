@@ -32,10 +32,25 @@ internal data class ClimbChevronSpec(
     val colorArgb: Int,
 )
 
-/** Specs produced by [buildGradeMapSpecs]. */
+/**
+ * Positional symbol ids. Every id [buildGradeMapSpecs] mints comes from these two builders, so a
+ * fresh `startMap` can clear whatever a dead predecessor painted by hiding `0 until span` of each
+ * kind — the rideapp keeps drawn symbols across extension process death and startMap restarts.
+ */
+internal fun gradeMapSegmentId(index: Int): String = "barberfish-seg-$index"
+
+internal fun gradeMapChevronId(index: Int): String = "barberfish-chev-$index"
+
+/**
+ * Specs produced by [buildGradeMapSpecs]. Ids are minted from `0 until span` per kind; filtering
+ * drops entries but keeps their indices, so the spans — not the list sizes — bound the id range a
+ * later `startMap` must hide.
+ */
 internal data class GradeMapSpecs(
     val polylines: List<GradeMapPolylineSpec>,
     val chevrons: List<ClimbChevronSpec>,
+    val segmentIdSpan: Int = 0,
+    val chevronIdSpan: Int = 0,
 )
 
 /** Axis-aligned viewport bounding box in lat/lng. */
@@ -285,7 +300,7 @@ internal fun buildGradeMapSpecs(
         if (sub.size >= 2) {
             polylines +=
                 GradeMapPolylineSpec(
-                    id = "barberfish-seg-$runIdx",
+                    id = gradeMapSegmentId(runIdx),
                     encoded = encodeGpsPolyline(sub),
                     colorArgb = run.colorArgb,
                     trimStart = atRouteStart,
@@ -295,7 +310,7 @@ internal fun buildGradeMapSpecs(
     }
     // Cap-trim shifts where the polylines are drawn, never where chevrons sit, so placement
     // runs against the untrimmed run bounds.
-    val chevrons =
+    val chevronPlacements =
         if (includeChevrons) {
             val tuning =
                 ChevronTuning(
@@ -304,30 +319,36 @@ internal fun buildGradeMapSpecs(
                     collisionRadiusM = chevronMinSpacingM,
                     headingThresholdDeg = chevronHeadingThresholdDeg,
                 )
-            placeChevrons(gps, cumDist, tuning).mapIndexedNotNull { idx, placement ->
-                val run =
-                    runs.firstOrNull {
-                        placement.distanceM >= it.startM * elevToGps &&
-                            placement.distanceM < it.endM * elevToGps
-                    } ?: return@mapIndexedNotNull null
-                ClimbChevronSpec(
-                    // Indexed over every placement on the route, so an id stays put when a
-                    // neighbouring run changes colour or the run list is re-cut.
-                    id = "barberfish-chev-$idx",
-                    lat = placement.lat,
-                    lng = placement.lng,
-                    bearingDeg = placement.bearingDeg,
-                    colorArgb = run.colorArgb,
-                )
-            }
+            placeChevrons(gps, cumDist, tuning)
         } else {
             emptyList()
         }
+    val chevrons = chevronPlacements.mapIndexedNotNull { idx, placement ->
+        val run =
+            runs.firstOrNull {
+                placement.distanceM >= it.startM * elevToGps &&
+                    placement.distanceM < it.endM * elevToGps
+            } ?: return@mapIndexedNotNull null
+        ClimbChevronSpec(
+            // Indexed over every placement on the route, so an id stays put when a
+            // neighbouring run changes colour or the run list is re-cut.
+            id = gradeMapChevronId(idx),
+            lat = placement.lat,
+            lng = placement.lng,
+            bearingDeg = placement.bearingDeg,
+            colorArgb = run.colorArgb,
+        )
+    }
     val filteredChevrons =
         if (chevronViewport != null) {
             chevrons.filter { chevronViewport.contains(it.lat, it.lng) }
         } else {
             chevrons
         }
-    return GradeMapSpecs(polylines, filteredChevrons)
+    return GradeMapSpecs(
+        polylines = polylines,
+        chevrons = filteredChevrons,
+        segmentIdSpan = runs.size,
+        chevronIdSpan = chevronPlacements.size,
+    )
 }
