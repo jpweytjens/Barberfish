@@ -346,8 +346,10 @@ internal fun gradeFloor(
 
 /**
  * The band's own colour for [grade], or [neutral] when the grade falls inside the edges.
- * [climbEdge] null means no climb band is coloured; [descentEdge] null means no descent band is.
- * Implemented in terms of [gradeBands] so the two can never disagree.
+ * [climbEdge] null means no climb band is coloured; [descentEdge] null means no descent band is. An
+ * edge may sit across zero (the crossover stops at a flat band's far edges), making each side a
+ * plain half-line: at or above the climb edge, at or below the descent edge. Implemented in terms
+ * of [gradeBands] so the two can never disagree.
  *
  * Grades below the palette's [gradeFloor] stay [neutral], the same guard [gradeColor] applies: the
  * lowest band's open low end is not a real floor on a one-sided palette, so a descent edge stored
@@ -362,17 +364,12 @@ internal fun gradeBandColor(
     readable: Boolean = true,
     isNightMode: Boolean = true,
 ): Color {
+    // Sign-agnostic on purpose: a crossover edge (climb at a flat band's lo, descent at its
+    // hi) reaches across zero, so each side is a plain half-line. The Off sentinels stay
+    // inert (no real grade reaches +-Double.MAX_VALUE), and exactly 0.0 needs no special
+    // case: it is coloured iff an edge at or across zero claims it.
     val coloured =
-        when {
-            grade > 0.0 -> climbEdge != null && grade >= climbEdge
-            grade < 0.0 -> descentEdge != null && grade <= descentEdge
-            // Exactly 0.0 is neither side, so the comparisons above never see it. An edge of 0.0
-            // is the fully-on position on palettes with a zero edge, and the existing
-            // inclusive-edge logic already colours 0.0 correctly for it.
-            else ->
-                (climbEdge != null && climbEdge <= 0.0) ||
-                    (descentEdge != null && descentEdge >= 0.0)
-        }
+        (climbEdge != null && grade >= climbEdge) || (descentEdge != null && grade <= descentEdge)
     if (!coloured) return neutral
     if (grade < gradeFloor(palette, readable, isNightMode)) return neutral
     val band =
