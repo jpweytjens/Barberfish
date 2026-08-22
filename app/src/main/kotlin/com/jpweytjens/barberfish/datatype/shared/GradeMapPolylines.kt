@@ -238,6 +238,18 @@ internal fun buildGradeMapSpecs(
         visvalingamWhyatt(rawElev, effectiveMinAreaM2(tuning.simplification, metresPerPixel))
     if (elevPoints.size < 2) return GradeMapSpecs(emptyList(), emptyList())
 
+    // Runs are cut on the elevation polyline's distance axis, but drawn by looking their
+    // bounds up in arclength over the GPS polyline. The GPS polyline cuts chords across
+    // curves, so its arclength runs slightly short of the elevation axis and the gap grows
+    // along the route — segment bounds and chevron colours drift, worst at the far end.
+    // Scaling elevation-axis distances by the ratio of the two totals pins the ends back
+    // together. Chord shortfall stays well within a percent; a ratio outside the guard band
+    // means the two polylines do not span the same extent (an elevation profile covering
+    // only part of the route), where scaling would misplace every run, so it stays off.
+    val elevSpanM = elevPoints.last().first.toDouble()
+    val ratio = if (elevSpanM > 0.0) cumDist.last() / elevSpanM else 1.0
+    val elevToGps = if (ratio in 0.9..1.1) ratio else 1.0
+
     // The runs have one derivation: the profile is resampled into cells and each takes the
     // band of its mean grade, so the vertex spacing decides nothing about where a colour may
     // change. Every cell gets a colour, so the runs tile the route and no gap can open onto
@@ -269,7 +281,7 @@ internal fun buildGradeMapSpecs(
         val maxTrim = ((run.endM - run.startM) * 0.5 - 0.5).coerceAtLeast(0.0)
         val drawStart = run.startM + (if (atRouteStart) capTrimM else 0.0).coerceAtMost(maxTrim)
         val drawEnd = run.endM - (if (atRouteEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
-        val sub = extractSubPolyline(gps, cumDist, drawStart, drawEnd)
+        val sub = extractSubPolyline(gps, cumDist, drawStart * elevToGps, drawEnd * elevToGps)
         if (sub.size >= 2) {
             polylines +=
                 GradeMapPolylineSpec(
@@ -295,7 +307,8 @@ internal fun buildGradeMapSpecs(
             placeChevrons(gps, cumDist, tuning).mapIndexedNotNull { idx, placement ->
                 val run =
                     runs.firstOrNull {
-                        placement.distanceM >= it.startM && placement.distanceM < it.endM
+                        placement.distanceM >= it.startM * elevToGps &&
+                            placement.distanceM < it.endM * elevToGps
                     } ?: return@mapIndexedNotNull null
                 ClimbChevronSpec(
                     // Indexed over every placement on the route, so an id stays put when a

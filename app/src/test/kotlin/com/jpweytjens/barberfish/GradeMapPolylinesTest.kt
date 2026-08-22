@@ -694,6 +694,70 @@ class GradeMapPolylinesTest {
         assertEquals(none.map { it.lat to it.lng }, trimmed.map { it.lat to it.lng })
     }
 
+    // Route and elevation polylines whose distance axes deliberately disagree: the elevation
+    // axis spans 2% more than the GPS polyline's arclength, standing in for the chord-cutting
+    // shortfall a real GPS polyline accumulates across curves. 34 equator points ≈ 36.7 km,
+    // so the 2% gap (~367 m) dwarfs the 30 m cell quantisation. The profile climbs at 8% to
+    // half the elevation span, then runs flat.
+    private fun mismatchedAxes(): Triple<String, String, Double> {
+        val route = encodeGpsManually((0..33).map { 0.0 to it * 0.01 })
+        val gpsArcM = cumulativeDistancesM(decodeGpsPolyline(route)).last()
+        val elevSpanM = gpsArcM * 1.02
+        val elevation =
+            encodeElevationManually(
+                listOf(
+                    0f to 100f,
+                    (elevSpanM / 2).toFloat() to (100.0 + 0.08 * elevSpanM / 2).toFloat(),
+                    elevSpanM.toFloat() to (100.0 + 0.08 * elevSpanM / 2).toFloat(),
+                )
+            )
+        return Triple(route, elevation, gpsArcM)
+    }
+
+    @Test
+    fun run_bounds_scale_to_the_gps_arclength() {
+        // The climb ends at half the elevation axis, which is half the route — so the drawn
+        // climb run must end at half the GPS arclength, not at elevation-metre elevSpan/2,
+        // which sits ~367 m further along the GPS polyline.
+        val (route, elevation, gpsArcM) = mismatchedAxes()
+        val specs =
+            buildGradeMapSpecs(
+                    routePolyline = route,
+                    routeElevationPolyline = elevation,
+                    palette = GradePalette.KAROO,
+                    readable = true,
+                    tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                )
+                .polylines
+        assertEquals(gpsArcM / 2, segLenM(specs[0]), 50.0)
+    }
+
+    @Test
+    fun chevron_run_matching_uses_the_scaled_bounds() {
+        // Chevron placements measure GPS arclength. A placement just past the route's true
+        // midpoint sits on the flat run — but compared against unscaled elevation-axis run
+        // bounds it would still fall inside the climb run and come out in the climb colour.
+        val (route, elevation, gpsArcM) = mismatchedAxes()
+        val chevrons =
+            buildGradeMapSpecs(
+                    routePolyline = route,
+                    routeElevationPolyline = elevation,
+                    palette = GradePalette.KAROO,
+                    readable = true,
+                    tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                )
+                .chevrons
+        // Distance along the route recovered from longitude: the route runs straight along
+        // the equator, so arclength is proportional to lng across the 0.33° span.
+        fun distanceM(lng: Double): Double = lng / 0.33 * gpsArcM
+        val pastMidpoint = chevrons.filter {
+            distanceM(it.lng) in (gpsArcM / 2 + 60.0)..(gpsArcM * 1.02 / 2 - 60.0)
+        }
+        assertTrue("expected chevrons in the drifted window", pastMidpoint.isNotEmpty())
+        val flat = gradeColor(0.0, GradePalette.KAROO, true)!!.toArgb()
+        pastMidpoint.forEach { assertEquals(flat, it.colorArgb) }
+    }
+
     @Test
     fun map_specs_cover_every_metre_of_the_route() {
         val specs =
