@@ -242,14 +242,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
                     // already prevents excessive rebuilds.
                     val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? = null
-                    // Climb.startDistance is measured from the rider's position including
-                    // the off-route rejoin path; our elevation polyline is pure route
-                    // distance (0..routeDistance). Subtract rejoinDistance to align them.
-                    val rejoinOffset = route.rejoinDistance ?: 0.0
+                    // Diagnostic only — buildGradeMapSpecs colours from the elevation
+                    // polyline and ignores climbs. Logged raw, matching what
+                    // SparklineDataFlow consumes; the reference frame of reroute-time
+                    // climb distances is unverified, so no correction is applied.
                     val climbRanges =
                         route.climbs.map {
-                            (it.startDistance - rejoinOffset) to
-                                (it.startDistance + it.length - rejoinOffset)
+                            it.startDistance to (it.startDistance + it.length)
                         }
                     // Round line-cap overhang per end = (width/2) px in ground metres.
                     // The overlay only re-emits on a band crossing, so this trim is fixed for

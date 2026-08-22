@@ -57,6 +57,7 @@ internal fun sparklineBitmapFlow(
     var ratchetRange = 0f
     var lastPositionM = 0f
     var lastOnRoutePositionM = 0f
+    var lastOnRouteClimbRanges: List<Pair<Float, Float>> = emptyList()
     var cachedElevKey: Triple<String, ElevationSimplification, Int>? = null
     var cachedElevPoints: List<Pair<Float, Float>> = emptyList()
     // Projection of global POIs onto the route is keyed on (routePolyline, reversed, global POI
@@ -166,11 +167,16 @@ internal fun sparklineBitmapFlow(
                 isPreview -> rvvClimbsFixture()
                 else -> emptyList()
             }
-        val climbRanges = rawClimbRanges.mapNotNull { (startM, endM) ->
+        val currentClimbRanges = rawClimbRanges.mapNotNull { (startM, endM) ->
             val startElev = elevationAt(elevPoints, startM) ?: return@mapNotNull null
             val endElev = elevationAt(elevPoints, endM) ?: return@mapNotNull null
             if (endElev > startElev) startM to endM else null
         }
+        // Climb start distances reported while rerouting are not verified to sit on the
+        // route-start axis the profile uses, so off-route the last on-route ranges are
+        // kept — the same posture as the frozen rider position above.
+        if (!isOffRoute) lastOnRouteClimbRanges = currentClimbRanges
+        val climbRanges = if (isOffRoute) lastOnRouteClimbRanges else currentClimbRanges
         val reveal =
             resolveClimbReveal(sparkCfg.hudMode, climbRanges, elevPoints, sparklinePositionM)
         val windowOverride = reveal.windowOverride
