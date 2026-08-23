@@ -61,6 +61,7 @@ HR_PALETTE_ORDER: list[tuple[str, str]] = [
 # resolve via the power palette / their own readable lists post-rename).
 GRADE_PALETTE_ORDER: list[tuple[str, str]] = [
     ("barberfish", "BARBERFISH_GRADE_BANDS"),
+    ("surgeonfish", "SURGEONFISH_GRADE_BANDS"),
     ("karoo", "KAROO_GRADE_BANDS"),
     ("wahoo", "WAHOO_GRADE_BANDS"),
     ("garmin", "GARMIN_GRADE_BANDS"),
