@@ -42,15 +42,16 @@ either theme.
 
 ## Grade palettes
 
-| Palette    | Grade bands                            |
-| ---------- | -------------------------------------- |
-| Karoo      | ![](palettes/palette-grade-karoo.svg)  |
-| Barberfish | ![](palettes/palette-grade-barberfish.svg) |
-| Turbo      | ![](palettes/palette-grade-turbo.svg)  |
-| Wahoo      | ![](palettes/palette-grade-wahoo.svg)  |
-| Garmin     | ![](palettes/palette-grade-garmin.svg) |
-| HSLuv      | ![](palettes/palette-grade-hsluv.svg)  |
-| Zwift      | ![](palettes/palette-grade-zwift.svg)  |
+| Palette     | Grade bands                            |
+| ----------- | -------------------------------------- |
+| Karoo       | ![](palettes/palette-grade-karoo.svg)  |
+| Barberfish  | ![](palettes/palette-grade-barberfish.svg) |
+| Surgeonfish | ![](palettes/palette-grade-surgeonfish.svg) |
+| Turbo       | ![](palettes/palette-grade-turbo.svg)  |
+| Wahoo       | ![](palettes/palette-grade-wahoo.svg)  |
+| Garmin      | ![](palettes/palette-grade-garmin.svg) |
+| HSLuv       | ![](palettes/palette-grade-hsluv.svg)  |
+| Zwift       | ![](palettes/palette-grade-zwift.svg)  |
 
 Barberfish is the default grade palette. It keeps the Karoo climb ramp above 2
 per cent, folds terrain between -2 and 2 into a quiet green-grey, and adds
@@ -61,6 +62,16 @@ thresholds mirror the climb side: measured ride data from the
 [GoldenCheetah OpenData](https://osf.io/6hfpz/) corpus shows grade occupancy
 puts -10 at the same within-side time share as +8, so descents and climbs
 carry matching visual resolution.
+
+Surgeonfish is the second Barberfish take on the Karoo ramp, one step further
+from the original. Neither is a true perceptual colour map: the goal is a
+hazard scale that still reads as cycling, from easy green up through yellow,
+orange and red to a dark purple band above 20 per cent, with perceptual ideas
+applied where they sharpen it. Where Barberfish reuses the Karoo zone colours,
+Surgeonfish respaces the same reading in even HSLuv steps and mutes the flat
+band, so colour builds only as the road tilts. Its descents share the climb
+thresholds and turn blue, deepening toward navy, after the blue limb of
+[Peter Kovesi's](https://colorcet.com/) perceptual rainbow maps.
 
 ## Text mode: auto contrast-tuning
 
@@ -123,8 +134,8 @@ steep, spaced like Garmin's grade categories.
 
 ## Turbo palette
 
-Grade is one of the few cycling numbers that goes negative, and Turbo is the
-one grade palette that colors descents too. It runs from deep blue around
+Grade is one of the few cycling numbers that goes negative, and Turbo colors
+descents too. It runs from deep blue around
 `-9%` through green at `0%` to red at `15%` and beyond, in ten bands that
 each read as their own color. The palette is
 [Google's Turbo](https://research.google/blog/turbo-an-improved-rainbow-colormap-for-visualization/),
