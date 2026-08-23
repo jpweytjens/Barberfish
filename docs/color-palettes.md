@@ -64,13 +64,13 @@ puts -10 at the same within-side time share as +8, so descents and climbs
 carry matching visual resolution.
 
 Surgeonfish is the second Barberfish take on the Karoo ramp, one step further
-from the original. Neither is a true perceptual colour map: the goal is a
+from the original. Neither is a true perceptual color map: the goal is a
 hazard scale that still reads as cycling, from easy green up through yellow,
 orange and red to a dark purple band above 20 per cent, with perceptual ideas
-applied where they sharpen it. Where Barberfish reuses the Karoo zone colours,
+applied where they sharpen it. Where Barberfish reuses the Karoo zone colors,
 Surgeonfish respaces the same reading in even HSLuv steps and mutes the flat
-band, so colour builds only as the road tilts. Its descents share the climb
-thresholds and turn blue, deepening toward navy, after the blue limb of
+band, so color builds only as the road tilts. Its descents keep Barberfish's
+-2, -6 and -10 and turn blue, deepening toward navy, after the blue limb of
 [Peter Kovesi's](https://colorcet.com/) perceptual rainbow maps.
 
 ## Text mode: auto contrast-tuning
