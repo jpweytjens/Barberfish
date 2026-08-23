@@ -818,7 +818,10 @@ internal fun SparklineOptionsControls(
     // show exactly which bands the profile colours.
     val (climbEdge, descentEdge) = config.gradeEdges(zoneConfig.gradePalette)
     LabeledHelper("EMPHASIS") {
-        HelperText("Filter out gentle grades so meaningful climbs and descents stand out.")
+        HelperText(
+            "Filter out gentle grades so meaningful climbs and descents stand out. " +
+                "Grades between the handles draw only the outline, no fill."
+        )
     }
     // The profile paints no grade fill inside the edges (its faint silhouette shows through),
     // so the filtered region renders as an outlined groove rather than a colour.
