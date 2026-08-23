@@ -141,6 +141,23 @@ private val TURBO_GRADE_BANDS =
         -9.0 to Color(0xFF5783E9), // [-9, -6) — blue
         Double.NEGATIVE_INFINITY to Color(0xFF401C4C), // (-∞, -9) — dark purple
     )
+
+// Surgeonfish grade bands — Barberfish's thresholds under a sharper ramp: HSLuv-spaced
+// green→yellow→orange→red climbs with a dark purple band above 20%, and saturated blue
+// descents that deepen toward navy, after the blue limb of Kovesi's CET rainbow maps.
+private val SURGEONFISH_GRADE_BANDS =
+    listOf(
+        20.0 to Color(0xFF7804AD), // [20, ∞)   — purple
+        14.0 to Color(0xFFE5050B), // [14, 20)  — red
+        11.0 to Color(0xFFE66407), // [11, 14)  — red-orange
+        8.0 to Color(0xFFE5950B), //  [8, 11)  — orange
+        5.0 to Color(0xFFE0CF10), //  [5, 8)   — yellow
+        2.0 to Color(0xFFA8C90E), //  [2, 5)   — yellow-green
+        -2.0 to Color(0xFF59BA63), // [-2, 2)   — flat green (muted, s70)
+        -6.0 to Color(0xFF37A6D6), // [-6, -2)  — azure
+        -10.0 to Color(0xFF1E81C6), // [-10, -6) — blue
+        Double.NEGATIVE_INFINITY to Color(0xFF145B9C), // (-∞, -10) — navy
+    )
 private val TURBO_GRADE_BANDS_READABLE_DARK =
     listOf(
         15.0 to Color(0xFFFF5950),
@@ -153,6 +170,19 @@ private val TURBO_GRADE_BANDS_READABLE_DARK =
         -6.0 to Color(0xFF2BC7F0),
         -9.0 to Color(0xFF7092EC),
         Double.NEGATIVE_INFINITY to Color(0xFFBF79D9),
+    )
+private val SURGEONFISH_GRADE_BANDS_READABLE_DARK =
+    listOf(
+        20.0 to Color(0xFFC16EFE), // was #7804AD
+        14.0 to Color(0xFFFE5A5A), // was #E5050B
+        11.0 to Color(0xFFF26A08), // was #E66407
+        8.0 to Color(0xFFE5950B),
+        5.0 to Color(0xFFE0CF10),
+        2.0 to Color(0xFFA8C90E),
+        -2.0 to Color(0xFF59BA63),
+        -6.0 to Color(0xFF37A6D6),
+        -10.0 to Color(0xFF269AEB), // was #1E81C6
+        Double.NEGATIVE_INFINITY to Color(0xFF3197F9), // was #145B9C
     )
 
 private val BARBERFISH_GRADE_BANDS_READABLE_LIGHT =
@@ -214,6 +244,19 @@ private val TURBO_GRADE_BANDS_READABLE_LIGHT =
         -9.0 to Color(0xFF5783E9),
         Double.NEGATIVE_INFINITY to Color(0xFF401C4C),
     )
+private val SURGEONFISH_GRADE_BANDS_READABLE_LIGHT =
+    listOf(
+        20.0 to Color(0xFF7804AD),
+        14.0 to Color(0xFFE5050B),
+        11.0 to Color(0xFFE66407),
+        8.0 to Color(0xFFE5950B),
+        5.0 to Color(0xFFBCAD0B), // was #E0CF10
+        2.0 to Color(0xFF99B70C), // was #A8C90E
+        -2.0 to Color(0xFF59BA63),
+        -6.0 to Color(0xFF37A6D6),
+        -10.0 to Color(0xFF1E81C6),
+        Double.NEGATIVE_INFINITY to Color(0xFF145B9C),
+    )
 
 // Raw threshold/color pairs backing a palette's bands, descending high to low, exactly the
 // tables gradeColor used to switch on directly.
@@ -228,6 +271,12 @@ private fun gradeThresholdColors(
                 !readable -> BARBERFISH_GRADE_BANDS
                 isNightMode -> BARBERFISH_GRADE_BANDS_READABLE_DARK
                 else -> BARBERFISH_GRADE_BANDS_READABLE_LIGHT
+            }
+        GradePalette.SURGEONFISH ->
+            when {
+                !readable -> SURGEONFISH_GRADE_BANDS
+                isNightMode -> SURGEONFISH_GRADE_BANDS_READABLE_DARK
+                else -> SURGEONFISH_GRADE_BANDS_READABLE_LIGHT
             }
         GradePalette.WAHOO ->
             when {
@@ -307,10 +356,11 @@ internal fun gradeBandStops(palette: GradePalette): GradeBandStops {
 }
 
 /**
- * The band strictly containing zero, if [palette] has one: a designed rest state (only Barberfish
- * today). Its colour is the map neutral and its far edges are the selector's crossover stops, so
- * the two can never disagree. lo must be a real threshold: a one-sided palette's lowest band has an
- * open low end that is not a floor (see [gradeBands]' KDoc), and it must not match here.
+ * The band strictly containing zero, if [palette] has one: a designed rest state (Barberfish and
+ * Surgeonfish today). Its colour is the map neutral and its far edges are the selector's crossover
+ * stops, so the two can never disagree. lo must be a real threshold: a one-sided palette's lowest
+ * band has an open low end that is not a floor (see [gradeBands]' KDoc), and it must not match
+ * here.
  */
 internal fun zeroStraddlingBand(
     palette: GradePalette,
@@ -323,8 +373,8 @@ internal fun zeroStraddlingBand(
 
 /**
  * The map overlay's neutral for [palette]: what a run inside the emphasis edges paints. A palette
- * with a band strictly containing zero (only Barberfish) uses that band's colour, so its flat band
- * and the map neutral stay one colour; every other palette keeps the shared [FlatGrey].
+ * with a band strictly containing zero (Barberfish and Surgeonfish) uses that band's colour, so its
+ * flat band and the map neutral stay one colour; every other palette keeps the shared [FlatGrey].
  */
 internal fun mapNeutral(
     palette: GradePalette,

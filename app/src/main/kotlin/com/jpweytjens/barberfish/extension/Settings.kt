@@ -686,6 +686,7 @@ suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
 @Serializable
 enum class GradePalette(val label: String) {
     BARBERFISH("Barberfish"),
+    SURGEONFISH("Surgeonfish"),
     KAROO("Karoo"),
     WAHOO("Wahoo"),
     GARMIN("Garmin"),

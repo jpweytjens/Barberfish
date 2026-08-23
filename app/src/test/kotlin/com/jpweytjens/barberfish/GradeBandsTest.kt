@@ -18,6 +18,7 @@ import org.junit.Test
 class GradeBandsTest {
 
     private val NEUTRAL = Color(0xFFC4C4C4)
+    private val zeroStraddling = setOf(GradePalette.BARBERFISH, GradePalette.SURGEONFISH)
 
     @Test
     fun karoo_bands_are_ordered_low_to_high_with_open_ends() {
@@ -257,17 +258,20 @@ class GradeBandsTest {
     }
 
     // The map paints every cell, so what "uncoloured" looks like is itself a palette
-    // decision. Barberfish keeps its flat band and the map neutral one colour; palettes
-    // without a band strictly containing zero keep the shared grey.
+    // decision. Barberfish and Surgeonfish keep their flat band and the map neutral one
+    // colour; palettes without a band strictly containing zero keep the shared grey.
 
     @Test
-    fun map_neutral_is_the_flat_band_for_barberfish_and_flatgrey_elsewhere() {
-        assertEquals(
-            gradeBands(GradePalette.BARBERFISH, readable = false).single { it.lo == -2.0 }.color,
-            mapNeutral(GradePalette.BARBERFISH, readable = false),
-        )
+    fun map_neutral_is_the_flat_band_for_zero_straddling_palettes_and_flatgrey_elsewhere() {
+        zeroStraddling.forEach { palette ->
+            assertEquals(
+                "$palette",
+                gradeBands(palette, readable = false).single { it.lo == -2.0 }.color,
+                mapNeutral(palette, readable = false),
+            )
+        }
         GradePalette.entries
-            .filter { it != GradePalette.BARBERFISH }
+            .filter { it !in zeroStraddling }
             .forEach { palette ->
                 assertEquals("$palette", FlatGrey, mapNeutral(palette, readable = false))
             }
@@ -312,13 +316,22 @@ class GradeBandsTest {
     // colour, and the selector's crossover stops sit at its far edges, so they cannot disagree.
 
     @Test
-    fun the_zero_straddling_band_is_barberfish_flat_and_absent_elsewhere() {
-        val flat = zeroStraddlingBand(GradePalette.BARBERFISH, readable = false)
-        assertEquals(-2.0, flat?.lo)
-        assertEquals(2.0, flat?.hi)
-        assertEquals(Color(0xFF92B4A5), flat?.color)
+    fun the_zero_straddling_band_is_the_flat_band_and_absent_elsewhere() {
+        zeroStraddling.forEach { palette ->
+            val flat = zeroStraddlingBand(palette, readable = false)
+            assertEquals("$palette", -2.0, flat?.lo)
+            assertEquals("$palette", 2.0, flat?.hi)
+        }
+        assertEquals(
+            Color(0xFF92B4A5),
+            zeroStraddlingBand(GradePalette.BARBERFISH, readable = false)?.color,
+        )
+        assertEquals(
+            Color(0xFF59BA63),
+            zeroStraddlingBand(GradePalette.SURGEONFISH, readable = false)?.color,
+        )
         GradePalette.entries
-            .filter { it != GradePalette.BARBERFISH }
+            .filter { it !in zeroStraddling }
             .forEach { palette ->
                 assertNull("$palette", zeroStraddlingBand(palette, readable = false))
             }
