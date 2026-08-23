@@ -42,16 +42,16 @@ either theme.
 
 ## Grade palettes
 
-| Palette     | Grade bands                            |
-| ----------- | -------------------------------------- |
-| Karoo       | ![](palettes/palette-grade-karoo.svg)  |
-| Barberfish  | ![](palettes/palette-grade-barberfish.svg) |
+| Palette    | Grade bands                            |
+| ---------- | -------------------------------------- |
+| Karoo      | ![](palettes/palette-grade-karoo.svg)  |
+| Barberfish | ![](palettes/palette-grade-barberfish.svg) |
 | Surgeonfish | ![](palettes/palette-grade-surgeonfish.svg) |
-| Turbo       | ![](palettes/palette-grade-turbo.svg)  |
-| Wahoo       | ![](palettes/palette-grade-wahoo.svg)  |
-| Garmin      | ![](palettes/palette-grade-garmin.svg) |
-| HSLuv       | ![](palettes/palette-grade-hsluv.svg)  |
-| Zwift       | ![](palettes/palette-grade-zwift.svg)  |
+| Turbo      | ![](palettes/palette-grade-turbo.svg)  |
+| Wahoo      | ![](palettes/palette-grade-wahoo.svg)  |
+| Garmin     | ![](palettes/palette-grade-garmin.svg) |
+| HSLuv      | ![](palettes/palette-grade-hsluv.svg)  |
+| Zwift      | ![](palettes/palette-grade-zwift.svg)  |
 
 Barberfish is the default grade palette. It keeps the Karoo climb ramp above 2
 per cent, folds terrain between -2 and 2 into a quiet green-grey, and adds
