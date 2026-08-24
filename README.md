@@ -45,7 +45,7 @@ The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mod
 
 Zone and grade palettes designed for Barberfish, alongside palettes matching other bike computers and training apps, each kept legible in light and dark mode. The [palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
 
-The two Barberfish-designed grade palettes, shown in Text mode on light and dark, then Fill. Both color descents, with a teal limb down to -10% and steeper; among the palettes from other platforms, only Turbo also colors descents. Surgeonfish respaces the same reading in even steps and also comes as a power and HR zone palette.
+Two Barberfish-designed grade palettes, shown in Text mode on light and dark, then Fill. Both color descents, with a teal limb down to -10% and steeper; among the palettes from other platforms, only Turbo also colors descents. Surgeonfish respaces the same reading in even steps and also comes as a power and HR zone palette.
 
 ![Barberfish grade palette in both themes and fill mode](docs/palettes/palette-grade-barberfish.svg)
 
