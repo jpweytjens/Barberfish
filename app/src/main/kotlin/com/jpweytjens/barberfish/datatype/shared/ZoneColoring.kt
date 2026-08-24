@@ -76,6 +76,23 @@ internal val karooHrColors =
         Color(0xFFD01020), // Zone 5 – VO2 Max           (red)
     )
 
+// Surgeonfish power zones (7 zones) — the Surgeonfish grade gradient sliced into zones: its flat
+// band is Zone 1, its six climb bands are Zones 2–7. An even-progression sibling of the Karoo
+// palette. Source of truth for the Surgeonfish grade climb bands (see GradeBands.kt).
+internal val surgeonfishPowerColors =
+    listOf(
+        Color(0xFF59BA63), // Zone 1 – Active Recovery   (flat green)
+        Color(0xFFA8C90E), // Zone 2 – Endurance         (yellow-green)
+        Color(0xFFE0CF10), // Zone 3 – Tempo             (yellow)
+        Color(0xFFE5950B), // Zone 4 – Lactate Threshold (orange)
+        Color(0xFFE66407), // Zone 5 – VO2 Max           (red-orange)
+        Color(0xFFE5050B), // Zone 6 – Anaerobic         (red)
+        Color(0xFF7804AD), // Zone 7 – Neuromuscular     (purple)
+    )
+
+// Surgeonfish HR zones (5 zones) — same subset as Karoo (drops Zone 5 and Zone 7)
+internal val surgeonfishHrColors = listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColors[it] }
+
 // Wahoo power zones (7 zones, low to high)
 internal val wahooPowerColors =
     listOf(
@@ -160,6 +177,19 @@ internal val karooPowerColorsReadableDark =
 internal val karooHrColorsReadableDark =
     listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadableDark[it] }
 
+internal val surgeonfishPowerColorsReadableDark =
+    listOf(
+        Color(0xFF59BA63), // Zone 1 – Active Recovery   (flat green)
+        Color(0xFFA8C90E), // Zone 2 – Endurance         (yellow-green)
+        Color(0xFFE0CF10), // Zone 3 – Tempo             (yellow)
+        Color(0xFFE5950B), // Zone 4 – Lactate Threshold (orange)
+        Color(0xFFF26A08), // Zone 5 – VO2 Max           (red-orange, was #E66407)
+        Color(0xFFFE5A5A), // Zone 6 – Anaerobic         (red, was #E5050B)
+        Color(0xFFC16EFE), // Zone 7 – Neuromuscular     (purple, was #7804AD)
+    )
+internal val surgeonfishHrColorsReadableDark =
+    listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColorsReadableDark[it] }
+
 internal val wahooPowerColorsReadableDark =
     listOf(
         Color(0xFFC0C0C0), // Zone 1 – Recovery Miles    (grey)
@@ -209,6 +239,19 @@ internal val karooPowerColorsReadableLight =
     )
 internal val karooHrColorsReadableLight =
     listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadableLight[it] }
+
+internal val surgeonfishPowerColorsReadableLight =
+    listOf(
+        Color(0xFF59BA63), // Zone 1 – Active Recovery   (flat green)
+        Color(0xFF99B70C), // Zone 2 – Endurance         (yellow-green, was #A8C90E)
+        Color(0xFFBCAD0B), // Zone 3 – Tempo             (yellow, was #E0CF10)
+        Color(0xFFE5950B), // Zone 4 – Lactate Threshold (orange)
+        Color(0xFFE66407), // Zone 5 – VO2 Max           (red-orange)
+        Color(0xFFE5050B), // Zone 6 – Anaerobic         (red)
+        Color(0xFF7804AD), // Zone 7 – Neuromuscular     (purple)
+    )
+internal val surgeonfishHrColorsReadableLight =
+    listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColorsReadableLight[it] }
 
 internal val wahooPowerColorsReadableLight =
     listOf(
@@ -266,6 +309,12 @@ fun powerZoneColor(
                     isNightMode -> karooPowerColorsReadableDark
                     else -> karooPowerColorsReadableLight
                 }
+            ZonePalette.SURGEONFISH ->
+                when {
+                    !readable -> surgeonfishPowerColors
+                    isNightMode -> surgeonfishPowerColorsReadableDark
+                    else -> surgeonfishPowerColorsReadableLight
+                }
             ZonePalette.WAHOO ->
                 when {
                     !readable -> wahooPowerColors
@@ -302,6 +351,12 @@ fun hrZoneColor(
                     !readable -> karooHrColors
                     isNightMode -> karooHrColorsReadableDark
                     else -> karooHrColorsReadableLight
+                }
+            ZonePalette.SURGEONFISH ->
+                when {
+                    !readable -> surgeonfishHrColors
+                    isNightMode -> surgeonfishHrColorsReadableDark
+                    else -> surgeonfishHrColorsReadableLight
                 }
             ZonePalette.WAHOO ->
                 when {
