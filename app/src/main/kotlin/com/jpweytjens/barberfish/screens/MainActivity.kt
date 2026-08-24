@@ -165,6 +165,7 @@ import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.RouteSimplification
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
@@ -361,7 +362,11 @@ class MainActivity : ComponentActivity() {
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 
-        CompositionLocalProvider(LocalDataFieldDesign provides dataFieldDesignConfig) {
+        val screenshotMode = remember { intent?.getBooleanExtra("screenshot", false) == true }
+        CompositionLocalProvider(
+            LocalDataFieldDesign provides dataFieldDesignConfig,
+            LocalScreenshotMode provides screenshotMode,
+        ) {
             Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
                 Column(
                     modifier =
@@ -426,7 +431,11 @@ class MainActivity : ComponentActivity() {
                     ) {
                         HUDConfigSection(
                             hudConfig = hudConfig,
-                            sparklineConfig = hudSparklineConfig,
+                            // Screenshot mode forces the elevation profile On so the HUD shot
+                            // always shows it, regardless of the device's stored setting.
+                            sparklineConfig =
+                                if (screenshotMode) hudSparklineConfig.copy(mode = SparklineMode.ON)
+                                else hudSparklineConfig,
                             zoneConfig = zoneConfig,
                             timeCfg = timeConfig,
                             profile = userProfile,
@@ -1296,23 +1305,26 @@ class MainActivity : ComponentActivity() {
                     } // end Data Field Design
                     Spacer(modifier = Modifier.height(72.dp))
                 }
-                Box(
-                    modifier =
-                        Modifier.align(Alignment.BottomStart)
-                            .padding(bottom = 16.dp)
-                            .offset(x = (-8).dp)
-                            .size(width = 62.dp, height = 50.dp)
-                            .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
-                            .background(BackButtonTint)
-                            .clickable { finish() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_arrow_back),
-                        contentDescription = "Back",
-                        modifier = Modifier.size(18.dp),
-                        tint = Color.Black,
-                    )
+                if (!screenshotMode) {
+                    // Hidden in screenshot mode so it never overlaps a field's config in a shot.
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.BottomStart)
+                                .padding(bottom = 16.dp)
+                                .offset(x = (-8).dp)
+                                .size(width = 62.dp, height = 50.dp)
+                                .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
+                                .background(BackButtonTint)
+                                .clickable { finish() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = "Back",
+                            modifier = Modifier.size(18.dp),
+                            tint = Color.Black,
+                        )
+                    }
                 }
             } // end Box
         }
@@ -1682,6 +1694,11 @@ private fun CollapsibleSection(
 
 internal val LocalDataFieldDesign = staticCompositionLocalOf { DataFieldDesignConfig() }
 
+// True while the config screen is driven by the screenshot capture tool (launched with the
+// `bfCapture` intent extra). Freezes the HUD preview animation so shots are reproducible; inert
+// in normal use.
+internal val LocalScreenshotMode = staticCompositionLocalOf { false }
+
 private val FIELD_PREVIEW_WIDTH = 120.dp
 private val FIELD_PREVIEW_HEIGHT = 80.dp
 
@@ -1697,8 +1714,11 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
             ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat()).withDesign(design)
         }
     var index by remember { mutableIntStateOf(0) }
-    LaunchedEffect(previewFields) {
+    val screenshotMode = LocalScreenshotMode.current
+    LaunchedEffect(previewFields, screenshotMode) {
         index = 0
+        if (screenshotMode)
+            return@LaunchedEffect // freeze on the first state for reproducible shots
         while (true) {
             delay(PREVIEW_DELAY_MS)
             index = (index + 1) % previewFields.size

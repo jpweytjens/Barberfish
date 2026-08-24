@@ -108,6 +108,11 @@ private const val HUD_SPARKLINE_CELL_RESERVATION_DP = 34f
 // Total height of the HUD preview container (3 or 4 cells side-by-side + sparkline strip).
 private val HUD_PREVIEW_HEIGHT = 90.dp
 
+// Sweep position the preview freezes at in screenshot mode (LocalScreenshotMode): between the two
+// climbs of the On-mode RvV fixture — past the long shallow one, short of the punchy one — so
+// the screenshot always shows the same recognisable climb profile.
+private const val SCREENSHOT_SWEEP_POSITION_M = 5300f
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HUDConfigSection(
@@ -228,9 +233,13 @@ internal fun SparklinePreview(
     val climbRanges = if (climbsMode) colDeRatesClimbsFixture() else rvvClimbsFixture()
     val poiDistances = if (climbsMode) colDeRatesPoisFixture() else rvvPoisFixture()
 
-    // Animate position: sweep from route start to end, then loop
-    var positionM by remember { mutableStateOf(elevationPoints.first().first) }
-    var lastPositionM by remember { mutableStateOf(elevationPoints.first().first) }
+    // Animate position: sweep from route start to end, then loop. In screenshot mode, freeze at a
+    // fixed point between the two climbs so the shot is reproducible (see
+    // SCREENSHOT_SWEEP_POSITION_M).
+    val screenshotMode = LocalScreenshotMode.current
+    val startM = if (screenshotMode) SCREENSHOT_SWEEP_POSITION_M else elevationPoints.first().first
+    var positionM by remember { mutableStateOf(startM) }
+    var lastPositionM by remember { mutableStateOf(startM) }
     var displayedRange by remember { mutableStateOf(0f) }
     val routeEndM = remember(elevationPoints) { elevationPoints.last().first }
     // Total seconds to complete one full sweep at 30 fps.
@@ -238,7 +247,13 @@ internal fun SparklinePreview(
         remember(elevationPoints, previewSweepSeconds) {
             (routeEndM - elevationPoints.first().first) / (previewSweepSeconds * 30f)
         }
-    LaunchedEffect(elevationPoints) {
+    LaunchedEffect(elevationPoints, screenshotMode) {
+        if (screenshotMode) {
+            positionM = SCREENSHOT_SWEEP_POSITION_M
+            lastPositionM = SCREENSHOT_SWEEP_POSITION_M
+            displayedRange = 0f
+            return@LaunchedEffect
+        }
         positionM = elevationPoints.first().first
         lastPositionM = elevationPoints.first().first
         displayedRange = 0f
@@ -369,9 +384,12 @@ private fun HUDPreview(
         remember(hudConfig, zoneConfig, timeCfg, profile) {
             HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
         }
+    val screenshotMode = LocalScreenshotMode.current
     var index by remember { mutableIntStateOf(0) }
-    LaunchedEffect(states) {
+    LaunchedEffect(states, screenshotMode) {
         index = 0
+        if (screenshotMode)
+            return@LaunchedEffect // freeze on the first state for reproducible shots
         while (true) {
             delay(PREVIEW_DELAY_MS)
             index = (index + 1) % states.size
