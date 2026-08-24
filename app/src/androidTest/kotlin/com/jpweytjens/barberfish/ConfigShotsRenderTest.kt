@@ -124,8 +124,12 @@ class ConfigShotsRenderTest {
                     LocalDataFieldDesign provides DataFieldDesignConfig(),
                 ) {
                     if (scrollable) {
-                        // The tagged node is a fixed window-height viewport; captureTall()
-                        // pages through it by driving scrollState and stitching the pages.
+                        // The tagged node is a fixed window-height viewport over a
+                        // verticalScroll()'d Column, which measures children unbounded so every
+                        // row gets its natural size — none get squished to fit the boundary (see
+                        // fixedHeight's caveat below). capture() on this shows exactly the
+                        // unscrolled viewport; captureTall() pages through it via scrollState and
+                        // stitches the full content.
                         Box(
                             modifier =
                                 Modifier.testTag(SHOT_TAG).width(shotWidth).height(windowHeight)
@@ -141,6 +145,12 @@ class ConfigShotsRenderTest {
                             )
                         }
                     } else {
+                        // Caveat: Modifier.height(fixed).clipToBounds() on a plain Column gives
+                        // Compose's layout a shrinking "remaining budget" for later children — if
+                        // content ever grows enough for a row to straddle the boundary, that row
+                        // gets squished (shrunk icon, dropped text) rather than cleanly clipped.
+                        // Safe today because nothing here reaches the boundary; if that changes,
+                        // switch to the scrollable path above instead (see configOverview()).
                         Column(
                             modifier =
                                 Modifier.testTag(SHOT_TAG)
@@ -214,7 +224,15 @@ class ConfigShotsRenderTest {
 
     @Test
     fun configOverview() {
-        setShotContent(fixedHeight = true) {
+        // Scrollable, not fixedHeight: a plain Column with a hard Modifier.height() clip gives
+        // Compose's layout a shrinking "remaining budget" for later children, so the row that
+        // straddles the boundary gets squished (shrunk icon, dropped description) instead of
+        // rendering at full size and being cleanly clipped. verticalScroll measures children
+        // unbounded, so every row gets its natural size; capturing only the unscrolled viewport
+        // still shows exactly what fits, cut cleanly at the boundary — matching what the live
+        // (scrollable) screen shows before scrolling, with no squished content.
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
             for (section in ConfigSection.entries) {
                 CollapsibleSection(section = section, expanded = false, onToggle = {}) {}
             }
