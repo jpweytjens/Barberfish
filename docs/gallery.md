@@ -71,10 +71,10 @@ Light and dark mode are both supported, with [each palette tuned per theme](colo
 <table>
   <tr>
     <td align="center">Data field configuration grouped by category</td>
-    <td align="center">Average speed with target-mode threshold, text coloring above target</td>
+    <td align="center">Palette pickers with live previews</td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/config.jpg" alt="Main Barberfish config screen with HUD and Data Fields sections"></td>
-    <td align="center"><img src="screenshots/threshold_config.jpg" alt="Avg Speed threshold config with text-mode green above-target coloring"></td>
+    <td align="center"><img src="screenshots/config.jpg" alt="Main Barberfish config screen with its seven collapsed sections"></td>
+    <td align="center"><img src="screenshots/palette_config.jpg" alt="Palettes section with power, HR, and grade palette pickers and their previews"></td>
   </tr>
 </table>
