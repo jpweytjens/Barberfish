@@ -18,6 +18,12 @@ import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadableDark
 import com.jpweytjens.barberfish.datatype.shared.karooPowerColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
+import com.jpweytjens.barberfish.datatype.shared.surgeonfishHrColors
+import com.jpweytjens.barberfish.datatype.shared.surgeonfishHrColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.surgeonfishHrColorsReadableLight
+import com.jpweytjens.barberfish.datatype.shared.surgeonfishPowerColors
+import com.jpweytjens.barberfish.datatype.shared.surgeonfishPowerColorsReadableDark
+import com.jpweytjens.barberfish.datatype.shared.surgeonfishPowerColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadableDark
 import com.jpweytjens.barberfish.datatype.shared.wahooHrColorsReadableLight
 import com.jpweytjens.barberfish.datatype.shared.wahooPowerColorsReadableDark
@@ -283,6 +289,7 @@ class ZoneColoringTest {
         val palettes =
             mapOf(
                 "Karoo" to karooPowerColorsReadableLight,
+                "Surgeonfish" to surgeonfishPowerColorsReadableLight,
                 "Wahoo" to wahooPowerColorsReadableLight,
                 "Intervals" to intervalsPowerColorsReadableLight,
                 "Zwift" to zwiftPowerColorsReadableLight,
@@ -297,6 +304,7 @@ class ZoneColoringTest {
         val palettes =
             mapOf(
                 "Karoo HR" to karooHrColorsReadableLight,
+                "Surgeonfish HR" to surgeonfishHrColorsReadableLight,
                 "Wahoo HR" to wahooHrColorsReadableLight,
                 "Intervals HR" to intervalsHrColorsReadableLight,
                 "Zwift HR" to zwiftHrColorsReadableLight,
@@ -304,6 +312,33 @@ class ZoneColoringTest {
         for ((name, colors) in palettes) {
             colors.forEachIndexed { i, c -> assertReadableOnWhite("$name Z${i + 1}", c) }
         }
+    }
+
+    // --- Surgeonfish palette (improved-progression sibling of Karoo) ---
+
+    @Test
+    fun `every Surgeonfish readable-dark zone meets contrast on black`() {
+        surgeonfishPowerColorsReadableDark.forEachIndexed { i, c ->
+            assertReadable("Surgeonfish Z${i + 1}", c)
+        }
+        surgeonfishHrColorsReadableDark.forEachIndexed { i, c ->
+            assertReadable("Surgeonfish HR Z${i + 1}", c)
+        }
+    }
+
+    // HR is the same [0,1,2,3,5] slice of the power palette Karoo uses (drops Z5 and Z7).
+    @Test
+    fun `Surgeonfish HR palette is the power subset 0 1 2 3 5`() {
+        val subset = listOf(0, 1, 2, 3, 5)
+        assertEquals(subset.map { surgeonfishPowerColors[it] }, surgeonfishHrColors)
+        assertEquals(
+            subset.map { surgeonfishPowerColorsReadableDark[it] },
+            surgeonfishHrColorsReadableDark,
+        )
+        assertEquals(
+            subset.map { surgeonfishPowerColorsReadableLight[it] },
+            surgeonfishHrColorsReadableLight,
+        )
     }
 
     // --- bestTextOnBackground picker ---
