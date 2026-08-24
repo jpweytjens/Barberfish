@@ -377,10 +377,7 @@ class MainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     CollapsibleSection(
-                        title = "Palettes",
-                        tag = "palettes",
-                        description = "Zone and grade color palettes",
-                        icon = R.drawable.ic_section_palette,
+                        section = ConfigSection.PALETTES,
                         expanded = palettesExpanded,
                         onToggle = { palettesExpanded = !palettesExpanded },
                     ) {
@@ -422,10 +419,7 @@ class MainActivity : ComponentActivity() {
                     } // end Palettes
 
                     CollapsibleSection(
-                        title = "HUD",
-                        tag = "hud",
-                        description = "Slots and layout for the heads-up display",
-                        icon = R.drawable.ic_section_hud,
+                        section = ConfigSection.HUD,
                         expanded = hudExpanded,
                         onToggle = { hudExpanded = !hudExpanded },
                     ) {
@@ -558,10 +552,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                     CollapsibleSection(
-                        title = "Data fields",
-                        tag = "data-fields",
-                        description = "Per-field settings for the standalone fields",
-                        icon = R.drawable.ic_section_fields,
+                        section = ConfigSection.DATA_FIELDS,
                         expanded = fieldsExpanded,
                         onToggle = { fieldsExpanded = !fieldsExpanded },
                     ) {
@@ -1192,10 +1183,7 @@ class MainActivity : ComponentActivity() {
                     } // end Fields
 
                     CollapsibleSection(
-                        title = "Climbing",
-                        tag = "climbing",
-                        description = "The elevation profile and the grade map overlay",
-                        icon = R.drawable.ic_grade,
+                        section = ConfigSection.CLIMBING,
                         expanded = climbingExpanded,
                         onToggle = { climbingExpanded = !climbingExpanded },
                     ) {
@@ -1226,10 +1214,7 @@ class MainActivity : ComponentActivity() {
                     } // end Climbing
 
                     CollapsibleSection(
-                        title = "ETA",
-                        tag = "eta",
-                        description = "Time of arrival estimation",
-                        icon = R.drawable.ic_finish_flag,
+                        section = ConfigSection.ETA,
                         expanded = etaExpanded,
                         onToggle = { etaExpanded = !etaExpanded },
                     ) {
@@ -1249,10 +1234,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     CollapsibleSection(
-                        title = "Time",
-                        tag = "time",
-                        description = "Format for time and duration fields",
-                        icon = R.drawable.ic_stopwatch,
+                        section = ConfigSection.TIME,
                         expanded = timeExpanded,
                         onToggle = { timeExpanded = !timeExpanded },
                     ) {
@@ -1266,11 +1248,7 @@ class MainActivity : ComponentActivity() {
                         TimeFormatPreview(format = timeConfig.format)
                     } // end Time
                     CollapsibleSection(
-                        title = "Data Field Design",
-                        tag = "data-field-design",
-                        description =
-                            "Match Karoo's icon and label-size settings for Barberfish fields",
-                        icon = R.drawable.ic_section_grid,
+                        section = ConfigSection.DATA_FIELD_DESIGN,
                         expanded = designExpanded,
                         onToggle = { designExpanded = !designExpanded },
                     ) {
@@ -1613,19 +1591,53 @@ internal fun <T> SmoothingSlider(
     }
 }
 
+// The config screen's seven sections, in on-screen order. Titles, tags, descriptions,
+// and icons live here once; ConfigScreen and the screenshot render test both draw from it.
+internal enum class ConfigSection(
+    val title: String,
+    val tag: String,
+    val description: String,
+    val icon: Int,
+) {
+    PALETTES(
+        "Palettes",
+        "palettes",
+        "Zone and grade color palettes",
+        R.drawable.ic_section_palette,
+    ),
+    HUD("HUD", "hud", "Slots and layout for the heads-up display", R.drawable.ic_section_hud),
+    DATA_FIELDS(
+        "Data fields",
+        "data-fields",
+        "Per-field settings for the standalone fields",
+        R.drawable.ic_section_fields,
+    ),
+    CLIMBING(
+        "Climbing",
+        "climbing",
+        "The elevation profile and the grade map overlay",
+        R.drawable.ic_grade,
+    ),
+    ETA("ETA", "eta", "Time of arrival estimation", R.drawable.ic_finish_flag),
+    TIME("Time", "time", "Format for time and duration fields", R.drawable.ic_stopwatch),
+    DATA_FIELD_DESIGN(
+        "Data Field Design",
+        "data-field-design",
+        "Match Karoo's icon and label-size settings for Barberfish fields",
+        R.drawable.ic_section_grid,
+    ),
+}
+
 @Composable
-private fun CollapsibleSection(
-    title: String,
-    tag: String,
-    description: String,
-    icon: Int,
+internal fun CollapsibleSection(
+    section: ConfigSection,
     expanded: Boolean,
     onToggle: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier =
-            Modifier.testTag("bf:section:$tag")
+            Modifier.testTag("bf:section:${section.tag}")
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .border(1.dp, Grey200, RoundedCornerShape(6.dp))
@@ -1647,12 +1659,12 @@ private fun CollapsibleSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(
-                        painter = painterResource(icon),
+                        painter = painterResource(section.icon),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        title.uppercase(),
+                        section.title.uppercase(),
                         style =
                             MaterialTheme.typography.bodyMedium.copy(
                                 fontSize = 14.sp,
@@ -1660,7 +1672,7 @@ private fun CollapsibleSection(
                             ),
                     )
                 }
-                HelperText(description)
+                HelperText(section.description)
             }
             val rotation by
                 animateFloatAsState(
