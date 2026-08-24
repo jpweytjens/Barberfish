@@ -145,15 +145,17 @@ private val TURBO_GRADE_BANDS =
 // Surgeonfish grade bands — Barberfish's thresholds under a sharper ramp: HSLuv-spaced
 // green→yellow→orange→red climbs with a dark purple band above 20%, and saturated blue
 // descents that deepen toward navy, after the blue limb of Kovesi's CET rainbow maps.
+// Climb bands and the flat band reuse the Surgeonfish power zone palette (see ZoneColoring.kt),
+// exactly as KAROO_GRADE_BANDS reuses karooPowerColors; the descent bands are grade-only.
 private val SURGEONFISH_GRADE_BANDS =
     listOf(
-        20.0 to Color(0xFF7804AD), // [20, ∞)   — purple
-        14.0 to Color(0xFFE5050B), // [14, 20)  — red
-        11.0 to Color(0xFFE66407), // [11, 14)  — red-orange
-        8.0 to Color(0xFFE5950B), //  [8, 11)  — orange
-        5.0 to Color(0xFFE0CF10), //  [5, 8)   — yellow
-        2.0 to Color(0xFFA8C90E), //  [2, 5)   — yellow-green
-        -2.0 to Color(0xFF59BA63), // [-2, 2)   — flat green (muted, s70)
+        20.0 to surgeonfishPowerColors[6], // [20, ∞)   — purple
+        14.0 to surgeonfishPowerColors[5], // [14, 20)  — red
+        11.0 to surgeonfishPowerColors[4], // [11, 14)  — red-orange
+        8.0 to surgeonfishPowerColors[3], //  [8, 11)  — orange
+        5.0 to surgeonfishPowerColors[2], //  [5, 8)   — yellow
+        2.0 to surgeonfishPowerColors[1], //  [2, 5)   — yellow-green
+        -2.0 to surgeonfishPowerColors[0], // [-2, 2)   — flat green (muted, s70)
         -6.0 to Color(0xFF37A6D6), // [-6, -2)  — azure
         -10.0 to Color(0xFF1E81C6), // [-10, -6) — blue
         Double.NEGATIVE_INFINITY to Color(0xFF145B9C), // (-∞, -10) — navy
@@ -173,13 +175,13 @@ private val TURBO_GRADE_BANDS_READABLE_DARK =
     )
 private val SURGEONFISH_GRADE_BANDS_READABLE_DARK =
     listOf(
-        20.0 to Color(0xFFC16EFE), // was #7804AD
-        14.0 to Color(0xFFFE5A5A), // was #E5050B
-        11.0 to Color(0xFFF26A08), // was #E66407
-        8.0 to Color(0xFFE5950B),
-        5.0 to Color(0xFFE0CF10),
-        2.0 to Color(0xFFA8C90E),
-        -2.0 to Color(0xFF59BA63),
+        20.0 to surgeonfishPowerColorsReadableDark[6],
+        14.0 to surgeonfishPowerColorsReadableDark[5],
+        11.0 to surgeonfishPowerColorsReadableDark[4],
+        8.0 to surgeonfishPowerColorsReadableDark[3],
+        5.0 to surgeonfishPowerColorsReadableDark[2],
+        2.0 to surgeonfishPowerColorsReadableDark[1],
+        -2.0 to surgeonfishPowerColorsReadableDark[0],
         -6.0 to Color(0xFF37A6D6),
         -10.0 to Color(0xFF269AEB), // was #1E81C6
         Double.NEGATIVE_INFINITY to Color(0xFF3197F9), // was #145B9C
@@ -246,13 +248,13 @@ private val TURBO_GRADE_BANDS_READABLE_LIGHT =
     )
 private val SURGEONFISH_GRADE_BANDS_READABLE_LIGHT =
     listOf(
-        20.0 to Color(0xFF7804AD),
-        14.0 to Color(0xFFE5050B),
-        11.0 to Color(0xFFE66407),
-        8.0 to Color(0xFFE5950B),
-        5.0 to Color(0xFFBCAD0B), // was #E0CF10
-        2.0 to Color(0xFF99B70C), // was #A8C90E
-        -2.0 to Color(0xFF59BA63),
+        20.0 to surgeonfishPowerColorsReadableLight[6],
+        14.0 to surgeonfishPowerColorsReadableLight[5],
+        11.0 to surgeonfishPowerColorsReadableLight[4],
+        8.0 to surgeonfishPowerColorsReadableLight[3],
+        5.0 to surgeonfishPowerColorsReadableLight[2],
+        2.0 to surgeonfishPowerColorsReadableLight[1],
+        -2.0 to surgeonfishPowerColorsReadableLight[0],
         -6.0 to Color(0xFF37A6D6),
         -10.0 to Color(0xFF1E81C6),
         Double.NEGATIVE_INFINITY to Color(0xFF145B9C),
