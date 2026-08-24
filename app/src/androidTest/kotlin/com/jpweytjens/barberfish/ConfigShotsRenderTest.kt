@@ -3,12 +3,15 @@ package com.jpweytjens.barberfish
 import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -18,21 +21,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
-import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jpweytjens.barberfish.datatype.shared.Grey100
+import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
@@ -197,17 +199,25 @@ class ConfigShotsRenderTest {
                 )
             }
         }
-        // Select the second preview column so its slot panel shows below the preview.
-        composeRule.onNodeWithTag("bf:hud:preview", useUnmergedTree = true).performTouchInput {
-            click(Offset(width * 0.375f, height * 0.4f))
-        }
         capture("hud_config")
     }
 
     @Test
     fun paletteConfig() {
+        // No CollapsibleSection header here: reclaims the ~header's-worth of height for the
+        // palette previews (esp. Grade, which is taller than the two zone previews above it).
+        // Mirrors the card look CollapsibleSection renders around its expanded content, minus
+        // the header row.
         setShotContent {
-            CollapsibleSection(section = ConfigSection.PALETTES, expanded = true, onToggle = {}) {
+            Column(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .border(1.dp, Grey200, RoundedCornerShape(6.dp))
+                        .background(Color.White)
+                        .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 PalettesSectionContent(zoneConfig = ZoneConfig(), onUpdate = {})
             }
         }
