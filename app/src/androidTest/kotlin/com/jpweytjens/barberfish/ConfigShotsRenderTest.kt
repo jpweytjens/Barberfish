@@ -1,10 +1,13 @@
 package com.jpweytjens.barberfish
 
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -55,6 +59,7 @@ import com.jpweytjens.barberfish.screens.PalettesSectionContent
 import io.hammerhead.karooext.models.UserProfile
 import java.io.File
 import java.io.FileOutputStream
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -98,6 +103,8 @@ class ConfigShotsRenderTest {
 
     private fun setShotContent(
         fixedHeight: Boolean = false,
+        scrollable: Boolean = false,
+        scrollState: ScrollState = ScrollState(0),
         content: @Composable ColumnScope.() -> Unit,
     ) {
         // Hide the status bar to reclaim its height for the capture; the shot is a synthetic
@@ -116,19 +123,39 @@ class ConfigShotsRenderTest {
                     LocalScreenshotMode provides true,
                     LocalDataFieldDesign provides DataFieldDesignConfig(),
                 ) {
-                    Column(
-                        modifier =
-                            Modifier.testTag(SHOT_TAG)
-                                .width(shotWidth)
-                                .then(
-                                    if (fixedHeight) Modifier.height(windowHeight).clipToBounds()
-                                    else Modifier
-                                )
-                                .background(Grey100)
-                                .padding(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        content = content,
-                    )
+                    if (scrollable) {
+                        // The tagged node is a fixed window-height viewport; captureTall()
+                        // pages through it by driving scrollState and stitching the pages.
+                        Box(
+                            modifier =
+                                Modifier.testTag(SHOT_TAG).width(shotWidth).height(windowHeight)
+                        ) {
+                            Column(
+                                modifier =
+                                    Modifier.fillMaxWidth()
+                                        .verticalScroll(scrollState)
+                                        .background(Grey100)
+                                        .padding(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                content = content,
+                            )
+                        }
+                    } else {
+                        Column(
+                            modifier =
+                                Modifier.testTag(SHOT_TAG)
+                                    .width(shotWidth)
+                                    .then(
+                                        if (fixedHeight)
+                                            Modifier.height(windowHeight).clipToBounds()
+                                        else Modifier
+                                    )
+                                    .background(Grey100)
+                                    .padding(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            content = content,
+                        )
+                    }
                 }
             }
         }
@@ -137,6 +164,47 @@ class ConfigShotsRenderTest {
     private fun capture(name: String) {
         composeRule.waitForIdle()
         val bitmap = composeRule.onNodeWithTag(SHOT_TAG).captureToImage().asAndroidBitmap()
+        writePng(name, bitmap)
+    }
+
+    // Pages a scrollable shot through its window-height viewport and stitches the pages into one
+    // full-height bitmap, escaping the physical display's height cap. Reused by any shot whose
+    // content is taller than the K3 screen (e.g. the grade-map config shot).
+    private fun captureTall(name: String, scrollState: ScrollState) {
+        composeRule.waitForIdle()
+        val node = composeRule.onNodeWithTag(SHOT_TAG)
+        val size = node.fetchSemanticsNode().size
+        val viewportPx = size.height
+        val widthPx = size.width
+        val totalPx = scrollState.maxValue + viewportPx
+
+        val result = Bitmap.createBitmap(widthPx, totalPx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+
+        var k = 0
+        while (true) {
+            val target = minOf(k * viewportPx, scrollState.maxValue)
+            composeRule.runOnIdle { runBlocking { scrollState.scrollTo(target) } }
+            composeRule.waitForIdle()
+            val page = composeRule.onNodeWithTag(SHOT_TAG).captureToImage().asAndroidBitmap()
+            val y = k * viewportPx
+            if (target == scrollState.maxValue) {
+                // Final page: keep only the rows below where the previous page left off,
+                // discarding the overlap with it.
+                val cropY = y - target
+                val cropHeight = viewportPx - cropY
+                val cropped = Bitmap.createBitmap(page, 0, cropY, widthPx, cropHeight)
+                canvas.drawBitmap(cropped, 0f, y.toFloat(), null)
+                break
+            }
+            canvas.drawBitmap(page, 0f, y.toFloat(), null)
+            k++
+        }
+
+        writePng(name, result)
+    }
+
+    private fun writePng(name: String, bitmap: Bitmap) {
         val outDir =
             File(composeRule.activity.getExternalFilesDir(null), "config_shots").apply { mkdirs() }
         FileOutputStream(File(outDir, "$name.png")).use {
@@ -204,11 +272,12 @@ class ConfigShotsRenderTest {
 
     @Test
     fun paletteConfig() {
-        // No CollapsibleSection header here: reclaims the ~header's-worth of height for the
-        // palette previews (esp. Grade, which is taller than the two zone previews above it).
-        // Mirrors the card look CollapsibleSection renders around its expanded content, minus
-        // the header row.
-        setShotContent {
+        // No CollapsibleSection header here: mirrors the card look CollapsibleSection renders
+        // around its expanded content, minus the header row. The full palette content (esp.
+        // Grade's three-part preview) is taller than the K3 screen even without the header, so
+        // this shot pages through a scrollable viewport and captureTall() stitches it whole.
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
             Column(
                 modifier =
                     Modifier.fillMaxWidth()
@@ -221,7 +290,7 @@ class ConfigShotsRenderTest {
                 PalettesSectionContent(zoneConfig = ZoneConfig(), onUpdate = {})
             }
         }
-        capture("palette_config")
+        captureTall("palette_config", scrollState)
     }
 
     @Test
