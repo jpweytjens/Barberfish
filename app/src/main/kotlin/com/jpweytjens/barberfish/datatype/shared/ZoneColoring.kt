@@ -66,15 +66,8 @@ internal val karooPowerColors =
         Color(0xFF9020A0), // Zone 7 – Neuromuscular     (purple)
     )
 
-// Karoo HR zones (5 zones) — same palette, subset of power zones
-internal val karooHrColors =
-    listOf(
-        Color(0xFF1A8C3A), // Zone 1 – Active Recovery   (dark green)
-        Color(0xFF40D078), // Zone 2 – Endurance         (mint green)
-        Color(0xFFF0D800), // Zone 3 – Tempo             (yellow)
-        Color(0xFFF08868), // Zone 4 – Lactate Threshold (salmon)
-        Color(0xFFD01020), // Zone 5 – VO2 Max           (red)
-    )
+// Karoo HR zones (5 zones) — the [0,1,2,3,5] subset of power the readable variants also use
+internal val karooHrColors = listOf(0, 1, 2, 3, 5).map { karooPowerColors[it] }
 
 // Surgeonfish power zones (7 zones) — the Surgeonfish grade gradient sliced into zones: its flat
 // band is Zone 1, its six climb bands are Zones 2–7. An even-progression sibling of the Karoo
@@ -105,15 +98,8 @@ internal val wahooPowerColors =
         Color(0xFFE03020), // Zone 7 – Power Intervals   (red)
     )
 
-// Wahoo HR zones (5 zones)
-internal val wahooHrColors =
-    listOf(
-        Color(0xFFC0C0C0), // Zone 1 (grey)
-        Color(0xFF253070), // Zone 2 (navy)
-        Color(0xFF48B830), // Zone 3 (green)
-        Color(0xFFE06818), // Zone 4 (orange)
-        Color(0xFFE03020), // Zone 5 (red)
-    )
+// Wahoo HR zones (5 zones) — the [0,1,3,5,6] subset of power the readable variants also use
+internal val wahooHrColors = listOf(0, 1, 3, 5, 6).map { wahooPowerColors[it] }
 
 // Intervals.icu power zones (7 zones)
 internal val intervalsPowerColors =
