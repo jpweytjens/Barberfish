@@ -296,6 +296,7 @@ class ConfigShotsRenderTest {
         // this shot pages through a scrollable viewport and captureTall() stitches it whole.
         val scrollState = ScrollState(0)
         setShotContent(scrollable = true, scrollState = scrollState) {
+            // Card chrome mirrors CollapsibleSection's; keep in sync if that styling changes.
             Column(
                 modifier =
                     Modifier.fillMaxWidth()

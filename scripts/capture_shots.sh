@@ -3,9 +3,9 @@
 # version bumps. Each "shot" navigates a pre-staged Karoo to a known screen and
 # captures it. This is the LIVE-DEVICE set only; the fixture-rendered set
 # (all_fields, grade/profile states, palettes) stays with render_previews.sh.
-# The Barberfish config-screen shots (config, hud_config, threshold_config,
-# design_barberfish) are rendered from Compose instead — see
-# scripts/render_config_shots.sh. threshold_config is retired entirely.
+# The Barberfish config-screen shots (config, hud_config, design_barberfish)
+# are rendered from Compose instead, by scripts/render_config_shots.sh, which
+# also adds a palette_config shot. threshold_config is retired entirely.
 #
 # Pre-staged device assumption: the Barberfish profile, data pages, and per-field
 # config are already set up as you want them shown. This script navigates and
@@ -106,7 +106,6 @@ crop_band() { # crop_band <src.png> <y1> <y2> <out> — full width minus scrollb
 }
 
 box_y1() { ui box "$@" | awk '{print $2}'; }   # top edge of a matched node
-box_y2() { ui box "$@" | awk '{print $4}'; }   # bottom edge
 
 frame_heading() { # scroll TEXT heading into the upper viewport; echo its y1.
     # Puts the heading high enough that its ~150px panel (help + toggle) sits
