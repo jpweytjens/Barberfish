@@ -42,6 +42,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -156,6 +157,7 @@ internal fun HUDConfigSection(
         },
         stripSelected = stripSelected,
         onStripSelected = { selection = if (stripSelected) null else HudSelection.Strip },
+        modifier = Modifier.testTag("bf:hud:preview"),
     )
 
     val slot =
@@ -360,6 +362,7 @@ private fun HUDPreview(
     onSlotSelected: (Int) -> Unit,
     stripSelected: Boolean,
     onStripSelected: () -> Unit,
+    modifier: Modifier = Modifier,
     previewSweepSeconds: Int = 10,
 ) {
     val states =
@@ -382,7 +385,8 @@ private fun HUDPreview(
 
     Box(
         modifier =
-            Modifier.fillMaxWidth()
+            modifier
+                .fillMaxWidth()
                 .height(HUD_PREVIEW_HEIGHT)
                 .clip(RoundedCornerShape(8.dp))
                 .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
@@ -506,6 +510,7 @@ private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
         options = listOf(3 to "3", 4 to "4"),
         selected = columns,
         onSelect = onSelect,
+        modifier = Modifier.testTag("bf:hud:columns"),
         trackColor = Grey200,
     )
 }
@@ -522,6 +527,7 @@ private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -
             ),
         selected = mode,
         onSelect = onSelect,
+        modifier = Modifier.testTag("bf:hud:profile"),
         trackColor = Grey200,
     )
 }
@@ -652,7 +658,10 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             readOnly = true,
             label = { Text("Data field") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+            modifier =
+                Modifier.testTag("bf:hud:data-field")
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             val groups =

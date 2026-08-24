@@ -64,6 +64,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -75,7 +76,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -256,6 +260,7 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     private fun ConfigScreen() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
@@ -360,11 +365,15 @@ class MainActivity : ComponentActivity() {
             Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
                 Column(
                     modifier =
-                        Modifier.fillMaxSize().padding(6.dp).verticalScroll(rememberScrollState()),
+                        Modifier.semantics { testTagsAsResourceId = true }
+                            .fillMaxSize()
+                            .padding(6.dp)
+                            .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     CollapsibleSection(
                         title = "Palettes",
+                        tag = "palettes",
                         description = "Zone and grade color palettes",
                         icon = R.drawable.ic_section_palette,
                         expanded = palettesExpanded,
@@ -409,6 +418,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "HUD",
+                        tag = "hud",
                         description = "Slots and layout for the heads-up display",
                         icon = R.drawable.ic_section_hud,
                         expanded = hudExpanded,
@@ -540,6 +550,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "Data fields",
+                        tag = "data-fields",
                         description = "Per-field settings for the standalone fields",
                         icon = R.drawable.ic_section_fields,
                         expanded = fieldsExpanded,
@@ -550,6 +561,7 @@ class MainActivity : ComponentActivity() {
                         ControlLabel("POWER")
                         FieldCard(
                             title = "POWER",
+                            typeId = "power",
                             description = "Current power output",
                             previewFields = powerPreviewStates,
                             colorMode = powerFieldConfig.colorMode,
@@ -581,6 +593,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "AVG POWER",
+                            typeId = "avg-power",
                             description = "Average power with zone coloring.",
                             previewFields = avgPowerPreviewStates,
                             colorMode = avgPowerFieldConfig.colorMode,
@@ -603,6 +616,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "NORMALIZED POWER",
+                            typeId = "np",
                             description = "Normalized power with zone coloring.",
                             previewFields = npPreviewStates,
                             colorMode = npFieldConfig.colorMode,
@@ -622,6 +636,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "LAP AVG POWER",
+                            typeId = "lap-power",
                             description = "Average power this lap with zone coloring.",
                             previewFields = lapPowerPreviewStates,
                             colorMode = lapPowerFieldConfig.colorMode,
@@ -648,6 +663,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "LAST LAP AVG POWER",
+                            typeId = "last-lap-power",
                             description = "Average power from the previous lap with zone coloring.",
                             previewFields = lastLapPowerPreviewStates,
                             colorMode = lastLapPowerFieldConfig.colorMode,
@@ -675,6 +691,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "POWER ZONE",
+                            typeId = "power-zone",
                             description = "Current power zone, with zone coloring.",
                             previewFields = powerZonePreviewStates,
                             colorMode = powerZoneFieldConfig.colorMode,
@@ -708,6 +725,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "MAX POWER",
+                            typeId = "max-power",
                             description = "Maximum power reached this ride, with zone coloring.",
                             previewFields = maxPowerPreviewStates,
                             colorMode = maxPowerFieldConfig.colorMode,
@@ -731,6 +749,7 @@ class MainActivity : ComponentActivity() {
                         ControlLabel("HEART RATE", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
                             title = "HEART RATE",
+                            typeId = "hr",
                             description = "Current heart rate",
                             previewFields = hrPreviewStates,
                             colorMode = hrFieldConfig.colorMode,
@@ -753,6 +772,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "AVG HR",
+                            typeId = "avg-hr",
                             description = "Average heart rate with zone coloring.",
                             previewFields = avgHrPreviewStates,
                             colorMode = avgHrFieldConfig.colorMode,
@@ -775,6 +795,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "LAP AVG HR",
+                            typeId = "lap-avg-hr",
                             description = "Average heart rate this lap with zone coloring.",
                             previewFields = lapAvgHrPreviewStates,
                             colorMode = lapAvgHrFieldConfig.colorMode,
@@ -797,6 +818,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "LAST LAP AVG HR",
+                            typeId = "last-lap-avg-hr",
                             description =
                                 "Average heart rate from the previous lap with zone coloring.",
                             previewFields = lastLapAvgHrPreviewStates,
@@ -825,6 +847,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "%MAX HR",
+                            typeId = "hr-percent-max",
                             description =
                                 "Current heart rate as a percentage of max HR, with zone coloring.",
                             previewFields = hrMaxPercentPreviewStates,
@@ -849,6 +872,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "MAX HR",
+                            typeId = "max-hr",
                             description =
                                 "Maximum heart rate reached this ride, with zone coloring.",
                             previewFields = maxHrPreviewStates,
@@ -870,6 +894,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "HR ZONE",
+                            typeId = "hr-zone",
                             description = "Current heart rate zone, with zone coloring.",
                             previewFields = hrZonePreviewStates,
                             colorMode = hrZoneFieldConfig.colorMode,
@@ -903,6 +928,7 @@ class MainActivity : ComponentActivity() {
                         ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
                             title = "SPEED",
+                            typeId = "speed",
                             description = "Current speed",
                             previewFields = speedPreviewStates,
                             colorMode = speedFieldConfig.colorMode,
@@ -951,6 +977,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "AVG SPEED (TOTAL)",
+                            typeId = "avg-speed-total",
                             description = "Average speed including paused time.",
                             previewFields = avgTotalPreviewStates,
                             colorMode = avgTotalConfig.colorMode,
@@ -993,6 +1020,7 @@ class MainActivity : ComponentActivity() {
 
                         FieldCard(
                             title = "AVG SPEED (MOVING)",
+                            typeId = "avg-speed-moving",
                             description = "Average speed excluding paused time.",
                             previewFields = avgMovingPreviewStates,
                             colorMode = avgMovingConfig.colorMode,
@@ -1027,6 +1055,7 @@ class MainActivity : ComponentActivity() {
                         ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
                             title = "CADENCE",
+                            typeId = "cadence",
                             description = "Current cadence with threshold coloring.",
                             previewFields = cadencePreviewStates,
                             colorMode = cadenceFieldConfig.colorMode,
@@ -1072,6 +1101,7 @@ class MainActivity : ComponentActivity() {
                         ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
                             title = "GRADE",
+                            typeId = "grade",
                             description = "Road gradient with color coding.",
                             previewFields = gradePreviewStates,
                             colorMode = gradeFieldConfig.colorMode,
@@ -1114,6 +1144,7 @@ class MainActivity : ComponentActivity() {
                         ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
                             title = "RIDE REMAINING",
+                            typeId = "remaining-effort",
                             description = "Distance and ascent remaining, stacked.",
                             previewFields = effortPreviewStates,
                             colorMode = ZoneColorMode.NONE,
@@ -1153,6 +1184,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "Climbing",
+                        tag = "climbing",
                         description = "The elevation profile and the grade map overlay",
                         icon = R.drawable.ic_grade,
                         expanded = climbingExpanded,
@@ -1186,6 +1218,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "ETA",
+                        tag = "eta",
                         description = "Time of arrival estimation",
                         icon = R.drawable.ic_finish_flag,
                         expanded = etaExpanded,
@@ -1208,6 +1241,7 @@ class MainActivity : ComponentActivity() {
 
                     CollapsibleSection(
                         title = "Time",
+                        tag = "time",
                         description = "Format for time and duration fields",
                         icon = R.drawable.ic_stopwatch,
                         expanded = timeExpanded,
@@ -1224,6 +1258,7 @@ class MainActivity : ComponentActivity() {
                     } // end Time
                     CollapsibleSection(
                         title = "Data Field Design",
+                        tag = "data-field-design",
                         description =
                             "Match Karoo's icon and label-size settings for Barberfish fields",
                         icon = R.drawable.ic_section_grid,
@@ -1241,6 +1276,7 @@ class MainActivity : ComponentActivity() {
                             },
                             help = "Show the icon in each field header.",
                             trackColor = Grey100,
+                            labelModifier = Modifier.testTag("bf:dfd:data-icons"),
                         )
 
                         ControlLabel("LABEL SIZE")
@@ -1254,6 +1290,7 @@ class MainActivity : ComponentActivity() {
                                     saveDataFieldDesignConfig(dataFieldDesignConfig)
                                 }
                             },
+                            modifier = Modifier.testTag("bf:dfd:label-size"),
                             trackColor = Grey100,
                         )
                     } // end Data Field Design
@@ -1437,8 +1474,10 @@ internal fun <T> ChoiceRow(
     onSelect: (T) -> Unit,
     help: String? = null,
     trackColor: Color = Color.White,
+    labelModifier: Modifier = Modifier,
 ) {
-    if (help != null) LabeledHelper(label) { HelperText(help) } else ControlLabel(label)
+    if (help != null) LabeledHelper(label, labelModifier) { HelperText(help) }
+    else ControlLabel(label, labelModifier)
     SegmentedRow(
         options = options,
         selected = selected,
@@ -1454,7 +1493,17 @@ internal fun BoolToggleRow(
     onChange: (Boolean) -> Unit,
     help: String? = null,
     trackColor: Color = Color.White,
-) = ChoiceRow(label, listOf(false to "Off", true to "On"), value, onChange, help, trackColor)
+    labelModifier: Modifier = Modifier,
+) =
+    ChoiceRow(
+        label,
+        listOf(false to "Off", true to "On"),
+        value,
+        onChange,
+        help,
+        trackColor,
+        labelModifier,
+    )
 
 @Composable
 internal fun <T> SmoothingSlider(
@@ -1555,6 +1604,7 @@ internal fun <T> SmoothingSlider(
 @Composable
 private fun CollapsibleSection(
     title: String,
+    tag: String,
     description: String,
     icon: Int,
     expanded: Boolean,
@@ -1563,7 +1613,8 @@ private fun CollapsibleSection(
 ) {
     Column(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier.testTag("bf:section:$tag")
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .border(1.dp, Grey200, RoundedCornerShape(6.dp))
                 .background(Color.White)
@@ -1755,6 +1806,7 @@ private fun RouteRemainingCard(
         title = "OVERVIEW",
         selected = selected,
         onSelect = onSelect,
+        testTag = "bf:field:route-remaining",
         headerExtra = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1793,12 +1845,14 @@ internal fun ExpandableCard(
     title: String,
     selected: Boolean,
     onSelect: () -> Unit,
+    testTag: String? = null,
     headerExtra: (@Composable () -> Unit)? = null,
     controls: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier =
             Modifier.fillMaxWidth()
+                .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
                 .clip(RoundedCornerShape(6.dp))
                 .border(1.dp, Grey200, RoundedCornerShape(6.dp))
     ) {
@@ -1841,6 +1895,7 @@ internal fun ExpandableCard(
 @Composable
 private fun FieldCard(
     title: String,
+    typeId: String,
     description: String,
     previewFields: List<FieldState>,
     colorMode: ZoneColorMode,
@@ -1852,6 +1907,7 @@ private fun FieldCard(
         title = title,
         selected = selected,
         onSelect = onSelect,
+        testTag = "bf:field:$typeId",
         headerExtra = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1900,7 +1956,13 @@ private fun ThresholdLegend() {
 
 @Composable
 internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) =
-    ChoiceRow("ZONE COLOR", ZoneColorMode.entries.map { it to it.label }, selected, onSelected)
+    ChoiceRow(
+        "ZONE COLOR",
+        ZoneColorMode.entries.map { it to it.label },
+        selected,
+        onSelected,
+        labelModifier = Modifier.testTag("bf:field:zone-color"),
+    )
 
 @Composable
 internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) =
@@ -2208,7 +2270,7 @@ internal fun AvgSpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
-    ControlLabel("THRESHOLD")
+    ControlLabel("THRESHOLD", Modifier.testTag("bf:field:threshold"))
     ThresholdLegend()
     val modeOptions = listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
     SegmentedRow(
@@ -2263,7 +2325,7 @@ internal fun CadenceThresholdControls(
     config: CadenceThresholdConfig,
     onConfigChange: (CadenceThresholdConfig) -> Unit,
 ) {
-    ControlLabel("THRESHOLD")
+    ControlLabel("THRESHOLD", Modifier.testTag("bf:field:threshold"))
     ThresholdLegend()
     val modeOptions = listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
     SegmentedRow(
