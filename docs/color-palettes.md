@@ -35,10 +35,16 @@ either theme.
 | Palette       | Power zones                          | HR zones                          |
 | ------------- | ------------------------------------ | --------------------------------- |
 | Karoo         | ![](palettes/palette-power-karoo.svg)     | ![](palettes/palette-hr-karoo.svg)     |
+| Surgeonfish   | ![](palettes/palette-power-surgeonfish.svg) | ![](palettes/palette-hr-surgeonfish.svg) |
 | Wahoo         | ![](palettes/palette-power-wahoo.svg)     | ![](palettes/palette-hr-wahoo.svg)     |
 | Zwift         | ![](palettes/palette-power-zwift.svg)     | ![](palettes/palette-hr-zwift.svg)     |
 | Intervals.icu | ![](palettes/palette-power-intervals.svg) | ![](palettes/palette-hr-intervals.svg) |
 | HSLuv         | ![](palettes/palette-power-hsluv.svg)     | ![](palettes/palette-hr-hsluv.svg)     |
+
+The Surgeonfish zone palette is its grade gradient sliced the way Karoo's is:
+the flat band is Zone 1 and the six climb bands are Zones 2 to 7, with HR taking
+the same five-zone subset. The grade palettes below describe how that gradient is
+built.
 
 ## Grade palettes
 

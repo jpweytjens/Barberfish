@@ -42,6 +42,7 @@ from palettes import (
 
 POWER_PALETTE_ORDER: list[tuple[str, str]] = [
     ("karoo", "karooPowerColors"),
+    ("surgeonfish", "surgeonfishPowerColors"),
     ("wahoo", "wahooPowerColors"),
     ("zwift", "zwiftPowerColors"),
     ("intervals", "intervalsPowerColors"),
@@ -50,6 +51,7 @@ POWER_PALETTE_ORDER: list[tuple[str, str]] = [
 
 HR_PALETTE_ORDER: list[tuple[str, str]] = [
     ("karoo", "karooHrColors"),
+    ("surgeonfish", "surgeonfishHrColors"),
     ("wahoo", "wahooHrColors"),
     ("zwift", "zwiftHrColors"),
     ("intervals", "intervalsHrColors"),
