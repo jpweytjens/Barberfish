@@ -381,41 +381,10 @@ class MainActivity : ComponentActivity() {
                         expanded = palettesExpanded,
                         onToggle = { palettesExpanded = !palettesExpanded },
                     ) {
-                        EnumDropdown(
-                            title = "Power zones",
-                            entries = ZonePalette.entries,
-                            selected = zoneConfig.powerPalette,
-                            label = ::zonePaletteLabel,
-                            onSelected = { palette ->
-                                zoneConfig = zoneConfig.copy(powerPalette = palette)
-                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                            },
-                        )
-                        ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
-
-                        EnumDropdown(
-                            title = "HR zones",
-                            entries = ZonePalette.entries,
-                            selected = zoneConfig.hrPalette,
-                            label = ::zonePaletteLabel,
-                            onSelected = { palette ->
-                                zoneConfig = zoneConfig.copy(hrPalette = palette)
-                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                            },
-                        )
-                        ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
-
-                        EnumDropdown(
-                            title = "Grade",
-                            entries = GradePalette.entries,
-                            selected = zoneConfig.gradePalette,
-                            label = { it.label },
-                            onSelected = { palette ->
-                                zoneConfig = zoneConfig.copy(gradePalette = palette)
-                                lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                            },
-                        )
-                        GradePalettePreview(palette = zoneConfig.gradePalette)
+                        PalettesSectionContent(zoneConfig) { updated ->
+                            zoneConfig = updated
+                            lifecycleScope.launch { saveZoneConfig(updated) }
+                        }
                     } // end Palettes
 
                     CollapsibleSection(
@@ -1252,34 +1221,10 @@ class MainActivity : ComponentActivity() {
                         expanded = designExpanded,
                         onToggle = { designExpanded = !designExpanded },
                     ) {
-                        BoolToggleRow(
-                            label = "DATA ICONS",
-                            value = dataFieldDesignConfig.showIcons,
-                            onChange = { on ->
-                                dataFieldDesignConfig = dataFieldDesignConfig.copy(showIcons = on)
-                                lifecycleScope.launch {
-                                    saveDataFieldDesignConfig(dataFieldDesignConfig)
-                                }
-                            },
-                            help = "Show the icon in each field header.",
-                            trackColor = Grey100,
-                            labelModifier = Modifier.testTag("bf:dfd:data-icons"),
-                        )
-
-                        ControlLabel("LABEL SIZE")
-                        HelperText("Header label size on dense (2-column) pages.")
-                        SegmentedRow(
-                            options = LabelSize.entries.map { it to it.label },
-                            selected = dataFieldDesignConfig.labelSize,
-                            onSelect = { size ->
-                                dataFieldDesignConfig = dataFieldDesignConfig.copy(labelSize = size)
-                                lifecycleScope.launch {
-                                    saveDataFieldDesignConfig(dataFieldDesignConfig)
-                                }
-                            },
-                            modifier = Modifier.testTag("bf:dfd:label-size"),
-                            trackColor = Grey100,
-                        )
+                        DataFieldDesignSectionContent(dataFieldDesignConfig) { updated ->
+                            dataFieldDesignConfig = updated
+                            lifecycleScope.launch { saveDataFieldDesignConfig(updated) }
+                        }
                     } // end Data Field Design
                     Spacer(modifier = Modifier.height(72.dp))
                 }
@@ -2006,6 +1951,61 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
         options = TimeFormat.entries.map { it to it.label },
         selected = selected,
         onSelect = onSelected,
+        trackColor = Grey100,
+    )
+}
+
+@Composable
+internal fun PalettesSectionContent(zoneConfig: ZoneConfig, onUpdate: (ZoneConfig) -> Unit) {
+    EnumDropdown(
+        title = "Power zones",
+        entries = ZonePalette.entries,
+        selected = zoneConfig.powerPalette,
+        label = ::zonePaletteLabel,
+        onSelected = { palette -> onUpdate(zoneConfig.copy(powerPalette = palette)) },
+    )
+    ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
+
+    EnumDropdown(
+        title = "HR zones",
+        entries = ZonePalette.entries,
+        selected = zoneConfig.hrPalette,
+        label = ::zonePaletteLabel,
+        onSelected = { palette -> onUpdate(zoneConfig.copy(hrPalette = palette)) },
+    )
+    ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
+
+    EnumDropdown(
+        title = "Grade",
+        entries = GradePalette.entries,
+        selected = zoneConfig.gradePalette,
+        label = { it.label },
+        onSelected = { palette -> onUpdate(zoneConfig.copy(gradePalette = palette)) },
+    )
+    GradePalettePreview(palette = zoneConfig.gradePalette)
+}
+
+@Composable
+internal fun DataFieldDesignSectionContent(
+    config: DataFieldDesignConfig,
+    onUpdate: (DataFieldDesignConfig) -> Unit,
+) {
+    BoolToggleRow(
+        label = "DATA ICONS",
+        value = config.showIcons,
+        onChange = { on -> onUpdate(config.copy(showIcons = on)) },
+        help = "Show the icon in each field header.",
+        trackColor = Grey100,
+        labelModifier = Modifier.testTag("bf:dfd:data-icons"),
+    )
+
+    ControlLabel("LABEL SIZE")
+    HelperText("Header label size on dense (2-column) pages.")
+    SegmentedRow(
+        options = LabelSize.entries.map { it to it.label },
+        selected = config.labelSize,
+        onSelect = { size -> onUpdate(config.copy(labelSize = size)) },
+        modifier = Modifier.testTag("bf:dfd:label-size"),
         trackColor = Grey100,
     )
 }
