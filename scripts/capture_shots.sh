@@ -3,6 +3,9 @@
 # version bumps. Each "shot" navigates a pre-staged Karoo to a known screen and
 # captures it. This is the LIVE-DEVICE set only; the fixture-rendered set
 # (all_fields, grade/profile states, palettes) stays with render_previews.sh.
+# The Barberfish config-screen shots (config, hud_config, threshold_config,
+# design_barberfish) are rendered from Compose instead — see
+# scripts/render_config_shots.sh. threshold_config is retired entirely.
 #
 # Pre-staged device assumption: the Barberfish profile, data pages, and per-field
 # config are already set up as you want them shown. This script navigates and
@@ -15,11 +18,10 @@
 #
 # Usage:
 #   scripts/capture_shots.sh                 # all shots below
-#   scripts/capture_shots.sh config hud_config   # just these
 #   OUTDIR=docs/screenshots scripts/capture_shots.sh   # write straight to the committed dir
 #
 # Shots (increment 1, no ride needed):
-#   config  hud_config  threshold_config  design_barberfish  design_karoo
+#   design_karoo
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -29,8 +31,6 @@ UI="$STAGE/ui.xml"
 trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$OUTDIR"
 
-BF=com.jpweytjens.barberfish
-MAIN="$BF/.screens.MainActivity"
 KAROO_DFD=io.hammerhead.settingsapp/.dataFieldSettings.DataFieldSettingsActivity
 FONT=/System/Library/Fonts/Supplemental/Arial.ttf
 
@@ -93,38 +93,6 @@ scroll_to() { # scroll_to <selector...> — step down until the target text is o
     echo "  ! never found while scrolling: $*" >&2; return 1
 }
 
-# Left-margin fling: scrolls from x=14, clear of the pill/preview hitboxes that
-# span the card width. A center swipe that starts on a pill toggles it instead of
-# scrolling; this doesn't.
-scroll_lm() { A shell input swipe 14 $((H*62/100)) 14 $((H*47/100)) 450; }
-# ... and the reverse (finger down = content down), for two-sided convergence.
-scroll_lm_down() { A shell input swipe 14 $((H*47/100)) 14 $((H*62/100)) 450; }
-
-# Scroll to the bottom of the page: keep flinging until the target selector's
-# bounds stop changing (max scroll). Lifts a target out of the bottom-left Back
-# FAB's zone. Uses the aggressive scroll_up fling, not scroll_step — near the
-# content edge the gentle step doesn't overcome Compose's scroll threshold and
-# moves nothing. The target must already be on screen — call scroll_to first.
-scroll_to_bottom() { # scroll_to_bottom <selector...>
-    local prev="" cur tries=0
-    while (( tries < 8 )); do
-        wake; dump; cur=$(ui box "$@" 2>/dev/null)
-        [[ -n "$cur" && "$cur" == "$prev" ]] && return 0
-        prev=$cur; scroll_up; settle
-        (( tries++ ))
-    done
-}
-
-wait_text() { # block until a selector appears (content rendered), or time out
-    local tries=0
-    while (( tries < 12 )); do
-        wake; dump
-        if ui has "$@" >/dev/null 2>&1; then return 0; fi
-        settle 1; (( tries++ ))
-    done
-    echo "  ! content never appeared: $*" >&2; return 1
-}
-
 nudge_to_top() { # bring the matched element near the top of the viewport
     # small upward scroll so the anchor sits below the app bar, not at the very edge
     scroll_up; settle
@@ -133,17 +101,8 @@ nudge_to_top() { # bring the matched element near the top of the viewport
 # ---- capture / crop ----------------------------------------------------------
 cap() { wake; A exec-out screencap -p > "$STAGE/$1.png"; }
 
-publish_full() { # publish_full <name>  — full screen, saved as jpg
-    magick "$STAGE/$1.png" -quality 92 "$OUTDIR/$1.jpg"
-    echo "  -> $OUTDIR/$1.jpg"
-}
-
 crop_band() { # crop_band <src.png> <y1> <y2> <out> — full width minus scrollbar
     magick "$1" -crop "$((W-12))x$(( $3 - $2 ))+0+$2" +repage -quality 92 "$4"
-}
-
-crop_full() { # crop_full <src.png> <y1> <y2> <out> — full device width (keeps a card's right edge)
-    magick "$1" -crop "${W}x$(( $3 - $2 ))+0+$2" +repage -quality 92 "$4"
 }
 
 box_y1() { ui box "$@" | awk '{print $2}'; }   # top edge of a matched node
@@ -161,20 +120,6 @@ frame_heading() { # scroll TEXT heading into the upper viewport; echo its y1.
     dump; box_y1 text "$1"   # best effort
 }
 
-# ---- Barberfish app navigation ----------------------------------------------
-bf_fresh() {
-    wake
-    A shell am force-stop "$BF"
-    settle 1
-    # screenshot mode freezes the HUD preview animation (fixed values + a fixed sweep
-    # position between the two climbs) so hud_config is reproducible.
-    A shell am start -n "$MAIN" --ez screenshot true >/dev/null 2>&1
-    # Compose cold start renders blank for a beat; wait for real content, not a
-    # fixed sleep, or the capture catches an empty white frame.
-    wait_text res "bf:section:palettes"
-    wake
-}
-
 # ---- theme -------------------------------------------------------------------
 SAVED_NIGHT=""
 save_theme() { SAVED_NIGHT=$(A shell cmd uimode night | tr -d '\r'); }
@@ -187,95 +132,6 @@ restore_theme() {
 }
 
 # ============================= shots =========================================
-
-shot_config() {
-    echo "config: main screen overview (all sections collapsed)"
-    bf_fresh
-    cap config
-    publish_full config
-}
-
-shot_hud_config() {
-    echo "hud_config: HUD expanded, Speed column selected"
-    bf_fresh
-    tap res "bf:section:hud"; settle
-    scroll_to res "bf:hud:preview"
-    # reveal the full preview strip: scroll_to lands it at the bottom edge (only a
-    # sliver on screen). Step down until the whole strip and its cells are visible.
-    # scroll_step starts above the ELEVATION PROFILE pills, so it scrolls the page
-    # instead of tapping a pill (scroll_up starts on the pill row and gets eaten).
-    local pt pb r=0
-    while (( r < 5 )); do
-        dump; pt=$(box_y1 res "bf:hud:preview"); pb=$(box_y2 res "bf:hud:preview")
-        { [[ -n "$pt" && -n "$pb" ]] && (( pb - pt >= 120 )) && (( pb <= H*88/100 )); } && break
-        scroll_step; settle; (( r++ ))
-    done
-    tap hud-col 1; settle          # select the first (Speed) column
-    # The preview is frozen in capture mode, so the ELEVATION-PROFILE..Data-field
-    # block is a fixed-height slab. Converge the profile row into a band where that
-    # whole slab is on-screen and clear of the fixed header, then crop a FIXED height
-    # anchored to it — so the frame is identical every run regardless of the exact
-    # scroll offset. Left-margin scrolls clear the pill hitboxes.
-    local pt c=0
-    while (( c < 12 )); do
-        dump; pt=$(box_y1 res "bf:hud:profile")
-        if [[ -z "$pt" ]]; then scroll_lm; settle; (( c++ )); continue; fi
-        (( pt >= 240 && pt <= 300 )) && break
-        if (( pt > 300 )); then scroll_lm; else scroll_lm_down; fi
-        settle; (( c++ ))
-    done
-    dump
-    local ptop
-    ptop=$(box_y1 res "bf:hud:profile")
-    cap hud_config
-    # ptop is the ELEVATION PROFILE pill row; its label sits 53px above it. Crop from
-    # 62px above (the heading) down a fixed 550px, through the Data field panel.
-    crop_full "$STAGE/hud_config.png" $((ptop-62)) $((ptop+488)) "$OUTDIR/hud_config.jpg"
-    echo "  -> $OUTDIR/hud_config.jpg"
-}
-
-shot_threshold_config() {
-    echo "threshold_config: Avg Speed Total THRESHOLD block"
-    bf_fresh
-    tap res "bf:section:data-fields"; settle
-    scroll_to res "bf:field:avg-speed-total"
-    tap res "bf:field:avg-speed-total"; settle   # expand the Avg Speed Total card
-    scroll_to res "bf:field:threshold"
-    # bring the THRESHOLD label to the top, then crop a fixed height from it: the
-    # frame is just the threshold config — the card title, preview and zone-color
-    # scroll off above. Left-margin scrolls clear the pill/input hitboxes; the hidden
-    # Back FAB (screenshot mode) keeps the bottom clean.
-    local tt c=0
-    while (( c < 12 )); do
-        dump; tt=$(box_y1 res "bf:field:threshold")
-        if [[ -z "$tt" ]]; then scroll_lm; settle; (( c++ )); continue; fi
-        (( tt >= 150 && tt <= 185 )) && break
-        if (( tt > 185 )); then scroll_lm; else scroll_lm_down; fi
-        settle; (( c++ ))
-    done
-    dump
-    local ttop
-    ttop=$(box_y1 res "bf:field:threshold")
-    cap threshold_config
-    crop_full "$STAGE/threshold_config.png" $((ttop-8)) $((ttop+528)) "$OUTDIR/threshold_config.jpg"
-    echo "  -> $OUTDIR/threshold_config.jpg"
-}
-
-shot_design_barberfish() {
-    echo "design_barberfish: Data Field Design section (Data Icons + Label Size)"
-    bf_fresh
-    scroll_to res "bf:section:data-field-design"
-    tap res "bf:section:data-field-design"; settle   # it's a collapsible card
-    scroll_to res "bf:dfd:label-size"      # brings the full Data Icons + Label Size pair into view
-    scroll_to_bottom res "bf:dfd:label-size"  # lift the pills clear of the bottom-left Back FAB
-    dump
-    local top bot
-    top=$(box_y1 res "bf:dfd:data-icons")
-    bot=$(box_y2 res "bf:dfd:label-size")
-    cap design_barberfish
-    crop_full "$STAGE/design_barberfish.png" $((top-12)) $((bot+16)) "$OUTDIR/design_barberfish.jpg"
-    echo "  -> $OUTDIR/design_barberfish.jpg"
-}
 
 shot_design_karoo() {
     echo "design_karoo: Karoo native Data Icons + Label Size (day mode, cropped pair)"
@@ -307,7 +163,7 @@ shot_design_karoo() {
 }
 
 # ============================= main ==========================================
-ALL=(config hud_config threshold_config design_barberfish design_karoo)
+ALL=(design_karoo)
 targets=("$@"); [[ ${#targets[@]} -eq 0 ]] && targets=("${ALL[@]}")
 
 require_device || { echo "no device" >&2; exit 1; }
