@@ -33,34 +33,29 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 - Threshold coloring for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
 - Per-field setup in the Barberfish app with live previews, covering [every field and its options](docs/data-fields.md).
 
-## Gallery
-
-<table>
-  <tr>
-    <td align="center">Climbs mode flags the next climb before it arrives</td>
-    <td align="center">Climbs mode frames the climb foot to summit</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="docs/screenshots/climbs_counter.jpg" alt="Climbs mode heads-up showing the next climb on the route"></td>
-    <td align="center"><img src="docs/screenshots/climbs_profile.jpg" alt="Climbs mode profile framing a climb foot to summit with the position dot partway up"></td>
-  </tr>
-</table>
-
-The [gallery](docs/gallery.md) continues with light mode, threshold coloring, the grey stale grade state, and the config screens.
+The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mode, light mode, the native comparison, and the config screens.
 
 ## Data fields
 
 39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
+![Every Barberfish field, rendered as it appears in the Karoo field picker](docs/screenshots/all_fields.png)
+
 ## Color palettes
 
-Zone palettes from Karoo, Surgeonfish, Wahoo, Zwift, Intervals.icu, and HSLuv; grade palettes add Barberfish, Garmin, and Turbo. Each is kept legible in light and dark mode. The [palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
+Zone and grade palettes designed for Barberfish, alongside palettes matching other bike computers and training apps, each kept legible in light and dark mode. The [palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
 
-Two samples, each shown in Text mode on light and dark, then Fill: the Barberfish-designed HSLuv power zones, and the Barberfish grade palette with one color per band of steepness, a green-grey flat band, and a teal descent limb down to -10% and steeper.
-
-![HSLuv power palette in both themes and fill mode](docs/palettes/palette-power-hsluv.svg)
+The two Barberfish-designed grade palettes, shown in Text mode on light and dark, then Fill. Both color descents, with a teal limb down to -10% and steeper; among the palettes from other platforms, only Turbo also colors descents. Surgeonfish respaces the same reading in even steps and also comes as a power and HR zone palette.
 
 ![Barberfish grade palette in both themes and fill mode](docs/palettes/palette-grade-barberfish.svg)
+
+![Surgeonfish grade palette in both themes and fill mode](docs/palettes/palette-grade-surgeonfish.svg)
+
+## Configuration
+
+Every field is set up in the Barberfish app on your Karoo, with live previews and no companion app. Changes apply mid-ride. The [data fields](docs/data-fields.md) page lists every option.
+
+<img src="docs/screenshots/hud_config.jpg" alt="HUD config with live preview, 4-column layout, and fill-mode zones" width="480">
 
 ## Compatibility
 
