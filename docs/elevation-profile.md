@@ -25,6 +25,8 @@ The fill uses the same [gradient palette](color-palettes.md) as the Grade field,
   </tr>
 </table>
 
+The color reflects the trend of the road, not the number on a grade field. Before coloring, the profile merges small elevation wiggles into longer stretches (the Simplification setting) and colors each stretch by its average grade. On rolling terrain the two can disagree: a gentle descent broken by short rises can average out slightly uphill, land inside the emphasis handles, and stay uncolored even though the grade field read negative most of the way. Turning Simplification down narrows the gap by keeping more of the small detail, at the cost of a busier profile that changes color more often.
+
 Climbs detected by Karoo tint the outline blue, and points of interest on the route appear as markers at their distance down the road.
 
 <table>
