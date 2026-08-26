@@ -30,11 +30,13 @@ import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
+import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
 import com.jpweytjens.barberfish.datatype.shared.groundResolution
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
@@ -44,10 +46,12 @@ import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
+import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
+import io.hammerhead.karooext.models.StreamState
 import kotlin.math.floor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -57,6 +61,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -208,120 +213,173 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     ViewportInputs(zoom, loc.lat, loc.lng)
                 }
 
-            configNavFlow
-                .combine(viewportFlow) { cfg, vp -> cfg to vp }
-                .distinctUntilChanged { prev, next ->
-                    prev.first.signature() == next.first.signature() &&
-                        prev.second.bucketedSignature() == next.second.bucketedSignature()
-                }
-                .collect { (inputs, viewport) ->
-                    val route = inputs.state as? OnNavigationState.NavigationState.NavigatingRoute
-                    if (!inputs.enabled || route == null) {
-                        polylineController.clearAll(emitter)
-                        chevronController.clearAll(emitter)
-                        persistDrawnIdSpans(GradeMapDrawnIdSpans())
-                        return@collect
+            val progressLatch = GradeMapProgress()
+            var lastRoute: OnNavigationState.NavigationState.NavigatingRoute? = null
+            val rebuildFlow =
+                configNavFlow
+                    .combine(viewportFlow) { cfg, vp -> GradeMapRebuild(cfg, vp) }
+                    .distinctUntilChanged { prev, next ->
+                        prev.inputs.signature() == next.inputs.signature() &&
+                            prev.viewport.bucketedSignature() == next.viewport.bucketedSignature()
                     }
-                    // Spacing/window are zoom-driven; latitude only scales the cos(lat)
-                    // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
-                    // sparsest case — which is the safe direction to err. Once a fix lands
-                    // it tightens to the true value.
-                    val chevronStep = nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
-                    val chevronWindow =
-                        nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
-                    val chevronCollision =
-                        chevronIconLengthM(
-                            CHEVRON_ICON_HEIGHT_DP,
-                            density,
-                            viewport.lat,
-                            viewport.zoomLevel,
-                        )
-                    val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
-                    // Viewport filtering disabled for now — the rideapp's IPC reordering
-                    // between HideSymbols and ShowSymbols causes chevrons to vanish when
-                    // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
-                    // already prevents excessive rebuilds.
-                    val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? = null
-                    // Diagnostic only — buildGradeMapSpecs colours from the elevation
-                    // polyline and ignores climbs. Logged raw, matching what
-                    // SparklineDataFlow consumes; the reference frame of reroute-time
-                    // climb distances is unverified, so no correction is applied.
-                    val climbRanges =
-                        route.climbs.map {
-                            it.startDistance to (it.startDistance + it.length)
+            // Progress alone never triggers a rebuild: a tick costs a HideSymbols batch, nothing
+            // else. The latch's bucketing keeps ticks rare; extra samples return false and stop
+            // here.
+            val progressFlow =
+                karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).map { state ->
+                    val streaming = state as? StreamState.Streaming
+                    GradeMapProgressTick(
+                        distanceToDestinationM =
+                            streaming
+                                ?.dataPoint
+                                ?.values
+                                ?.get(DataType.Field.DISTANCE_TO_DESTINATION),
+                        onRoute =
+                            streaming?.dataPoint?.values?.get(DataType.Field.ON_ROUTE)?.let {
+                                it >= 0.5
+                            } ?: true,
+                    )
+                }
+            merge(rebuildFlow, progressFlow).collect { event ->
+                when (event) {
+                    is GradeMapProgressTick -> {
+                        val route = lastRoute ?: return@collect
+                        val advanced =
+                            progressLatch.advance(
+                                event.distanceToDestinationM,
+                                event.onRoute,
+                                route.routeDistance,
+                            )
+                        if (advanced) {
+                            Timber.d("grademap: progress=${progressLatch.progressM.toInt()}m")
+                            chevronController.hidePassed(emitter, progressLatch.progressM)
                         }
-                    // Round line-cap overhang per end = (width/2) px in ground metres.
-                    // The overlay only re-emits on a band crossing, so this trim is fixed for
-                    // the whole band while the rendered zoom moves across it. Centring on the
-                    // band's midpoint bounds the error at about 1.41x either way instead of 2x.
-                    val capTrimM =
-                        (CLIMB_OVERLAY_WIDTH / 2.0) *
-                            groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
-                    val specs =
-                        buildGradeMapSpecs(
-                            routePolyline = route.routePolyline,
-                            routeElevationPolyline = route.routeElevationPolyline,
-                            palette = inputs.palette,
-                            readable = false,
-                            tuning = inputs.tuning,
-                            includeChevrons = inputs.showChevrons,
-                            chevronSpacingM = chevronStep,
-                            chevronWindowHalfM = chevronWindow,
-                            chevronHeadingThresholdDeg = headingThreshold,
-                            chevronMinSpacingM = chevronCollision,
-                            chevronViewport = bounds,
-                            capTrimM = capTrimM,
-                            reversed = route.reversed,
-                            metresPerPixel = metresPerPixel(viewport.zoomLevel),
+                    }
+                    is GradeMapRebuild -> {
+                        val inputs = event.inputs
+                        val viewport = event.viewport
+                        val route =
+                            inputs.state as? OnNavigationState.NavigationState.NavigatingRoute
+                        // Keep the progress branch's view of the route current.
+                        lastRoute = route?.takeIf { inputs.enabled }
+                        if (!inputs.enabled || route == null) {
+                            polylineController.clearAll(emitter)
+                            chevronController.clearAll(emitter)
+                            persistDrawnIdSpans(GradeMapDrawnIdSpans())
+                            return@collect
+                        }
+                        // Reset the latch when the route identity changes.
+                        progressLatch.trackRoute(
+                            gradeMapRouteKey(route.routePolyline, route.reversed)
                         )
-                    Timber.d(
-                        "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
-                    )
-                    if (BuildConfig.DEBUG) {
-                        val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
-                        Timber.d(
-                            "grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
-                        )
-                        // Direction diagnostic. routePolyline always arrives in saved
-                        // order, so gpsFirst/gpsLast are identical forward and reversed;
-                        // segStart is what moves once the reversal is applied.
-                        val gpsPts = decodeGpsPolyline(route.routePolyline)
-                        val segStart =
-                            specs.polylines.firstOrNull()?.let {
-                                decodeGpsPolyline(it.encoded).firstOrNull()
+                        // Spacing/window are zoom-driven; latitude only scales the cos(lat)
+                        // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
+                        // sparsest case — which is the safe direction to err. Once a fix lands
+                        // it tightens to the true value.
+                        val chevronStep =
+                            nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
+                        val chevronWindow =
+                            nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
+                        val chevronCollision =
+                            chevronIconLengthM(
+                                CHEVRON_ICON_HEIGHT_DP,
+                                density,
+                                viewport.lat,
+                                viewport.zoomLevel,
+                            )
+                        val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
+                        // Viewport filtering disabled for now — the rideapp's IPC reordering
+                        // between HideSymbols and ShowSymbols causes chevrons to vanish when
+                        // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
+                        // already prevents excessive rebuilds.
+                        val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? = null
+                        // Diagnostic only — buildGradeMapSpecs colours from the elevation
+                        // polyline and ignores climbs. Logged raw, matching what
+                        // SparklineDataFlow consumes; the reference frame of reroute-time
+                        // climb distances is unverified, so no correction is applied.
+                        val climbRanges =
+                            route.climbs.map {
+                                it.startDistance to (it.startDistance + it.length)
                             }
+                        // Round line-cap overhang per end = (width/2) px in ground metres.
+                        // The overlay only re-emits on a band crossing, so this trim is fixed for
+                        // the whole band while the rendered zoom moves across it. Centring on the
+                        // band's midpoint bounds the error at about 1.41x either way instead of 2x.
+                        val capTrimM =
+                            (CLIMB_OVERLAY_WIDTH / 2.0) *
+                                groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
+                        val specs =
+                            buildGradeMapSpecs(
+                                routePolyline = route.routePolyline,
+                                routeElevationPolyline = route.routeElevationPolyline,
+                                palette = inputs.palette,
+                                readable = false,
+                                tuning = inputs.tuning,
+                                includeChevrons = inputs.showChevrons,
+                                chevronSpacingM = chevronStep,
+                                chevronWindowHalfM = chevronWindow,
+                                chevronHeadingThresholdDeg = headingThreshold,
+                                chevronMinSpacingM = chevronCollision,
+                                chevronViewport = bounds,
+                                capTrimM = capTrimM,
+                                reversed = route.reversed,
+                                metresPerPixel = metresPerPixel(viewport.zoomLevel),
+                            )
                         Timber.d(
-                            "grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}"
+                            "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
                         )
-                        val segLen =
-                            specs.polylines
-                                .map { decodeGpsPolyline(it.encoded) }
-                                .map { if (it.size < 2) 0.0 else cumulativeDistancesM(it).last() }
-                                .sorted()
-                        Timber.d(
-                            "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
+                        if (BuildConfig.DEBUG) {
+                            val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
+                            Timber.d(
+                                "grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
+                            )
+                            // Direction diagnostic. routePolyline always arrives in saved
+                            // order, so gpsFirst/gpsLast are identical forward and reversed;
+                            // segStart is what moves once the reversal is applied.
+                            val gpsPts = decodeGpsPolyline(route.routePolyline)
+                            val segStart =
+                                specs.polylines.firstOrNull()?.let {
+                                    decodeGpsPolyline(it.encoded).firstOrNull()
+                                }
+                            Timber.d(
+                                "grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}"
+                            )
+                            val segLen =
+                                specs.polylines
+                                    .map { decodeGpsPolyline(it.encoded) }
+                                    .map {
+                                        if (it.size < 2) 0.0 else cumulativeDistancesM(it).last()
+                                    }
+                                    .sorted()
+                            Timber.d(
+                                "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
+                            )
+                        }
+                        val newSpans =
+                            GradeMapDrawnIdSpans(
+                                segments = if (inputs.showPolylines) specs.segmentIdSpan else 0,
+                                chevrons = specs.chevronIdSpan,
+                            )
+                        persistDrawnIdSpans(
+                            GradeMapDrawnIdSpans(
+                                segments = maxOf(drawnIdSpans.segments, newSpans.segments),
+                                chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
+                            )
                         )
+                        if (inputs.showPolylines) {
+                            polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
+                        } else {
+                            // Native route line shows through; we just drop our grade overlay.
+                            polylineController.clearAll(emitter)
+                        }
+                        // A rebuild must not resurrect chevrons the rider already passed.
+                        val visibleChevrons =
+                            specs.chevrons.filter { it.distanceM >= progressLatch.progressM }
+                        chevronController.emit(emitter, visibleChevrons)
+                        persistDrawnIdSpans(newSpans)
                     }
-                    val newSpans =
-                        GradeMapDrawnIdSpans(
-                            segments = if (inputs.showPolylines) specs.segmentIdSpan else 0,
-                            chevrons = specs.chevronIdSpan,
-                        )
-                    persistDrawnIdSpans(
-                        GradeMapDrawnIdSpans(
-                            segments = maxOf(drawnIdSpans.segments, newSpans.segments),
-                            chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
-                        )
-                    )
-                    if (inputs.showPolylines) {
-                        polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
-                    } else {
-                        // Native route line shows through; we just drop our grade overlay.
-                        polylineController.clearAll(emitter)
-                    }
-                    chevronController.emit(emitter, specs.chevrons)
-                    persistDrawnIdSpans(newSpans)
                 }
+            }
         }
         emitter.setCancellable {
             Timber.d("grademap: startMap cancelled")
@@ -330,6 +388,20 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         }
     }
 }
+
+// The two things that can touch the map, merged into one serially-collected flow so the
+// single-consumer controllers never see concurrent calls.
+private sealed interface GradeMapEvent
+
+private data class GradeMapRebuild(
+    val inputs: GradeMapConfigInputs,
+    val viewport: ViewportInputs,
+) : GradeMapEvent
+
+private data class GradeMapProgressTick(
+    val distanceToDestinationM: Double?,
+    val onRoute: Boolean,
+) : GradeMapEvent
 
 internal data class GradeMapConfigInputs(
     val enabled: Boolean,
