@@ -1,5 +1,7 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import kotlin.math.ceil
+
 /**
  * Monotonic rider progress along the active route, bucketed so consumers act once per [bucketM] of
  * road instead of once per GPS tick.
@@ -43,7 +45,12 @@ internal class GradeMapProgress(private val bucketM: Double = 50.0) {
             return false
         }
         val raw = (routeDistanceM - distanceToDestinationM).coerceIn(0.0, routeDistanceM)
-        val newBucket = (raw / bucketM).toInt()
+        // Mid-route the floor keeps progress from ever running ahead of the rider; on
+        // arrival (raw clamped to the route end) the ceiling covers the final partial
+        // bucket, which the floor alone could never reach.
+        val newBucket =
+            if (raw >= routeDistanceM) ceil(routeDistanceM / bucketM).toInt()
+            else (raw / bucketM).toInt()
         if (newBucket <= bucket) return false
         bucket = newBucket
         return true

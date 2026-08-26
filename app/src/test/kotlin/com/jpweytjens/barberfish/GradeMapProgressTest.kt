@@ -108,4 +108,13 @@ class GradeMapProgressTest {
         assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 0.0))
         assertEquals(0.0, progress.progressM, 0.0)
     }
+
+    @Test
+    fun arrival_covers_the_final_partial_bucket() {
+        val progress = tracked()
+        // 998 m route: floor bucketing alone would cap progress at 950 m and never
+        // reach a chevron placed in the last 48 m.
+        assertTrue(progress.advance(0.0, onRoute = true, routeDistanceM = 998.0))
+        assertTrue(progress.progressM >= 998.0)
+    }
 }
