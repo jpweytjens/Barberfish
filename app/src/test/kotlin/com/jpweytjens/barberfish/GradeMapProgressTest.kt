@@ -110,6 +110,16 @@ class GradeMapProgressTest {
     }
 
     @Test
+    fun trackRoute_reports_whether_it_reset() {
+        val progress = GradeMapProgress()
+        assertTrue(progress.trackRoute(key))
+        assertFalse(progress.trackRoute(key))
+        assertTrue(progress.trackRoute(gradeMapRouteKey("other", reversed = false)))
+        progress.clear()
+        assertTrue(progress.trackRoute(key))
+    }
+
+    @Test
     fun arrival_covers_the_final_partial_bucket() {
         val progress = tracked()
         // 998 m route: floor bucketing alone would cap progress at 950 m and never

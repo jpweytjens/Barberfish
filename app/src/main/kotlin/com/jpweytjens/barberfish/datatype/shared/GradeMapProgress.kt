@@ -19,12 +19,15 @@ internal class GradeMapProgress(private val bucketM: Double = 50.0) {
     val progressM: Double
         get() = bucket * bucketM
 
-    /** Pins the latch to a route; a changed key resets progress to zero. */
-    fun trackRoute(key: Long) {
-        if (routeKey != key) {
-            routeKey = key
-            bucket = 0
-        }
+    /**
+     * Pins the latch to a route; a changed key resets progress to zero. Returns true when it reset,
+     * so callers can hold ticks while the distance stream still reflects the old route.
+     */
+    fun trackRoute(key: Long): Boolean {
+        if (routeKey == key) return false
+        routeKey = key
+        bucket = 0
+        return true
     }
 
     /** Forgets the tracked route and progress: navigation was cleared. */

@@ -215,6 +215,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
             val progressLatch = GradeMapProgress()
             var lastRoute: OnNavigationState.NavigationState.NavigatingRoute? = null
+            // Distance samples carry no route identity, so a sample queued behind a route
+            // change was computed against the old route; fed to the fresh latch it would
+            // commit a bogus monotonic jump on the new one. Hold ticks briefly after every
+            // reset until the stream reflects the new route.
+            var progressSettleUntilMs = 0L
             val rebuildFlow =
                 configNavFlow
                     .combine(viewportFlow) { cfg, vp -> GradeMapRebuild(cfg, vp) }
@@ -244,6 +249,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 when (event) {
                     is GradeMapProgressTick -> {
                         val route = lastRoute ?: return@collect
+                        if (System.currentTimeMillis() < progressSettleUntilMs) return@collect
                         val advanced =
                             progressLatch.advance(
                                 event.distanceToDestinationM,
@@ -272,9 +278,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             return@collect
                         }
                         // Reset the latch when the route identity changes.
-                        progressLatch.trackRoute(
-                            gradeMapRouteKey(route.routePolyline, route.reversed)
-                        )
+                        if (
+                            progressLatch.trackRoute(
+                                gradeMapRouteKey(route.routePolyline, route.reversed)
+                            )
+                        ) {
+                            progressSettleUntilMs = System.currentTimeMillis() + PROGRESS_SETTLE_MS
+                        }
                         // Spacing/window are zoom-driven; latitude only scales the cos(lat)
                         // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
                         // sparsest case — which is the safe direction to err. Once a fix lands
@@ -391,6 +401,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         }
     }
 }
+
+// How long progress ticks are held after a route change, while the distance stream may
+// still deliver samples computed against the previous route.
+private const val PROGRESS_SETTLE_MS = 2_000L
 
 // The two things that can touch the map, merged into one serially-collected flow so the
 // single-consumer controllers never see concurrent calls.
