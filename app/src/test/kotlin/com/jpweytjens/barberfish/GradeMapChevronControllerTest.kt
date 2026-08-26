@@ -207,4 +207,72 @@ class GradeMapChevronControllerTest {
         assertEquals(4.0, icon.lng, 0.0)
         assertEquals(42f, icon.orientation, 0f)
     }
+
+    @Test
+    fun hidePassed_hides_only_chevrons_behind_progress() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(
+            fake,
+            listOf(
+                spec("a", distanceM = 30.0),
+                spec("b", distanceM = 90.0),
+                spec("c", distanceM = 150.0),
+            ),
+        )
+        fake.events.clear()
+        controller.hidePassed(fake, 100.0)
+        assertEquals(setOf("a", "b"), fake.hiddenIds().toSet())
+        assertTrue(fake.shownIds().isEmpty())
+    }
+
+    @Test
+    fun hidePassed_with_nothing_behind_emits_nothing() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a", distanceM = 200.0)))
+        fake.events.clear()
+        controller.hidePassed(fake, 100.0)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun hidden_passed_chevrons_are_not_reshown_by_a_filtered_emit() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(
+            fake,
+            listOf(
+                spec("a", distanceM = 30.0),
+                spec("b", distanceM = 90.0),
+                spec("c", distanceM = 150.0),
+            ),
+        )
+        controller.hidePassed(fake, 100.0)
+        fake.events.clear()
+        // The rebuild path filters passed specs before emitting (Task 4); the controller
+        // must not re-show a and b, and may re-issue their hides (lost-hide robustness).
+        controller.emit(fake, listOf(spec("c", distanceM = 150.0)))
+        assertTrue(fake.shownIds().isEmpty())
+    }
+
+    @Test
+    fun hidePassed_reissues_hides_through_the_next_emit() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a", distanceM = 30.0), spec("c", distanceM = 150.0)))
+        controller.hidePassed(fake, 100.0)
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("c", distanceM = 150.0)))
+        assertTrue(fake.hiddenIds().contains("a"))
+    }
+
+    @Test
+    fun hidePassed_leaves_stale_sentinels_alone() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(3)
+        controller.hidePassed(fake, 1_000.0)
+        assertTrue(fake.events.isEmpty())
+    }
 }

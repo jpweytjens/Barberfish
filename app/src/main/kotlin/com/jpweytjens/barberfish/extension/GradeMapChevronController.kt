@@ -70,6 +70,21 @@ internal class GradeMapChevronController {
         previous = current
     }
 
+    /**
+     * Hides every tracked chevron whose [ClimbChevronSpec.distanceM] is behind [progressM]. A
+     * hide-only batch: nothing here can be reordered against a show. Hidden ids join
+     * [recentlyRemoved] so the next [emit] re-issues the hide if the rideapp dropped it. Stale
+     * sentinels carry a NaN distance, which never compares below [progressM]; they stay for the
+     * next [emit] to resolve.
+     */
+    fun hidePassed(emitter: Emitter<MapEffect>, progressM: Double) {
+        val passed = previous.filterValues { it.distanceM < progressM }.keys
+        if (passed.isEmpty()) return
+        emitter.onNext(HideSymbols(passed.toList()))
+        previous = previous - passed
+        recentlyRemoved = recentlyRemoved + listOf(passed to LOST_HIDE_REISSUE_ROUNDS)
+    }
+
     fun clearAll(emitter: Emitter<MapEffect>) {
         val ids = previous.keys + recentlyRemoved.flatMap { it.first }
         if (ids.isNotEmpty()) {
