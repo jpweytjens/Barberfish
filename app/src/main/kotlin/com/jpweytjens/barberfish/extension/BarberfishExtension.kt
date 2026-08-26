@@ -263,6 +263,9 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         // Keep the progress branch's view of the route current.
                         lastRoute = route?.takeIf { inputs.enabled }
                         if (!inputs.enabled || route == null) {
+                            // Navigation cleared forgets progress; a mere disable keeps the
+                            // latch, since the route identity is unchanged.
+                            if (route == null) progressLatch.clear()
                             polylineController.clearAll(emitter)
                             chevronController.clearAll(emitter)
                             persistDrawnIdSpans(GradeMapDrawnIdSpans())

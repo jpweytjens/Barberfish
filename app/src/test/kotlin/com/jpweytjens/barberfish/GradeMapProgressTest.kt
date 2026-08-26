@@ -90,4 +90,22 @@ class GradeMapProgressTest {
         progress.trackRoute(key)
         assertEquals(1_000.0, progress.progressM, 0.0)
     }
+
+    @Test
+    fun clear_resets_progress_even_for_the_same_route() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        progress.clear()
+        assertEquals(0.0, progress.progressM, 0.0)
+        assertFalse(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        progress.trackRoute(key)
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun zero_route_distance_never_advances() {
+        val progress = tracked()
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 0.0))
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
 }

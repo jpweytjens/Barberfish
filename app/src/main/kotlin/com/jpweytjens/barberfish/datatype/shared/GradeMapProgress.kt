@@ -25,6 +25,12 @@ internal class GradeMapProgress(private val bucketM: Double = 50.0) {
         }
     }
 
+    /** Forgets the tracked route and progress: navigation was cleared. */
+    fun clear() {
+        routeKey = null
+        bucket = 0
+    }
+
     /** True when the bucketed progress advanced, i.e. the rider crossed a bucket edge. */
     fun advance(
         distanceToDestinationM: Double?,
