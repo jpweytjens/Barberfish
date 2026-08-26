@@ -301,6 +301,24 @@ class GradeMapPolylinesTest {
     }
 
     @Test
+    fun chevron_specs_carry_ride_order_distances() {
+        // Same fixture as chevrons_come_from_one_route_wide_cadence: five placements at the
+        // 60 m default cadence land on the three runs, at 30..270 m along the GPS axis.
+        val overlay =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+            )
+        val distances = overlay.chevrons.map { it.distanceM }
+        val expected = listOf(30.0, 90.0, 150.0, 210.0, 270.0)
+        assertEquals(expected.size, distances.size)
+        expected.zip(distances).forEach { (e, a) -> assertEquals(e, a, 1e-6) }
+    }
+
+    @Test
     fun chevrons_omitted_when_includeChevrons_false() {
         val overlay =
             buildGradeMapSpecs(

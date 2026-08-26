@@ -32,8 +32,15 @@ class GradeMapChevronControllerTest {
     private val red = 0xFFFF0000.toInt()
     private val green = 0xFF00FF00.toInt()
 
-    private fun spec(id: String, bearing: Float = 0f, color: Int = red) =
-        ClimbChevronSpec(id = id, lat = 50.0, lng = 4.0, bearingDeg = bearing, colorArgb = color)
+    private fun spec(id: String, bearing: Float = 0f, color: Int = red, distanceM: Double = 0.0) =
+        ClimbChevronSpec(
+            id = id,
+            lat = 50.0,
+            lng = 4.0,
+            bearingDeg = bearing,
+            colorArgb = color,
+            distanceM = distanceM,
+        )
 
     private fun FakeEmitter.hiddenIds() =
         events.filterIsInstance<HideSymbols>().flatMap { it.symbolIds }

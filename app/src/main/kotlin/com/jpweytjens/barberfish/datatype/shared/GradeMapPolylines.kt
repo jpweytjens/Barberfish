@@ -22,7 +22,7 @@ internal data class GradeMapPolylineSpec(
  * coloured gradient run it lands on. The bearing is the direction the chevron points, taken as a
  * chord across the bearing window (about 24 m on device); 10 m survives only as the fallback when
  * no window is configured. [colorArgb] is the gradient-band colour of the polyline run the chevron
- * sits on.
+ * sits on. [distanceM] is the placement's route distance in ride order, metres on the GPS axis.
  */
 internal data class ClimbChevronSpec(
     val id: String,
@@ -30,6 +30,7 @@ internal data class ClimbChevronSpec(
     val lng: Double,
     val bearingDeg: Float,
     val colorArgb: Int,
+    val distanceM: Double,
 )
 
 /**
@@ -337,6 +338,7 @@ internal fun buildGradeMapSpecs(
             lng = placement.lng,
             bearingDeg = placement.bearingDeg,
             colorArgb = run.colorArgb,
+            distanceM = placement.distanceM,
         )
     }
     val filteredChevrons =

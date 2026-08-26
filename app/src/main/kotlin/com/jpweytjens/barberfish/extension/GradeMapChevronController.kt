@@ -95,7 +95,7 @@ internal class GradeMapChevronController {
         previous =
             (0 until span).associate { index ->
                 val id = gradeMapChevronId(index)
-                id to ClimbChevronSpec(id, Double.NaN, Double.NaN, 0f, 0)
+                id to ClimbChevronSpec(id, Double.NaN, Double.NaN, 0f, 0, Double.NaN)
             }
     }
 
