@@ -26,5 +26,17 @@
             </intent-filter>
         </receiver>
 
+        <!-- Debug-only: reads/writes the global HUD config from adb so capture scripts can
+             set each shot's HUD and snapshot/restore the user's own. Never in release. -->
+        <receiver
+            android:name=".extension.HudConfigReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.jpweytjens.barberfish.SET_HUD" />
+                <action android:name="com.jpweytjens.barberfish.GET_HUD" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>
