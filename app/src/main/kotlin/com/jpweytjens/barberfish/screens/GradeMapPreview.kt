@@ -72,7 +72,6 @@ internal fun GradeMapPreview(
                 tuning = eff,
                 // Always place chevrons; the toggle only changes their colour (grade vs native).
                 includeChevrons = true,
-                chevronSpacingM = PREVIEW_CHEVRON_SPACING_M,
             )
         }
     val routePoints = remember { decodeGpsPolyline(ClimbPreviewFixture.routePolyline) }

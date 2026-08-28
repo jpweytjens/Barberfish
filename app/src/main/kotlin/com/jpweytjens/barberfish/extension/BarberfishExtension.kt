@@ -329,9 +329,9 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 readable = false,
                                 tuning = inputs.tuning,
                                 includeChevrons = inputs.showChevrons,
-                                chevronSpacingM = chevronStep,
+                                // removed in a later task: cadence-blend params take over
+                                // buildGradeMapSpecs's fixed-spacing chevron placement here.
                                 chevronWindowHalfM = chevronWindow,
-                                chevronHeadingThresholdDeg = headingThreshold,
                                 chevronMinSpacingM = chevronCollision,
                                 chevronViewport = bounds,
                                 capTrimM = capTrimM,

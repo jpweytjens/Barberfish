@@ -4,9 +4,11 @@ import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.FlatGrey
 import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
+import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
@@ -53,6 +55,10 @@ class GradeMapPolylinesTest {
             simplification = ElevationSimplification.NONE,
             skipBands = 0,
         )
+
+    // Chevron spacing tests that only care about run/id/colour behaviour, not the cadence
+    // blend itself, pin both spacing bounds to one value so placement is a fixed grid again.
+    private val FIXED_CHEVRON_SPACING_M = 60.0
 
     // buildGradeMapSpecs takes an already-resolved tuning, so these tests resolve their config
     // through the same function the live callers use. Sync is turned off first: with it on the
@@ -280,45 +286,6 @@ class GradeMapPolylinesTest {
     }
 
     @Test
-    fun chevrons_come_from_one_route_wide_cadence() {
-        // Three runs covering the profile's first 300 m. At 60 m spacing the cadence is
-        // 30, 90, 150, 210, 270 and continues past the runs to the end of the 3336 m route.
-        // The first five placements fall inside the runs, so ids 0 to 4 are emitted and
-        // every later placement is dropped for sitting on no run.
-        val overlay =
-            buildGradeMapSpecs(
-                routePolyline = routePolyline,
-                routeElevationPolyline = elevationPolyline,
-                palette = GradePalette.KAROO,
-                readable = true,
-                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
-            )
-        assertEquals(3, overlay.polylines.size)
-        assertEquals(5, overlay.chevrons.size)
-        assertEquals("barberfish-chev-0", overlay.chevrons[0].id)
-        assertEquals("barberfish-chev-2", overlay.chevrons[2].id)
-        assertEquals("barberfish-chev-4", overlay.chevrons[4].id)
-    }
-
-    @Test
-    fun chevron_specs_carry_ride_order_distances() {
-        // Same fixture as chevrons_come_from_one_route_wide_cadence: five placements at the
-        // 60 m default cadence land on the three runs, at 30..270 m along the GPS axis.
-        val overlay =
-            buildGradeMapSpecs(
-                routePolyline = routePolyline,
-                routeElevationPolyline = elevationPolyline,
-                palette = GradePalette.KAROO,
-                readable = true,
-                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
-            )
-        val distances = overlay.chevrons.map { it.distanceM }
-        val expected = listOf(30.0, 90.0, 150.0, 210.0, 270.0)
-        assertEquals(expected.size, distances.size)
-        expected.zip(distances).forEach { (e, a) -> assertEquals(e, a, 1e-6) }
-    }
-
-    @Test
     fun chevrons_omitted_when_includeChevrons_false() {
         val overlay =
             buildGradeMapSpecs(
@@ -328,88 +295,11 @@ class GradeMapPolylinesTest {
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
                 includeChevrons = false,
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
             )
         assertEquals(3, overlay.polylines.size)
         assertTrue(overlay.chevrons.isEmpty())
-    }
-
-    @Test
-    fun straight_route_keeps_all_chevrons_with_curvature_filter() {
-        // The default route is 4 points along the equator — bearing is constant 90° (east).
-        // With the curvature filter enabled, every spacing interval emits a chevron because
-        // the local bearing spread is 0°.
-        val unfiltered =
-            buildGradeMapSpecs(
-                routePolyline = routePolyline,
-                routeElevationPolyline = elevationPolyline,
-                palette = GradePalette.KAROO,
-                readable = true,
-                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
-            )
-        val filtered =
-            buildGradeMapSpecs(
-                routePolyline = routePolyline,
-                routeElevationPolyline = elevationPolyline,
-                palette = GradePalette.KAROO,
-                readable = true,
-                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
-                chevronWindowHalfM = 40.0,
-                chevronHeadingThresholdDeg = 30.0,
-            )
-        assertEquals(unfiltered.chevrons.size, filtered.chevrons.size)
-    }
-
-    @Test
-    fun tight_bend_suppresses_chevrons_near_the_corner() {
-        // L-shaped route: 200 m east, then 200 m north — a single 90° turn at the corner.
-        // Climb covers the full path. With a window wide enough to contain both edges
-        // at the corner, the bearing spread is 90° → corner-spanning chevrons are dropped.
-        val lEast = 0.001813 // ~200 m east at equator (1° longitude ≈ 111_320 m)
-        val lNorth = 0.001797 // ~200 m north (1° latitude ≈ 111_320 m)
-        val bendyPolyline =
-            encodeGpsManually(
-                listOf(
-                    0.0 to 0.0,
-                    0.0 to lEast,
-                    lNorth to lEast,
-                )
-            )
-        val climbPolyline =
-            encodeElevationManually(
-                listOf(
-                    0f to 100f,
-                    400f to 116f, // 4% climb over the full 400 m — falls in the KAROO yellow band
-                )
-            )
-        val unfiltered =
-            buildGradeMapSpecs(
-                routePolyline = bendyPolyline,
-                routeElevationPolyline = climbPolyline,
-                palette = GradePalette.KAROO,
-                readable = true,
-                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
-            )
-        val filtered =
-            buildGradeMapSpecs(
-                routePolyline = bendyPolyline,
-                routeElevationPolyline = climbPolyline,
-                palette = GradePalette.KAROO,
-                readable = true,
-                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
-                // 40 m window, close to the native ~28 m at zoom 15: only the positions whose
-                // neighbourhood spans both legs (the 90° corner) see a 90° spread and drop.
-                // Positions along either straight leg keep their chevrons.
-                chevronWindowHalfM = 40.0,
-                chevronHeadingThresholdDeg = 30.0,
-            )
-        assertTrue(
-            "expected fewer chevrons with curvature filter (unfiltered=${unfiltered.chevrons.size}, filtered=${filtered.chevrons.size})",
-            filtered.chevrons.size < unfiltered.chevrons.size,
-        )
-        assertTrue(
-            "corner suppression should not wipe the whole run",
-            filtered.chevrons.isNotEmpty(),
-        )
     }
 
     @Test
@@ -488,6 +378,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
             )
         assertTrue(overlay.chevrons.isNotEmpty())
         val expectedYellow = gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb()
@@ -497,11 +389,11 @@ class GradeMapPolylinesTest {
     @Test
     fun collision_radius_stretches_the_cadence() {
         // A 300 m climb covering the first 300 m of the route, straight along the equator.
-        // At 60 m spacing the uncollided cadence is 30, 90, 150, 210, 270. With a 100 m
-        // collision radius: 90 collides with 30 (60 m apart, every offset still within 100 m
-        // of it), so the walk skips to 150 (120 m from 30, clear); 210 collides with 150 the
-        // same way, so the walk skips to 270 (120 m from 150, clear). The walk lands on
-        // 30, 150, 270.
+        // At a fixed 60 m spacing the uncollided cadence is 30, 90, 150, 210, 270. With a
+        // 100 m collision radius: 90 sits within 100 m of the mark already placed at 30, so
+        // it is skipped (no retry at a nearby offset); the walk resumes its 60 m stride and
+        // 150 is clear (120 m from 30); 210 sits within 100 m of 150 and is skipped the same
+        // way; 270 is clear (120 m from 150). The walk lands on 30, 150, 270.
         val longClimb =
             encodeElevationManually(
                 listOf(
@@ -516,6 +408,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
             )
         val deduped =
             buildGradeMapSpecs(
@@ -524,6 +418,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
                 chevronMinSpacingM = 100.0,
             )
         assertEquals(5, noDedup.chevrons.size)
@@ -559,6 +455,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
             )
         val marked =
             buildGradeMapSpecs(
@@ -567,6 +465,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
             )
         assertEquals(1, bare.polylines.size)
         assertTrue(bare.chevrons.isEmpty())
@@ -696,6 +596,8 @@ class GradeMapPolylinesTest {
                     palette = GradePalette.KAROO,
                     readable = true,
                     tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                    chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                    chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
                 )
                 .chevrons
         val trimmed =
@@ -705,6 +607,8 @@ class GradeMapPolylinesTest {
                     palette = GradePalette.KAROO,
                     readable = true,
                     tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                    chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                    chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
                     capTrimM = 20.0,
                 )
                 .chevrons
@@ -725,6 +629,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
             )
         val segIds = (0 until overlay.segmentIdSpan).map { "barberfish-seg-$it" }
         assertTrue(overlay.polylines.all { it.id in segIds })
@@ -799,6 +705,8 @@ class GradeMapPolylinesTest {
                     palette = GradePalette.KAROO,
                     readable = true,
                     tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                    chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                    chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
                 )
                 .chevrons
         // Distance along the route recovered from longitude: the route runs straight along
@@ -908,6 +816,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
             )
         val reversed =
             buildGradeMapSpecs(
@@ -916,6 +826,8 @@ class GradeMapPolylinesTest {
                 palette = GradePalette.KAROO,
                 readable = true,
                 tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
                 reversed = true,
             )
         assertTrue(forward.chevrons.isNotEmpty())
@@ -948,6 +860,60 @@ class GradeMapPolylinesTest {
             reversed.polylines.map { it.colorArgb },
         )
     }
+
+    @Test
+    fun steeper_grade_yields_more_chevrons_than_gentle() {
+        val gentle =
+            buildGradeMapSpecs(
+                routePolyline = straightRoute2kmPolyline(),
+                routeElevationPolyline = linearElevationPolyline(gradePct = 3.0, lengthM = 2000.0),
+                palette = GradePalette.SURGEONFISH,
+                readable = false,
+                tuning = fullyOnTuning(),
+                chevronBlend = 0.0,
+                chevronSpacingMaxM = 200.0,
+                chevronSpacingMinM = 40.0,
+                chevronWindowHalfM = 20.0,
+                metresPerPixel = 1.0,
+            )
+        val steep =
+            buildGradeMapSpecs(
+                routePolyline = straightRoute2kmPolyline(),
+                routeElevationPolyline = linearElevationPolyline(gradePct = 12.0, lengthM = 2000.0),
+                palette = GradePalette.SURGEONFISH,
+                readable = false,
+                tuning = fullyOnTuning(),
+                chevronBlend = 0.0,
+                chevronSpacingMaxM = 200.0,
+                chevronSpacingMinM = 40.0,
+                chevronWindowHalfM = 20.0,
+                metresPerPixel = 1.0,
+            )
+        assertTrue(steep.chevrons.size > gentle.chevrons.size)
+    }
+
+    // Straight 2 km route east along the equator, for chevron cadence tests that only care
+    // about grade magnitude, not curvature or run boundaries.
+    private fun straightRoute2kmPolyline(): String {
+        val lngPerM = 1.0 / 111_320.0 // degrees longitude per metre at the equator
+        return encodeGpsPolyline(listOf(LatLng(0.0, 0.0), LatLng(0.0, 2000.0 * lngPerM)))
+    }
+
+    // Two-point elevation polyline climbing at a constant [gradePct] over [lengthM].
+    private fun linearElevationPolyline(gradePct: Double, lengthM: Double): String =
+        encodeElevationManually(
+            listOf(0f to 0f, lengthM.toFloat() to (lengthM * gradePct / 100.0).toFloat())
+        )
+
+    // Emphasis fully on (every band, including flat, takes its own colour) and unsimplified,
+    // so a chevron cadence test sees every metre of the profile it feeds in.
+    private fun fullyOnTuning(): EffectiveGradeMapTuning =
+        EffectiveGradeMapTuning(
+            skipBands = 0,
+            simplification = ElevationSimplification.NONE,
+            climbEdge = null,
+            descentEdge = null,
+        )
 
     // --- inline polyline encoders (test-only) -----------------------------------
 

@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype.shared
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.extension.GradePalette
+import kotlin.math.abs
 import kotlin.math.round
 
 /** A single coloured fill polyline for a route gradient segment. */
@@ -215,10 +216,12 @@ internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): 
  *    Adjacent same-colour cells merge into runs, each emitting a single polyline spanning
  *    `[runStartM, runEndM]`. The runs tile the route, so our overlay covers Karoo's own route line
  *    everywhere, in both directions of travel, and none of them is too short to read.
- * 4. Place chevrons along the whole route with [placeChevrons], then colour each placement with the
- *    run containing it and drop the placements that sit on no run. Placement is a property of the
- *    route, not of the runs: a run shorter than the spacing carries a chevron only when a cadence
- *    position happens to fall inside it, so short runs are marked by their colour alone.
+ * 4. Place chevrons along the whole route with [placeChevronsByCadence], spacing them by the local
+ *    blend of grade and grade-change sampled off the same simplified profile, then colour each
+ *    placement with the run containing it and drop the placements that sit on no run. Placement is
+ *    a property of the route, not of the runs: a run shorter than the local spacing carries a
+ *    chevron only when a cadence position happens to fall inside it, so short runs are marked by
+ *    their colour alone.
  * 5. If [chevronViewport] is non-null, drop any chevron whose lat/lng falls outside the viewport
  *    bounds. This keeps the emitted symbol count bounded regardless of route length — we only
  *    render what the rider can see.
@@ -232,9 +235,13 @@ internal fun buildGradeMapSpecs(
     readable: Boolean,
     tuning: EffectiveGradeMapTuning,
     includeChevrons: Boolean = true,
-    chevronSpacingM: Double = DEFAULT_CHEVRON_SPACING_M,
+    chevronBlend: Double = 0.5,
+    chevronGradeFullPct: Double = 15.0,
+    chevronChangeWindowM: Double = 60.0,
+    chevronChangeFullPctPerM: Double = 0.2,
+    chevronSpacingMaxM: Double = 0.0,
+    chevronSpacingMinM: Double = 0.0,
     chevronWindowHalfM: Double = 0.0,
-    chevronHeadingThresholdDeg: Double = 0.0,
     chevronMinSpacingM: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
     capTrimM: Double = 0.0,
@@ -313,14 +320,33 @@ internal fun buildGradeMapSpecs(
     // runs against the untrimmed run bounds.
     val chevronPlacements =
         if (includeChevrons) {
-            val tuning =
-                ChevronTuning(
-                    spacingM = chevronSpacingM,
-                    windowHalfM = chevronWindowHalfM,
-                    collisionRadiusM = chevronMinSpacingM,
-                    headingThresholdDeg = chevronHeadingThresholdDeg,
-                )
-            placeChevrons(gps, cumDist, tuning)
+            // Grade and grade-change are read off the already-simplified profile, on the
+            // elevation distance axis, then queried at GPS-axis distances via elevToGps. The
+            // simplification has removed the jitter, so a change here is real, not noise.
+            fun gradeAtElevM(d: Double): Double {
+                val a = elevationAtM(elevPoints, d - 1.0)
+                val b = elevationAtM(elevPoints, d + 1.0)
+                return (b - a) / 2.0 * 100.0
+            }
+            val w = chevronChangeWindowM.coerceAtLeast(1.0)
+            val gradeAtM: (Double) -> Double = { gpsM -> gradeAtElevM(gpsM / elevToGps) }
+            val changeAtM: (Double) -> Double = { gpsM ->
+                val d = gpsM / elevToGps
+                abs(gradeAtElevM(d + w) - gradeAtElevM(d - w)) / (2.0 * w)
+            }
+            placeChevronsByCadence(
+                gps = gps,
+                cumDist = cumDist,
+                gradeAtM = gradeAtM,
+                changeAtM = changeAtM,
+                alpha = chevronBlend,
+                gradeFullPct = chevronGradeFullPct,
+                changeFullPctPerM = chevronChangeFullPctPerM,
+                spacingMaxM = chevronSpacingMaxM,
+                spacingMinM = chevronSpacingMinM,
+                collisionRadiusM = chevronMinSpacingM,
+                windowHalfM = chevronWindowHalfM,
+            )
         } else {
             emptyList()
         }
