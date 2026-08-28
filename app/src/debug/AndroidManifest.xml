@@ -26,15 +26,16 @@
             </intent-filter>
         </receiver>
 
-        <!-- Debug-only: reads/writes the global HUD config from adb so capture scripts can
-             set each shot's HUD and snapshot/restore the user's own. Never in release. -->
+        <!-- Debug-only: reads/writes a named Barberfish config (hud/zone/time) from adb so
+             capture scripts can set each shot's config and snapshot/restore the user's own.
+             Never in release. -->
         <receiver
-            android:name=".extension.HudConfigReceiver"
+            android:name=".extension.ConfigReceiver"
             android:exported="true"
             tools:ignore="ExportedReceiver">
             <intent-filter>
-                <action android:name="com.jpweytjens.barberfish.SET_HUD" />
-                <action android:name="com.jpweytjens.barberfish.GET_HUD" />
+                <action android:name="com.jpweytjens.barberfish.SET_CONFIG" />
+                <action android:name="com.jpweytjens.barberfish.GET_CONFIG" />
             </intent-filter>
         </receiver>
 
