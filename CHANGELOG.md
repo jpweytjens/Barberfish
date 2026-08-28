@@ -49,6 +49,7 @@ Fixes:
 - The position dot on the elevation profile no longer sits half outside the field at the very start and end of a route
 - Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
 - The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
+- Profile climb highlights no longer vanish when you enter the climb. Barberfish now keeps a ride-long climb inventory per route, using the caching approach worked out in timklge's karoo-routegraph.
 - POI dots on the elevation profile are now solid instead of slightly see-through
 - Grade in fill mode keeps its color while holding the last value, instead of dropping to grey text
 - The held-grey grade reading is now readable in light mode, not only dark
