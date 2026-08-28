@@ -195,6 +195,71 @@ private fun bearingDeg(from: LatLng, to: LatLng): Float {
     return ((deg + 360.0) % 360.0).toFloat()
 }
 
+/**
+ * Blended placement intensity in `[0, 1]`. [gradePct] and [changePctPerM] are normalised against
+ * their "full" values and mixed by [alpha]: 0 follows grade magnitude alone, 1 follows the rate of
+ * grade change alone. Colour already carries grade, so pushing [alpha] up makes the cadence carry
+ * something colour does not — where the road is changing.
+ */
+internal fun chevronIntensity(
+    gradePct: Double,
+    changePctPerM: Double,
+    alpha: Double,
+    gradeFullPct: Double,
+    changeFullPctPerM: Double,
+): Double {
+    val gMag = if (gradeFullPct > 0.0) (abs(gradePct) / gradeFullPct).coerceIn(0.0, 1.0) else 0.0
+    val cMag =
+        if (changeFullPctPerM > 0.0) (abs(changePctPerM) / changeFullPctPerM).coerceIn(0.0, 1.0)
+        else 0.0
+    return ((1.0 - alpha) * gMag + alpha * cMag).coerceIn(0.0, 1.0)
+}
+
+/** Metres between consecutive marks: the sparse ceiling at intensity 0, the dense floor at 1. */
+internal fun chevronSpacingM(intensity: Double, spacingMaxM: Double, spacingMinM: Double): Double =
+    spacingMaxM + (spacingMinM - spacingMaxM) * intensity.coerceIn(0.0, 1.0)
+
+/**
+ * Places chevrons along the route at a spacing that varies with local [gradeAtM] and [changeAtM]. A
+ * cursor walks the route; at each step the local intensity sets the distance to the next step. A
+ * candidate within [collisionRadiusM] of a placed mark is skipped (the cursor still advances), so
+ * switchbacks never stack marks. Placement knows nothing about grade runs — callers colour and
+ * filter the result.
+ */
+internal fun placeChevronsByCadence(
+    gps: List<LatLng>,
+    cumDist: DoubleArray,
+    gradeAtM: (Double) -> Double,
+    changeAtM: (Double) -> Double,
+    alpha: Double,
+    gradeFullPct: Double,
+    changeFullPctPerM: Double,
+    spacingMaxM: Double,
+    spacingMinM: Double,
+    collisionRadiusM: Double,
+    windowHalfM: Double,
+): List<ChevronPlacement> {
+    if (gps.size < 2 || cumDist.size != gps.size) return emptyList()
+    val totalM = cumDist.last()
+    if (totalM <= 0.0 || spacingMinM <= 0.0) return emptyList()
+    fun spacingAt(d: Double): Double =
+        chevronSpacingM(
+            chevronIntensity(gradeAtM(d), changeAtM(d), alpha, gradeFullPct, changeFullPctPerM),
+            spacingMaxM,
+            spacingMinM,
+        )
+    val placed = mutableListOf<ChevronPlacement>()
+    // Start half a (local) spacing in, so the first mark is not pinned to the route origin.
+    var cursorM = spacingAt(0.0) * 0.5
+    while (cursorM < totalM) {
+        if (!collides(placed, gps, cumDist, cursorM, collisionRadiusM)) {
+            placed += placementAt(gps, cumDist, cursorM, windowHalfM)
+        }
+        cursorM += spacingAt(cursorM)
+    }
+    return placed
+}
+
 // --- Zoom-derived tuning ---------------------------------------------------------
 //
 // Spacing and collision radius are fixed pixel counts scaled to ground metres by the map's
