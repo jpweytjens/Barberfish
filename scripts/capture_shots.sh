@@ -141,10 +141,12 @@ RR=it.gangitano.karooridereplay/.MainActivity
 replay_open() { A shell am start -n "$RR" >/dev/null 2>&1; settle 2; wake; }
 replay_load() { # open replay, pick tranquilo, start playback
     replay_open
+    dump
     if ui has text "SELECT RIDE" >/dev/null 2>&1; then
         scroll_to text* "tranquilo" || { echo "  ! tranquilo not in replay list" >&2; return 1; }
         tap text* "tranquilo"; settle 2
     fi
+    dump
     ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 2; }
 }
 replay_pause() { replay_open; ui has text "Pause" >/dev/null 2>&1 && { tap text "Pause"; settle 1; }; }
@@ -156,6 +158,7 @@ replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that
 
 # ---- rideapp ride lifecycle (fixed coords where the ride screen won't dump) --
 ride_start() { # from ride-replay's replay screen: To ride -> start the ride
+    dump
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
     tap_xy 429 732; settle 6   # green play FAB on the profile carousel
 }
@@ -164,6 +167,7 @@ ride_load_route() { # ride_load_route <route name> — control center -> ADD Rou
     tap_xy 239 184; settle 3            # ADD Route tile
     scroll_to text* "$1" || { echo "  ! route not found: $1" >&2; return 1; }
     local xy; xy=$(ui tap text* "$1"); tap_xy $xy; settle 3   # open the route detail
+    dump
     ui has text "Follow route" >/dev/null 2>&1 && { tap text "Follow route"; settle 5; }
 }
 ride_end() { # finish flag -> confirm -> Delete -> confirm (discard the throwaway recording)
@@ -269,6 +273,77 @@ shot_design_karoo() {
         -quality 92 "$OUTDIR/design_karoo.jpg"
     echo "  -> $OUTDIR/design_karoo.jpg"
     restore_theme
+}
+
+shot_hud_sparkline() { # page 1: map + 3-col HUD + elevation profile strip (README/gallery hero)
+    echo "hud_sparkline: map page, HUD 3-col Speed/HR/Power, sparkline on"
+    session_start
+    set_hud scripts/fixtures/hud/hud_sparkline.json
+    goto_page 1; settle_drawer
+    cap hud_sparkline
+    magick "$STAGE/hud_sparkline.png" -quality 92 "$OUTDIR/hud_sparkline.jpg"
+    echo "  -> $OUTDIR/hud_sparkline.jpg"
+}
+
+shot_climbs_counter() { # page 1: HUD in CLIMBS mode showing the climb counter, on a climb
+    echo "climbs_counter: map page, HUD climb counter"
+    session_start
+    set_hud scripts/fixtures/hud/climbs_counter.json
+    # Must park on one of Tranquilo's categorized climbs so the native climber engages and the
+    # HUD counter reads "Climb N/M"; tune this fraction against the reference. On an uncategorized
+    # pitch the counter does not show.
+    replay_seek 0.28
+    press_button drawer_action  # collapse the native climber panel to its closed (down-chevron)
+                                # state; drawer_action cycles closed/half/full, so may need tuning
+    goto_page 1; settle_drawer
+    cap climbs_counter
+    magick "$STAGE/climbs_counter.png" -quality 92 "$OUTDIR/climbs_counter.jpg"
+    echo "  -> $OUTDIR/climbs_counter.jpg"
+}
+
+shot_climbs_profile() { # page 1: HUD 3-col Speed/HR/Grade + profile strip, on a climb
+    echo "climbs_profile: map page, HUD grade + profile"
+    session_start
+    set_hud scripts/fixtures/hud/climbs_profile.json
+    # Park on a categorized climb so GRADE reads a settled positive value (it shows "Searching…"
+    # on flats/descents); tune against the reference.
+    replay_seek 0.28
+    press_button drawer_action  # collapse the native climber panel (see shot_climbs_counter)
+    goto_page 1; settle_drawer
+    cap climbs_profile
+    magick "$STAGE/climbs_profile.png" -quality 92 "$OUTDIR/climbs_profile.jpg"
+    echo "  -> $OUTDIR/climbs_profile.jpg"
+}
+
+shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields) — README hero
+    echo "barberfish_fields: data page 2"
+    session_start
+    set_hud scripts/fixtures/hud/barberfish_fields.json
+    goto_page 2; settle_drawer
+    cap barberfish_fields
+    magick "$STAGE/barberfish_fields.png" -quality 92 "$OUTDIR/barberfish_fields.jpg"
+    echo "  -> $OUTDIR/barberfish_fields.jpg"
+}
+
+shot_light_mode() { # page 3 in day mode: 4-col zone HUD + fill-mode field pairs
+    echo "light_mode: data page 3, day mode"
+    session_start
+    set_hud scripts/fixtures/hud/light_mode.json
+    save_theme; set_day
+    goto_page 3; settle_drawer
+    cap light_mode
+    magick "$STAGE/light_mode.png" -quality 92 "$OUTDIR/light_mode.jpg"
+    echo "  -> $OUTDIR/light_mode.jpg"
+    restore_theme
+}
+
+shot_karoo_vs_barberfish() { # page 4: native vs Barberfish paired single fields (no HUD row)
+    echo "karoo_vs_barberfish: data page 4"
+    session_start
+    goto_page 4; settle_drawer
+    cap karoo_vs_barberfish
+    magick "$STAGE/karoo_vs_barberfish.png" -quality 92 "$OUTDIR/karoo_vs_barberfish.jpg"
+    echo "  -> $OUTDIR/karoo_vs_barberfish.jpg"
 }
 
 # ============================= main ==========================================

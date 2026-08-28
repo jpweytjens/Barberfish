@@ -1,0 +1,134 @@
+{
+  "columns": 4,
+  "leftSlot": {
+    "field": {
+      "type": "com.jpweytjens.barberfish.extension.HUDSlotField.Speed"
+    },
+    "powerSmoothing": "S3",
+    "speedSmoothing": "S0",
+    "cadenceSmoothing": "S0",
+    "avgSpeedConfig": {
+      "mode": "TARGET",
+      "thresholdKph": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minKph": null,
+      "maxKph": null,
+      "colorMode": "TEXT"
+    },
+    "cadenceThreshold": {
+      "mode": "TARGET",
+      "thresholdRpm": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minRpm": null,
+      "maxRpm": null
+    },
+    "colorMode": "TEXT",
+    "zoneDisplayMode": "FLOAT",
+    "gradePrecision": "FLOAT",
+    "gradeShowPercentSign": true
+  },
+  "middleSlot": {
+    "field": {
+      "type": "com.jpweytjens.barberfish.extension.HUDSlotField.PowerZone"
+    },
+    "powerSmoothing": "S3",
+    "speedSmoothing": "S0",
+    "cadenceSmoothing": "S0",
+    "avgSpeedConfig": {
+      "mode": "TARGET",
+      "thresholdKph": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minKph": null,
+      "maxKph": null,
+      "colorMode": "TEXT"
+    },
+    "cadenceThreshold": {
+      "mode": "TARGET",
+      "thresholdRpm": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minRpm": null,
+      "maxRpm": null
+    },
+    "colorMode": "BACKGROUND",
+    "zoneDisplayMode": "FLOAT",
+    "gradePrecision": "FLOAT",
+    "gradeShowPercentSign": true
+  },
+  "rightSlot": {
+    "field": {
+      "type": "com.jpweytjens.barberfish.extension.HUDSlotField.HRZone"
+    },
+    "powerSmoothing": "S3",
+    "speedSmoothing": "S0",
+    "cadenceSmoothing": "S0",
+    "avgSpeedConfig": {
+      "mode": "TARGET",
+      "thresholdKph": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minKph": null,
+      "maxKph": null,
+      "colorMode": "TEXT"
+    },
+    "cadenceThreshold": {
+      "mode": "TARGET",
+      "thresholdRpm": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minRpm": null,
+      "maxRpm": null
+    },
+    "colorMode": "BACKGROUND",
+    "zoneDisplayMode": "FLOAT",
+    "gradePrecision": "FLOAT",
+    "gradeShowPercentSign": true
+  },
+  "fourthSlot": {
+    "field": {
+      "type": "com.jpweytjens.barberfish.extension.HUDSlotField.Grade"
+    },
+    "powerSmoothing": "S3",
+    "speedSmoothing": "S0",
+    "cadenceSmoothing": "S0",
+    "avgSpeedConfig": {
+      "mode": "TARGET",
+      "thresholdKph": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minKph": null,
+      "maxKph": null,
+      "colorMode": "TEXT"
+    },
+    "cadenceThreshold": {
+      "mode": "TARGET",
+      "thresholdRpm": 0.0,
+      "rangePercentAbove": 10.0,
+      "rangePercentBelow": 10.0,
+      "minRpm": null,
+      "maxRpm": null
+    },
+    "colorMode": "TEXT",
+    "zoneDisplayMode": "FLOAT",
+    "gradePrecision": "FLOAT",
+    "gradeShowPercentSign": true
+  },
+  "sparkline": {
+    "mode": "OFF",
+    "enabled": null,
+    "lookaheadKm": 5,
+    "skipBands": 1,
+    "skipBandsDescent": 0,
+    "climbEdge": 8.0,
+    "descentEdge": -2.0,
+    "simplification": "HEAVY",
+    "warp": "MILD",
+    "yZoom": "NORMAL",
+    "showClimbs": true,
+    "showPois": true,
+    "showHeader": true
+  }
+}
