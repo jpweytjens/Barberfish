@@ -137,6 +137,12 @@ internal fun sparklineBitmapFlow(
         val onRoute =
             streamingDist?.dataPoint?.values?.get(DataType.Field.ON_ROUTE)?.let { it >= 0.5 }
                 ?: true
+        // Cache acceptance is stricter than the freeze below: an absent or not-yet-streaming
+        // ON_ROUTE counts as off-route, so a doubtful emission can never commit climbs whose
+        // start distances may track the rider instead of the route start.
+        val onRouteForCache =
+            streamingDist?.dataPoint?.values?.get(DataType.Field.ON_ROUTE)?.let { it >= 0.5 }
+                ?: false
         val positionM =
             when {
                 isPreview ->
@@ -156,13 +162,25 @@ internal fun sparklineBitmapFlow(
             }
         val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
         lastPositionM = positionM
+        // Navigation cleared (or switched to destination mode): drop the inventory. Live
+        // flows only — a preview rendering with no route must not clear the cache the live
+        // fields are riding on.
+        if (route == null && !isPreview) {
+            sharedClimbCache.resolve(null, null, false)
+        }
         val rawClimbRanges: List<Pair<Float, Float>> =
             when {
                 route != null ->
-                    route.climbs.map { climb ->
-                        climb.startDistance.toFloat() to
-                            (climb.startDistance + climb.length).toFloat()
-                    }
+                    sharedClimbCache
+                        .resolve(
+                            gradeMapRouteKey(route.routePolyline, route.reversed),
+                            route.climbs,
+                            onRouteForCache,
+                        )
+                        .map { climb ->
+                            climb.startDistance.toFloat() to
+                                (climb.startDistance + climb.length).toFloat()
+                        }
                 previewClimbs -> colDeRatesClimbsFixture()
                 isPreview -> rvvClimbsFixture()
                 else -> emptyList()
