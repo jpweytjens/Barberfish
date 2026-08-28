@@ -480,12 +480,30 @@ fun Context.streamZoneConfig(): Flow<ZoneConfig> = streamConfig(zoneConfigKey, Z
 
 suspend fun Context.saveZoneConfig(config: ZoneConfig) = saveConfig(zoneConfigKey, config)
 
+/** Five stops for the grade-map chevron cadence blend (grade magnitude ↔ grade change). */
+enum class ChevronEmphasis(val alpha: Double, val label: String) {
+    GRADIENT(0.0, "Gradient"),
+    MOSTLY_GRADIENT(0.25, "Mostly gradient"),
+    BALANCED(0.5, "Balanced"),
+    MOSTLY_CHANGES(0.75, "Mostly changes"),
+    CHANGES(1.0, "Changes");
+
+    companion object {
+        /**
+         * The stop whose alpha is nearest [alpha]; [GradeMapConfig.chevronBlend] is the authority.
+         */
+        fun nearest(alpha: Double): ChevronEmphasis = entries.minBy {
+            kotlin.math.abs(it.alpha - alpha)
+        }
+    }
+}
+
 // --- GradeMapConfig ---
 
 @Serializable
 data class GradeMapConfig(
     val enabled: Boolean = true,
-    val showPolylines: Boolean = true,
+    val showPolylines: Boolean = false, // was true — fill is now opt-in
     val showChevrons: Boolean = true,
     // When true, skipBands/simplification are taken from the field sparkline config
     // at the consumer via resolveGradeMapTuning(); the two fields below are ignored.
@@ -499,6 +517,7 @@ data class GradeMapConfig(
     val climbEdge: Double? = null,
     val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
+    val chevronBlend: Double = 0.5, // grade↔change cadence blend; ChevronEmphasis.nearest maps it
 ) {
     /**
      * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,
