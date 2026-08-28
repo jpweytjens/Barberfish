@@ -17,10 +17,10 @@ import kotlinx.serialization.json.Json
 // shot's config and snapshot/restore the user's own. Names: hud, zone (palettes), time
 // (formatting) — add a config by adding one `when` branch. Never in release.
 //
-//   adb push shot.json /sdcard/bf_config.json
+//   adb push shot.json /sdcard/Android/data/com.jpweytjens.barberfish/files/bf_config.json
 //   adb shell am broadcast -n com.jpweytjens.barberfish/.extension.ConfigReceiver \
-//       -a com.jpweytjens.barberfish.SET_CONFIG -f 0x01000000 --es name hud --es file
-// /sdcard/bf_config.json
+//       -a com.jpweytjens.barberfish.SET_CONFIG -f 0x01000000 --es name hud \
+//       --es file /sdcard/Android/data/com.jpweytjens.barberfish/files/bf_config.json
 //
 //   adb shell am broadcast -n com.jpweytjens.barberfish/.extension.ConfigReceiver \
 //       -a com.jpweytjens.barberfish.GET_CONFIG -f 0x01000000 --es name hud
