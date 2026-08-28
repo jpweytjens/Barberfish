@@ -9,12 +9,22 @@
 #
 # Pre-staged device assumption: the Barberfish profile, data pages, and per-field
 # config are already set up as you want them shown. This script navigates and
-# captures; it does not mutate your config (the one exception, restored in-shot,
-# is noted where it happens).
+# captures; it does not mutate your config, with one exception: the ride shots
+# briefly set the HUD config to drive the on-device HUD, then restore the
+# snapshot taken at session start.
+#
+# Ride shots additionally assume: the Barberfish profile is selected in
+# ride-replay with its four data pages; replay sensors are paired to that
+# profile; the Tranquilo ride is starred in ride-replay and its recording is
+# at /sdcard/FitFiles/tranquilo.fit; pages 3-4 field colorMode is pre-staged
+# per shot; the debug APK (with HardwareActionReceiver / ConfigReceiver) is
+# installed. K3 only (single device).
 #
 # Taps and crops are anchored on element *text* via _shot_ui.py + uiautomator,
 # not fixed coordinates, so a reordered or restructured settings screen still
-# resolves. K3 only (single device).
+# resolves, except the in-ride rideapp screens (ride_start/ride_load_route/
+# ride_end/goto_page), which don't dump reliably and use fixed coordinates
+# instead.
 #
 # Usage:
 #   scripts/capture_shots.sh                 # all shots below
@@ -22,6 +32,9 @@
 #
 # Shots (increment 1, no ride needed):
 #   design_karoo
+# Shots (increment 2, share one discardable ride session):
+#   hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode
+#   karoo_vs_barberfish
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -98,6 +111,77 @@ nudge_to_top() { # bring the matched element near the top of the viewport
     scroll_up; settle
 }
 
+# ---- debug broadcast helpers (debug APK only) -------------------------------
+PKG=com.jpweytjens.barberfish
+bcast() { # bcast <ReceiverClass> <ACTION> [extra args...]
+    A shell am broadcast -n "$PKG/.extension.$1" -a "$PKG.$2" -f 0x01000000 "${@:3}" \
+        >/dev/null 2>&1
+}
+press_button() { bcast HardwareActionReceiver PRESS_BUTTON --es button "$1"; settle 1; }
+
+CFG_PUSH=/sdcard/Android/data/$PKG/files/bf_config.json   # app external files dir: readable
+                                                          # by the app under scoped storage;
+                                                          # an arbitrary /sdcard path is not
+                                                          # (EACCES on Android 12 / targetSdk 34)
+config_set() { # config_set <name> <local json file> — push and apply, wait for re-render
+    [[ -f "$2" ]] || { echo "  ! no such fixture: $2" >&2; return 1; }
+    A push "$2" "$CFG_PUSH" >/dev/null 2>&1
+    bcast ConfigReceiver SET_CONFIG --es name "$1" --es file "$CFG_PUSH"
+    settle 2
+}
+config_get() { # config_get <name> <local out file> — dump live config and pull
+    bcast ConfigReceiver GET_CONFIG --es name "$1"; settle 1
+    A pull /sdcard/Android/data/$PKG/files/"$1"_config.json "$2" >/dev/null 2>&1
+}
+set_hud() { config_set hud "$1"; }
+get_hud() { config_get hud "$1"; }
+
+# ---- ride-replay control (it.gangitano.karooridereplay) ----------------------
+RR=it.gangitano.karooridereplay/.MainActivity
+replay_open() { A shell am start -n "$RR" >/dev/null 2>&1; settle 2; wake; }
+replay_load() { # open replay, pick tranquilo, start playback
+    replay_open
+    if ui has text "SELECT RIDE" >/dev/null 2>&1; then
+        scroll_to text* "tranquilo" || { echo "  ! tranquilo not in replay list" >&2; return 1; }
+        tap text* "tranquilo"; settle 2
+    fi
+    ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 2; }
+}
+replay_pause() { replay_open; ui has text "Pause" >/dev/null 2>&1 && { tap text "Pause"; settle 1; }; }
+replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that fraction
+    replay_open
+    local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 55 + f*(455-55)}')
+    tap_xy "$x" 312; settle 1   # track y verified on-device; adjust if the thumb does not move
+}
+
+# ---- rideapp ride lifecycle (fixed coords where the ride screen won't dump) --
+ride_start() { # from ride-replay's replay screen: To ride -> start the ride
+    ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
+    tap_xy 429 732; settle 6   # green play FAB on the profile carousel
+}
+ride_load_route() { # ride_load_route <route name> — control center -> ADD Route -> Follow
+    press_button control_center; settle 1
+    tap_xy 239 184; settle 3            # ADD Route tile
+    scroll_to text* "$1" || { echo "  ! route not found: $1" >&2; return 1; }
+    local xy; xy=$(ui tap text* "$1"); tap_xy $xy; settle 3   # open the route detail
+    ui has text "Follow route" >/dev/null 2>&1 && { tap text "Follow route"; settle 5; }
+}
+ride_end() { # finish flag -> confirm -> Delete -> confirm (discard the throwaway recording)
+    tap_xy 40 732; settle 2             # finish flag (bottom-left of the map overlay)
+    tap_xy 429 732; settle 4            # confirm end
+    scroll_to text "Delete" || { echo "  ! Delete not found on summary" >&2; return 1; }
+    tap text "Delete"; settle 2
+    tap_xy 429 732; settle 3            # confirm delete
+}
+
+# ---- data-page navigation ----------------------------------------------------
+goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), from page 1
+    tap_xy 240 400; settle 1            # tap map to make sure the ride view has focus
+    local i
+    for (( i=1; i<$1; i++ )); do A shell input swipe 400 400 80 400 250; settle 1; done
+}
+settle_drawer() { settle "${1:-6}"; }   # the bottom pill auto-hides after a few idle seconds
+
 # ---- capture / crop ----------------------------------------------------------
 cap() { wake; A exec-out screencap -p > "$STAGE/$1.png"; }
 
@@ -128,6 +212,32 @@ restore_theme() {
         *yes) A shell cmd uimode night yes >/dev/null 2>&1 ;;
         *no)  A shell cmd uimode night no  >/dev/null 2>&1 ;;
     esac
+}
+
+# ============================= ride session ==================================
+# The ride shots share one discardable ride: snapshot the user's HUD, start the
+# replay + ride, load the route once (RIDE REMAINING / OVERVIEW / PROFILE / climbs
+# all need it), capture, then end+discard and restore the HUD.
+RIDE_SHOTS=(hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish)
+SESSION_UP=0
+session_start() {
+    (( SESSION_UP )) && return 0
+    get_hud "$STAGE/hud_saved.json"
+    replay_load
+    ride_start
+    ride_load_route Tranquilo
+    SESSION_UP=1
+}
+session_end() {
+    (( SESSION_UP )) || return 0
+    ride_end
+    [[ -f "$STAGE/hud_saved.json" ]] && set_hud "$STAGE/hud_saved.json"
+    SESSION_UP=0
+}
+needs_session() { # true if any requested target is a ride shot
+    local t s
+    for t in "$@"; do for s in "${RIDE_SHOTS[@]}"; do [[ "$t" == "$s" ]] && return 0; done; done
+    return 1
 }
 
 # ============================= shots =========================================
@@ -162,12 +272,14 @@ shot_design_karoo() {
 }
 
 # ============================= main ==========================================
-ALL=(design_karoo)
+ALL=(design_karoo hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish)
 targets=("$@"); [[ ${#targets[@]} -eq 0 ]] && targets=("${ALL[@]}")
 
 require_device || { echo "no device" >&2; exit 1; }
 keep_awake
 echo "capturing to $OUTDIR"
+
+needs_session "${targets[@]}" && session_start
 for s in "${targets[@]}"; do
     if declare -F "shot_$s" >/dev/null; then
         "shot_$s"
@@ -175,5 +287,7 @@ for s in "${targets[@]}"; do
         echo "unknown shot: $s (known: ${ALL[*]})" >&2
     fi
 done
-A shell dumpsys deviceidle enable >/dev/null 2>&1 || true   # restore normal Doze
+session_end
+
+A shell dumpsys deviceidle enable >/dev/null 2>&1 || true
 echo "done."
