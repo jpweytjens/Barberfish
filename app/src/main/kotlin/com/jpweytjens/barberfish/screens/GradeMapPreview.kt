@@ -27,9 +27,11 @@ import androidx.core.graphics.drawable.toBitmap
 import com.jpweytjens.barberfish.datatype.shared.ClimbPreviewFixture
 import com.jpweytjens.barberfish.datatype.shared.LemonYellow
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
+import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.mercatorBoundsAspect
+import com.jpweytjens.barberfish.datatype.shared.placeChevronsByCadence
 import com.jpweytjens.barberfish.datatype.shared.projectToUnit
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.GradeMapConfig
@@ -45,8 +47,16 @@ import kotlin.math.sin
 // contains a cadence position and shows a chevron. At NONE and MILD the texture tiers
 // cut in far shorter runs and some go bare (no cadence position lands inside them) —
 // the same as how the field renders on the device, which carries no per-run guarantee
-// either.
-private const val PREVIEW_CHEVRON_SPACING_M = 150.0
+// either. Bounds echo the live sparse-ceiling / dense-floor split so the blend slider
+// still visibly changes cadence in the preview.
+private const val PREVIEW_CHEVRON_SPACING_MAX_M = 150.0
+private const val PREVIEW_CHEVRON_SPACING_MIN_M = 40.0
+
+// Representative native-style chevron cadence, drawn as a yellow underlay beneath our own
+// marks so the preview shows our marks stacked on the map's own always-present chevron
+// layer, the same z-order as on the device. Evenly spaced; it does not track any measured
+// on-device interval.
+private const val PREVIEW_NATIVE_CHEVRON_SPACING_M = 90.0
 
 // On-screen chevron width; the drawable's 25x17 viewport fixes the height ratio. Drawing
 // the real ic_climber_chevron_* drawables (grade fill + black outline) matches the device,
@@ -70,29 +80,47 @@ internal fun GradeMapPreview(
                 palette = gradePalette,
                 readable = false,
                 tuning = eff,
-                // Always place chevrons; the toggle only changes their colour (grade vs native).
-                includeChevrons = true,
+                // The toggle gates our own marks, same as the live path; native's own
+                // chevrons are a separate underlay drawn unconditionally below.
+                includeChevrons = config.showChevrons,
+                chevronBlend = config.chevronBlend,
+                chevronSpacingMaxM = PREVIEW_CHEVRON_SPACING_MAX_M,
+                chevronSpacingMinM = PREVIEW_CHEVRON_SPACING_MIN_M,
             )
         }
     val routePoints = remember { decodeGpsPolyline(ClimbPreviewFixture.routePolyline) }
     val segmentPoints = remember(specs) { specs.polylines.map { decodeGpsPolyline(it.encoded) } }
+    // Representative native-style chevrons, evenly spaced along the route; drawn under our
+    // own marks regardless of the toggle, matching the map's own always-present layer.
+    val nativePlacements =
+        remember(routePoints) {
+            val cumDist = cumulativeDistancesM(routePoints)
+            placeChevronsByCadence(
+                gps = routePoints,
+                cumDist = cumDist,
+                gradeAtM = { 0.0 },
+                changeAtM = { 0.0 },
+                alpha = 0.0,
+                gradeFullPct = 1.0,
+                changeFullPctPerM = 1.0,
+                spacingMaxM = PREVIEW_NATIVE_CHEVRON_SPACING_M,
+                spacingMinM = PREVIEW_NATIVE_CHEVRON_SPACING_M,
+                collisionRadiusM = 0.0,
+                windowHalfM = 0.0,
+            )
+        }
     val bounds = ClimbPreviewFixture.bounds
     val aspect = remember { mercatorBoundsAspect(bounds).toFloat() }
 
-    // Rasterise one chevron bitmap per colour we will draw: grade-band colours when the
-    // chevron toggle is on, otherwise the single native LemonYellow chevron.
+    // Rasterise one chevron bitmap per colour we will draw: every grade-band colour the
+    // fixture can produce, plus the native LemonYellow underlay.
     val context = LocalContext.current
     val density = LocalDensity.current
     val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
     val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
     val chevronBitmaps: Map<Int, ImageBitmap> =
-        remember(specs, config.showChevrons, chevW, chevH) {
-            val argbs =
-                if (config.showChevrons) {
-                    specs.chevrons.map { it.colorArgb }.distinct()
-                } else {
-                    listOf(LemonYellow.toArgb())
-                }
+        remember(specs, chevW, chevH) {
+            val argbs = (specs.chevrons.map { it.colorArgb } + LemonYellow.toArgb()).distinct()
             argbs
                 .mapNotNull { argb ->
                     val drawable =
@@ -144,17 +172,17 @@ internal fun GradeMapPreview(
             }
         }
 
-        specs.chevrons.forEach { ch ->
-            val argb = if (config.showChevrons) ch.colorArgb else LemonYellow.toArgb()
-            val bmp = chevronBitmaps[argb] ?: return@forEach
-            val center = project(ch.lat, ch.lng)
-            // Drawable points up (tip = north); rotate clockwise by the travel bearing.
-            rotate(degrees = ch.bearingDeg, pivot = center) {
-                drawImage(
-                    image = bmp,
-                    topLeft = Offset(center.x - bmp.width / 2f, center.y - bmp.height / 2f),
-                )
+        // Native's own chevrons first, so ours draw on top of them.
+        val nativeBmp = chevronBitmaps[LemonYellow.toArgb()]
+        if (nativeBmp != null) {
+            nativePlacements.forEach { p ->
+                drawChevron(nativeBmp, project(p.lat, p.lng), p.bearingDeg)
             }
+        }
+
+        specs.chevrons.forEach { ch ->
+            val bmp = chevronBitmaps[ch.colorArgb] ?: return@forEach
+            drawChevron(bmp, project(ch.lat, ch.lng), ch.bearingDeg)
         }
     }
 }
@@ -345,6 +373,16 @@ private fun DrawScope.drawBarberfishLake(w: Float, h: Float) {
         topLeft = Offset(eye.x - eyeR * 1.3f, eye.y - eyeR),
         size = Size(eyeR * 2.6f, eyeR * 2f),
     )
+}
+
+/** Draws [bmp] centred at [center], rotated clockwise by [bearingDeg] (drawable points north). */
+private fun DrawScope.drawChevron(bmp: ImageBitmap, center: Offset, bearingDeg: Float) {
+    rotate(degrees = bearingDeg, pivot = center) {
+        drawImage(
+            image = bmp,
+            topLeft = Offset(center.x - bmp.width / 2f, center.y - bmp.height / 2f),
+        )
+    }
 }
 
 private fun DrawScope.drawConnected(points: List<Offset>, color: Color, widthPx: Float) {
