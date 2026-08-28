@@ -288,12 +288,17 @@ internal fun buildGradeMapSpecs(
             readable = readable,
         )
 
+    // Emphasis hides, it does not recolour: a run inside the emphasis edges resolves to the
+    // map neutral, and we drop it here so only the emphasised climbs and descents draw, the
+    // same as the elevation profile. The native line shows through the gaps.
+    val neutralArgb = mapNeutral(palette, readable).toArgb()
+
     val polylines = mutableListOf<GradeMapPolylineSpec>()
     runs.forEachIndexed { runIdx, run ->
-        // Runs tile the route, so the only ends that overhang the coloured extent via the
-        // renderer's round line-cap are the route's own two: only those are pulled in by
-        // capTrimM, and the cap then lands on the true endpoint. Interior junctions stay
-        // full (cap overlap, no gap).
+        if (run.colorArgb == neutralArgb) return@forEachIndexed
+        // Only the route's own two ends overhang the coloured extent via the renderer's round
+        // line-cap, so only those are pulled in by capTrimM and the cap lands on the true
+        // endpoint. Interior junctions stay full (cap overlap, no gap).
         val atRouteStart = runIdx == 0
         val atRouteEnd = runIdx == runs.lastIndex
         // Cap each end's trim so the two never cross: the 0.5 m buffer keeps drawEnd >
@@ -353,6 +358,8 @@ internal fun buildGradeMapSpecs(
                 placement.distanceM >= it.startM * elevToGps &&
                     placement.distanceM < it.endM * elevToGps
             } ?: return@mapIndexedNotNull null
+        // Emphasis hides: no chevron on an unemphasised (neutral) run, matching the fill.
+        if (run.colorArgb == neutralArgb) return@mapIndexedNotNull null
         ClimbChevronSpec(
             // Indexed over every placement on the route, so an id stays put when a
             // neighbouring run changes colour or the run list is re-cut.
