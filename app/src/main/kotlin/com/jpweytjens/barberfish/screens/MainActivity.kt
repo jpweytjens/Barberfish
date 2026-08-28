@@ -142,6 +142,7 @@ import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
+import com.jpweytjens.barberfish.extension.ChevronEmphasis
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.ETAConfig
 import com.jpweytjens.barberfish.extension.EffortFieldConfig
@@ -1363,6 +1364,18 @@ private fun GradeMapCard(
                 value = config.showChevrons,
                 onChange = { onUpdate(config.copy(showChevrons = it)) },
                 help = "Gradient-colour the direction chevrons; off keeps the native ones.",
+            )
+
+            ControlLabel("CHEVRON EMPHASIS")
+            HelperText(
+                "How chevron spacing is decided: pack in on steep gradient, or cluster where the " +
+                    "gradient changes."
+            )
+            SmoothingSlider(
+                options = ChevronEmphasis.entries,
+                selected = ChevronEmphasis.nearest(config.chevronBlend),
+                label = { it.label },
+                onSelected = { onUpdate(config.copy(chevronBlend = it.alpha)) },
             )
         }
     }
