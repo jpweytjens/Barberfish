@@ -443,7 +443,9 @@ internal data class GradeMapConfigInputs(
             descentEdge = tuning.descentEdge,
             routeElevationHash = route?.routeElevationPolyline?.hashCode() ?: 0,
             routePolylineHash = route?.routePolyline?.hashCode() ?: 0,
-            climbsHash = route?.climbs?.hashCode() ?: 0,
+            // Climbs stay out of the signature: buildGradeMapSpecs colours from the
+            // elevation polyline and never reads them, and the upcoming-only list
+            // shrinking at each climb foot would churn a full rebuild mid-climb.
             reversed = route?.reversed ?: false,
             // Bucket the rejoin offset to ~50 m so the filler tracks the rider riding the
             // rejoin path without rebuilding on every metre.
@@ -463,7 +465,6 @@ internal data class GradeMapConfigSignature(
     val descentEdge: Double?,
     val routeElevationHash: Int,
     val routePolylineHash: Int,
-    val climbsHash: Int,
     val reversed: Boolean,
     val rejoinBucket: Int,
 )
