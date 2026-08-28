@@ -130,7 +130,6 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
-import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -1288,18 +1287,15 @@ private fun GradeMapCard(
                 gradePalette = gradePalette,
             )
 
-            ControlLabel("TUNING")
-            SegmentedRow(
+            ChoiceRow(
+                label = "TUNING",
                 options = listOf(true to "Sync", false to "Independent"),
                 selected = config.syncWithSparkline,
                 onSelect = { onUpdate(config.copy(syncWithSparkline = it)) },
+                help = "Tune the map with the elevation profile, or set it on its own.",
             )
 
             if (config.syncWithSparkline) {
-                HelperText(
-                    "Starts from the elevation profile's emphasis and simplification, then " +
-                        "coarsens further as you zoom out."
-                )
                 // Display only: the edges are the sparkline's, resolved exactly as the overlay
                 // renders them, so the bar shows which bands the map paints and which fall
                 // back to the map neutral.
@@ -1309,7 +1305,7 @@ private fun GradeMapCard(
                     climbEdge = effTuning.climbEdge,
                     descentEdge = effTuning.descentEdge,
                     onEdgesChange = { _, _ -> },
-                    neutral = mapNeutral(gradePalette, readable = false),
+                    neutral = null,
                     enabled = false,
                 )
             } else {
@@ -1339,7 +1335,7 @@ private fun GradeMapCard(
                             )
                         )
                     },
-                    neutral = mapNeutral(gradePalette, readable = false),
+                    neutral = null,
                 )
 
                 LabeledHelper("SIMPLIFICATION") {
@@ -1366,16 +1362,12 @@ private fun GradeMapCard(
                 help = "Gradient-colour the direction chevrons; off keeps the native ones.",
             )
 
-            ControlLabel("CHEVRON EMPHASIS")
-            HelperText(
-                "How chevron spacing is decided: pack in on steep gradient, or cluster where the " +
-                    "gradient changes."
-            )
-            SmoothingSlider(
-                options = ChevronEmphasis.entries,
+            ChoiceRow(
+                label = "CHEVRON SPACING",
+                options = ChevronEmphasis.entries.map { it to it.label },
                 selected = ChevronEmphasis.nearest(config.chevronBlend),
-                label = { it.label },
-                onSelected = { onUpdate(config.copy(chevronBlend = it.alpha)) },
+                onSelect = { onUpdate(config.copy(chevronBlend = it.alpha)) },
+                help = "Bunch chevrons on the steepest ramps, or where the gradient shifts.",
             )
         }
     }

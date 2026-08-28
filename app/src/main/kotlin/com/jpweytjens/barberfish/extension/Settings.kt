@@ -483,9 +483,7 @@ suspend fun Context.saveZoneConfig(config: ZoneConfig) = saveConfig(zoneConfigKe
 /** Five stops for the grade-map chevron cadence blend (grade magnitude ↔ grade change). */
 enum class ChevronEmphasis(val alpha: Double, val label: String) {
     GRADIENT(0.0, "Gradient"),
-    MOSTLY_GRADIENT(0.25, "Mostly gradient"),
     BALANCED(0.5, "Balanced"),
-    MOSTLY_CHANGES(0.75, "Mostly changes"),
     CHANGES(1.0, "Changes");
 
     companion object {
