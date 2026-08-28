@@ -50,18 +50,20 @@ import kotlin.math.sin
 // either. Bounds echo the live sparse-ceiling / dense-floor split so the blend slider
 // still visibly changes cadence in the preview.
 private const val PREVIEW_CHEVRON_SPACING_MAX_M = 150.0
-private const val PREVIEW_CHEVRON_SPACING_MIN_M = 40.0
+private const val PREVIEW_CHEVRON_SPACING_MIN_M = 70.0
 
 // Representative native-style chevron cadence, drawn as a yellow underlay beneath our own
 // marks so the preview shows our marks stacked on the map's own always-present chevron
 // layer, the same z-order as on the device. Evenly spaced; it does not track any measured
 // on-device interval.
-private const val PREVIEW_NATIVE_CHEVRON_SPACING_M = 90.0
+private const val PREVIEW_NATIVE_CHEVRON_SPACING_M = 200.0
 
-// On-screen chevron width; the drawable's 25x17 viewport fixes the height ratio. Drawing
-// the real ic_climber_chevron_* drawables (grade fill + black outline) matches the device,
-// where chevrons sit above the route line as their own symbol layer.
-private val CHEVRON_WIDTH = 12.dp
+// On-screen chevron widths. Ours (grade fill + black outline) is sized to sit within the
+// route line; the representative native marker underneath is drawn a little wider, as the
+// map's own direction chevrons read, so the two layers stay distinct. The drawable's 25x17
+// viewport fixes the height ratio.
+private val CHEVRON_WIDTH = 7.dp
+private val NATIVE_CHEVRON_WIDTH = 14.dp
 private const val CHEVRON_HEIGHT_RATIO = 17f / 25f
 
 @Composable
@@ -118,10 +120,13 @@ internal fun GradeMapPreview(
     val density = LocalDensity.current
     val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
     val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
+    val nativeChevW = with(density) { NATIVE_CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
+    val nativeChevH = (nativeChevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
     val chevronBitmaps: Map<Int, ImageBitmap> =
         remember(specs, chevW, chevH) {
-            val argbs = (specs.chevrons.map { it.colorArgb } + LemonYellow.toArgb()).distinct()
-            argbs
+            specs.chevrons
+                .map { it.colorArgb }
+                .distinct()
                 .mapNotNull { argb ->
                     val drawable =
                         ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
@@ -129,6 +134,13 @@ internal fun GradeMapPreview(
                     argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
                 }
                 .toMap()
+        }
+    // Native underlay bitmap, rasterised at its own wider size so it reads distinctly from ours.
+    val nativeBmp: ImageBitmap? =
+        remember(nativeChevW, nativeChevH) {
+            ContextCompat.getDrawable(context, gradeChevronDrawable(LemonYellow.toArgb()))
+                ?.toBitmap(width = nativeChevW, height = nativeChevH)
+                ?.asImageBitmap()
         }
 
     Canvas(modifier.fillMaxWidth().aspectRatio(aspect)) {
@@ -156,8 +168,16 @@ internal fun GradeMapPreview(
             routeWidth,
         )
 
-        // Grade-coloured segments overlay the native yellow line only when polylines are on.
-        // Pull each contiguous chain's outer ends in by half the stroke so the round cap
+        // Native's own chevrons, drawn before the grade fill so the fill sits over them, the
+        // way the extension line draws above the map's own direction markers on the device.
+        if (nativeBmp != null) {
+            nativePlacements.forEach { p ->
+                drawChevron(nativeBmp, project(p.lat, p.lng), p.bearingDeg)
+            }
+        }
+
+        // Grade-coloured segments overlay the native line and its chevrons when polylines are
+        // on. Pull each contiguous chain's outer ends in by half the stroke so the round cap
         // lands on the true endpoint, mirroring the device's metre-space cap trim.
         if (config.showPolylines) {
             specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
@@ -169,14 +189,6 @@ internal fun GradeMapPreview(
                         endPx = if (spec.trimEnd) routeWidth / 2f else 0f,
                     )
                 drawConnected(trimmed, Color(spec.colorArgb), routeWidth)
-            }
-        }
-
-        // Native's own chevrons first, so ours draw on top of them.
-        val nativeBmp = chevronBitmaps[LemonYellow.toArgb()]
-        if (nativeBmp != null) {
-            nativePlacements.forEach { p ->
-                drawChevron(nativeBmp, project(p.lat, p.lng), p.bearingDeg)
             }
         }
 
