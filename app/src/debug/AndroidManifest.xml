@@ -15,5 +15,16 @@
             </intent-filter>
         </receiver>
 
+        <!-- Debug-only: presses a Karoo hardware button from adb so capture scripts can
+             drive the in-ride flow. Exported for the shell UID. Never in release. -->
+        <receiver
+            android:name=".extension.HardwareActionReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.jpweytjens.barberfish.PRESS_BUTTON" />
+            </intent-filter>
+        </receiver>
+
     </application>
 </manifest>
