@@ -65,9 +65,6 @@ internal data class LatLngBounds(
     fun contains(lat: Double, lng: Double): Boolean = lat in minLat..maxLat && lng in minLng..maxLng
 }
 
-/** Default chevron spacing when no zoom-adaptive step is supplied. */
-internal const val DEFAULT_CHEVRON_SPACING_M = 60.0
-
 /**
  * A maximal stretch of route sharing one band colour.
  *
