@@ -39,8 +39,6 @@ import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
 import com.jpweytjens.barberfish.datatype.shared.groundResolution
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
-import com.jpweytjens.barberfish.datatype.shared.nativeChevronHeadingThresholdDeg
-import com.jpweytjens.barberfish.datatype.shared.nativeChevronSpacingM
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import io.hammerhead.karooext.KarooSystemService
@@ -67,6 +65,14 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 private const val CLIMB_OVERLAY_WIDTH = 8 // coloured fill width; tune via screencaps
+
+// Chevron cadence: on-device-tunable placeholders driving placeChevronsByCadence's
+// intensity blend of grade magnitude and grade change.
+private const val CHEVRON_SPACING_MAX_PX = 130.0 // sparse ceiling (intensity 0)
+private const val CHEVRON_SPACING_MIN_PX = 34.0 // dense floor (intensity 1)
+private const val CHEVRON_GRADE_FULL_PCT = 15.0
+private const val CHEVRON_CHANGE_WINDOW_M = 60.0
+private const val CHEVRON_CHANGE_FULL_PCT_PER_M = 0.2
 
 // Chevron icon height in dp — keep in sync with ic_climber_chevron*.xml. Drives the
 // collision-dedup spacing so chevrons never overlap regardless of zoom.
@@ -184,6 +190,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         enabled = gradeMapCfg.enabled,
                         showPolylines = gradeMapCfg.showPolylines,
                         showChevrons = gradeMapCfg.showChevrons,
+                        chevronBlend = gradeMapCfg.chevronBlend,
                         palette = zoneCfg.gradePalette,
                         tuning = eff,
                         state = navEvent.state,
@@ -289,8 +296,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
                         // sparsest case — which is the safe direction to err. Once a fix lands
                         // it tightens to the true value.
-                        val chevronStep =
-                            nativeChevronSpacingM(xdpi, viewport.lat, viewport.zoomLevel)
                         val chevronWindow =
                             nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
                         val chevronCollision =
@@ -300,7 +305,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 viewport.lat,
                                 viewport.zoomLevel,
                             )
-                        val headingThreshold = nativeChevronHeadingThresholdDeg(viewport.zoomLevel)
                         // Viewport filtering disabled for now — the rideapp's IPC reordering
                         // between HideSymbols and ShowSymbols causes chevrons to vanish when
                         // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
@@ -329,8 +333,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 readable = false,
                                 tuning = inputs.tuning,
                                 includeChevrons = inputs.showChevrons,
-                                // removed in a later task: cadence-blend params take over
-                                // buildGradeMapSpecs's fixed-spacing chevron placement here.
+                                chevronBlend = inputs.chevronBlend,
+                                chevronGradeFullPct = CHEVRON_GRADE_FULL_PCT,
+                                chevronChangeWindowM = CHEVRON_CHANGE_WINDOW_M,
+                                chevronChangeFullPctPerM = CHEVRON_CHANGE_FULL_PCT_PER_M,
+                                chevronSpacingMaxM =
+                                    CHEVRON_SPACING_MAX_PX * metresPerPixel(viewport.zoomLevel),
+                                chevronSpacingMinM =
+                                    CHEVRON_SPACING_MIN_PX * metresPerPixel(viewport.zoomLevel),
                                 chevronWindowHalfM = chevronWindow,
                                 chevronMinSpacingM = chevronCollision,
                                 chevronViewport = bounds,
@@ -339,7 +349,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 metresPerPixel = metresPerPixel(viewport.zoomLevel),
                             )
                         Timber.d(
-                            "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (step=${chevronStep.toInt()}m window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m thresh=${headingThreshold.toInt()}° zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
+                            "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
                         )
                         if (BuildConfig.DEBUG) {
                             val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
@@ -424,6 +434,7 @@ internal data class GradeMapConfigInputs(
     val enabled: Boolean,
     val showPolylines: Boolean,
     val showChevrons: Boolean,
+    val chevronBlend: Double,
     val palette: GradePalette,
     // Sparkline-sync is resolved upstream, so everything downstream — the rebuild signature
     // and the specs themselves — reads one already-effective tuning.
@@ -436,6 +447,7 @@ internal data class GradeMapConfigInputs(
             enabled = enabled,
             showPolylines = showPolylines,
             showChevrons = showChevrons,
+            chevronBlend = chevronBlend,
             palette = palette,
             simplification = tuning.simplification,
             skipBands = tuning.skipBands,
@@ -458,6 +470,7 @@ internal data class GradeMapConfigSignature(
     val enabled: Boolean,
     val showPolylines: Boolean,
     val showChevrons: Boolean,
+    val chevronBlend: Double,
     val palette: GradePalette,
     val simplification: ElevationSimplification,
     val skipBands: Int,

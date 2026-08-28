@@ -130,6 +130,7 @@ class GradeMapTuningTest {
             enabled = true,
             showPolylines = true,
             showChevrons = true,
+            chevronBlend = 0.5,
             palette = GradePalette.KAROO,
             tuning =
                 EffectiveGradeMapTuning(
@@ -167,6 +168,7 @@ class GradeMapTuningTest {
                     enabled = map.enabled,
                     showPolylines = map.showPolylines,
                     showChevrons = map.showChevrons,
+                    chevronBlend = map.chevronBlend,
                     palette = palette,
                     tuning = resolveGradeMapTuning(map, sparkline, palette),
                     state = OnNavigationState.NavigationState.Idle,
