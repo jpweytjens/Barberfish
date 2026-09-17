@@ -105,6 +105,28 @@ fun ViewConfig.toViewSizeConfig(
     )
 }
 
+/**
+ * Slot sizing for a HUD strip showing [visibleColumns] of its configured columns. Four and three
+ * keep the hand-tuned HUD presets. Two is sized as a native 2-col cell of the strip's row height,
+ * whose value size is the measured native one since the SDK only sizes the whole strip. One is the
+ * whole strip, so the SDK's own [ViewConfig.textSize] applies unchanged.
+ */
+fun ViewConfig.toHudSlotSizeConfig(
+    visibleColumns: Int,
+    design: DataFieldDesignConfig,
+): ViewSizeConfig =
+    when (visibleColumns) {
+        4 -> ViewSizeConfig.HUD_FOUR.copy(showIcons = design.showIcons)
+        3 -> ViewSizeConfig.HUD_THREE.copy(showIcons = design.showIcons)
+        2 ->
+            toViewSizeConfig(
+                colSpanOverride = TWO_COLS,
+                textSizeOverride = twoColValueBase(design.labelSize == LabelSize.LARGE),
+                design = design,
+            )
+        else -> toViewSizeConfig(design = design)
+    }
+
 // Preview-only: apply the design settings to a fixed preview ViewSizeConfig.
 // On-device the value font follows ViewConfig.textSize; previews have no SDK textSize,
 // so for 2-col preview cells we also set the value base to the native Small/Large value.

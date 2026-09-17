@@ -18,6 +18,9 @@ data class FieldState(
     // the ride-clock fields' icon green on the ride having started; everything else is
     // stream-driven and stays true.
     val liveIcon: Boolean = true,
+    // true only for the "No sensor" state: the source sensor is not paired at all. The HUD
+    // drops such a slot's column. Searching and idle states keep theirs.
+    val noSensor: Boolean = false,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =
@@ -35,7 +38,13 @@ data class FieldState(
         // Each replaces the generic "Not available" where the field knows why
         // its data is absent, matching the native fields' vocabulary.
         fun noSensor(label: String = "", iconRes: Int? = null) =
-            FieldState("No sensor", label, FieldColor.StreamState, iconRes = iconRes)
+            FieldState(
+                "No sensor",
+                label,
+                FieldColor.StreamState,
+                iconRes = iconRes,
+                noSensor = true,
+            )
 
         fun noRoute(label: String = "", iconRes: Int? = null) =
             FieldState("No route", label, FieldColor.StreamState, iconRes = iconRes)
