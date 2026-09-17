@@ -381,3 +381,24 @@ the extension mid-ride and comparing painted symbols against emissions:
 `GradeMapDrawnIdSpans` exist because of the first and last points: a fresh
 `startMap` folds the previous generation's id range into its first diff
 instead of emitting an up-front hide.
+
+## Map layer order: extension drawings cover the native chevrons
+
+Observed on a Karoo 3 (2026-09-17) with a route loaded and the grade overlay's
+fill on, by enlarging a screencap of the map page four times:
+
+- Extension polylines paint above the native route line and above its direction
+  chevrons. A polyline at route width hides the line's colour and the centre of
+  every chevron it crosses.
+- The native chevrons are wider than the route line, so their outer ends still
+  show either side of a route-width polyline. That overhang is what makes them
+  look as if they were drawn on top; they are not.
+- Extension symbols paint above extension polylines.
+- The native chevron is a yellow chevron with a black outline. On the yellow
+  route line only the outline reads, so it looks black until something covers
+  the line beneath it.
+
+There is no API to draw beneath the route line or to change any of this
+ordering. A route-width overlay therefore always costs the direction cue where
+it is drawn; an overlay that wants to keep the chevrons legible has to be
+narrower than the line, sparse along it, or offset beside it.
