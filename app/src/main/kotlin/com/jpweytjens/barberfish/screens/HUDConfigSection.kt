@@ -897,12 +897,6 @@ internal fun SparklineOptionsControls(
         onChange = { onUpdate(config.copy(showPois = it)) },
         help = "Mark points of interest (POIs) along the elevation profile.",
     )
-    BoolToggleRow(
-        label = "HEADER",
-        value = config.showHeader,
-        onChange = { onUpdate(config.copy(showHeader = it)) },
-        help = "Show the field name and icon above the profile.",
-    )
 }
 
 @Composable
@@ -975,6 +969,13 @@ internal fun SparklineCard(
             zoneConfig = zoneConfig,
             profile = profile,
             onUpdate = onUpdate,
+        )
+        // Only the standalone Profile field draws a header; the HUD strip ignores showHeader.
+        BoolToggleRow(
+            label = "HEADER",
+            value = config.showHeader,
+            onChange = { onUpdate(config.copy(showHeader = it)) },
+            help = "Show the field name and icon above the profile.",
         )
     }
 }
