@@ -402,3 +402,21 @@ There is no API to draw beneath the route line or to change any of this
 ordering. A route-width overlay therefore always costs the direction cue where
 it is drawn; an overlay that wants to keep the chevrons legible has to be
 narrower than the line, sparse along it, or offset beside it.
+
+## Extension polyline width is in dp, and casings need a second batch
+
+Measured on a Karoo 3 (2026-09-17) by requesting widths of 30 and 36 and reading
+the drawn band off a screencap: about 55 px and 67 px, which is the request times
+the 1.875 screen density. `ShowPolyline.width` is therefore a dp value, not
+pixels. The grade overlay's fill of 8 has always been a 15 px band, a little
+wider than the 13 px route line, and the native direction chevrons span about
+27 px (31 px with their outline), so hiding them takes 17 dp or more.
+
+Extension polylines have no outline of their own. A casing is a second, wider
+black polyline under the fill, and its order matters: a new layer goes on top
+of everything already in the extension group, while a `ShowPolyline` for an id
+that already exists updates that layer in place and keeps its position. Casing
+and fill sent in one batch came out with the casing on top, repeatedly, even
+after hiding every id first, so a single batch is not processed in emission
+order. Sending the casings, waiting about half a second, then sending the fills
+put the fills on top, and later in-place updates kept that order.
