@@ -63,8 +63,54 @@ class GradeMapProgressTest {
     @Test
     fun distance_beyond_route_clamps_to_route_end() {
         val progress = tracked()
+        // Ride to 9 km first (two agreeing samples) so arrival is a plausible step, not a
+        // lone jump.
+        assertFalse(progress.advance(1_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertTrue(progress.advance(990.0, onRoute = true, routeDistanceM = 10_000.0))
         assertTrue(progress.advance(-50.0, onRoute = true, routeDistanceM = 10_000.0))
         assertEquals(10_000.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_lone_jump_is_held_back() {
+        val progress = tracked()
+        // Observed on-device: removing the route delivers one last distance sample that
+        // reads as arrival, before the stream goes unavailable. A single sample must not
+        // commit a jump no rider could make between two ticks.
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_repeated_jump_is_committed() {
+        val progress = tracked()
+        // Loading a route mid-way, or a long GPS gap: the jump is real when the next
+        // sample lands within a bucket of it.
+        assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertTrue(progress.advance(19_980.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(14_150.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_contradicted_jump_is_dropped() {
+        val progress = tracked()
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        // The next sample disagrees, so the held jump is forgotten and this one is held.
+        assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(0.0, progress.progressM, 0.0)
+        assertTrue(progress.advance(19_990.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(14_150.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_small_step_clears_a_held_jump() {
+        val progress = tracked()
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertTrue(progress.advance(34_031.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(100.0, progress.progressM, 0.0)
+        // A later sample near the old held value is again a lone jump.
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(100.0, progress.progressM, 0.0)
     }
 
     @Test

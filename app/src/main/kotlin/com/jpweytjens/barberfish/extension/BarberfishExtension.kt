@@ -266,6 +266,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         if (advanced) {
                             Timber.d("grademap: progress=${progressLatch.progressM.toInt()}m")
                             chevronController.hidePassed(emitter, progressLatch.progressM)
+                        } else {
+                            progressLatch.heldM?.let {
+                                Timber.d(
+                                    "grademap: progress held at ${it.toInt()}m (distanceToDestination=${event.distanceToDestinationM} onRoute=${event.onRoute} routeDist=${route.routeDistance.toInt()})"
+                                )
+                            }
                         }
                     }
                     is GradeMapRebuild -> {

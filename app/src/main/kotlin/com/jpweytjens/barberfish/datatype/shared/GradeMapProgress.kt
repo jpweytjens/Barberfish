@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import kotlin.math.abs
 import kotlin.math.ceil
 
 /**
@@ -11,13 +12,26 @@ import kotlin.math.ceil
  * riding backward never lower it. Off route the distance field is rejoin-relative, so those samples
  * are ignored and the latch holds its last on-route value. [trackRoute] resets the latch when the
  * route identity changes (new polyline or reversal).
+ *
+ * A jump of more than [maxLoneJumpM] in one sample is held until a second sample lands within a
+ * bucket of it. Removing the route delivers one last distance sample that reads as arrival before
+ * the stream goes unavailable; committed, it would hide every chevron until the route identity
+ * changes. A real jump (route loaded mid-way, a long GPS gap) repeats on the next tick.
  */
-internal class GradeMapProgress(private val bucketM: Double = 50.0) {
+internal class GradeMapProgress(
+    private val bucketM: Double = 50.0,
+    private val maxLoneJumpM: Double = 1_000.0,
+) {
     private var routeKey: Long? = null
     private var bucket = 0
+    private var heldBucket: Int? = null
 
     val progressM: Double
         get() = bucket * bucketM
+
+    /** Where a held jump would put progress, for diagnostics; null when nothing is held. */
+    val heldM: Double?
+        get() = heldBucket?.let { it * bucketM }
 
     /**
      * Pins the latch to a route; a changed key resets progress to zero. Returns true when it reset,
@@ -27,6 +41,7 @@ internal class GradeMapProgress(private val bucketM: Double = 50.0) {
         if (routeKey == key) return false
         routeKey = key
         bucket = 0
+        heldBucket = null
         return true
     }
 
@@ -34,6 +49,7 @@ internal class GradeMapProgress(private val bucketM: Double = 50.0) {
     fun clear() {
         routeKey = null
         bucket = 0
+        heldBucket = null
     }
 
     /** True when the bucketed progress advanced, i.e. the rider crossed a bucket edge. */
@@ -54,7 +70,16 @@ internal class GradeMapProgress(private val bucketM: Double = 50.0) {
         val newBucket =
             if (raw >= routeDistanceM) ceil(routeDistanceM / bucketM).toInt()
             else (raw / bucketM).toInt()
-        if (newBucket <= bucket) return false
+        if (newBucket <= bucket) {
+            heldBucket = null
+            return false
+        }
+        if ((newBucket - bucket) * bucketM > maxLoneJumpM) {
+            val held = heldBucket
+            heldBucket = newBucket
+            if (held == null || abs(newBucket - held) > 1) return false
+        }
+        heldBucket = null
         bucket = newBucket
         return true
     }
