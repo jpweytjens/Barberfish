@@ -18,18 +18,17 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ClimbPreviewFixture
 import com.jpweytjens.barberfish.datatype.shared.LemonYellow
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
-import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.mercatorBoundsAspect
 import com.jpweytjens.barberfish.datatype.shared.placeChevronsByCadence
 import com.jpweytjens.barberfish.datatype.shared.projectToUnit
@@ -122,23 +121,16 @@ internal fun GradeMapPreview(
     val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
     val nativeChevW = with(density) { NATIVE_CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
     val nativeChevH = (nativeChevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
-    val chevronBitmaps: Map<Int, ImageBitmap> =
-        remember(specs, chevW, chevH) {
-            specs.chevrons
-                .map { it.colorArgb }
-                .distinct()
-                .mapNotNull { argb ->
-                    val drawable =
-                        ContextCompat.getDrawable(context, gradeChevronDrawable(argb))
-                            ?: return@mapNotNull null
-                    argb to drawable.toBitmap(width = chevW, height = chevH).asImageBitmap()
-                }
-                .toMap()
+    val chevronBmp: ImageBitmap? =
+        remember(chevW, chevH) {
+            ContextCompat.getDrawable(context, R.drawable.ic_climber_chevron)
+                ?.toBitmap(width = chevW, height = chevH)
+                ?.asImageBitmap()
         }
     // Native underlay bitmap, rasterised at its own wider size so it reads distinctly from ours.
     val nativeBmp: ImageBitmap? =
         remember(nativeChevW, nativeChevH) {
-            ContextCompat.getDrawable(context, gradeChevronDrawable(LemonYellow.toArgb()))
+            ContextCompat.getDrawable(context, R.drawable.ic_climber_chevron)
                 ?.toBitmap(width = nativeChevW, height = nativeChevH)
                 ?.asImageBitmap()
         }
@@ -192,9 +184,10 @@ internal fun GradeMapPreview(
             }
         }
 
-        specs.chevrons.forEach { ch ->
-            val bmp = chevronBitmaps[ch.colorArgb] ?: return@forEach
-            drawChevron(bmp, project(ch.lat, ch.lng), ch.bearingDeg)
+        if (chevronBmp != null) {
+            specs.chevrons.forEach { ch ->
+                drawChevron(chevronBmp, project(ch.lat, ch.lng), ch.bearingDeg)
+            }
         }
     }
 }

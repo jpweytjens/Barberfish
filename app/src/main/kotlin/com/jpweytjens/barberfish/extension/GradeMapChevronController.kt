@@ -1,7 +1,7 @@
 package com.jpweytjens.barberfish.extension
 
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
-import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.gradeMapChevronId
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.HideSymbols
@@ -55,7 +55,7 @@ internal class GradeMapChevronController {
                     id = spec.id,
                     lat = spec.lat,
                     lng = spec.lng,
-                    iconRes = gradeChevronDrawable(spec.colorArgb),
+                    iconRes = R.drawable.ic_climber_chevron,
                     orientation = spec.bearingDeg,
                 )
             }
