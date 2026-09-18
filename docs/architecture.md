@@ -276,12 +276,14 @@ in emission order, so the first emit of a generation hides any fills already pai
 puts the casing down, waits again, then sends the fills; later emits update in place.
 `docs/sdk-findings.md` records the measurements behind this.
 
-Chevrons carry direction only; grade stays in the band. One white glyph with a black outline,
-24 by 16 dp, serves every band of every palette: taking the stronger of the white fill and the
-black stroke, the weakest Surgeonfish band still scores 56 on APCA, above the non-text
-minimum. White also keeps the chevron out of the hue channel the band uses, which matters for
-riders who cannot separate the warm palette steps. Chevron cadence tightens with grade and
-grade change and is documented with the placement code.
+Chevrons carry direction only; grade stays in the band. Each palette draws its chevron in its
+own yellow climb band colour with a black outline, 24 by 16 dp, so the glyph reads as the
+palette's own; on the yellow band itself only the outline shows, as the native chevron does on
+the native yellow line, and the outline is what carries it there. HSLuv has no yellow and takes
+white. One drawable per yellow, six in all plus the white one, mapped from the palette in
+`ChevronDrawables.kt`. A palette change re-shows every chevron in place with the new icon,
+without a hide, since a hide and a show for one id in the same batch race on the map. Chevron
+cadence tightens with grade and grade change and is documented with the placement code.
 
 The grade map is one switch. Band and chevrons are a single design: the band covers the native
 chevrons, so chevrons without it would sit on nothing, and the band without chevrons has no

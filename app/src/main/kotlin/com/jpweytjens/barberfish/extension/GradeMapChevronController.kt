@@ -1,6 +1,6 @@
 package com.jpweytjens.barberfish.extension
 
-import com.jpweytjens.barberfish.R
+import androidx.annotation.DrawableRes
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.gradeMapChevronId
 import io.hammerhead.karooext.internal.Emitter
@@ -26,17 +26,26 @@ import io.hammerhead.karooext.models.Symbol
  */
 internal class GradeMapChevronController {
     private var previous: Map<String, ClimbChevronSpec> = emptyMap()
+    private var lastIconRes: Int? = null
 
     /** Removed id sets paired with how many more emits they should be re-hidden on. */
     private var recentlyRemoved: List<Pair<Set<String>, Int>> = emptyList()
 
-    fun emit(emitter: Emitter<MapEffect>, specs: List<ClimbChevronSpec>) {
+    fun emit(
+        emitter: Emitter<MapEffect>,
+        specs: List<ClimbChevronSpec>,
+        @DrawableRes iconRes: Int,
+    ) {
         val current = specs.associateBy { it.id }
         val removed = previous.keys - current.keys
         val changed =
             current.keys.filterTo(mutableSetOf()) { id ->
                 previous[id]?.let { it != current[id] } ?: false
             }
+        // A new icon (palette change) re-shows every kept chevron in place, without a hide:
+        // ShowSymbols replaces an existing id, and a hide in the same batch would race it.
+        val iconChanged = lastIconRes != null && lastIconRes != iconRes
+        val restyled = if (iconChanged) current.keys - changed else emptySet()
         val reissued = recentlyRemoved.flatMapTo(mutableSetOf()) { it.first } - current.keys
         // Redrawn stale ids ([assumeStale] sentinels) are re-shown without a preceding hide:
         // ShowSymbols replaces an existing id in place, while a hide in the same batch races
@@ -48,14 +57,14 @@ internal class GradeMapChevronController {
         if (hideIds.isNotEmpty()) {
             emitter.onNext(HideSymbols(hideIds.toList()))
         }
-        val showSpecs = specs.filter { it.id !in previous || it.id in changed }
+        val showSpecs = specs.filter { it.id !in previous || it.id in changed || it.id in restyled }
         if (showSpecs.isNotEmpty()) {
             val icons = showSpecs.map { spec ->
                 Symbol.Icon(
                     id = spec.id,
                     lat = spec.lat,
                     lng = spec.lng,
-                    iconRes = R.drawable.ic_climber_chevron,
+                    iconRes = iconRes,
                     orientation = spec.bearingDeg,
                 )
             }
@@ -68,6 +77,7 @@ internal class GradeMapChevronController {
                 if (removed.isNotEmpty()) listOf(removed to LOST_HIDE_REISSUE_ROUNDS)
                 else emptyList()
         previous = current
+        lastIconRes = iconRes
     }
 
     /**

@@ -23,10 +23,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
-import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ClimbPreviewFixture
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.mercatorBoundsAspect
 import com.jpweytjens.barberfish.datatype.shared.projectToUnit
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
@@ -84,14 +84,14 @@ internal fun GradeMapPreview(
     val bounds = ClimbPreviewFixture.bounds
     val aspect = remember { mercatorBoundsAspect(bounds).toFloat() }
 
-    // Rasterise the one chevron drawable once, at the card's chevron size.
+    // Rasterise the palette's chevron once, at the card's chevron size.
     val context = LocalContext.current
     val density = LocalDensity.current
     val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
     val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
     val chevronBmp: ImageBitmap? =
-        remember(chevW, chevH) {
-            ContextCompat.getDrawable(context, R.drawable.ic_climber_chevron)
+        remember(gradePalette, chevW, chevH) {
+            ContextCompat.getDrawable(context, gradeChevronDrawable(gradePalette))
                 ?.toBitmap(width = chevW, height = chevH)
                 ?.asImageBitmap()
         }

@@ -36,6 +36,7 @@ import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
 import com.jpweytjens.barberfish.datatype.shared.groundResolution
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
@@ -410,7 +411,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         // A rebuild must not resurrect chevrons the rider already passed.
                         val visibleChevrons =
                             specs.chevrons.filter { it.distanceM >= progressLatch.progressM }
-                        chevronController.emit(emitter, visibleChevrons)
+                        chevronController.emit(
+                            emitter,
+                            visibleChevrons,
+                            gradeChevronDrawable(inputs.palette),
+                        )
                         persistDrawnIdSpans(newSpans)
                     }
                 }
