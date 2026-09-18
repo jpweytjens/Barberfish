@@ -486,8 +486,7 @@ class GradeMapPolylinesTest {
         }
 
     @Test
-    fun casing_spans_the_route_trimmed_at_both_ends() {
-        val routeM = cumulativeDistancesM(decodeGpsPolyline(routePolyline)).last()
+    fun casing_spans_the_profiled_extent_trimmed_at_both_ends() {
         val full =
             buildGradeMapSpecs(
                 routePolyline = routePolyline,
@@ -506,10 +505,11 @@ class GradeMapPolylinesTest {
                 casingCapTrimM = 15.0,
             )
         fun lenM(encoded: String) = cumulativeDistancesM(decodeGpsPolyline(encoded)).last()
-        // Untrimmed, the casing is the GPS route itself, whatever the profiled extent.
-        assertEquals(routeM, lenM(full.casing), 1e-6)
+        // The fixture's profile covers 300 m of a 3.3 km route: the casing stops with the
+        // fills rather than running on to the route's end.
+        assertEquals(300.0, lenM(full.casing), 1.0)
         // Trimmed, it loses one trim at each end.
-        assertEquals(routeM - 30.0, lenM(trimmed.casing), 3.0)
+        assertEquals(270.0, lenM(trimmed.casing), 3.0)
     }
 
     @Test

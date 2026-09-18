@@ -379,10 +379,13 @@ internal fun buildGradeMapSpecs(
         } else {
             chevrons
         }
-    // Trim both ends, but never past each other: a route shorter than two trims keeps a
-    // 0.5 m stub so the casing still exists.
-    val casingTrim = casingCapTrimM.coerceAtMost((cumDist.last() * 0.5 - 0.5).coerceAtLeast(0.0))
-    val casingPoints = extractSubPolyline(gps, cumDist, casingTrim, cumDist.last() - casingTrim)
+    // The casing ends where the fills end: the profiled extent on the GPS axis, which can stop
+    // short of the GPS route's last point. Running it to the route's end would leave a bare
+    // black tail past the last colour. Trim both ends, but never past each other: an extent
+    // shorter than two trims keeps a 0.5 m stub so the casing still exists.
+    val drawnEndM = (elevPoints.last().first.toDouble() * elevToGps).coerceAtMost(cumDist.last())
+    val casingTrim = casingCapTrimM.coerceAtMost((drawnEndM * 0.5 - 0.5).coerceAtLeast(0.0))
+    val casingPoints = extractSubPolyline(gps, cumDist, casingTrim, drawnEndM - casingTrim)
     return GradeMapSpecs(
         polylines = polylines,
         chevrons = filteredChevrons,
