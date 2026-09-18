@@ -45,7 +45,7 @@ import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinCasingId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
-import com.jpweytjens.barberfish.datatype.shared.groundResolution
+import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
@@ -58,7 +58,6 @@ import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
-import kotlin.math.floor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -341,15 +340,23 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             route.climbs.map {
                                 it.startDistance to (it.startDistance + it.length)
                             }
-                        // Round line-cap overhang per end = (width/2) px in ground metres.
-                        // The overlay only re-emits on a band crossing, so this trim is fixed for
-                        // the whole band while the rendered zoom moves across it. Centring on the
-                        // band's midpoint bounds the error at about 1.41x either way instead of 2x.
-                        val bandResolution =
-                            groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
-                        val capTrimM = (GRADE_BAND_WIDTH_DP * density / 2.0) * bandResolution
+                        val routeLat =
+                            decodeGpsPolyline(route.routePolyline).firstOrNull()?.lat
+                                ?: viewport.lat
+                        val capTrimM =
+                            lineCapTrimM(
+                                GRADE_BAND_WIDTH_DP,
+                                density,
+                                routeLat,
+                                viewport.zoomLevel,
+                            )
                         val casingCapTrimM =
-                            (GRADE_BAND_CASING_WIDTH_DP * density / 2.0) * bandResolution
+                            lineCapTrimM(
+                                GRADE_BAND_CASING_WIDTH_DP,
+                                density,
+                                routeLat,
+                                viewport.zoomLevel,
+                            )
                         val specs =
                             buildGradeMapSpecs(
                                 routePolyline = route.routePolyline,

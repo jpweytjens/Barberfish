@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.REFERENCE_ZOOM
 import com.jpweytjens.barberfish.datatype.shared.effectiveMinAreaM2
+import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.ElevationSimplification
@@ -212,5 +213,19 @@ class GradeMapTuningTest {
         assertNotEquals(signatureFor(null), signatureFor("xyz"))
         assertNotEquals(signatureFor("xyz"), signatureFor("uvw"))
         assertEquals(signatureFor("xyz"), signatureFor("xyz"))
+    }
+
+    @Test
+    fun lineCapTrim_is_half_the_width_in_ground_metres_at_the_route_latitude() {
+        // 18 dp at density 1.875 is 33.75 px; the trim is the half of that, 16.875 px, priced at
+        // the midpoint of zoom band 15 (1.10 m/px at 49.5 N, within 2% of the measured law).
+        val atRoute = lineCapTrimM(18, 1.875f, lat = 49.5, zoom = 15.96)
+        assertEquals(16.875 * 1.097, atRoute, 0.2)
+        // The equator, where the rider sits until the first fix, prices 1.54x more metres per
+        // pixel at this latitude and would trim that much too far.
+        val atEquator = lineCapTrimM(18, 1.875f, lat = 0.0, zoom = 15.96)
+        assertEquals(1.54, atEquator / atRoute, 0.01)
+        // A wider casing trims proportionally further.
+        assertEquals(21.0 / 18.0, lineCapTrimM(21, 1.875f, 49.5, 15.96) / atRoute, 1e-9)
     }
 }

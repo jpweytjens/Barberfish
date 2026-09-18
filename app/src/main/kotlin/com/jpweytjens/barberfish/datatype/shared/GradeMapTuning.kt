@@ -4,6 +4,7 @@ import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import kotlin.math.floor
 import kotlin.math.pow
 
 /** Emphasis/simplification/edges actually used to render the climb overlay. */
@@ -57,6 +58,17 @@ internal const val REFERENCE_M_PER_PX = 1.54
 /** Metres per screen pixel at [zoom], anchored on the measured reference. */
 internal fun metresPerPixel(zoom: Double): Double =
     REFERENCE_M_PER_PX * 2.0.pow(REFERENCE_ZOOM - zoom)
+
+/**
+ * Ground metres a round line cap overhangs the line's last point: half of [widthDp] in pixels, at
+ * the map resolution for [lat] and [zoom]. The band is only re-emitted when the zoom crosses an
+ * integer band, so the trim is priced once at the band's midpoint and held while the rendered zoom
+ * moves across it, bounding the error at about 1.41x either way instead of 2x. [lat] is the
+ * route's, not the rider's: the trim describes the drawn line, and the rider's location is the
+ * equator until the first GPS fix.
+ */
+internal fun lineCapTrimM(widthDp: Int, density: Float, lat: Double, zoom: Double): Double =
+    (widthDp * density / 2.0) * groundResolution(lat, floor(zoom) + 0.5)
 
 /**
  * Visvalingam area threshold for the map at the current zoom. Area is metres of distance times
