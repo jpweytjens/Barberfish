@@ -486,6 +486,33 @@ class GradeMapPolylinesTest {
         }
 
     @Test
+    fun casing_spans_the_route_trimmed_at_both_ends() {
+        val routeM = cumulativeDistancesM(decodeGpsPolyline(routePolyline)).last()
+        val full =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+            )
+        val trimmed =
+            buildGradeMapSpecs(
+                routePolyline = routePolyline,
+                routeElevationPolyline = elevationPolyline,
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                casingCapTrimM = 15.0,
+            )
+        fun lenM(encoded: String) = cumulativeDistancesM(decodeGpsPolyline(encoded)).last()
+        // Untrimmed, the casing is the GPS route itself, whatever the profiled extent.
+        assertEquals(routeM, lenM(full.casing), 1e-6)
+        // Trimmed, it loses one trim at each end.
+        assertEquals(routeM - 30.0, lenM(trimmed.casing), 3.0)
+    }
+
+    @Test
     fun cap_trim_flags_mark_the_route_ends() {
         // Default fixture: salmon, a transition cell and neutral tile the coloured extent.
         // First run owns the start end, last owns the finish end, the middle owns neither.

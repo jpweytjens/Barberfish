@@ -330,9 +330,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         // The overlay only re-emits on a band crossing, so this trim is fixed for
                         // the whole band while the rendered zoom moves across it. Centring on the
                         // band's midpoint bounds the error at about 1.41x either way instead of 2x.
-                        val capTrimM =
-                            (GRADE_BAND_WIDTH_DP * density / 2.0) *
-                                groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
+                        val bandResolution =
+                            groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
+                        val capTrimM = (GRADE_BAND_WIDTH_DP * density / 2.0) * bandResolution
+                        val casingCapTrimM =
+                            (GRADE_BAND_CASING_WIDTH_DP * density / 2.0) * bandResolution
                         val specs =
                             buildGradeMapSpecs(
                                 routePolyline = route.routePolyline,
@@ -353,6 +355,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 chevronMinSpacingM = chevronCollision,
                                 chevronViewport = bounds,
                                 capTrimM = capTrimM,
+                                casingCapTrimM = casingCapTrimM,
                                 reversed = route.reversed,
                                 metresPerPixel = metresPerPixel(viewport.zoomLevel),
                             )
@@ -399,7 +402,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         )
                         polylineController.emit(
                             emitter,
-                            casingEncoded = route.routePolyline,
+                            casingEncoded = specs.casing,
                             specs = specs.polylines,
                             fillWidth = GRADE_BAND_WIDTH_DP,
                             casingWidth = GRADE_BAND_CASING_WIDTH_DP,

@@ -56,6 +56,9 @@ internal data class GradeMapSpecs(
     val chevrons: List<ClimbChevronSpec>,
     val segmentIdSpan: Int = 0,
     val chevronIdSpan: Int = 0,
+    // The black casing's geometry: the whole GPS route, pulled in at both ends so its round
+    // cap lands on the true endpoint like the fills' do. Empty when nothing is drawn.
+    val casing: String = "",
 )
 
 /** Axis-aligned viewport bounding box in lat/lng. */
@@ -245,6 +248,7 @@ internal fun buildGradeMapSpecs(
     chevronMinSpacingM: Double = 0.0,
     chevronViewport: LatLngBounds? = null,
     capTrimM: Double = 0.0,
+    casingCapTrimM: Double = 0.0,
     reversed: Boolean = false,
     metresPerPixel: Double = 0.0,
 ): GradeMapSpecs {
@@ -375,10 +379,15 @@ internal fun buildGradeMapSpecs(
         } else {
             chevrons
         }
+    // Trim both ends, but never past each other: a route shorter than two trims keeps a
+    // 0.5 m stub so the casing still exists.
+    val casingTrim = casingCapTrimM.coerceAtMost((cumDist.last() * 0.5 - 0.5).coerceAtLeast(0.0))
+    val casingPoints = extractSubPolyline(gps, cumDist, casingTrim, cumDist.last() - casingTrim)
     return GradeMapSpecs(
         polylines = polylines,
         chevrons = filteredChevrons,
         segmentIdSpan = runs.size,
         chevronIdSpan = chevronPlacements.size,
+        casing = if (casingPoints.size >= 2) encodeGpsPolyline(casingPoints) else routePolyline,
     )
 }
