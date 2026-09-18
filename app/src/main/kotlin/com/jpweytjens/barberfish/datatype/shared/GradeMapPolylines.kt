@@ -41,6 +41,9 @@ internal data class ClimbChevronSpec(
  */
 internal fun gradeMapSegmentId(index: Int): String = "barberfish-seg-$index"
 
+/** The single black casing polyline drawn along the whole route beneath the fills. */
+internal fun gradeMapCasingId(): String = "barberfish-casing"
+
 internal fun gradeMapChevronId(index: Int): String = "barberfish-chev-$index"
 
 /**

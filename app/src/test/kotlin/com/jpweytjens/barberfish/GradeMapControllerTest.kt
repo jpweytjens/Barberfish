@@ -6,6 +6,7 @@ import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.ShowPolyline
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,124 +31,133 @@ class GradeMapControllerTest {
 
     private val red = 0xFFFF0000.toInt()
     private val green = 0xFF00FF00.toInt()
-    private val fillW = 8
+    private val fillW = 18
+    private val casingW = 21
+    private val casingId = "barberfish-casing"
+    private val route = "route"
+
+    private fun controller() = GradeMapController(settleMs = 0)
+
+    private fun GradeMapController.emit(fake: FakeEmitter, specs: List<GradeMapPolylineSpec>) =
+        runBlocking {
+            emit(fake, route, specs, fillW, casingW)
+        }
+
+    private fun FakeEmitter.showIds() = events.filterIsInstance<ShowPolyline>().map { it.id }
+
+    private fun FakeEmitter.hideIds() = events.filterIsInstance<HidePolyline>().map { it.id }
 
     @Test
-    fun emit_single_spec_outputs_one_show_polyline() {
-        val controller = GradeMapController()
+    fun first_emit_puts_the_casing_down_before_the_fills() {
+        val controller = controller()
         val fake = FakeEmitter()
-        controller.emit(
-            emitter = fake,
-            specs = listOf(GradeMapPolylineSpec("a", "xyz", red)),
-            fillWidth = fillW,
-        )
-        assertEquals(1, fake.events.size)
-        val fill = fake.events[0] as ShowPolyline
-        assertEquals("a", fill.id)
+        controller.emit(fake, listOf(GradeMapPolylineSpec("a", "xyz", red)))
+        assertEquals(listOf(casingId, "a"), fake.showIds())
+        val casing = fake.events[0] as ShowPolyline
+        assertEquals(route, casing.encodedPolyline)
+        assertEquals(casingW, casing.width)
+        assertEquals(0xFF000000.toInt(), casing.color)
+        val fill = fake.events[1] as ShowPolyline
         assertEquals("xyz", fill.encodedPolyline)
         assertEquals(red, fill.color)
         assertEquals(fillW, fill.width)
     }
 
     @Test
-    fun emit_two_specs_outputs_in_order() {
-        val controller = GradeMapController()
+    fun fills_are_shown_in_order() {
+        val controller = controller()
         val fake = FakeEmitter()
         controller.emit(
-            emitter = fake,
-            specs =
-                listOf(
-                    GradeMapPolylineSpec("a", "xyz", red),
-                    GradeMapPolylineSpec("b", "pqr", green),
-                ),
-            fillWidth = fillW,
+            fake,
+            listOf(
+                GradeMapPolylineSpec("a", "xyz", red),
+                GradeMapPolylineSpec("b", "pqr", green),
+            ),
         )
-        val ids = fake.events.map { (it as ShowPolyline).id }
-        assertEquals(listOf("a", "b"), ids)
+        assertEquals(listOf(casingId, "a", "b"), fake.showIds())
     }
 
     @Test
-    fun second_emit_hides_removed_specs() {
-        val controller = GradeMapController()
+    fun later_emits_hide_removed_fills_and_update_the_casing_in_place() {
+        val controller = controller()
         val fake = FakeEmitter()
         controller.emit(
-            emitter = fake,
-            specs =
-                listOf(
-                    GradeMapPolylineSpec("a", "xyz", red),
-                    GradeMapPolylineSpec("b", "pqr", green),
-                ),
-            fillWidth = fillW,
+            fake,
+            listOf(
+                GradeMapPolylineSpec("a", "xyz", red),
+                GradeMapPolylineSpec("b", "pqr", green),
+            ),
         )
         fake.events.clear()
         controller.emit(
-            emitter = fake,
-            specs =
-                listOf(
-                    GradeMapPolylineSpec("a", "xyz", red),
-                    GradeMapPolylineSpec("c", "stu", red),
-                ),
-            fillWidth = fillW,
+            fake,
+            listOf(
+                GradeMapPolylineSpec("a", "xyz", red),
+                GradeMapPolylineSpec("c", "stu", red),
+            ),
         )
-        val hides = fake.events.filterIsInstance<HidePolyline>().map { it.id }
-        assertEquals(listOf("b"), hides)
-        val shows = fake.events.filterIsInstance<ShowPolyline>().map { it.id }
-        assertTrue(shows.containsAll(listOf("a", "c")))
+        assertEquals(listOf("b"), fake.hideIds())
+        assertEquals(listOf(casingId, "a", "c"), fake.showIds())
     }
 
     @Test
-    fun assumeStale_first_emit_hides_the_unclaimed_range() {
-        val controller = GradeMapController()
+    fun assumeStale_first_emit_hides_the_whole_range_before_the_casing() {
+        val controller = controller()
         val fake = FakeEmitter()
         controller.assumeStale(2)
-        controller.emit(fake, listOf(GradeMapPolylineSpec("barberfish-seg-0", "xyz", red)), fillW)
-        // The stale hide travels inside the emission's own hide batch, never as a separate
-        // early effect the rideapp could reorder after the shows.
-        val hidden = fake.events.filterIsInstance<HidePolyline>().map { it.id }
-        assertEquals(listOf("barberfish-seg-1"), hidden)
-        val shown = fake.events.filterIsInstance<ShowPolyline>().map { it.id }
-        assertEquals(listOf("barberfish-seg-0"), shown)
+        controller.emit(fake, listOf(GradeMapPolylineSpec("barberfish-seg-0", "xyz", red)))
+        // Every stale fill goes, claimed or not: a stale fill re-shown in place would keep
+        // its position beneath the casing added after it. The claimed id comes back as a
+        // fresh show above the casing.
+        assertEquals(listOf("barberfish-seg-0", "barberfish-seg-1"), fake.hideIds().sorted())
+        assertEquals(listOf(casingId, "barberfish-seg-0"), fake.showIds())
+        assertTrue(
+            fake.events.indexOfLast { it is HidePolyline } <
+                fake.events.indexOfFirst { it is ShowPolyline }
+        )
     }
 
     @Test
-    fun assumeStale_zero_span_changes_nothing() {
-        val controller = GradeMapController()
+    fun assumeStale_zero_span_first_emit_is_just_the_casing() {
+        val controller = controller()
         val fake = FakeEmitter()
         controller.assumeStale(0)
-        controller.emit(fake, emptyList(), fillW)
-        assertTrue(fake.events.isEmpty())
+        controller.emit(fake, emptyList())
+        assertEquals(listOf(casingId), fake.showIds())
+        assertTrue(fake.hideIds().isEmpty())
     }
 
     @Test
-    fun assumeStale_clearAll_hides_the_range() {
-        val controller = GradeMapController()
+    fun assumeStale_clearAll_hides_the_range_and_the_casing() {
+        val controller = controller()
         val fake = FakeEmitter()
         controller.assumeStale(2)
         controller.clearAll(fake)
-        val hidden = fake.events.filterIsInstance<HidePolyline>().map { it.id }.toSet()
-        assertEquals(setOf("barberfish-seg-0", "barberfish-seg-1"), hidden)
+        assertEquals(
+            setOf("barberfish-seg-0", "barberfish-seg-1", casingId),
+            fake.hideIds().toSet(),
+        )
     }
 
     @Test
-    fun clearAll_hides_all_previous_ids_then_empty_emit_is_noop() {
-        val controller = GradeMapController()
+    fun clearAll_then_emit_starts_a_fresh_generation() {
+        val controller = controller()
         val fake = FakeEmitter()
         controller.emit(
-            emitter = fake,
-            specs =
-                listOf(
-                    GradeMapPolylineSpec("a", "xyz", red),
-                    GradeMapPolylineSpec("b", "pqr", green),
-                ),
-            fillWidth = fillW,
+            fake,
+            listOf(
+                GradeMapPolylineSpec("a", "xyz", red),
+                GradeMapPolylineSpec("b", "pqr", green),
+            ),
         )
         fake.events.clear()
         controller.clearAll(fake)
-        val hidden = fake.events.filterIsInstance<HidePolyline>().map { it.id }.toSet()
-        assertEquals(setOf("a", "b"), hidden)
+        assertEquals(setOf("a", "b", casingId), fake.hideIds().toSet())
 
         fake.events.clear()
-        controller.emit(fake, specs = emptyList(), fillWidth = fillW)
-        assertTrue(fake.events.isEmpty())
+        controller.emit(fake, listOf(GradeMapPolylineSpec("a", "xyz", red)))
+        // Nothing is known to be painted, so no hides; the casing goes down first again.
+        assertTrue(fake.hideIds().isEmpty())
+        assertEquals(listOf(casingId, "a"), fake.showIds())
     }
 }

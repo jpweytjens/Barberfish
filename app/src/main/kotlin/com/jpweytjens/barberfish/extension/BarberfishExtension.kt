@@ -64,7 +64,11 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-private const val CLIMB_OVERLAY_WIDTH = 8 // coloured fill width; tune via screencaps
+// Grade band widths, in dp as the map takes them. The fill hides the native route line and its
+// direction chevrons, which overhang the line by about half its width each side; the casing
+// adds a black edge so the band stays crisp over any map feature. Tuned on-device.
+private const val GRADE_BAND_WIDTH_DP = 18
+private const val GRADE_BAND_CASING_WIDTH_DP = 21
 
 // Chevron cadence: on-device-tunable placeholders driving placeChevronsByCadence's
 // intensity blend of grade magnitude and grade change.
@@ -329,7 +333,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         // the whole band while the rendered zoom moves across it. Centring on the
                         // band's midpoint bounds the error at about 1.41x either way instead of 2x.
                         val capTrimM =
-                            (CLIMB_OVERLAY_WIDTH / 2.0) *
+                            (GRADE_BAND_WIDTH_DP * density / 2.0) *
                                 groundResolution(viewport.lat, floor(viewport.zoomLevel) + 0.5)
                         val specs =
                             buildGradeMapSpecs(
@@ -396,7 +400,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             )
                         )
                         if (inputs.showPolylines) {
-                            polylineController.emit(emitter, specs.polylines, CLIMB_OVERLAY_WIDTH)
+                            polylineController.emit(
+                                emitter,
+                                casingEncoded = route.routePolyline,
+                                specs = specs.polylines,
+                                fillWidth = GRADE_BAND_WIDTH_DP,
+                                casingWidth = GRADE_BAND_CASING_WIDTH_DP,
+                            )
                         } else {
                             // Native route line shows through; we just drop our grade overlay.
                             polylineController.clearAll(emitter)
