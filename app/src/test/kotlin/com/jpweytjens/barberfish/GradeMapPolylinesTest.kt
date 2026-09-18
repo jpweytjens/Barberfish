@@ -11,6 +11,7 @@ import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeMapConfig
@@ -190,12 +191,16 @@ class GradeMapPolylinesTest {
         // The two climbing segments (8% and 10%) are both in the salmon band and merge into a
         // single run; the cell across their boundary means 6.7%, still above the 2% climb edge,
         // so it takes a band of its own. The flat 0% segment is below the climb edge, so it
-        // resolves to the map neutral and drops out of the overlay instead of drawing a
-        // neutral-coloured run.
-        assertEquals(2, specs.size)
-        assertEquals("barberfish-seg-0", specs[0].id)
+        // resolves to the map neutral and still draws: the band tiles the whole route, and
+        // emphasis only decides which runs take a colour.
+        assertEquals(3, specs.size)
+        assertEquals(
+            listOf("barberfish-seg-0", "barberfish-seg-1", "barberfish-seg-2"),
+            specs.map { it.id },
+        )
         assertEquals(gradeColor(8.0, GradePalette.KAROO, true)!!.toArgb(), specs[0].colorArgb)
         assertEquals(gradeColor(6.7, GradePalette.KAROO, true)!!.toArgb(), specs[1].colorArgb)
+        assertEquals(FlatGrey.toArgb(), specs[2].colorArgb)
     }
 
     @Test
@@ -225,17 +230,15 @@ class GradeMapPolylinesTest {
                             .resolvedFor(GradePalette.KAROO),
                 )
                 .polylines
-        // Four runs: a climb band, the flattest band on the cell straddling the peak (its chord
-        // is exactly 0% and the climb side is fully on), the shallow band of the cell straddling
-        // the dip's end, then the second climb band. The dip itself (KAROO colours no descent)
-        // resolves to the map neutral and is hidden, leaving a gap in the id sequence — ids stay
-        // keyed on the original run index, not the position in this list.
-        assertEquals(4, specs.size)
-        assertEquals("barberfish-seg-0", specs[0].id)
-        assertEquals("barberfish-seg-1", specs[1].id)
-        assertEquals("barberfish-seg-3", specs[2].id)
-        assertEquals("barberfish-seg-4", specs[3].id)
+        // Five runs: a climb band, the flattest band on the cell straddling the peak (its chord
+        // is exactly 0% and the climb side is fully on), the dip itself in the map neutral
+        // (KAROO colours no descent), the shallow band of the cell straddling the dip's end,
+        // then the second climb band. Neutral runs draw like any other, so the ids run
+        // without gaps.
+        assertEquals(5, specs.size)
+        assertEquals((0 until 5).map { "barberfish-seg-$it" }, specs.map { it.id })
         assertEquals(gradeColor(0.0, GradePalette.KAROO, true)!!.toArgb(), specs[1].colorArgb)
+        assertEquals(FlatGrey.toArgb(), specs[2].colorArgb)
     }
 
     @Test
@@ -309,8 +312,7 @@ class GradeMapPolylinesTest {
     fun descent_takes_its_band_colour_on_a_two_sided_palette() {
         // Barberfish colours both sides, so the -5% dip takes its own descent band rather
         // than the neutral KAROO gives it. The cell across the summit at 100 m means out flat,
-        // so it resolves to the map neutral and drops out of the overlay between the climb
-        // and the descent.
+        // so it draws in the map neutral between the climb and the descent.
         val dipPolyline =
             encodeElevationManually(
                 listOf(
@@ -328,18 +330,19 @@ class GradeMapPolylinesTest {
                     tuning = noneCfg.resolvedFor(GradePalette.BARBERFISH),
                 )
                 .polylines
-        assertEquals(2, specs.size)
+        assertEquals(3, specs.size)
+        assertEquals(mapNeutral(GradePalette.BARBERFISH, false).toArgb(), specs[1].colorArgb)
         assertEquals(
             gradeColor(-5.0, GradePalette.BARBERFISH, false)!!.toArgb(),
-            specs[1].colorArgb,
+            specs[2].colorArgb,
         )
     }
 
     @Test
-    fun neutral_runs_are_hidden_on_barberfish() {
+    fun neutral_runs_draw_in_the_map_neutral_on_barberfish() {
         // At a normal emphasis (climb 2, descent -10) the 0% summit cell and the -5% dip both
-        // sit inside the edges. On Barberfish, as on every palette, an unemphasised run resolves
-        // to the map neutral and drops out of the overlay rather than drawing a colour.
+        // sit inside the edges. On Barberfish, as on every palette, an unemphasised run draws
+        // in the map neutral, so the band tiles the route without gaps in the id sequence.
         val dipPolyline =
             encodeElevationManually(
                 listOf(
@@ -364,10 +367,10 @@ class GradeMapPolylinesTest {
                         ),
                 )
                 .polylines
-        assertEquals(2, specs.size)
-        val flat = gradeColor(0.0, GradePalette.BARBERFISH, false)!!.toArgb()
-        assertTrue(specs.none { it.colorArgb == flat })
-        assertTrue(specs.none { it.colorArgb == FlatGrey.toArgb() })
+        val neutral = mapNeutral(GradePalette.BARBERFISH, false).toArgb()
+        assertEquals(specs.indices.map { "barberfish-seg-$it" }, specs.map { it.id })
+        assertTrue(specs.any { it.colorArgb == neutral })
+        assertTrue(specs.any { it.colorArgb != neutral })
     }
 
     @Test
@@ -540,8 +543,8 @@ class GradeMapPolylinesTest {
     fun cap_trim_leaves_an_interior_run_untouched() {
         // dip: 10% [0,100], -5% dip [100,200], 15% [200,300], plus the exact-0% cell straddling
         // the peak (flattest band, climb side fully on) and the shallow cell straddling the
-        // dip's end. The -5% dip itself resolves to the map neutral and is hidden, leaving four
-        // runs; the two that remain interior at both ends keep their full geometry.
+        // dip's end: five runs, the dip in the map neutral. The three interior runs keep their
+        // full geometry.
         val dipPolyline =
             encodeElevationManually(
                 listOf(
@@ -570,20 +573,19 @@ class GradeMapPolylinesTest {
                     capTrimM = 15.0,
                 )
                 .polylines
-        assertEquals(4, specs.size)
+        assertEquals(5, specs.size)
         assertTrue(specs[0].trimStart)
         assertFalse(specs[0].trimEnd)
-        assertFalse(specs[1].trimStart)
-        assertFalse(specs[1].trimEnd)
-        assertFalse(specs[2].trimStart)
-        assertFalse(specs[2].trimEnd)
-        assertFalse(specs[3].trimStart)
-        assertTrue(specs[3].trimEnd)
+        (1..3).forEach { i ->
+            assertFalse(specs[i].trimStart)
+            assertFalse(specs[i].trimEnd)
+        }
+        assertFalse(specs[4].trimStart)
+        assertTrue(specs[4].trimEnd)
         // Outer runs lose ~15 m at their outer end only; the interior runs lose nothing.
         assertEquals(segLenM(full[0]) - 15.0, segLenM(specs[0]), 3.0)
-        assertEquals(segLenM(full[1]), segLenM(specs[1]), 1e-6)
-        assertEquals(segLenM(full[2]), segLenM(specs[2]), 1e-6)
-        assertEquals(segLenM(full[3]) - 15.0, segLenM(specs[3]), 3.0)
+        (1..3).forEach { i -> assertEquals(segLenM(full[i]), segLenM(specs[i]), 1e-6) }
+        assertEquals(segLenM(full[4]) - 15.0, segLenM(specs[4]), 3.0)
     }
 
     @Test
@@ -721,8 +723,7 @@ class GradeMapPolylinesTest {
 
     @Test
     fun emphasised_runs_produce_polylines() {
-        // Hide-neutral means the overlay no longer tiles the whole route: unemphasised runs
-        // drop out, so gaps between consecutive polylines are expected. What must still hold is
+        // The band tiles the whole route, unemphasised runs included; what this checks is
         // that the emphasised climb and descent bands themselves produce polylines.
         val specs =
             buildGradeMapSpecs(
@@ -747,6 +748,34 @@ class GradeMapPolylinesTest {
             "descent bands must produce polylines",
             specs.any { it.colorArgb in descentArgbs },
         )
+    }
+
+    @Test
+    fun band_tiles_the_whole_route() {
+        // With a normal emphasis most of the dip profile is unemphasised. The neutral runs
+        // still draw, so the polylines together span the profiled 300 m end to end.
+        val dipPolyline =
+            encodeElevationManually(
+                listOf(
+                    0f to 100f,
+                    100f to 110f,
+                    200f to 105f,
+                    300f to 120f,
+                )
+            )
+        val specs =
+            buildGradeMapSpecs(
+                    routePolyline = routePolyline,
+                    routeElevationPolyline = dipPolyline,
+                    palette = GradePalette.KAROO,
+                    readable = true,
+                    tuning =
+                        GradeMapConfig(climbEdge = 12.0, descentEdge = -20.0)
+                            .resolvedFor(GradePalette.KAROO),
+                )
+                .polylines
+        assertEquals(300.0, specs.sumOf { segLenM(it) }, 1.0)
+        assertTrue(specs.count { it.colorArgb == FlatGrey.toArgb() } >= 1)
     }
 
     @Test
