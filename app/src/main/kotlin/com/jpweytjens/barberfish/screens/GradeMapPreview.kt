@@ -81,9 +81,7 @@ internal fun GradeMapPreview(
                 palette = gradePalette,
                 readable = false,
                 tuning = eff,
-                // The toggle gates our own marks, same as the live path; native's own
-                // chevrons are a separate underlay drawn unconditionally below.
-                includeChevrons = config.showChevrons,
+                includeChevrons = true,
                 chevronBlend = config.chevronBlend,
                 chevronSpacingMaxM = PREVIEW_CHEVRON_SPACING_MAX_M,
                 chevronSpacingMinM = PREVIEW_CHEVRON_SPACING_MIN_M,
@@ -168,20 +166,18 @@ internal fun GradeMapPreview(
             }
         }
 
-        // Grade-coloured segments overlay the native line and its chevrons when polylines are
-        // on. Pull each contiguous chain's outer ends in by half the stroke so the round cap
-        // lands on the true endpoint, mirroring the device's metre-space cap trim.
-        if (config.showPolylines) {
-            specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
-                val px = points.map { project(it.lat, it.lng) }
-                val trimmed =
-                    trimEndsPx(
-                        px,
-                        startPx = if (spec.trimStart) routeWidth / 2f else 0f,
-                        endPx = if (spec.trimEnd) routeWidth / 2f else 0f,
-                    )
-                drawConnected(trimmed, Color(spec.colorArgb), routeWidth)
-            }
+        // Grade-coloured segments overlay the native line and its chevrons. Pull each
+        // contiguous chain's outer ends in by half the stroke so the round cap lands on the
+        // true endpoint, mirroring the device's metre-space cap trim.
+        specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
+            val px = points.map { project(it.lat, it.lng) }
+            val trimmed =
+                trimEndsPx(
+                    px,
+                    startPx = if (spec.trimStart) routeWidth / 2f else 0f,
+                    endPx = if (spec.trimEnd) routeWidth / 2f else 0f,
+                )
+            drawConnected(trimmed, Color(spec.colorArgb), routeWidth)
         }
 
         if (chevronBmp != null) {

@@ -192,8 +192,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
                     GradeMapConfigInputs(
                         enabled = gradeMapCfg.enabled,
-                        showPolylines = gradeMapCfg.showPolylines,
-                        showChevrons = gradeMapCfg.showChevrons,
                         chevronBlend = gradeMapCfg.chevronBlend,
                         palette = zoneCfg.gradePalette,
                         tuning = eff,
@@ -342,7 +340,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 palette = inputs.palette,
                                 readable = false,
                                 tuning = inputs.tuning,
-                                includeChevrons = inputs.showChevrons,
+                                includeChevrons = true,
                                 chevronBlend = inputs.chevronBlend,
                                 chevronGradeFullPct = CHEVRON_GRADE_FULL_PCT,
                                 chevronChangeWindowM = CHEVRON_CHANGE_WINDOW_M,
@@ -390,7 +388,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         }
                         val newSpans =
                             GradeMapDrawnIdSpans(
-                                segments = if (inputs.showPolylines) specs.segmentIdSpan else 0,
+                                segments = specs.segmentIdSpan,
                                 chevrons = specs.chevronIdSpan,
                             )
                         persistDrawnIdSpans(
@@ -399,18 +397,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
                             )
                         )
-                        if (inputs.showPolylines) {
-                            polylineController.emit(
-                                emitter,
-                                casingEncoded = route.routePolyline,
-                                specs = specs.polylines,
-                                fillWidth = GRADE_BAND_WIDTH_DP,
-                                casingWidth = GRADE_BAND_CASING_WIDTH_DP,
-                            )
-                        } else {
-                            // Native route line shows through; we just drop our grade overlay.
-                            polylineController.clearAll(emitter)
-                        }
+                        polylineController.emit(
+                            emitter,
+                            casingEncoded = route.routePolyline,
+                            specs = specs.polylines,
+                            fillWidth = GRADE_BAND_WIDTH_DP,
+                            casingWidth = GRADE_BAND_CASING_WIDTH_DP,
+                        )
                         // A rebuild must not resurrect chevrons the rider already passed.
                         val visibleChevrons =
                             specs.chevrons.filter { it.distanceM >= progressLatch.progressM }
@@ -448,8 +441,6 @@ private data class GradeMapProgressTick(
 
 internal data class GradeMapConfigInputs(
     val enabled: Boolean,
-    val showPolylines: Boolean,
-    val showChevrons: Boolean,
     val chevronBlend: Double,
     val palette: GradePalette,
     // Sparkline-sync is resolved upstream, so everything downstream — the rebuild signature
@@ -461,8 +452,6 @@ internal data class GradeMapConfigInputs(
         val route = state as? OnNavigationState.NavigationState.NavigatingRoute
         return GradeMapConfigSignature(
             enabled = enabled,
-            showPolylines = showPolylines,
-            showChevrons = showChevrons,
             chevronBlend = chevronBlend,
             palette = palette,
             simplification = tuning.simplification,
@@ -484,8 +473,6 @@ internal data class GradeMapConfigInputs(
 
 internal data class GradeMapConfigSignature(
     val enabled: Boolean,
-    val showPolylines: Boolean,
-    val showChevrons: Boolean,
     val chevronBlend: Double,
     val palette: GradePalette,
     val simplification: ElevationSimplification,

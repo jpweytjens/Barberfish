@@ -501,8 +501,6 @@ enum class ChevronEmphasis(val alpha: Double, val label: String) {
 @Serializable
 data class GradeMapConfig(
     val enabled: Boolean = true,
-    val showPolylines: Boolean = false, // was true — fill is now opt-in
-    val showChevrons: Boolean = true,
     // When true, skipBands/simplification are taken from the field sparkline config
     // at the consumer via resolveGradeMapTuning(); the two fields below are ignored.
     val syncWithSparkline: Boolean = true,

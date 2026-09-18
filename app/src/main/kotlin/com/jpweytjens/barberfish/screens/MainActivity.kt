@@ -1348,20 +1348,6 @@ private fun GradeMapCard(
                 )
             }
 
-            BoolToggleRow(
-                label = "POLYLINES",
-                value = config.showPolylines,
-                onChange = { onUpdate(config.copy(showPolylines = it)) },
-                help = "Gradient-colour the route line; off keeps the native line.",
-            )
-
-            BoolToggleRow(
-                label = "CHEVRONS",
-                value = config.showChevrons,
-                onChange = { onUpdate(config.copy(showChevrons = it)) },
-                help = "Gradient-colour the direction chevrons; off keeps the native ones.",
-            )
-
             ChoiceRow(
                 label = "CHEVRON SPACING",
                 options = ChevronEmphasis.entries.map { it to it.label },
