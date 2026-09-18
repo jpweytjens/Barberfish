@@ -327,7 +327,7 @@ class GradeBandsTest {
             zeroStraddlingBand(GradePalette.BARBERFISH, readable = false)?.color,
         )
         assertEquals(
-            Color(0xFF59BA63),
+            Color(0xFF5CC066),
             zeroStraddlingBand(GradePalette.SURGEONFISH, readable = false)?.color,
         )
         GradePalette.entries

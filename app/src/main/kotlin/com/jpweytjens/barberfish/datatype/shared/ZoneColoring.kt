@@ -74,13 +74,13 @@ internal val karooHrColors = listOf(0, 1, 2, 3, 5).map { karooPowerColors[it] }
 // palette. Source of truth for the Surgeonfish grade climb bands (see GradeBands.kt).
 internal val surgeonfishPowerColors =
     listOf(
-        Color(0xFF59BA63), // Zone 1 – Active Recovery   (flat green)
-        Color(0xFFA8C90E), // Zone 2 – Endurance         (yellow-green)
-        Color(0xFFE0CF10), // Zone 3 – Tempo             (yellow)
-        Color(0xFFE5950B), // Zone 4 – Lactate Threshold (orange)
-        Color(0xFFE66407), // Zone 5 – VO2 Max           (red-orange)
-        Color(0xFFE5050B), // Zone 6 – Anaerobic         (red)
-        Color(0xFF7804AD), // Zone 7 – Neuromuscular     (purple)
+        Color(0xFF5CC066), // Zone 1 – Active Recovery   (flat green)
+        Color(0xFFB2D40F), // Zone 2 – Endurance         (yellow-green)
+        Color(0xFFF5E313), // Zone 3 – Tempo             (yellow)
+        Color(0xFFEC990C), // Zone 4 – Lactate Threshold (orange)
+        Color(0xFFEA6607), // Zone 5 – VO2 Max           (red-orange)
+        Color(0xFFD7040A), // Zone 6 – Anaerobic         (red)
+        Color(0xFF7404A8), // Zone 7 – Neuromuscular     (purple)
     )
 
 // Surgeonfish HR zones (5 zones) — same subset as Karoo (drops Zone 5 and Zone 7)
@@ -165,13 +165,13 @@ internal val karooHrColorsReadableDark =
 
 internal val surgeonfishPowerColorsReadableDark =
     listOf(
-        Color(0xFF59BA63), // Zone 1 – Active Recovery   (flat green)
-        Color(0xFFA8C90E), // Zone 2 – Endurance         (yellow-green)
-        Color(0xFFE0CF10), // Zone 3 – Tempo             (yellow)
-        Color(0xFFE5950B), // Zone 4 – Lactate Threshold (orange)
-        Color(0xFFF26A08), // Zone 5 – VO2 Max           (red-orange, was #E66407)
-        Color(0xFFFE5A5A), // Zone 6 – Anaerobic         (red, was #E5050B)
-        Color(0xFFC16EFE), // Zone 7 – Neuromuscular     (purple, was #7804AD)
+        Color(0xFF5CC066), // Zone 1 – Active Recovery   (flat green)
+        Color(0xFFB2D40F), // Zone 2 – Endurance         (yellow-green)
+        Color(0xFFF5E313), // Zone 3 – Tempo             (yellow)
+        Color(0xFFEC990C), // Zone 4 – Lactate Threshold (orange)
+        Color(0xFFF26A08), // Zone 5 – VO2 Max           (red-orange), was #EA6607
+        Color(0xFFFE5A5B), // Zone 6 – Anaerobic         (red), was #D7040A
+        Color(0xFFC06FFE), // Zone 7 – Neuromuscular     (purple), was #7404A8
     )
 internal val surgeonfishHrColorsReadableDark =
     listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColorsReadableDark[it] }
@@ -228,13 +228,13 @@ internal val karooHrColorsReadableLight =
 
 internal val surgeonfishPowerColorsReadableLight =
     listOf(
-        Color(0xFF59BA63), // Zone 1 – Active Recovery   (flat green)
-        Color(0xFF99B70C), // Zone 2 – Endurance         (yellow-green, was #A8C90E)
-        Color(0xFFBCAD0B), // Zone 3 – Tempo             (yellow, was #E0CF10)
-        Color(0xFFE5950B), // Zone 4 – Lactate Threshold (orange)
-        Color(0xFFE66407), // Zone 5 – VO2 Max           (red-orange)
-        Color(0xFFE5050B), // Zone 6 – Anaerobic         (red)
-        Color(0xFF7804AD), // Zone 7 – Neuromuscular     (purple)
+        Color(0xFF5CBF66), // Zone 1 – Active Recovery   (flat green), was #5CC066
+        Color(0xFF9AB70B), // Zone 2 – Endurance         (yellow-green), was #B2D40F
+        Color(0xFFBCAD0C), // Zone 3 – Tempo             (yellow), was #F5E313
+        Color(0xFFEB990C), // Zone 4 – Lactate Threshold (orange), was #EC990C
+        Color(0xFFEA6607), // Zone 5 – VO2 Max           (red-orange)
+        Color(0xFFD7040A), // Zone 6 – Anaerobic         (red)
+        Color(0xFF7404A8), // Zone 7 – Neuromuscular     (purple)
     )
 internal val surgeonfishHrColorsReadableLight =
     listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColorsReadableLight[it] }

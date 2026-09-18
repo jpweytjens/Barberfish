@@ -14,7 +14,7 @@ internal fun gradeChevronDrawable(palette: GradePalette): Int =
     when (palette) {
         GradePalette.BARBERFISH,
         GradePalette.KAROO -> R.drawable.ic_climber_chevron_f0d800
-        GradePalette.SURGEONFISH -> R.drawable.ic_climber_chevron_e0cf10
+        GradePalette.SURGEONFISH -> R.drawable.ic_climber_chevron_f5e313
         GradePalette.WAHOO -> R.drawable.ic_climber_chevron_feff00
         GradePalette.GARMIN -> R.drawable.ic_climber_chevron_f9ee44
         GradePalette.ZWIFT -> R.drawable.ic_climber_chevron_f2c510

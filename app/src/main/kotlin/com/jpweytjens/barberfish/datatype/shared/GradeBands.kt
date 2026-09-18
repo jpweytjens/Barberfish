@@ -156,9 +156,9 @@ private val SURGEONFISH_GRADE_BANDS =
         5.0 to surgeonfishPowerColors[2], //  [5, 8)   — yellow
         2.0 to surgeonfishPowerColors[1], //  [2, 5)   — yellow-green
         -2.0 to surgeonfishPowerColors[0], // [-2, 2)   — flat green (muted, s70)
-        -6.0 to Color(0xFF37A6D6), // [-6, -2)  — azure
-        -10.0 to Color(0xFF1E81C6), // [-10, -6) — blue
-        Double.NEGATIVE_INFINITY to Color(0xFF145B9C), // (-∞, -10) — navy
+        -6.0 to Color(0xFF3298C4), // [-6, -2)  — azure
+        -10.0 to Color(0xFF1A74B3), // [-10, -6) — blue
+        Double.NEGATIVE_INFINITY to Color(0xFF104F89), // (-∞, -10) — navy
     )
 private val TURBO_GRADE_BANDS_READABLE_DARK =
     listOf(
@@ -182,9 +182,9 @@ private val SURGEONFISH_GRADE_BANDS_READABLE_DARK =
         5.0 to surgeonfishPowerColorsReadableDark[2],
         2.0 to surgeonfishPowerColorsReadableDark[1],
         -2.0 to surgeonfishPowerColorsReadableDark[0],
-        -6.0 to Color(0xFF37A6D6),
-        -10.0 to Color(0xFF269AEB), // was #1E81C6
-        Double.NEGATIVE_INFINITY to Color(0xFF3197F9), // was #145B9C
+        -6.0 to Color(0xFF359FCC), // was #3298C4
+        -10.0 to Color(0xFF269AEB), // , was #1A74B3
+        Double.NEGATIVE_INFINITY to Color(0xFF3397FA), // , was #104F89
     )
 
 private val BARBERFISH_GRADE_BANDS_READABLE_LIGHT =
@@ -255,9 +255,9 @@ private val SURGEONFISH_GRADE_BANDS_READABLE_LIGHT =
         5.0 to surgeonfishPowerColorsReadableLight[2],
         2.0 to surgeonfishPowerColorsReadableLight[1],
         -2.0 to surgeonfishPowerColorsReadableLight[0],
-        -6.0 to Color(0xFF37A6D6),
-        -10.0 to Color(0xFF1E81C6),
-        Double.NEGATIVE_INFINITY to Color(0xFF145B9C),
+        -6.0 to Color(0xFF3298C4),
+        -10.0 to Color(0xFF1A74B3),
+        Double.NEGATIVE_INFINITY to Color(0xFF104F89),
     )
 
 // Raw threshold/color pairs backing a palette's bands, descending high to low, exactly the
