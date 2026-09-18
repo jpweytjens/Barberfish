@@ -251,3 +251,38 @@ Zone coloring and threshold coloring produce a `FieldColor` sealed variant. `Fie
 `BarberfishView` reads the current system theme from `Configuration.UI_MODE_NIGHT_MASK` and threads an `isNightMode: Boolean` through `toColorConfig`. The flag forwards into `powerZoneColor`, `hrZoneColor`, and `gradeColor`, which pick between the `*ColorsReadableDark` and `*ColorsReadableLight` palette variants so Text-mode fields stay readable on either background.
 
 `colorMode = BACKGROUND` is theme-agnostic: the cell fills with the original brand palette and the overlay text is chosen per cell by `bestTextOnBackground`, whichever of black or white gives the higher APCA `|Lc|` against that specific fill. See `docs/color-palettes.md` for the full contrast methodology.
+
+## Grade map overlay
+
+The grade map paints the route on the map page as a band coloured by grade, with white
+direction chevrons on top. It replaces the native route line rather than decorating it:
+extension polylines draw above the native line and its direction chevrons, and nothing an
+extension draws can go underneath, so a band narrower than the native chevrons leaves their
+wings poking out either side. The band is therefore 18 dp wide, enough to cover them, inside a
+21 dp black casing that keeps its edge crisp over water, parks and buildings. Widths are dp;
+the map applies them as they are.
+
+The band tiles the whole route. Emphasis decides which runs take a grade colour; runs inside
+the emphasis edges draw in the palette's neutral at the same width, so the band never changes
+width along the route and the native line stays covered end to end. Adjacent runs are separate
+polylines with round caps, so at a colour change the downstream run's cap sits as a small nose
+on the upstream run. Layer order is index order along the route and new ids are always the
+highest indices, so the nose always points the same way.
+
+The casing is one polyline along the whole route, drawn once beneath the fills. Getting it
+beneath them depends on two rules the map applies: a new id is added above everything the
+extension has drawn, and an update to an existing id keeps its place. A batch is not processed
+in emission order, so the first emit of a generation hides any fills already painted, waits,
+puts the casing down, waits again, then sends the fills; later emits update in place.
+`docs/sdk-findings.md` records the measurements behind this.
+
+Chevrons carry direction only; grade stays in the band. One white glyph with a black outline,
+24 by 16 dp, serves every band of every palette: taking the stronger of the white fill and the
+black stroke, the weakest Surgeonfish band still scores 56 on APCA, above the non-text
+minimum. White also keeps the chevron out of the hue channel the band uses, which matters for
+riders who cannot separate the warm palette steps. Chevron cadence tightens with grade and
+grade change and is documented with the placement code.
+
+The grade map is one switch. Band and chevrons are a single design: the band covers the native
+chevrons, so chevrons without it would sit on nothing, and the band without chevrons has no
+direction cue.
