@@ -299,4 +299,14 @@ class GradeMapChevronControllerTest {
         assertTrue(shown.all { (it as Symbol.Icon).iconRes == YELLOW })
         assertTrue(fake.events.none { it is HideSymbols })
     }
+
+    @Test
+    fun id_namespace_seeds_stale_ids() {
+        val controller = GradeMapChevronController { "r-$it" }
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.emit(fake, emptyList(), WHITE)
+        val hidden = fake.events.filterIsInstance<HideSymbols>().flatMap { it.symbolIds }.toSet()
+        assertEquals(setOf("r-0", "r-1"), hidden)
+    }
 }

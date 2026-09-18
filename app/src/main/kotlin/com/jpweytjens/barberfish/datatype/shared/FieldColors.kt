@@ -29,6 +29,7 @@ internal val TextDark = Color(0xFF1B2D2D)
 internal val BarberfishYellow = Color(0xFFFBE401)
 internal val LemonYellow = Color(0xFFFFE900) // native Karoo route-line yellow
 internal val FlatGrey = Color(0xFFC4C4C4) // Barberfish neutral band; the map overlay's flat colour
+internal val RerouteRed = Color(0xFFF80000) // the map's rerouting line red, measured on-device
 internal val OceanBlue = Color(0xFF2A679A)
 internal val BackButtonTint = Color(0xFFA0B4BE)
 

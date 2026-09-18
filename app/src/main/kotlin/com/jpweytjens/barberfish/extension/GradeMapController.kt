@@ -24,7 +24,10 @@ import kotlinx.coroutines.delay
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not thread-safe.
  */
-internal class GradeMapController(private val settleMs: Long = CASING_SETTLE_MS) {
+internal class GradeMapController(
+    private val casingId: String = gradeMapCasingId(),
+    private val settleMs: Long = CASING_SETTLE_MS,
+) {
     private var previousIds: Set<String> = emptySet()
     private var casingBeneath = false
 
@@ -38,7 +41,7 @@ internal class GradeMapController(private val settleMs: Long = CASING_SETTLE_MS)
         val newIds = specs.mapTo(mutableSetOf()) { it.id }
         val casing =
             ShowPolyline(
-                id = gradeMapCasingId(),
+                id = casingId,
                 encodedPolyline = casingEncoded,
                 color = CASING_COLOR,
                 width = casingWidth,
@@ -71,7 +74,7 @@ internal class GradeMapController(private val settleMs: Long = CASING_SETTLE_MS)
 
     fun clearAll(emitter: Emitter<MapEffect>) {
         previousIds.forEach { emitter.onNext(HidePolyline(it)) }
-        emitter.onNext(HidePolyline(gradeMapCasingId()))
+        emitter.onNext(HidePolyline(casingId))
         previousIds = emptySet()
         casingBeneath = false
     }
@@ -85,7 +88,12 @@ internal class GradeMapController(private val settleMs: Long = CASING_SETTLE_MS)
      * reordered after the shows by the rideapp's async symbol processing.
      */
     fun assumeStale(span: Int) {
-        previousIds = (0 until span).mapTo(mutableSetOf()) { gradeMapSegmentId(it) }
+        assumeStale((0 until span).mapTo(mutableSetOf()) { gradeMapSegmentId(it) })
+    }
+
+    /** As [assumeStale] with a span, for a controller whose fill ids are not positional. */
+    fun assumeStale(ids: Set<String>) {
+        previousIds = ids
     }
 }
 

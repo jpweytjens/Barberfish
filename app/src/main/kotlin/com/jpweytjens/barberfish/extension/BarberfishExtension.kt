@@ -1,6 +1,8 @@
 package com.jpweytjens.barberfish.extension
 
+import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.BuildConfig
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
@@ -31,12 +33,17 @@ import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
+import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
+import com.jpweytjens.barberfish.datatype.shared.buildRejoinSpecs
 import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
+import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinCasingId
+import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
+import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
 import com.jpweytjens.barberfish.datatype.shared.groundResolution
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
@@ -159,6 +166,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         Timber.d("grademap: startMap invoked")
         val polylineController = GradeMapController()
         val chevronController = GradeMapChevronController()
+        val rejoinController = GradeMapController(casingId = gradeMapRejoinCasingId())
+        val rejoinChevronController = GradeMapChevronController(::gradeMapRejoinChevronId)
         val zoomBand = ChevronZoomBand()
         val xdpi = applicationContext.resources.displayMetrics.xdpi
         val density = applicationContext.resources.displayMetrics.density
@@ -171,6 +180,9 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             var drawnIdSpans = applicationContext.streamGradeMapDrawnIdSpans().first()
             polylineController.assumeStale(drawnIdSpans.segments)
             chevronController.assumeStale(drawnIdSpans.chevrons)
+            // The rejoin fill has one fixed id; hiding it when nothing is painted is a no-op.
+            rejoinController.assumeStale(setOf(gradeMapRejoinId()))
+            rejoinChevronController.assumeStale(drawnIdSpans.rejoinChevrons)
             // Invariant: the persisted spans always cover the painted ids, whatever instant
             // the process dies. Raised to the ceiling of old and new before a draw, settled
             // to the exact spans after it, zeroed after a clear.
@@ -290,6 +302,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             if (route == null) progressLatch.clear()
                             polylineController.clearAll(emitter)
                             chevronController.clearAll(emitter)
+                            rejoinController.clearAll(emitter)
+                            rejoinChevronController.clearAll(emitter)
                             persistDrawnIdSpans(GradeMapDrawnIdSpans())
                             return@collect
                         }
@@ -390,15 +404,32 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
                             )
                         }
+                        // The reroute band: the path back to the route while off it, in the
+                        // rerouting red with chevrons at the route's sparse cadence.
+                        val rejoinSpecs =
+                            route.rejoinPolyline?.let {
+                                buildRejoinSpecs(
+                                    rejoinPolyline = it,
+                                    colorArgb = RerouteRed.toArgb(),
+                                    chevronSpacingM =
+                                        CHEVRON_SPACING_MAX_PX * metresPerPixel(viewport.zoomLevel),
+                                    chevronMinSpacingM = chevronCollision,
+                                    capTrimM = capTrimM,
+                                    casingCapTrimM = casingCapTrimM,
+                                )
+                            }
                         val newSpans =
                             GradeMapDrawnIdSpans(
                                 segments = specs.segmentIdSpan,
                                 chevrons = specs.chevronIdSpan,
+                                rejoinChevrons = rejoinSpecs?.chevrons?.size ?: 0,
                             )
                         persistDrawnIdSpans(
                             GradeMapDrawnIdSpans(
                                 segments = maxOf(drawnIdSpans.segments, newSpans.segments),
                                 chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
+                                rejoinChevrons =
+                                    maxOf(drawnIdSpans.rejoinChevrons, newSpans.rejoinChevrons),
                             )
                         )
                         polylineController.emit(
@@ -416,6 +447,23 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             visibleChevrons,
                             gradeChevronDrawable(inputs.palette),
                         )
+                        if (rejoinSpecs != null) {
+                            rejoinController.emit(
+                                emitter,
+                                casingEncoded = rejoinSpecs.casing,
+                                specs = listOfNotNull(rejoinSpecs.fill),
+                                fillWidth = GRADE_BAND_WIDTH_DP,
+                                casingWidth = GRADE_BAND_CASING_WIDTH_DP,
+                            )
+                            rejoinChevronController.emit(
+                                emitter,
+                                rejoinSpecs.chevrons,
+                                R.drawable.ic_climber_chevron_f80000,
+                            )
+                        } else {
+                            rejoinController.clearAll(emitter)
+                            rejoinChevronController.clearAll(emitter)
+                        }
                         persistDrawnIdSpans(newSpans)
                     }
                 }
@@ -475,6 +523,7 @@ internal data class GradeMapConfigInputs(
             // Bucket the rejoin offset to ~50 m so the filler tracks the rider riding the
             // rejoin path without rebuilding on every metre.
             rejoinBucket = ((route?.rejoinDistance ?: 0.0) / 50.0).toInt(),
+            rejoinHash = route?.rejoinPolyline?.hashCode() ?: 0,
         )
     }
 }
@@ -491,6 +540,7 @@ internal data class GradeMapConfigSignature(
     val routePolylineHash: Int,
     val reversed: Boolean,
     val rejoinBucket: Int,
+    val rejoinHash: Int,
 )
 
 private data class ViewportInputs(

@@ -551,7 +551,12 @@ suspend fun Context.saveGradeMapConfig(config: GradeMapConfig) =
  * each kind before drawing — clearing whatever a dead predecessor left. Written before each
  * emission so a death between write and draw errs towards over-hiding, which is a no-op.
  */
-@Serializable data class GradeMapDrawnIdSpans(val segments: Int = 0, val chevrons: Int = 0)
+@Serializable
+data class GradeMapDrawnIdSpans(
+    val segments: Int = 0,
+    val chevrons: Int = 0,
+    val rejoinChevrons: Int = 0,
+)
 
 private val gradeMapDrawnIdSpansKey = stringPreferencesKey("grade_map_drawn_id_spans")
 

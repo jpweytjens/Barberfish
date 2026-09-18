@@ -189,4 +189,28 @@ class GradeMapTuningTest {
         assertEquals(3.08, metresPerPixel(zoom = REFERENCE_ZOOM - 1.0), 0.01)
         assertEquals(1.54, metresPerPixel(zoom = REFERENCE_ZOOM), 0.01)
     }
+
+    @Test
+    fun `map rebuild signature differs when only the rejoin path changes`() {
+        fun route(rejoin: String?) =
+            OnNavigationState.NavigationState.NavigatingRoute(
+                routePolyline = "abc",
+                routeDistance = 1000.0,
+                routeElevationPolyline = null,
+                rejoinPolyline = rejoin,
+                rejoinDistance = null,
+                name = "r",
+                reversed = false,
+                breadcrumb = false,
+                pois = emptyList(),
+                climbs = emptyList(),
+            )
+        fun signatureFor(rejoin: String?) =
+            inputsWithEdges(climbEdge = 5.0, descentEdge = null)
+                .copy(state = route(rejoin))
+                .signature()
+        assertNotEquals(signatureFor(null), signatureFor("xyz"))
+        assertNotEquals(signatureFor("xyz"), signatureFor("uvw"))
+        assertEquals(signatureFor("xyz"), signatureFor("xyz"))
+    }
 }

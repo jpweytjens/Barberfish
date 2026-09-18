@@ -24,7 +24,7 @@ import io.hammerhead.karooext.models.Symbol
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not thread-safe.
  */
-internal class GradeMapChevronController {
+internal class GradeMapChevronController(private val idOf: (Int) -> String = ::gradeMapChevronId) {
     private var previous: Map<String, ClimbChevronSpec> = emptyMap()
     private var lastIconRes: Int? = null
 
@@ -119,7 +119,7 @@ internal class GradeMapChevronController {
     fun assumeStale(span: Int) {
         previous =
             (0 until span).associate { index ->
-                val id = gradeMapChevronId(index)
+                val id = idOf(index)
                 id to ClimbChevronSpec(id, Double.NaN, Double.NaN, 0f, 0, Double.NaN)
             }
     }

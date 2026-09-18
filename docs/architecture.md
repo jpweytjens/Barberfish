@@ -288,3 +288,9 @@ cadence tightens with grade and grade change and is documented with the placemen
 The grade map is one switch. Band and chevrons are a single design: the band covers the native
 chevrons, so chevrons without it would sit on nothing, and the band without chevrons has no
 direction cue.
+
+Off route, the navigation state carries the path back to the route as its own polyline. The
+overlay draws it as a second band of the same widths in the map's rerouting red, chevrons in the
+same red at the route's sparse cadence, since there is no grade to vary them with. It has its own
+ids, its own casing under the same first-emit rule, and clears when the path goes away. The
+rejoin polyline's hash is part of the rebuild signature, so a new reroute redraws it.

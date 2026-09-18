@@ -160,4 +160,25 @@ class GradeMapControllerTest {
         assertTrue(fake.hideIds().isEmpty())
         assertEquals(listOf(casingId, "a"), fake.showIds())
     }
+
+    @Test
+    fun casing_id_and_stale_ids_are_configurable() {
+        val controller = GradeMapController(casingId = "other-casing", settleMs = 0)
+        val fake = FakeEmitter()
+        controller.assumeStale(setOf("other-fill"))
+        runBlocking {
+            controller.emit(
+                fake,
+                route,
+                listOf(GradeMapPolylineSpec("other-fill", "xyz", red)),
+                fillW,
+                casingW,
+            )
+        }
+        assertEquals(listOf("other-fill"), fake.hideIds())
+        assertEquals(listOf("other-casing", "other-fill"), fake.showIds())
+        fake.events.clear()
+        controller.clearAll(fake)
+        assertEquals(setOf("other-fill", "other-casing"), fake.hideIds().toSet())
+    }
 }
