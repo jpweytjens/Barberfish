@@ -218,14 +218,19 @@ class GradeMapTuningTest {
     @Test
     fun lineCapTrim_is_half_the_width_in_ground_metres_at_the_route_latitude() {
         // 18 dp at density 1.875 is 33.75 px; the trim is the half of that, 16.875 px, priced at
-        // the midpoint of zoom band 15 (1.10 m/px at 49.5 N, within 2% of the measured law).
+        // the fine end of zoom band 15 (0.776 m/px at 49.5 N, within 2% of the measured law).
         val atRoute = lineCapTrimM(18, 1.875f, lat = 49.5, zoom = 15.96)
-        assertEquals(16.875 * 1.097, atRoute, 0.2)
+        assertEquals(16.875 * 0.776, atRoute, 0.15)
         // The equator, where the rider sits until the first fix, prices 1.54x more metres per
         // pixel at this latitude and would trim that much too far.
         val atEquator = lineCapTrimM(18, 1.875f, lat = 0.0, zoom = 15.96)
         assertEquals(1.54, atEquator / atRoute, 0.01)
         // A wider casing trims proportionally further.
         assertEquals(21.0 / 18.0, lineCapTrimM(21, 1.875f, 49.5, 15.96) / atRoute, 1e-9)
+        // The trim is held across the band and never exceeds the cap's true overhang, so the
+        // coarse end of the band overhangs by at most a factor of two and no zoom in the band
+        // exposes the endpoint.
+        assertEquals(atRoute, lineCapTrimM(18, 1.875f, 49.5, 15.0), 1e-9)
+        assertEquals(2.0, lineCapTrimM(18, 1.875f, 49.5, 14.99) / atRoute, 0.01)
     }
 }

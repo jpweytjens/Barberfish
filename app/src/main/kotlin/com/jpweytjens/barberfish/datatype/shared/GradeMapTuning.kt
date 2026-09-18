@@ -62,13 +62,15 @@ internal fun metresPerPixel(zoom: Double): Double =
 /**
  * Ground metres a round line cap overhangs the line's last point: half of [widthDp] in pixels, at
  * the map resolution for [lat] and [zoom]. The band is only re-emitted when the zoom crosses an
- * integer band, so the trim is priced once at the band's midpoint and held while the rendered zoom
- * moves across it, bounding the error at about 1.41x either way instead of 2x. [lat] is the
- * route's, not the rider's: the trim describes the drawn line, and the rider's location is the
- * equator until the first GPS fix.
+ * integer band, so the trim is priced once and held while the rendered zoom moves across the band.
+ * It is priced at the band's fine end, where a pixel covers the fewest metres, so the held trim is
+ * never too long: the error is always a cap overhanging the endpoint by up to half the width at the
+ * band's coarse end, never a gap exposing the line beneath. [lat] is the route's, not the rider's:
+ * the trim describes the drawn line, and the rider's location is the equator until the first GPS
+ * fix.
  */
 internal fun lineCapTrimM(widthDp: Int, density: Float, lat: Double, zoom: Double): Double =
-    (widthDp * density / 2.0) * groundResolution(lat, floor(zoom) + 0.5)
+    (widthDp * density / 2.0) * groundResolution(lat, floor(zoom) + 1.0)
 
 /**
  * Visvalingam area threshold for the map at the current zoom. Area is metres of distance times
