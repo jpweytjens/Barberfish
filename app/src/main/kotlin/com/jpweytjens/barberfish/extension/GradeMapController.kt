@@ -98,9 +98,9 @@ internal class GradeMapController(
 }
 
 // Opaque black, so the band keeps a crisp edge over any map feature it crosses.
-private const val CASING_COLOR = 0xFF000000.toInt()
+internal const val CASING_COLOR = 0xFF000000.toInt()
 
 // How long to let the map settle between the hides, the casing and the fills on a generation's
 // first emit, so the casing is added before the fills whatever order the rideapp works through
 // a batch in. 500 ms was enough on-device; half of it was not tried.
-private const val CASING_SETTLE_MS = 500L
+internal const val CASING_SETTLE_MS = 500L
