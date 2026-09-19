@@ -198,31 +198,8 @@ import com.jpweytjens.barberfish.extension.saveRouteRemainingConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
-import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
-import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
-import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
-import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
-import com.jpweytjens.barberfish.extension.streamETAConfig
-import com.jpweytjens.barberfish.extension.streamEffortFieldConfig
-import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
-import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
-import com.jpweytjens.barberfish.extension.streamGradeMapConfig
-import com.jpweytjens.barberfish.extension.streamHRFieldConfig
-import com.jpweytjens.barberfish.extension.streamHRMaxPercentFieldConfig
-import com.jpweytjens.barberfish.extension.streamHRZoneFieldConfig
-import com.jpweytjens.barberfish.extension.streamHUDConfig
-import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
-import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
-import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
-import com.jpweytjens.barberfish.extension.streamMaxPowerFieldConfig
-import com.jpweytjens.barberfish.extension.streamNPFieldConfig
-import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
-import com.jpweytjens.barberfish.extension.streamPowerZoneFieldConfig
-import com.jpweytjens.barberfish.extension.streamRouteRemainingConfig
-import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
-import com.jpweytjens.barberfish.extension.streamTimeConfig
+import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamUserProfile
-import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
@@ -323,43 +300,39 @@ class MainActivity : ComponentActivity() {
         var designExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
-            launch { streamHUDConfig().collect { hudConfig = it } }
-            launch { streamHudSparklineConfig().collect { hudSparklineConfig = it } }
-            launch { streamFieldSparklineConfig().collect { fieldSparklineConfig = it } }
-            launch { streamGradeMapConfig().collect { gradeMapConfig = it } }
-            launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
-            launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
-            launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
-            launch { streamHRFieldConfig(HRFieldKind.LAP_AVG).collect { lapAvgHrFieldConfig = it } }
             launch {
-                streamHRFieldConfig(HRFieldKind.LAST_LAP_AVG).collect {
-                    lastLapAvgHrFieldConfig = it
+                streamConfigSnapshot().collect { snapshot ->
+                    hudConfig = snapshot.hud
+                    hudSparklineConfig = snapshot.hudSparkline
+                    fieldSparklineConfig = snapshot.fieldSparkline
+                    gradeMapConfig = snapshot.gradeMap
+                    powerFieldConfig = snapshot.powerField
+                    hrFieldConfig = snapshot.hrField
+                    avgHrFieldConfig = snapshot.avgHrField
+                    lapAvgHrFieldConfig = snapshot.lapAvgHrField
+                    lastLapAvgHrFieldConfig = snapshot.lastLapAvgHrField
+                    hrMaxPercentFieldConfig = snapshot.hrMaxPercentField
+                    maxHrFieldConfig = snapshot.maxHrField
+                    hrZoneFieldConfig = snapshot.hrZoneField
+                    speedFieldConfig = snapshot.speedField
+                    cadenceFieldConfig = snapshot.cadenceField
+                    avgPowerFieldConfig = snapshot.avgPowerField
+                    npFieldConfig = snapshot.npField
+                    lapPowerFieldConfig = snapshot.lapPowerField
+                    lastLapPowerFieldConfig = snapshot.lastLapPowerField
+                    powerZoneFieldConfig = snapshot.powerZoneField
+                    maxPowerFieldConfig = snapshot.maxPowerField
+                    gradeFieldConfig = snapshot.gradeField
+                    avgTotalConfig = snapshot.avgSpeedTotal
+                    avgMovingConfig = snapshot.avgSpeedMoving
+                    timeConfig = snapshot.time
+                    etaConfig = snapshot.eta
+                    effortFieldConfig = snapshot.effortField
+                    routeRemainingConfig = snapshot.routeRemaining
+                    zoneConfig = snapshot.zone
+                    dataFieldDesignConfig = snapshot.dataFieldDesign
                 }
             }
-            launch { streamHRMaxPercentFieldConfig().collect { hrMaxPercentFieldConfig = it } }
-            launch { streamMaxHRFieldConfig().collect { maxHrFieldConfig = it } }
-            launch { streamHRZoneFieldConfig().collect { hrZoneFieldConfig = it } }
-            launch { streamSpeedFieldConfig().collect { speedFieldConfig = it } }
-            launch { streamCadenceFieldConfig().collect { cadenceFieldConfig = it } }
-            launch { streamAvgPowerFieldConfig().collect { avgPowerFieldConfig = it } }
-            launch { streamNPFieldConfig().collect { npFieldConfig = it } }
-            launch {
-                streamLapPowerFieldConfig(isLastLap = false).collect { lapPowerFieldConfig = it }
-            }
-            launch {
-                streamLapPowerFieldConfig(isLastLap = true).collect { lastLapPowerFieldConfig = it }
-            }
-            launch { streamPowerZoneFieldConfig().collect { powerZoneFieldConfig = it } }
-            launch { streamMaxPowerFieldConfig().collect { maxPowerFieldConfig = it } }
-            launch { streamGradeFieldConfig().collect { gradeFieldConfig = it } }
-            launch { streamAvgSpeedConfig(includePaused = true).collect { avgTotalConfig = it } }
-            launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
-            launch { streamTimeConfig().collect { timeConfig = it } }
-            launch { streamETAConfig().collect { etaConfig = it } }
-            launch { streamEffortFieldConfig().collect { effortFieldConfig = it } }
-            launch { streamRouteRemainingConfig().collect { routeRemainingConfig = it } }
-            launch { streamZoneConfig().collect { zoneConfig = it } }
-            launch { streamDataFieldDesignConfig().collect { dataFieldDesignConfig = it } }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 

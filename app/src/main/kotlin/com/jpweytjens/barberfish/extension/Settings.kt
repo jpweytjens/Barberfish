@@ -26,15 +26,14 @@ private val json = Json {
     encodeDefaults = true
 }
 
+/** Decodes one stored config from a preferences snapshot, falling back to [default]. */
+private inline fun <reified T> Preferences.config(key: Preferences.Key<String>, default: T): T =
+    this[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() } ?: default
+
 private inline fun <reified T> Context.streamConfig(
     key: Preferences.Key<String>,
     default: T,
-): Flow<T> =
-    dataStore.data
-        .map { prefs ->
-            prefs[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() } ?: default
-        }
-        .distinctUntilChanged()
+): Flow<T> = dataStore.data.map { it.config(key, default) }.distinctUntilChanged()
 
 private suspend inline fun <reified T> Context.saveConfig(
     key: Preferences.Key<String>,
@@ -284,16 +283,13 @@ suspend fun Context.saveHudSparklineConfig(config: SparklineConfig) =
 fun SparklineConfig?.toFieldConfig(): SparklineConfig =
     (this ?: SparklineConfig()).copy(mode = SparklineMode.ON)
 
+private fun Preferences.fieldSparklineConfig(): SparklineConfig =
+    this[fieldSparklineConfigKey]
+        ?.let { runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull() }
+        .toFieldConfig()
+
 fun Context.streamFieldSparklineConfig(): Flow<SparklineConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[fieldSparklineConfigKey]
-                ?.let {
-                    runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
-                }
-                .toFieldConfig()
-        }
-        .distinctUntilChanged()
+    dataStore.data.map { it.fieldSparklineConfig() }.distinctUntilChanged()
 
 suspend fun Context.saveFieldSparklineConfig(config: SparklineConfig) =
     saveConfig(fieldSparklineConfigKey, config)
@@ -778,3 +774,80 @@ fun Context.streamDataFieldDesignConfig(): Flow<DataFieldDesignConfig> =
 
 suspend fun Context.saveDataFieldDesignConfig(config: DataFieldDesignConfig) =
     saveConfig(dataFieldDesignConfigKey, config)
+
+// --- ConfigSnapshot ---
+
+/**
+ * Every stored config decoded from one DataStore snapshot. A screen that shows all of them collects
+ * this once and gets one consistent reading per write, instead of one emission per key. Decoding
+ * goes through the same helpers as the per-key streams, so the two cannot drift.
+ */
+data class ConfigSnapshot(
+    val hud: HUDConfig,
+    val hudSparkline: SparklineConfig,
+    val fieldSparkline: SparklineConfig,
+    val gradeMap: GradeMapConfig,
+    val powerField: PowerFieldConfig,
+    val hrField: HRFieldConfig,
+    val avgHrField: HRFieldConfig,
+    val lapAvgHrField: HRFieldConfig,
+    val lastLapAvgHrField: HRFieldConfig,
+    val hrMaxPercentField: HRMaxPercentFieldConfig,
+    val maxHrField: MaxHRFieldConfig,
+    val hrZoneField: HRZoneFieldConfig,
+    val speedField: SpeedFieldConfig,
+    val cadenceField: CadenceFieldConfig,
+    val avgPowerField: AvgPowerFieldConfig,
+    val npField: NPFieldConfig,
+    val lapPowerField: LapPowerFieldConfig,
+    val lastLapPowerField: LapPowerFieldConfig,
+    val powerZoneField: PowerZoneFieldConfig,
+    val maxPowerField: MaxPowerFieldConfig,
+    val gradeField: GradeFieldConfig,
+    val avgSpeedTotal: AvgSpeedConfig,
+    val avgSpeedMoving: AvgSpeedConfig,
+    val time: TimeConfig,
+    val eta: ETAConfig,
+    val effortField: EffortFieldConfig,
+    val routeRemaining: RouteRemainingConfig,
+    val zone: ZoneConfig,
+    val dataFieldDesign: DataFieldDesignConfig,
+)
+
+fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
+    dataStore.data
+        .map { prefs ->
+            ConfigSnapshot(
+                hud = prefs.config(hudConfigKey, HUDConfig()),
+                hudSparkline = prefs.hudSparklineConfig(),
+                fieldSparkline = prefs.fieldSparklineConfig(),
+                gradeMap = prefs.config(gradeMapConfigKey, GradeMapConfig()),
+                powerField = prefs.config(powerFieldConfigKey, PowerFieldConfig()),
+                hrField = prefs.config(HRFieldKind.HR.key, HRFieldConfig()),
+                avgHrField = prefs.config(HRFieldKind.AVG.key, HRFieldConfig()),
+                lapAvgHrField = prefs.config(HRFieldKind.LAP_AVG.key, HRFieldConfig()),
+                lastLapAvgHrField = prefs.config(HRFieldKind.LAST_LAP_AVG.key, HRFieldConfig()),
+                hrMaxPercentField =
+                    prefs.config(hrMaxPercentFieldConfigKey, HRMaxPercentFieldConfig()),
+                maxHrField = prefs.config(maxHrFieldConfigKey, MaxHRFieldConfig()),
+                hrZoneField = prefs.config(hrZoneFieldConfigKey, HRZoneFieldConfig()),
+                speedField = prefs.config(speedFieldConfigKey, SpeedFieldConfig()),
+                cadenceField = prefs.config(cadenceFieldConfigKey, CadenceFieldConfig()),
+                avgPowerField = prefs.config(avgPowerFieldConfigKey, AvgPowerFieldConfig()),
+                npField = prefs.config(npFieldConfigKey, NPFieldConfig()),
+                lapPowerField = prefs.config(lapPowerFieldConfigKey, LapPowerFieldConfig()),
+                lastLapPowerField = prefs.config(lastLapPowerFieldConfigKey, LapPowerFieldConfig()),
+                powerZoneField = prefs.config(powerZoneFieldConfigKey, PowerZoneFieldConfig()),
+                maxPowerField = prefs.config(maxPowerFieldConfigKey, MaxPowerFieldConfig()),
+                gradeField = prefs.config(gradeFieldConfigKey, GradeFieldConfig()),
+                avgSpeedTotal = prefs.config(avgSpeedTotalConfigKey, AvgSpeedConfig()),
+                avgSpeedMoving = prefs.config(avgSpeedMovingConfigKey, AvgSpeedConfig()),
+                time = prefs.config(timeConfigKey, TimeConfig()),
+                eta = prefs.config(etaConfigKey, ETAConfig()),
+                effortField = prefs.config(effortFieldConfigKey, EffortFieldConfig()),
+                routeRemaining = prefs.config(routeRemainingConfigKey, RouteRemainingConfig()),
+                zone = prefs.config(zoneConfigKey, ZoneConfig()),
+                dataFieldDesign = prefs.config(dataFieldDesignConfigKey, DataFieldDesignConfig()),
+            )
+        }
+        .distinctUntilChanged()
