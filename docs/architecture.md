@@ -290,10 +290,12 @@ first pass draws on top and the last at the bottom. Removing a ridden visit expo
 a last-in-first-out stack at each shared stretch.
 
 Visibility follows the rider's accepted progress, rescaled from the navigation distance onto
-the polyline's own axis. On ground covered once, a piece hides as progress passes its end and
-the piece under the rider is re-cut to start at progress, so the native grey trace trails the
-rider by one progress bucket. On shared ground a ridden visit is retained while it remains in
-view, so the colours behind the rider do not flip to the return leg's; it hides once the rider
+the polyline's own axis. On a visit with no later pass over its ground, whether the ground is
+covered once or this is the last pass over a repeated stretch, a piece hides as progress passes
+its end and the piece under the rider is re-cut to start at progress, so the native grey trace
+trails the rider by one progress bucket. A ridden visit with a later pass beneath it is retained
+while it remains in view, so the colours behind the rider do not flip to the return leg's; it
+hides once the rider
 is more than a screen radius from it, or once its next visit starts within that radius of route
 distance ahead, which on a return leg is the moment the ground enters the screen. Chevrons are
 generated for the whole route without collision filtering and selected at draw time: a mark is
