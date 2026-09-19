@@ -5,6 +5,9 @@ hooks = [
   # truth. The brew ktfmt CLI disagrees with it even at the same version, so
   # the hook goes through gradle. Fix failures with: ./gradlew spotlessApply
   { id = "spotless", name = "spotless check", language = "system", entry = "./gradlew -q spotlessCheck", files = '\.kt$', pass_filenames = false },
+  # Plain detekt (no type resolution): fast enough for a hook. The rules that
+  # need types, UnsafeCallOnNullableType among them, run as detektDebug in CI.
+  { id = "detekt", name = "detekt", language = "system", entry = "./gradlew -q detekt", files = '\.kt$', pass_filenames = false },
 ]
 
 [[repos]]
