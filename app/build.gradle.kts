@@ -59,6 +59,16 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        // Findings older than the baseline are grandfathered; new warnings fail the build.
+        baseline = file("lint-baseline.xml")
+        warningsAsErrors = true
+        // Field layouts are RemoteViews on a bike computer; there is no screen reader to serve.
+        disable += "ContentDescription"
+        // Dependency freshness is a maintenance task, not a per-commit check.
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+    }
 }
 
 kotlin {
