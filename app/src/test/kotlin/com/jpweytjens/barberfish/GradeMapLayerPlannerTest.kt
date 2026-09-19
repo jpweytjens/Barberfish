@@ -162,11 +162,11 @@ class GradeMapLayerPlannerTest {
     }
 
     @Test
-    fun a_changed_layout_restacks_even_with_the_same_ids() {
+    fun a_depth_change_restacks_even_with_the_same_ids() {
         val planner = GradeMapLayerPlanner()
         planner.plan(outAndBack, 18, 21)
         val moved = outAndBack.toMutableList()
-        moved[1] = outAndBack[1].copy(startM = 90.0)
+        moved[1] = outAndBack[1].copy(depth = 1)
         val batches = planner.plan(moved, 18, 21)
         assertTrue(batches.size >= 3)
         assertEquals(
@@ -174,6 +174,19 @@ class GradeMapLayerPlannerTest {
             batches[0].hideIds().toSet(),
         )
         assertTrue(batches[0].settleAfter)
+    }
+
+    @Test
+    fun an_extent_change_with_unchanged_depth_updates_in_place() {
+        val planner = GradeMapLayerPlanner()
+        planner.plan(outAndBack, 18, 21)
+        val recut = outAndBack.toMutableList()
+        recut[1] = outAndBack[1].copy(startM = 90.0, endM = 190.0, encoded = "fill1-recut")
+        val batches = planner.plan(recut, 18, 21)
+        assertEquals(1, batches.size)
+        assertTrue(batches[0].hideIds().isEmpty())
+        assertEquals(listOf("barberfish-seg-1"), batches[0].showIds())
+        assertFalse(batches[0].settleAfter)
     }
 
     @Test

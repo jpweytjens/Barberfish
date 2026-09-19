@@ -18,10 +18,10 @@ internal data class LayerBatch(val effects: List<MapEffect>, val settleAfter: Bo
  * offers nothing else: an id it has not seen goes on top of everything the extension has drawn, and
  * a show for an id it holds updates that layer in place. A batch is not processed in emission
  * order. So a stacking pass hides everything painted, settles, puts every casing down, settles,
- * then shows the fills one depth at a time from the bottom, settling between depths. Once stacked,
- * a plan whose layout (each id's visit, extent and depth) is unchanged only hides pieces that went
- * away and re-shows pieces whose geometry or colour changed, in place and with no settle. Any id
- * whose layout changed, or that is new to the map, forces a stacking pass.
+ * then shows the fills one depth at a time from the bottom, settling between depths. A plan
+ * restacks when an id is new to the map or a painted id's depth changed; otherwise it updates in
+ * place, hiding the ids that went away and re-showing the pieces whose geometry or colour changed,
+ * with no settle. So a zoom re-cut that moves extents but keeps depths never blanks the band.
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine; not thread-safe.
  */
@@ -37,7 +37,8 @@ internal class GradeMapLayerPlanner {
         casingWidth: Int,
     ): List<LayerBatch> {
         val structural =
-            !stacked || pieces.any { piece -> painted[piece.id]?.sameLayoutAs(piece) != true }
+            !stacked ||
+                pieces.any { piece -> painted[piece.id]?.let { it.depth == piece.depth } != true }
         val batches =
             if (structural) restack(pieces, fillWidth, casingWidth)
             else updateInPlace(pieces, fillWidth, casingWidth)
@@ -137,12 +138,6 @@ internal class GradeMapLayerPlanner {
             color = piece.colorArgb,
             width = fillWidth,
         )
-
-    private fun GradeMapPolylineSpec.sameLayoutAs(other: GradeMapPolylineSpec): Boolean =
-        visitKey == other.visitKey &&
-            startM == other.startM &&
-            endM == other.endM &&
-            depth == other.depth
 }
 
 /** Sends [batches] in order, sleeping [settleMs] after each batch that asks for it. */
