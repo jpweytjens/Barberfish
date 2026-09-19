@@ -19,10 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -678,7 +678,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier =
                 Modifier.testTag("bf:hud:data-field")
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
