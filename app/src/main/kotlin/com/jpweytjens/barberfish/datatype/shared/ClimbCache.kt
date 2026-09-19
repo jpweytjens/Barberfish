@@ -45,7 +45,7 @@ internal class ClimbCacheHolder {
         cached =
             if (routeKey == null) null
             else updateClimbCache(cached, incoming, onRoute, routeChanged)
-        return cached ?: emptyList()
+        return cached.orEmpty()
     }
 }
 

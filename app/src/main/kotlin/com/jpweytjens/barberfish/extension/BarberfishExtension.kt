@@ -385,7 +385,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
                         )
                         if (BuildConfig.DEBUG) {
-                            val elev = decodeElevationPolyline(route.routeElevationPolyline ?: "")
+                            val elev =
+                                decodeElevationPolyline(route.routeElevationPolyline.orEmpty())
                             Timber.d(
                                 "grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
                             )

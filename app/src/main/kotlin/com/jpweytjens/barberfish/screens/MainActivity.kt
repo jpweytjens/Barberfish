@@ -2232,7 +2232,7 @@ private fun NullableThresholdInput(
     onValueChange: (Double?) -> Unit,
 ) {
     val displayValue = value?.let { ConvertType.SPEED.toDisplay(it, profile) }
-    var text by remember(value) { mutableStateOf(displayValue?.toString() ?: "") }
+    var text by remember(value) { mutableStateOf(displayValue?.toString().orEmpty()) }
     CommitOnFocusLossTextField(
         text = text,
         onTextChange = { text = it },
@@ -2421,7 +2421,7 @@ private fun NullableCadenceThresholdInput(
     placeholder: String,
     onValueChange: (Double?) -> Unit,
 ) {
-    var text by remember(value) { mutableStateOf(value?.toInt()?.toString() ?: "") }
+    var text by remember(value) { mutableStateOf(value?.toInt()?.toString().orEmpty()) }
     CommitOnFocusLossTextField(
         text = text,
         onTextChange = { text = it },

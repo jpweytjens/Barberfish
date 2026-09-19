@@ -171,7 +171,7 @@ fun overviewBitmapFlow(
             (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
         val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
-        val encoded = route?.routeElevationPolyline ?: ""
+        val encoded = route?.routeElevationPolyline.orEmpty()
         if (encoded.isBlank() && !isPreview) return@combine null
 
         // Cache by route AND simplification so changing the knob re-simplifies.

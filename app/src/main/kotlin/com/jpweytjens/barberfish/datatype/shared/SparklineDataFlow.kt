@@ -110,8 +110,8 @@ internal fun sparklineBitmapFlow(
         val previewClimbs = isPreview && sparkCfg.hudMode == SparklineMode.CLIMBS
         val (elevEncoded, elevSource) =
             when {
-                route != null -> (route.routeElevationPolyline ?: "") to 0
-                dest != null -> (dest.elevationPolyline ?: "") to 1
+                route != null -> route.routeElevationPolyline.orEmpty() to 0
+                dest != null -> dest.elevationPolyline.orEmpty() to 1
                 previewClimbs -> "" to 4
                 isPreview -> "" to 2
                 else -> "" to 3
@@ -224,7 +224,8 @@ internal fun sparklineBitmapFlow(
                                     routeCum,
                                     POI_ROUTE_CORRIDOR_M,
                                 )
-                                ?.let { listOf(it.toFloat()) } ?: emptyList()
+                                ?.let { listOf(it.toFloat()) }
+                                .orEmpty()
                     }
                 cachedGlobalPoiKey = globalKey
             }
