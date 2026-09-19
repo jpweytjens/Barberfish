@@ -88,3 +88,18 @@ internal class GradeMapProgress(
 /** Route identity for [GradeMapProgress.trackRoute]: the polyline plus travel direction. */
 internal fun gradeMapRouteKey(routePolyline: String, reversed: Boolean): Long =
     (routePolyline.hashCode().toLong() shl 1) or (if (reversed) 1L else 0L)
+
+/**
+ * Progress on the polyline's own axis. The latch measures progress on the rideapp's route distance
+ * axis, which runs a fraction of a per cent longer than the polyline's cumulative length (34,151 m
+ * against 34,113.5 m on a 34 km route); every comparison with pieces, visits and chevrons happens
+ * on the polyline axis, so the two lengths' ratio is applied here and nowhere else. A missing or
+ * zero route distance leaves progress unscaled.
+ */
+internal fun polylineAxisProgressM(
+    sdkProgressM: Double,
+    sdkRouteDistanceM: Double,
+    polylineLengthM: Double,
+): Double =
+    if (sdkRouteDistanceM > 0.0) sdkProgressM * (polylineLengthM / sdkRouteDistanceM)
+    else sdkProgressM

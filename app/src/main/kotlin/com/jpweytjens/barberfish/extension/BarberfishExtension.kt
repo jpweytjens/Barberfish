@@ -55,6 +55,7 @@ import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
 import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
+import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
 import com.jpweytjens.barberfish.datatype.shared.trimPieceFrom
@@ -264,7 +265,15 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             var riderFix: LatLng? = null
 
             suspend fun drawRoute(d: RouteDrawing) {
-                d.visibility.update(progressLatch.progressM * d.axisScale, riderFix, d.viewRadiusM)
+                d.visibility.update(
+                    polylineAxisProgressM(
+                        progressLatch.progressM,
+                        d.sdkRouteDistanceM,
+                        d.index.lengthM,
+                    ),
+                    riderFix,
+                    d.viewRadiusM,
+                )
                 val pieces =
                     d.specs.polylines.mapNotNull { spec ->
                         when (
@@ -376,7 +385,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                     routeIndexKey = routeKey
                                     visibility = RideVisibility(it)
                                     Timber.d(
-                                        "grademap: route index ${it.visits.size} visits, ${it.visits.count { v -> v.nextVisitM != null }} repeated, deepest=${it.visits.maxOfOrNull { v -> v.depth }} axisRatio=${route.routeDistance / it.lengthM}"
+                                        "grademap: route index ${it.visits.size} visits, ${it.visits.count { v -> v.nextVisitM != null }} repeated, deepest=${it.visits.maxOfOrNull { v -> v.depth }} axisRatio=${route.routeDistance / it.lengthM} scaledEnd=${polylineAxisProgressM(route.routeDistance, route.routeDistance, it.lengthM).toInt()}m"
                                     )
                                 }
                         val ride = visibility ?: RideVisibility(index).also { visibility = it }
@@ -516,10 +525,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 casingCapTrimM = casingCapTrimM,
                                 collisionRadiusM = chevronCollision,
                                 viewRadiusM = VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
-                                axisScale =
-                                    if (route.routeDistance > 0.0)
-                                        index.lengthM / route.routeDistance
-                                    else 1.0,
+                                sdkRouteDistanceM = route.routeDistance,
                                 iconRes = gradeChevronDrawable(inputs.palette),
                             )
                         drawing = current
@@ -583,9 +589,8 @@ private class RouteDrawing(
     val casingCapTrimM: Double,
     val collisionRadiusM: Double,
     val viewRadiusM: Double,
-    // App GPS metres per SDK routeDistance metre: the two axes differ by a fraction of a per
-    // cent, which is tens of metres at the far end of a long route.
-    val axisScale: Double,
+    // The rideapp's route length, for rescaling latch progress onto the polyline axis.
+    val sdkRouteDistanceM: Double,
     @DrawableRes val iconRes: Int,
 )
 

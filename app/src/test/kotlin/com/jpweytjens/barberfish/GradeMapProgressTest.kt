@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
+import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -172,5 +173,21 @@ class GradeMapProgressTest {
         // reach a chevron placed in the last 48 m.
         assertTrue(progress.advance(0.0, onRoute = true, routeDistanceM = 998.0))
         assertTrue(progress.progressM >= 998.0)
+    }
+
+    @Test
+    fun polyline_axis_progress_shrinks_sdk_progress_by_the_length_ratio() {
+        // The route measured on device: the rideapp reports 34,151 m for a polyline whose
+        // cumulative length is 34,113.5 m. Arrival on the rideapp's axis is the polyline's end,
+        // not 37 m past it.
+        assertEquals(34_113.5, polylineAxisProgressM(34_151.0, 34_151.0, 34_113.5), 1e-9)
+        assertEquals(0.0, polylineAxisProgressM(0.0, 34_151.0, 34_113.5), 0.0)
+        // Halfway on one axis is halfway on the other.
+        assertEquals(17_056.75, polylineAxisProgressM(17_075.5, 34_151.0, 34_113.5), 1e-9)
+    }
+
+    @Test
+    fun polyline_axis_progress_is_unscaled_without_a_route_distance() {
+        assertEquals(1_000.0, polylineAxisProgressM(1_000.0, 0.0, 34_113.5), 0.0)
     }
 }
