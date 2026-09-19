@@ -13,8 +13,6 @@ private const val ONE_COL = 60
 private const val TWO_COLS = 30
 private const val THREE_COLS = 20 // HUD 3-col
 private const val FOUR_COLS = 15 // HUD 4-col
-private const val TWO_ROWS = 30
-private const val THREE_ROWS = 20
 private const val FOUR_ROWS = 15
 private const val FIVE_ROWS = 12
 
