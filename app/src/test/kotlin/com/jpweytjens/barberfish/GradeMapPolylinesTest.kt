@@ -4,15 +4,20 @@ import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.FlatGrey
 import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
+import com.jpweytjens.barberfish.datatype.shared.GradeRun
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
+import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
+import com.jpweytjens.barberfish.datatype.shared.cutRunsByVisits
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.drawnExtent
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.gradeColor
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
+import com.jpweytjens.barberfish.datatype.shared.trimPieceFrom
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -486,7 +491,7 @@ class GradeMapPolylinesTest {
         }
 
     @Test
-    fun casing_spans_the_profiled_extent_trimmed_at_both_ends() {
+    fun piece_casings_tile_the_profiled_extent_trimmed_at_the_route_ends() {
         val full =
             buildGradeMapSpecs(
                 routePolyline = routePolyline,
@@ -505,11 +510,12 @@ class GradeMapPolylinesTest {
                 casingCapTrimM = 15.0,
             )
         fun lenM(encoded: String) = cumulativeDistancesM(decodeGpsPolyline(encoded)).last()
-        // The fixture's profile covers 300 m of a 3.3 km route: the casing stops with the
-        // fills rather than running on to the route's end.
-        assertEquals(300.0, lenM(full.casing), 1.0)
-        // Trimmed, it loses one trim at each end.
-        assertEquals(270.0, lenM(trimmed.casing), 3.0)
+        // The fixture's profile covers 300 m of a 3.3 km route: every piece has a casing of its
+        // own extent, and together they stop with the fills rather than running to the route end.
+        assertTrue(full.polylines.all { it.casingEncoded.isNotEmpty() })
+        assertEquals(300.0, full.polylines.sumOf { lenM(it.casingEncoded) }, 1.0)
+        // Trimmed, only the first and last piece lose a trim.
+        assertEquals(270.0, trimmed.polylines.sumOf { lenM(it.casingEncoded) }, 3.0)
     }
 
     @Test
@@ -925,6 +931,138 @@ class GradeMapPolylinesTest {
                 metresPerPixel = 1.0,
             )
         assertTrue(steep.chevrons.size > gentle.chevrons.size)
+    }
+
+    @Test
+    fun pieces_are_runs_cut_at_visit_boundaries_and_inherit_depth() {
+        // Flat out-and-back: one colour run, six visits, so six pieces in route order.
+        val route = RouteFixtures.outAndBack(300.0, 100.0)
+        val specs =
+            buildGradeMapSpecs(
+                routePolyline = RouteFixtures.encoded(route),
+                routeElevationPolyline = RouteFixtures.flatElevation(600.0),
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                includeChevrons = false,
+            )
+        val index = buildRouteIndex(RouteFixtures.encoded(route), reversed = false)
+        assertEquals(6, specs.polylines.size)
+        assertEquals(6, specs.segmentIdSpan)
+        assertEquals((0 until 6).toList(), specs.polylines.map { it.visitKey })
+        assertEquals(listOf(2, 2, 2, 1, 1, 1), specs.polylines.map { it.depth })
+        // Encoding quantises the fixture's coordinates, so compare against the index built from
+        // the same encoded route rather than against round metres.
+        specs.polylines.forEachIndexed { i, piece ->
+            assertEquals(index.visits[i].startM, piece.startM, 1e-6)
+            assertEquals(index.visits[i].endM, piece.endM, 1e-6)
+        }
+        assertEquals((0 until 6).map { "barberfish-seg-$it" }, specs.polylines.map { it.id })
+    }
+
+    @Test
+    fun a_colour_change_inside_a_visit_makes_separate_pieces() {
+        // 600 m straight, 8 per cent for the first 300 m then flat: two runs, one visit.
+        val route = RouteFixtures.straight(600.0, 100.0)
+        val elevation =
+            RouteFixtures.encodeElevation(listOf(0f to 100f, 300f to 124f, 600f to 124f))
+        val specs =
+            buildGradeMapSpecs(
+                routePolyline = RouteFixtures.encoded(route),
+                routeElevationPolyline = elevation,
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                includeChevrons = false,
+            )
+        assertEquals(2, specs.polylines.size)
+        assertTrue(specs.polylines.all { it.visitKey == 0 })
+        // The run boundary is on the elevation axis and rescaled onto the GPS axis, which the
+        // encoding stretched by a fraction of a per cent.
+        assertEquals(300.0, specs.polylines[0].endM, 2.0)
+    }
+
+    @Test
+    fun cutRunsByVisits_intersects_runs_with_visits() {
+        // Built from raw points, so visit boundaries sit on exact 100 m multiples.
+        val route = RouteFixtures.outAndBack(300.0, 100.0)
+        val index = buildRouteIndex(route, cumulativeDistancesM(route))
+        val runs = listOf(GradeRun(0.0, 250.0, 1), GradeRun(250.0, 600.0, 2))
+        val pieces = cutRunsByVisits(runs, index)
+        val expected =
+            listOf(
+                0.0 to 100.0,
+                100.0 to 200.0,
+                200.0 to 250.0,
+                250.0 to 300.0,
+                300.0 to 400.0,
+                400.0 to 500.0,
+                500.0 to 600.0,
+            )
+        assertEquals(expected.size, pieces.size)
+        expected.forEachIndexed { i, (s, e) ->
+            assertEquals(s, pieces[i].startM, 1e-6)
+            assertEquals(e, pieces[i].endM, 1e-6)
+        }
+        assertEquals(listOf(1, 1, 1, 2, 2, 2, 2), pieces.map { it.colorArgb })
+        assertEquals(listOf(0, 1, 2, 2, 3, 4, 5), pieces.map { it.visitKey })
+    }
+
+    @Test
+    fun drawnExtent_trims_only_the_flagged_ends_and_never_past_the_middle() {
+        assertEquals(
+            20.0 to 100.0,
+            drawnExtent(0.0, 100.0, trimStart = true, trimEnd = false, capTrimM = 20.0),
+        )
+        assertEquals(
+            0.0 to 80.0,
+            drawnExtent(0.0, 100.0, trimStart = false, trimEnd = true, capTrimM = 20.0),
+        )
+        assertEquals(
+            0.0 to 100.0,
+            drawnExtent(0.0, 100.0, trimStart = false, trimEnd = false, capTrimM = 20.0),
+        )
+        // A 10 m piece trimmed at both ends by 20 m keeps a 1 m stub in the middle.
+        val (s, e) = drawnExtent(0.0, 10.0, trimStart = true, trimEnd = true, capTrimM = 20.0)
+        assertEquals(4.5, s, 1e-9)
+        assertEquals(5.5, e, 1e-9)
+    }
+
+    @Test
+    fun trimPieceFrom_recuts_fill_and_casing_from_progress() {
+        val route = RouteFixtures.straight(600.0, 100.0)
+        val index = buildRouteIndex(RouteFixtures.encoded(route), reversed = false)
+        val specs =
+            buildGradeMapSpecs(
+                routePolyline = RouteFixtures.encoded(route),
+                routeElevationPolyline = RouteFixtures.flatElevation(600.0),
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                includeChevrons = false,
+                capTrimM = 10.0,
+                casingCapTrimM = 15.0,
+                routeIndex = index,
+            )
+        val piece = specs.polylines.single()
+        val trimmed =
+            trimPieceFrom(
+                piece,
+                fromM = 250.0,
+                index = index,
+                capTrimM = 10.0,
+                casingCapTrimM = 15.0,
+            )
+        fun lenM(encoded: String) = cumulativeDistancesM(decodeGpsPolyline(encoded)).last()
+        // The route-end trim still applies; only the start moved to progress.
+        assertEquals(index.lengthM - 10.0 - 250.0, lenM(trimmed.encoded), 0.5)
+        assertEquals(index.lengthM - 15.0 - 250.0, lenM(trimmed.casingEncoded), 0.5)
+        // Identity and layout are untouched: the planner must see an in-place update.
+        assertEquals(piece.id, trimmed.id)
+        assertEquals(piece.startM, trimmed.startM, 0.0)
+        assertEquals(piece.endM, trimmed.endM, 0.0)
+        assertEquals(piece.depth, trimmed.depth)
+        assertEquals(piece.visitKey, trimmed.visitKey)
     }
 
     // Straight 2 km route east along the equator, for chevron cadence tests that only care

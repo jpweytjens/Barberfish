@@ -6,7 +6,7 @@ import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.abs
 import kotlin.math.round
 
-/** A single coloured fill polyline for a route gradient segment. */
+/** A single coloured fill polyline for one drawing piece: a colour run cut to one route visit. */
 internal data class GradeMapPolylineSpec(
     val id: String,
     val encoded: String,
@@ -16,6 +16,16 @@ internal data class GradeMapPolylineSpec(
     // opens to the native line.
     val trimStart: Boolean = false,
     val trimEnd: Boolean = false,
+    // The black casing beneath this piece: the same extent, pulled in at the route ends by
+    // the casing's own cap trim. Hidden and trimmed together with the fill.
+    val casingEncoded: String = "",
+    // The visit this piece belongs to (RouteVisit.key) and the piece's untrimmed extent on
+    // the GPS axis. Visibility is decided on these, never on the drawn geometry.
+    val visitKey: Int = 0,
+    val startM: Double = 0.0,
+    val endM: Double = 0.0,
+    // Drawing priority inherited from the visit: lowest is put down first.
+    val depth: Int = 1,
 )
 
 /**
@@ -44,21 +54,22 @@ internal fun gradeMapSegmentId(index: Int): String = "barberfish-seg-$index"
 /** The single black casing polyline drawn along the whole route beneath the fills. */
 internal const val GRADE_MAP_CASING_ID = "barberfish-casing"
 
+/** The casing beneath the fill [fillId]; derived so a stale span covers both. */
+internal fun gradeMapPieceCasingId(fillId: String): String = "$fillId-casing"
+
 internal fun gradeMapChevronId(index: Int): String = "barberfish-chev-$index"
 
 /**
  * Specs produced by [buildGradeMapSpecs]. Ids are minted from `0 until span` per kind; filtering
  * drops entries but keeps their indices, so the spans — not the list sizes — bound the id range a
- * later `startMap` must hide.
+ * later `startMap` must hide. Each fill's casing id derives from the fill's, so the segment span
+ * covers both.
  */
 internal data class GradeMapSpecs(
     val polylines: List<GradeMapPolylineSpec>,
     val chevrons: List<ClimbChevronSpec>,
     val segmentIdSpan: Int = 0,
     val chevronIdSpan: Int = 0,
-    // The black casing's geometry: the whole GPS route, pulled in at both ends so its round
-    // cap lands on the true endpoint like the fills' do. Empty when nothing is drawn.
-    val casing: String = "",
 )
 
 /** Axis-aligned viewport bounding box in lat/lng. */
@@ -84,6 +95,78 @@ internal data class LatLngBounds(
  * route is a single chain.
  */
 internal data class GradeRun(val startM: Double, val endM: Double, val colorArgb: Int)
+
+/** A colour run cut to one visit: the extent of one drawing piece, on the GPS axis. */
+internal data class VisitRun(
+    val startM: Double,
+    val endM: Double,
+    val colorArgb: Int,
+    val visitKey: Int,
+    val depth: Int,
+)
+
+/**
+ * Intersects [runs], already on the GPS axis and in route order, with the visits of [index]. A run
+ * inside one visit is one piece; a run crossing a visit boundary is cut there. Pieces come out in
+ * route order.
+ */
+internal fun cutRunsByVisits(runs: List<GradeRun>, index: RouteIndex): List<VisitRun> {
+    val visits = index.visits
+    val out = mutableListOf<VisitRun>()
+    var first = 0
+    for (run in runs) {
+        while (first < visits.size && visits[first].endM <= run.startM) first++
+        var i = first
+        while (i < visits.size && visits[i].startM < run.endM) {
+            val visit = visits[i]
+            val startM = maxOf(run.startM, visit.startM)
+            val endM = minOf(run.endM, visit.endM)
+            if (endM > startM) out += VisitRun(startM, endM, run.colorArgb, visit.key, visit.depth)
+            i++
+        }
+    }
+    return out
+}
+
+/**
+ * Where a piece of `[startM, endM]` is drawn: pulled in by [capTrimM] at whichever of its ends is a
+ * route end, so the round cap lands on the true endpoint. The two trims never cross: each is capped
+ * so a 0.5 m stub survives even when both ends of a lone short piece trim to the maximum.
+ */
+internal fun drawnExtent(
+    startM: Double,
+    endM: Double,
+    trimStart: Boolean,
+    trimEnd: Boolean,
+    capTrimM: Double,
+): Pair<Double, Double> {
+    val maxTrim = ((endM - startM) * 0.5 - 0.5).coerceAtLeast(0.0)
+    val drawStart = startM + (if (trimStart) capTrimM else 0.0).coerceAtMost(maxTrim)
+    val drawEnd = endM - (if (trimEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
+    return drawStart to drawEnd
+}
+
+/**
+ * [spec] re-cut to start at [fromM]: the piece the rider is on, with the ridden part removed. Its
+ * id, extent and depth are unchanged, so the planner updates it in place. If nothing drawable is
+ * left (progress inside the route-end trim), the spec is returned as it is.
+ */
+internal fun trimPieceFrom(
+    spec: GradeMapPolylineSpec,
+    fromM: Double,
+    index: RouteIndex,
+    capTrimM: Double,
+    casingCapTrimM: Double,
+): GradeMapPolylineSpec {
+    val (drawStart, drawEnd) =
+        drawnExtent(spec.startM, spec.endM, spec.trimStart, spec.trimEnd, capTrimM)
+    val (casingStart, casingEnd) =
+        drawnExtent(spec.startM, spec.endM, spec.trimStart, spec.trimEnd, casingCapTrimM)
+    val fill = extractSubPolyline(index.gps, index.cumDist, maxOf(fromM, drawStart), drawEnd)
+    val casing = extractSubPolyline(index.gps, index.cumDist, maxOf(fromM, casingStart), casingEnd)
+    if (fill.size < 2 || casing.size < 2) return spec
+    return spec.copy(encoded = encodeGpsPolyline(fill), casingEncoded = encodeGpsPolyline(casing))
+}
 
 /** One stroke width on screen: the width the run is drawn at is the length it must own. */
 internal const val MIN_RUN_PX = 12.0
@@ -251,6 +334,7 @@ internal fun buildGradeMapSpecs(
     casingCapTrimM: Double = 0.0,
     reversed: Boolean = false,
     metresPerPixel: Double = 0.0,
+    routeIndex: RouteIndex? = null,
 ): GradeMapSpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
         return GradeMapSpecs(emptyList(), emptyList())
@@ -298,27 +382,42 @@ internal fun buildGradeMapSpecs(
     // The band tiles the whole route: a run inside the emphasis edges draws in the map neutral
     // at full width, so the band never changes width along the route and the native line and
     // its chevrons stay covered end to end. Emphasis only decides which runs take a colour.
+    //
+    // Runs are cut where a visit begins or ends, so a piece belongs to exactly one pass over
+    // its ground and can be hidden with that pass. The index is a property of the route, not
+    // of the colouring, so callers hand in the one they built when the route loaded.
+    val index = routeIndex ?: buildRouteIndex(gps, cumDist)
+    val pieces =
+        cutRunsByVisits(
+            runs.map { GradeRun(it.startM * elevToGps, it.endM * elevToGps, it.colorArgb) },
+            index,
+        )
     val polylines = mutableListOf<GradeMapPolylineSpec>()
-    runs.forEachIndexed { runIdx, run ->
+    pieces.forEachIndexed { idx, piece ->
         // Only the route's own two ends overhang the coloured extent via the renderer's round
-        // line-cap, so only those are pulled in by capTrimM and the cap lands on the true
-        // endpoint. Interior junctions stay full (cap overlap, no gap).
-        val atRouteStart = runIdx == 0
-        val atRouteEnd = runIdx == runs.lastIndex
-        // Cap each end's trim so the two never cross: the 0.5 m buffer keeps drawEnd >
-        // drawStart even when both ends of a lone run trim to the maximum.
-        val maxTrim = ((run.endM - run.startM) * 0.5 - 0.5).coerceAtLeast(0.0)
-        val drawStart = run.startM + (if (atRouteStart) capTrimM else 0.0).coerceAtMost(maxTrim)
-        val drawEnd = run.endM - (if (atRouteEnd) capTrimM else 0.0).coerceAtMost(maxTrim)
-        val sub = extractSubPolyline(gps, cumDist, drawStart * elevToGps, drawEnd * elevToGps)
-        if (sub.size >= 2) {
+        // line-cap, so only those are pulled in and the cap lands on the true endpoint.
+        // Interior junctions stay full (cap overlap, no gap).
+        val atRouteStart = idx == 0
+        val atRouteEnd = idx == pieces.lastIndex
+        val (drawStart, drawEnd) =
+            drawnExtent(piece.startM, piece.endM, atRouteStart, atRouteEnd, capTrimM)
+        val (casingStart, casingEnd) =
+            drawnExtent(piece.startM, piece.endM, atRouteStart, atRouteEnd, casingCapTrimM)
+        val sub = extractSubPolyline(gps, cumDist, drawStart, drawEnd)
+        val casingSub = extractSubPolyline(gps, cumDist, casingStart, casingEnd)
+        if (sub.size >= 2 && casingSub.size >= 2) {
             polylines +=
                 GradeMapPolylineSpec(
-                    id = gradeMapSegmentId(runIdx),
+                    id = gradeMapSegmentId(idx),
                     encoded = encodeGpsPolyline(sub),
-                    colorArgb = run.colorArgb,
+                    colorArgb = piece.colorArgb,
                     trimStart = atRouteStart,
                     trimEnd = atRouteEnd,
+                    casingEncoded = encodeGpsPolyline(casingSub),
+                    visitKey = piece.visitKey,
+                    startM = piece.startM,
+                    endM = piece.endM,
+                    depth = piece.depth,
                 )
         }
     }
@@ -379,18 +478,10 @@ internal fun buildGradeMapSpecs(
         } else {
             chevrons
         }
-    // The casing ends where the fills end: the profiled extent on the GPS axis, which can stop
-    // short of the GPS route's last point. Running it to the route's end would leave a bare
-    // black tail past the last colour. Trim both ends, but never past each other: an extent
-    // shorter than two trims keeps a 0.5 m stub so the casing still exists.
-    val drawnEndM = (elevPoints.last().first.toDouble() * elevToGps).coerceAtMost(cumDist.last())
-    val casingTrim = casingCapTrimM.coerceAtMost((drawnEndM * 0.5 - 0.5).coerceAtLeast(0.0))
-    val casingPoints = extractSubPolyline(gps, cumDist, casingTrim, drawnEndM - casingTrim)
     return GradeMapSpecs(
         polylines = polylines,
         chevrons = filteredChevrons,
-        segmentIdSpan = runs.size,
+        segmentIdSpan = pieces.size,
         chevronIdSpan = chevronPlacements.size,
-        casing = if (casingPoints.size >= 2) encodeGpsPolyline(casingPoints) else routePolyline,
     )
 }

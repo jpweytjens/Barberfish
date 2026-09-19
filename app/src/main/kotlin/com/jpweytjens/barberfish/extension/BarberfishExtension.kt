@@ -442,7 +442,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         )
                         polylineController.emit(
                             emitter,
-                            casingEncoded = specs.casing,
+                            casingEncoded = "",
                             specs = specs.polylines,
                             fillWidth = GRADE_BAND_WIDTH_DP,
                             casingWidth = GRADE_BAND_CASING_WIDTH_DP,
