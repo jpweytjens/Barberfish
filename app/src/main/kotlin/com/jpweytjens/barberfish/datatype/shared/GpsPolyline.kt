@@ -8,7 +8,7 @@ import kotlin.math.sqrt
 internal data class LatLng(val lat: Double, val lng: Double)
 
 /** Earth radius in metres (mean). */
-private const val EARTH_RADIUS_M = 6_371_000.0
+internal const val EARTH_RADIUS_M = 6_371_000.0
 
 // --- Map viewport geometry ------------------------------------------------------
 //
