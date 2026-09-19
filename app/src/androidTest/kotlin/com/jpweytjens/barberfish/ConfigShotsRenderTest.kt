@@ -40,15 +40,21 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
+import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
+import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.screens.AvgSpeedThresholdControls
+import com.jpweytjens.barberfish.screens.CadenceThresholdControls
 import com.jpweytjens.barberfish.screens.CollapsibleSection
 import com.jpweytjens.barberfish.screens.ConfigSection
 import com.jpweytjens.barberfish.screens.DataFieldDesignSectionContent
@@ -56,6 +62,7 @@ import com.jpweytjens.barberfish.screens.HUDConfigSection
 import com.jpweytjens.barberfish.screens.LocalDataFieldDesign
 import com.jpweytjens.barberfish.screens.LocalScreenshotMode
 import com.jpweytjens.barberfish.screens.PalettesSectionContent
+import com.jpweytjens.barberfish.screens.SpeedThresholdControls
 import io.hammerhead.karooext.models.UserProfile
 import java.io.File
 import java.io.FileOutputStream
@@ -324,6 +331,28 @@ class ConfigShotsRenderTest {
             }
         }
         capture("design_barberfish")
+    }
+
+    @Test
+    fun thresholdControls() {
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
+            SpeedThresholdControls(
+                config = SpeedFieldConfig(thresholdKph = 30.0),
+                profile = shotProfile,
+                onConfigChange = {},
+            )
+            AvgSpeedThresholdControls(
+                config = AvgSpeedConfig(mode = ThresholdMode.MIN_MAX, minKph = 20.0, maxKph = 35.0),
+                profile = shotProfile,
+                onConfigChange = {},
+            )
+            CadenceThresholdControls(
+                config = CadenceThresholdConfig(thresholdRpm = 90.0),
+                onConfigChange = {},
+            )
+        }
+        captureTall("threshold_controls", scrollState)
     }
 
     private companion object {
