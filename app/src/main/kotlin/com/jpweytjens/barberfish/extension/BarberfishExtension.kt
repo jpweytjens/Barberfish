@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.extension
 
+import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.R
@@ -35,9 +36,15 @@ import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_CASING_ID
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
+import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
+import com.jpweytjens.barberfish.datatype.shared.LatLng
+import com.jpweytjens.barberfish.datatype.shared.PieceVisibility
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
+import com.jpweytjens.barberfish.datatype.shared.RideVisibility
+import com.jpweytjens.barberfish.datatype.shared.RouteIndex
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRejoinSpecs
+import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
 import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
@@ -49,6 +56,8 @@ import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
+import com.jpweytjens.barberfish.datatype.shared.selectChevrons
+import com.jpweytjens.barberfish.datatype.shared.trimPieceFrom
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -92,6 +101,10 @@ private const val CHEVRON_ICON_HEIGHT_DP = 16f
 // Zoom assumed until the map reports one, so the overlay builds on route load. Provisional:
 // the first real zoom replaces it whatever band it lands in.
 private const val SEED_ZOOM = 15.0
+
+// Screen radius in pixels beyond which a ridden repeated visit is out of view and may hide. The
+// Karoo 3 screen is 480 by 800 px, so this exceeds every visible distance from the rider.
+private const val VIEW_RADIUS_PX = 800.0
 
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
@@ -163,7 +176,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
     override fun startMap(emitter: Emitter<MapEffect>) {
         Timber.d("grademap: startMap invoked")
-        val polylineController = GradeMapController()
+        val layerPlanner = GradeMapLayerPlanner()
         val chevronController = GradeMapChevronController()
         val rejoinController = GradeMapController(casingId = GRADE_MAP_REJOIN_CASING_ID)
         val rejoinChevronController = GradeMapChevronController(::gradeMapRejoinChevronId)
@@ -177,7 +190,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             // controllers with the id ranges the last emission minted, so their first diff
             // hides whatever a dead predecessor left painted.
             var drawnIdSpans = applicationContext.streamGradeMapDrawnIdSpans().first()
-            polylineController.assumeStale(drawnIdSpans.segments)
+            layerPlanner.assumeStale(drawnIdSpans.segments)
             chevronController.assumeStale(drawnIdSpans.chevrons)
             // The rejoin fill has one fixed id; hiding it when nothing is painted is a no-op.
             rejoinController.assumeStale(setOf(GRADE_MAP_REJOIN_ID))
@@ -241,6 +254,40 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             // commit a bogus monotonic jump on the new one. Hold ticks briefly after every
             // reset until the stream reflects the new route.
             var progressSettleUntilMs = 0L
+            // The route index is a property of the route geometry and direction; it is built
+            // once per route identity and shared by every rebuild. Visibility lives with it.
+            var routeIndex: RouteIndex? = null
+            var routeIndexKey: Long? = null
+            var visibility: RideVisibility? = null
+            var drawing: RouteDrawing? = null
+            // The rider's last fix, for the out-of-view clause; null until the first one.
+            var riderFix: LatLng? = null
+
+            suspend fun drawRoute(d: RouteDrawing) {
+                d.visibility.update(progressLatch.progressM * d.axisScale, riderFix, d.viewRadiusM)
+                val pieces =
+                    d.specs.polylines.mapNotNull { spec ->
+                        when (
+                            val v = d.visibility.visibilityOf(spec.visitKey, spec.startM, spec.endM)
+                        ) {
+                            PieceVisibility.Hidden -> null
+                            PieceVisibility.Shown -> spec
+                            is PieceVisibility.Trimmed ->
+                                trimPieceFrom(spec, v.fromM, d.index, d.capTrimM, d.casingCapTrimM)
+                        }
+                    }
+                val batches =
+                    layerPlanner.plan(pieces, GRADE_BAND_WIDTH_DP, GRADE_BAND_CASING_WIDTH_DP)
+                Timber.d(
+                    "grademap: draw ${pieces.size}/${d.specs.polylines.size} pieces in ${batches.size} batches, hidden visits=${d.visibility.hiddenVisits.size}"
+                )
+                emitLayerBatches(emitter, batches)
+                chevronController.emit(
+                    emitter,
+                    selectChevrons(d.specs.chevrons, d.visibility, d.collisionRadiusM),
+                    d.iconRes,
+                )
+            }
             val rebuildFlow =
                 configNavFlow
                     .combine(viewportFlow) { cfg, vp -> GradeMapRebuild(cfg, vp) }
@@ -266,7 +313,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             } ?: true,
                     )
                 }
-            merge(rebuildFlow, progressFlow).collect { event ->
+            val locationFlow =
+                karooSystem.consumerFlow<OnLocationChanged>().map {
+                    GradeMapLocationTick(LatLng(it.lat, it.lng))
+                }
+            merge(rebuildFlow, progressFlow, locationFlow).collect { event ->
                 when (event) {
                     is GradeMapProgressTick -> {
                         val route = lastRoute ?: return@collect
@@ -279,7 +330,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             )
                         if (advanced) {
                             Timber.d("grademap: progress=${progressLatch.progressM.toInt()}m")
-                            chevronController.hidePassed(emitter, progressLatch.progressM)
+                            drawing?.let { drawRoute(it) }
                         } else {
                             progressLatch.heldM?.let {
                                 Timber.d(
@@ -288,6 +339,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             }
                         }
                     }
+                    is GradeMapLocationTick -> riderFix = event.fix
                     is GradeMapRebuild -> {
                         val inputs = event.inputs
                         val viewport = event.viewport
@@ -298,8 +350,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         if (!inputs.enabled || route == null) {
                             // Navigation cleared forgets progress; a mere disable keeps the
                             // latch, since the route identity is unchanged.
-                            if (route == null) progressLatch.clear()
-                            polylineController.clearAll(emitter)
+                            if (route == null) {
+                                progressLatch.clear()
+                                routeIndex = null
+                                routeIndexKey = null
+                                visibility = null
+                            }
+                            drawing = null
+                            emitLayerBatches(emitter, layerPlanner.clearAll())
                             chevronController.clearAll(emitter)
                             rejoinController.clearAll(emitter)
                             rejoinChevronController.clearAll(emitter)
@@ -307,13 +365,21 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             return@collect
                         }
                         // Reset the latch when the route identity changes.
-                        if (
-                            progressLatch.trackRoute(
-                                gradeMapRouteKey(route.routePolyline, route.reversed)
-                            )
-                        ) {
+                        val routeKey = gradeMapRouteKey(route.routePolyline, route.reversed)
+                        if (progressLatch.trackRoute(routeKey)) {
                             progressSettleUntilMs = System.currentTimeMillis() + PROGRESS_SETTLE_MS
                         }
+                        val index =
+                            routeIndex?.takeIf { routeIndexKey == routeKey }
+                                ?: buildRouteIndex(route.routePolyline, route.reversed).also {
+                                    routeIndex = it
+                                    routeIndexKey = routeKey
+                                    visibility = RideVisibility(it)
+                                    Timber.d(
+                                        "grademap: route index ${it.visits.size} visits, ${it.visits.count { v -> v.nextVisitM != null }} repeated, deepest=${it.visits.maxOfOrNull { v -> v.depth }} axisRatio=${route.routeDistance / it.lengthM}"
+                                    )
+                                }
+                        val ride = visibility ?: RideVisibility(index).also { visibility = it }
                         // Spacing/window are zoom-driven; latitude only scales the cos(lat)
                         // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
                         // sparsest case — which is the safe direction to err. Once a fix lands
@@ -374,12 +440,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 chevronSpacingMinM =
                                     CHEVRON_SPACING_MIN_PX * metresPerPixel(viewport.zoomLevel),
                                 chevronWindowHalfM = chevronWindow,
-                                chevronMinSpacingM = chevronCollision,
+                                chevronMinSpacingM = 0.0,
                                 chevronViewport = bounds,
                                 capTrimM = capTrimM,
                                 casingCapTrimM = casingCapTrimM,
                                 reversed = route.reversed,
                                 metresPerPixel = metresPerPixel(viewport.zoomLevel),
+                                routeIndex = index,
                             )
                         Timber.d(
                             "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
@@ -440,21 +507,23 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                     maxOf(drawnIdSpans.rejoinChevrons, newSpans.rejoinChevrons),
                             )
                         )
-                        polylineController.emit(
-                            emitter,
-                            casingEncoded = "",
-                            specs = specs.polylines,
-                            fillWidth = GRADE_BAND_WIDTH_DP,
-                            casingWidth = GRADE_BAND_CASING_WIDTH_DP,
-                        )
-                        // A rebuild must not resurrect chevrons the rider already passed.
-                        val visibleChevrons =
-                            specs.chevrons.filter { it.distanceM >= progressLatch.progressM }
-                        chevronController.emit(
-                            emitter,
-                            visibleChevrons,
-                            gradeChevronDrawable(inputs.palette),
-                        )
+                        val current =
+                            RouteDrawing(
+                                index = index,
+                                visibility = ride,
+                                specs = specs,
+                                capTrimM = capTrimM,
+                                casingCapTrimM = casingCapTrimM,
+                                collisionRadiusM = chevronCollision,
+                                viewRadiusM = VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
+                                axisScale =
+                                    if (route.routeDistance > 0.0)
+                                        index.lengthM / route.routeDistance
+                                    else 1.0,
+                                iconRes = gradeChevronDrawable(inputs.palette),
+                            )
+                        drawing = current
+                        drawRoute(current)
                         if (rejoinSpecs != null) {
                             rejoinController.emit(
                                 emitter,
@@ -502,6 +571,23 @@ private data class GradeMapProgressTick(
     val distanceToDestinationM: Double?,
     val onRoute: Boolean,
 ) : GradeMapEvent
+
+private data class GradeMapLocationTick(val fix: LatLng) : GradeMapEvent
+
+// Everything a progress tick needs to redraw the route without rebuilding it.
+private class RouteDrawing(
+    val index: RouteIndex,
+    val visibility: RideVisibility,
+    val specs: GradeMapSpecs,
+    val capTrimM: Double,
+    val casingCapTrimM: Double,
+    val collisionRadiusM: Double,
+    val viewRadiusM: Double,
+    // App GPS metres per SDK routeDistance metre: the two axes differ by a fraction of a per
+    // cent, which is tens of metres at the far end of a long route.
+    val axisScale: Double,
+    @DrawableRes val iconRes: Int,
+)
 
 internal data class GradeMapConfigInputs(
     val enabled: Boolean,
