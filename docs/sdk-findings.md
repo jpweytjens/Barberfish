@@ -420,3 +420,22 @@ and fill sent in one batch came out with the casing on top, repeatedly, even
 after hiding every id first, so a single batch is not processed in emission
 order. Sending the casings, waiting about half a second, then sending the fills
 put the fills on top, and later in-place updates kept that order.
+
+## A Strava route arrives as its own geometry
+
+Captured on a Karoo 3 (2026-09-19) by logging `NavigatingRoute.routePolyline` for a route
+imported from a Strava export and comparing it with the export's track points rounded to five
+decimals: 748 points against the export's 746, the two extra being exact duplicates of their
+predecessor, and the same length to the metre. The rideapp does not re-route or resample an
+imported route; the vertices are the export's, quantised by the polyline encoding. Two passes
+over the same road in a planned route therefore share their vertices, which is what makes
+matching repeated edges by endpoint distance workable.
+
+## `routeDistance` runs longer than the polyline
+
+On the same route `NavigatingRoute.routeDistance` reported 34,151 m while the polyline's
+cumulative equirectangular length is 34,113.5 m, a ratio of 1.0011. The distance field and
+`DISTANCE_TO_DESTINATION` are on the rideapp's axis; anything measured on the polyline is on
+the other. Thirty-eight metres at the far end of a 34 km route is inside one progress bucket
+but not inside the tolerance of a turnaround handoff, so progress is rescaled by the ratio of
+the two lengths before being compared with polyline distances.

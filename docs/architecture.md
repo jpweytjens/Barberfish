@@ -266,15 +266,41 @@ The band tiles the whole route. Emphasis decides which runs take a grade colour;
 the emphasis edges draw in the palette's neutral at the same width, so the band never changes
 width along the route and the native line stays covered end to end. Adjacent runs are separate
 polylines with round caps, so at a colour change the downstream run's cap sits as a small nose
-on the upstream run. Layer order is index order along the route and new ids are always the
-highest indices, so the nose always points the same way.
+on the upstream run. Layer order within one depth is whatever order the map processed the batch
+in; the nose is a few pixels and reads the same either way.
 
-The casing is one polyline along the whole route, drawn once beneath the fills. Getting it
-beneath them depends on two rules the map applies: a new id is added above everything the
-extension has drawn, and an update to an existing id keeps its place. A batch is not processed
-in emission order, so the first emit of a generation hides any fills already painted, waits,
-puts the casing down, waits again, then sends the fills; later emits update in place.
-`docs/sdk-findings.md` records the measurements behind this.
+Each piece has its own black casing beneath it, with the same extent. Getting casings beneath
+fills, and earlier visits above later ones, depends on two rules the map applies: a new id is
+added above everything the extension has drawn, and an update to an existing id keeps its
+place. A batch is not processed in emission order, so a stacking pass hides everything already
+painted, waits, puts every casing down, waits, then shows the fills one depth at a time from the
+bottom, waiting between depths. After that, updates are in place and need no waiting. A change
+of layout, meaning any id whose visit, extent or depth differs from what is painted, or an id new
+to the map, triggers the stacking pass again. Zoomed in past about zoom 15 nothing structural
+changes on a zoom band crossing; coarser than that the cells and the profile simplification
+grow with the zoom, run counts change, and a crossing restacks. `docs/sdk-findings.md`
+records the measurements behind this.
+
+Ground the route covers more than once is handled by a route index built once per route. A
+matcher finds GPS edges whose endpoints agree within 1.5 m, in either direction, and groups
+them. Each group is a unit of ground with a stack of visits in ride order; ground covered once
+is a unit with a single visit. Colour runs are cut at visit boundaries into pieces, and a piece
+inherits its visit's depth: one plus the number of later visits to the same ground, so the
+first pass draws on top and the last at the bottom. Removing a ridden visit exposes the next,
+a last-in-first-out stack at each shared stretch.
+
+Visibility follows the rider's accepted progress, rescaled from the navigation distance onto
+the polyline's own axis. On ground covered once, a piece hides as progress passes its end and
+the piece under the rider is re-cut to start at progress, so the native grey trace trails the
+rider by one progress bucket. On shared ground a ridden visit is retained while it remains in
+view, so the colours behind the rider do not flip to the return leg's; it hides once the rider
+is more than a screen radius from it, or once its next visit starts within that radius of route
+distance ahead, which on a return leg is the moment the ground enters the screen. Chevrons are
+generated for the whole route without collision filtering and selected at draw time: a mark is
+drawn only on the exposed visit of its ground, and collisions are resolved among the drawable
+marks, so a return-leg mark suppressed by an outbound mark appears once the outbound visit
+hides. Same-direction laps look identical on every pass; there the only visible effect is the
+grey trace after the last lap.
 
 Chevrons carry direction only; grade stays in the band. Each palette draws its chevron in its
 own yellow climb band colour with a black outline, 24 by 16 dp, so the glyph reads as the
