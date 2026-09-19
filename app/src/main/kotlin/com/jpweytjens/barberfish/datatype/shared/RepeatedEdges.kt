@@ -42,7 +42,8 @@ private class Metres(val x: Double, val y: Double)
 internal fun matchRepeatedEdges(gps: List<LatLng>, matchM: Double = MATCH_M): List<EdgeGroup> {
     if (gps.size < 2 || matchM <= 0.0) return emptyList()
     val degToM = EARTH_RADIUS_M * PI / 180.0
-    val lngScale = cos(gps.first().lat * PI / 180.0)
+    val midLat = (gps.minOf { it.lat } + gps.maxOf { it.lat }) * 0.5
+    val lngScale = cos(midLat * PI / 180.0)
     val pts = gps.map { Metres(it.lng * lngScale * degToM, it.lat * degToM) }
     fun dist(a: Metres, b: Metres) = hypot(a.x - b.x, a.y - b.y)
     fun cell(p: Metres) = floor(p.x / matchM).toLong() to floor(p.y / matchM).toLong()
