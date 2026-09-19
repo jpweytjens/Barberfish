@@ -55,7 +55,6 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
-import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -470,7 +469,6 @@ private fun HUDPreviewCell(
     columns: Int = 3,
     reserveSparklineSpace: Boolean = true,
 ) {
-    val context = LocalContext.current
     val baseConfig =
         if (columns == 4) ViewSizeConfig.PREVIEW_HUD_FOUR else ViewSizeConfig.PREVIEW_HUD_THREE
     BoxWithConstraints(
@@ -501,19 +499,7 @@ private fun HUDPreviewCell(
                     showIcons = design.showIcons,
                 )
             }
-        val bitmap =
-            remember(field, colorMode, sizeConfig, slotHeightPx) {
-                val rv =
-                    barberfishFieldRemoteViews(
-                        field = field,
-                        alignment = ViewConfig.Alignment.RIGHT,
-                        colorMode = colorMode,
-                        sizeConfig = sizeConfig,
-                        preview = true,
-                        context = context,
-                    )
-                remoteViewsToBitmap(rv, widthPx, slotHeightPx, context)
-            }
+        val bitmap = rememberFieldPreviewBitmap(field, colorMode, sizeConfig, widthPx, slotHeightPx)
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = null,

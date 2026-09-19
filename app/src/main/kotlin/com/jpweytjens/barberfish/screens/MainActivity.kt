@@ -111,7 +111,6 @@ import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.PowerZoneField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
-import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
 import com.jpweytjens.barberfish.datatype.formatTime
 import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
@@ -1653,7 +1652,6 @@ private val FIELD_PREVIEW_HEIGHT = 80.dp
 
 @Composable
 private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColorMode) {
-    val context = LocalContext.current
     val densityValue = LocalDensity.current.density
     val widthPx = (FIELD_PREVIEW_WIDTH.value * densityValue).toInt()
     val heightPx = (FIELD_PREVIEW_HEIGHT.value * densityValue).toInt()
@@ -1674,19 +1672,7 @@ private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColo
         }
     }
     val field = previewFields[index.coerceAtMost(previewFields.size - 1)]
-    val bitmap =
-        remember(field, colorMode, widthPx, heightPx) {
-            val rv =
-                barberfishFieldRemoteViews(
-                    field = field,
-                    alignment = ViewConfig.Alignment.RIGHT,
-                    colorMode = colorMode,
-                    sizeConfig = sizeConfig,
-                    preview = true,
-                    context = context,
-                )
-            remoteViewsToBitmap(rv, widthPx, heightPx, context)
-        }
+    val bitmap = rememberFieldPreviewBitmap(field, colorMode, sizeConfig, widthPx, heightPx)
     Image(
         bitmap = bitmap.asImageBitmap(),
         contentDescription = null,
