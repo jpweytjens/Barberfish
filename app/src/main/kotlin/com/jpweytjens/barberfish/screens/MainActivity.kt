@@ -229,6 +229,8 @@ import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private val STACK_ORDER_OPTIONS = listOf(false to "Distance", true to "Climb")
+
 class MainActivity : ComponentActivity() {
 
     private lateinit var karooSystem: KarooSystemService
@@ -1123,9 +1125,9 @@ class MainActivity : ComponentActivity() {
                                     else "RIDE REMAINING"
                             },
                         ) {
-                            ControlLabel("STACK ORDER")
-                            SegmentedRow(
-                                options = listOf(false to "Distance", true to "Climb"),
+                            ChoiceRow(
+                                label = "STACK ORDER",
+                                options = STACK_ORDER_OPTIONS,
                                 selected = effortFieldConfig.climbFirst,
                                 onSelect = {
                                     effortFieldConfig = effortFieldConfig.copy(climbFirst = it)
@@ -1257,6 +1259,8 @@ class MainActivity : ComponentActivity() {
 // Duration (ms) of expand/shrink/chevron animations for collapsible sections and cards.
 internal const val SECTION_ANIM_MS = 200
 
+private val GRADE_MAP_TUNING_OPTIONS = listOf(true to "Sync", false to "Independent")
+
 @Composable
 private fun GradeMapCard(
     config: GradeMapConfig,
@@ -1289,7 +1293,7 @@ private fun GradeMapCard(
 
             ChoiceRow(
                 label = "TUNING",
-                options = listOf(true to "Sync", false to "Independent"),
+                options = GRADE_MAP_TUNING_OPTIONS,
                 selected = config.syncWithSparkline,
                 onSelect = { onUpdate(config.copy(syncWithSparkline = it)) },
                 help = "Tune the map with the elevation profile, or set it on its own.",

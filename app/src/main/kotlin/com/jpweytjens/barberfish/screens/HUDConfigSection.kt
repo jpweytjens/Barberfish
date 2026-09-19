@@ -509,10 +509,12 @@ private fun HUDPreviewCell(
     }
 }
 
+private val HUD_COLUMN_OPTIONS = listOf(3 to "3", 4 to "4")
+
 @Composable
 private fun ColumnCountToggle(columns: Int, onSelect: (Int) -> Unit) {
     SegmentedRow(
-        options = listOf(3 to "3", 4 to "4"),
+        options = HUD_COLUMN_OPTIONS,
         selected = columns,
         onSelect = onSelect,
         modifier = Modifier.testTag("bf:hud:columns"),
