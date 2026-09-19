@@ -137,10 +137,10 @@ internal fun sparklineBitmapFlow(
         val onRoute =
             streamingDist?.dataPoint?.values?.get(DataType.Field.ON_ROUTE)?.let { it >= 0.5 }
                 ?: true
-        // Cache acceptance is stricter than the freeze below: an absent or not-yet-streaming
-        // ON_ROUTE counts as off-route, so a doubtful emission can never commit climbs whose
-        // start distances may track the rider instead of the route start.
-        val onRouteForCache =
+        // Stricter than onRoute above: an absent or not-yet-streaming ON_ROUTE counts as
+        // off-route, so a doubtful emission can neither commit climbs whose start distances may
+        // track the rider instead of the route start, nor overwrite the held on-route position.
+        val onRouteConfirmed =
             streamingDist?.dataPoint?.values?.get(DataType.Field.ON_ROUTE)?.let { it >= 0.5 }
                 ?: false
         val positionM =
@@ -152,7 +152,9 @@ internal fun sparklineBitmapFlow(
                 else -> 0f
             }
         val isOffRoute = route != null && !onRoute
-        if (!isOffRoute) lastOnRoutePositionM = positionM
+        if (route != null && distanceToDestinationM != null && onRouteConfirmed) {
+            lastOnRoutePositionM = positionM
+        }
         val sparklinePositionM = if (isOffRoute) lastOnRoutePositionM else positionM
         val dotColor =
             when {
@@ -175,7 +177,7 @@ internal fun sparklineBitmapFlow(
                         .resolve(
                             gradeMapRouteKey(route.routePolyline, route.reversed),
                             route.climbs,
-                            onRouteForCache,
+                            onRouteConfirmed,
                         )
                         .map { climb ->
                             climb.startDistance.toFloat() to
