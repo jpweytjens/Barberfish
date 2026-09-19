@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -238,9 +239,9 @@ internal fun SparklinePreview(
     // SCREENSHOT_SWEEP_POSITION_M).
     val screenshotMode = LocalScreenshotMode.current
     val startM = if (screenshotMode) SCREENSHOT_SWEEP_POSITION_M else elevationPoints.first().first
-    var positionM by remember { mutableStateOf(startM) }
-    var lastPositionM by remember { mutableStateOf(startM) }
-    var displayedRange by remember { mutableStateOf(0f) }
+    var positionM by remember { mutableFloatStateOf(startM) }
+    var lastPositionM by remember { mutableFloatStateOf(startM) }
+    var displayedRange by remember { mutableFloatStateOf(0f) }
     val routeEndM = remember(elevationPoints) { elevationPoints.last().first }
     // Total seconds to complete one full sweep at 30 fps.
     val speedMPerTick =
