@@ -1192,9 +1192,10 @@ class MainActivity : ComponentActivity() {
                             "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
                                 "Set to 0 to disable."
                         )
-                        ETAPriorSpeedInput(
-                            priorSpeedKph = etaConfig.priorSpeedKph,
-                            profile = userProfile,
+                        NumberInput(
+                            value = etaConfig.priorSpeedKph,
+                            unit = speedInputUnit(userProfile),
+                            placeholder = "Speed (${ConvertType.SPEED.unit(userProfile)})",
                             onValueChange = { kph ->
                                 etaConfig = ETAConfig(priorSpeedKph = kph)
                                 lifecycleScope.launch { saveETAConfig(etaConfig) }
@@ -2166,49 +2167,60 @@ private fun CommitOnFocusLossTextField(
     )
 }
 
+/** How a number is shown to and read from the rider: display units, formatting, keyboard. */
+private class InputUnit(
+    val format: (Double) -> String,
+    val parse: (Double) -> Double,
+    val keyboardType: KeyboardType,
+)
+
+private fun speedInputUnit(profile: UserProfile) =
+    InputUnit(
+        format = { ConvertType.SPEED.toDisplay(it, profile).toString() },
+        parse = { ConvertType.SPEED.fromDisplay(it, profile) },
+        keyboardType = KeyboardType.Decimal,
+    )
+
+private val RPM_INPUT_UNIT =
+    InputUnit(
+        format = { it.toInt().toString() },
+        parse = { it },
+        keyboardType = KeyboardType.Number,
+    )
+
+/** A value where 0 means unset and shows as an empty field. */
 @Composable
-private fun ETAPriorSpeedInput(
-    priorSpeedKph: Double,
-    profile: UserProfile,
+private fun NumberInput(
+    value: Double,
+    unit: InputUnit,
+    placeholder: String,
     onValueChange: (Double) -> Unit,
 ) {
-    val displayValue = ConvertType.SPEED.toDisplay(priorSpeedKph, profile)
-    var text by
-        remember(priorSpeedKph) {
-            mutableStateOf(if (priorSpeedKph == 0.0) "" else displayValue.toString())
-        }
-    val speedUnit = ConvertType.SPEED.unit(profile)
+    var text by remember(value) { mutableStateOf(if (value == 0.0) "" else unit.format(value)) }
     CommitOnFocusLossTextField(
         text = text,
         onTextChange = { text = it },
-        onCommit = {
-            val entered = text.toDoubleOrNull() ?: 0.0
-            onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
-        },
-        placeholder = "Speed ($speedUnit)",
-        keyboardType = KeyboardType.Decimal,
+        onCommit = { onValueChange(unit.parse(text.toDoubleOrNull() ?: 0.0)) },
+        placeholder = placeholder,
+        keyboardType = unit.keyboardType,
     )
 }
 
+/** A value where an empty field means disabled. */
 @Composable
-private fun ThresholdInput(
-    value: Double,
-    profile: UserProfile,
-    onValueChange: (Double) -> Unit,
+private fun NullableNumberInput(
+    value: Double?,
+    unit: InputUnit,
+    placeholder: String,
+    onValueChange: (Double?) -> Unit,
 ) {
-    val displayValue = ConvertType.SPEED.toDisplay(value, profile)
-    var text by
-        remember(value) { mutableStateOf(if (value == 0.0) "" else displayValue.toString()) }
-    val speedUnit = ConvertType.SPEED.unit(profile)
+    var text by remember(value) { mutableStateOf(value?.let(unit.format).orEmpty()) }
     CommitOnFocusLossTextField(
         text = text,
         onTextChange = { text = it },
-        onCommit = {
-            val entered = text.toDoubleOrNull() ?: 0.0
-            onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
-        },
-        placeholder = "Target ($speedUnit)",
-        keyboardType = KeyboardType.Decimal,
+        onCommit = { onValueChange(text.toDoubleOrNull()?.let(unit.parse)) },
+        placeholder = placeholder,
+        keyboardType = unit.keyboardType,
     )
 }
 
@@ -2224,25 +2236,42 @@ private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
     )
 }
 
+/** The under / over percentage band around the threshold. */
 @Composable
-private fun NullableThresholdInput(
-    value: Double?,
-    placeholder: String,
-    profile: UserProfile,
-    onValueChange: (Double?) -> Unit,
+private fun RangeRow(
+    below: Double,
+    above: Double,
+    onBelowChange: (Double) -> Unit,
+    onAboveChange: (Double) -> Unit,
 ) {
-    val displayValue = value?.let { ConvertType.SPEED.toDisplay(it, profile) }
-    var text by remember(value) { mutableStateOf(displayValue?.toString().orEmpty()) }
-    CommitOnFocusLossTextField(
-        text = text,
-        onTextChange = { text = it },
-        onCommit = {
-            onValueChange(text.toDoubleOrNull()?.let { ConvertType.SPEED.fromDisplay(it, profile) })
-        },
-        placeholder = placeholder,
-        keyboardType = KeyboardType.Decimal,
-    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
+            ControlLabel("UNDER (%)")
+            RangeInput(value = below, onValueChange = onBelowChange)
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            ControlLabel("OVER (%)")
+            RangeInput(value = above, onValueChange = onAboveChange)
+        }
+    }
 }
+
+private val THRESHOLD_MODE_OPTIONS =
+    listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
+
+@Composable
+private fun ThresholdModeRow(mode: ThresholdMode, onSelect: (ThresholdMode) -> Unit) {
+    ControlLabel("THRESHOLD", Modifier.testTag("bf:field:threshold"))
+    ThresholdLegend()
+    SegmentedRow(options = THRESHOLD_MODE_OPTIONS, selected = mode, onSelect = onSelect)
+}
+
+private val SPEED_THRESHOLD_SOURCE_OPTIONS =
+    listOf(
+        SpeedThresholdSource.FIXED to "Fixed",
+        SpeedThresholdSource.AVG_TOTAL to "Avg total",
+        SpeedThresholdSource.AVG_MOVING to "Avg moving",
+    )
 
 @Composable
 internal fun SpeedThresholdControls(
@@ -2250,43 +2279,28 @@ internal fun SpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (SpeedFieldConfig) -> Unit,
 ) {
-    val sourceOptions =
-        listOf(
-            SpeedThresholdSource.FIXED to "Fixed",
-            SpeedThresholdSource.AVG_TOTAL to "Avg total",
-            SpeedThresholdSource.AVG_MOVING to "Avg moving",
-        )
     ControlLabel("THRESHOLD SOURCE")
     SegmentedRow(
-        options = sourceOptions,
+        options = SPEED_THRESHOLD_SOURCE_OPTIONS,
         selected = config.source,
         onSelect = { onConfigChange(config.copy(source = it)) },
     )
-    val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
+    val speedUnit = ConvertType.SPEED.unit(profile)
     if (config.source == SpeedThresholdSource.FIXED) {
-        ControlLabel("TARGET ($speedUnit)")
-        ThresholdInput(
+        ControlLabel("TARGET (${speedUnit.uppercase()})")
+        NumberInput(
             value = config.thresholdKph,
-            profile = profile,
+            unit = speedInputUnit(profile),
+            placeholder = "Target ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("UNDER (%)")
-            RangeInput(
-                value = config.rangePercentBelow,
-                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("OVER (%)")
-            RangeInput(
-                value = config.rangePercentAbove,
-                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
-            )
-        }
-    }
+    RangeRow(
+        below = config.rangePercentBelow,
+        above = config.rangePercentAbove,
+        onBelowChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+        onAboveChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+    )
 }
 
 @Composable
@@ -2295,54 +2309,39 @@ internal fun AvgSpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
-    ControlLabel("THRESHOLD", Modifier.testTag("bf:field:threshold"))
-    ThresholdLegend()
-    val modeOptions = listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
-    SegmentedRow(
-        options = modeOptions,
-        selected = config.mode,
-        onSelect = { onConfigChange(config.copy(mode = it)) },
-    )
-    val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
+    ThresholdModeRow(mode = config.mode, onSelect = { onConfigChange(config.copy(mode = it)) })
+    val speedUnit = ConvertType.SPEED.unit(profile)
+    val unit = speedInputUnit(profile)
     if (config.mode == ThresholdMode.TARGET) {
-        ControlLabel("TARGET ($speedUnit)")
-        ThresholdInput(
+        ControlLabel("TARGET (${speedUnit.uppercase()})")
+        NumberInput(
             value = config.thresholdKph,
-            profile = profile,
+            unit = unit,
+            placeholder = "Target ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
         )
     } else {
-        ControlLabel("MIN SPEED ($speedUnit)")
-        NullableThresholdInput(
+        ControlLabel("MIN SPEED (${speedUnit.uppercase()})")
+        NullableNumberInput(
             value = config.minKph,
-            placeholder = "Min (${ConvertType.SPEED.unit(profile)})",
-            profile = profile,
+            unit = unit,
+            placeholder = "Min ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(minKph = it)) },
         )
-        ControlLabel("MAX SPEED ($speedUnit)")
-        NullableThresholdInput(
+        ControlLabel("MAX SPEED (${speedUnit.uppercase()})")
+        NullableNumberInput(
             value = config.maxKph,
-            placeholder = "Max (${ConvertType.SPEED.unit(profile)})",
-            profile = profile,
+            unit = unit,
+            placeholder = "Max ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(maxKph = it)) },
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("UNDER (%)")
-            RangeInput(
-                value = config.rangePercentBelow,
-                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("OVER (%)")
-            RangeInput(
-                value = config.rangePercentAbove,
-                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
-            )
-        }
-    }
+    RangeRow(
+        below = config.rangePercentBelow,
+        above = config.rangePercentAbove,
+        onBelowChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+        onAboveChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+    )
 }
 
 @Composable
@@ -2350,84 +2349,36 @@ internal fun CadenceThresholdControls(
     config: CadenceThresholdConfig,
     onConfigChange: (CadenceThresholdConfig) -> Unit,
 ) {
-    ControlLabel("THRESHOLD", Modifier.testTag("bf:field:threshold"))
-    ThresholdLegend()
-    val modeOptions = listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
-    SegmentedRow(
-        options = modeOptions,
-        selected = config.mode,
-        onSelect = { onConfigChange(config.copy(mode = it)) },
-    )
+    ThresholdModeRow(mode = config.mode, onSelect = { onConfigChange(config.copy(mode = it)) })
     if (config.mode == ThresholdMode.TARGET) {
         ControlLabel("TARGET (RPM)")
-        CadenceThresholdInput(
+        NumberInput(
             value = config.thresholdRpm,
+            unit = RPM_INPUT_UNIT,
+            placeholder = "Target (rpm)",
             onValueChange = { onConfigChange(config.copy(thresholdRpm = it)) },
         )
     } else {
         ControlLabel("MIN CADENCE (RPM)")
-        NullableCadenceThresholdInput(
+        NullableNumberInput(
             value = config.minRpm,
+            unit = RPM_INPUT_UNIT,
             placeholder = "Min (rpm)",
             onValueChange = { onConfigChange(config.copy(minRpm = it)) },
         )
         ControlLabel("MAX CADENCE (RPM)")
-        NullableCadenceThresholdInput(
+        NullableNumberInput(
             value = config.maxRpm,
+            unit = RPM_INPUT_UNIT,
             placeholder = "Max (rpm)",
             onValueChange = { onConfigChange(config.copy(maxRpm = it)) },
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("UNDER (%)")
-            RangeInput(
-                value = config.rangePercentBelow,
-                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("OVER (%)")
-            RangeInput(
-                value = config.rangePercentAbove,
-                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun CadenceThresholdInput(
-    value: Double,
-    onValueChange: (Double) -> Unit,
-) {
-    var text by
-        remember(value) { mutableStateOf(if (value == 0.0) "" else value.toInt().toString()) }
-    CommitOnFocusLossTextField(
-        text = text,
-        onTextChange = { text = it },
-        onCommit = {
-            val entered = text.toDoubleOrNull() ?: 0.0
-            onValueChange(entered)
-        },
-        placeholder = "Target (rpm)",
-        keyboardType = KeyboardType.Number,
-    )
-}
-
-@Composable
-private fun NullableCadenceThresholdInput(
-    value: Double?,
-    placeholder: String,
-    onValueChange: (Double?) -> Unit,
-) {
-    var text by remember(value) { mutableStateOf(value?.toInt()?.toString().orEmpty()) }
-    CommitOnFocusLossTextField(
-        text = text,
-        onTextChange = { text = it },
-        onCommit = { onValueChange(text.toDoubleOrNull()) },
-        placeholder = placeholder,
-        keyboardType = KeyboardType.Number,
+    RangeRow(
+        below = config.rangePercentBelow,
+        above = config.rangePercentAbove,
+        onBelowChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+        onAboveChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
     )
 }
 
