@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
-import android.util.Log
 import android.view.View
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
@@ -65,6 +64,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 // Fixed-height overlay strip inside a HUD slot. Independent of cell size — the HUD
 // design budgets 34dp of vertical space for the sparkline regardless of slot height.
@@ -450,7 +450,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
         }.catch { e ->
             // Isolate a slot failure: degrade it to Not available rather than let the
             // exception cancel the whole HUD combine and freeze every slot for the ride.
-            Log.e("Barberfish", "HUD slot ${slot.field} threw; showing Not available", e)
+            Timber.e(e, "HUD slot ${slot.field} threw; showing Not available")
             emit(FieldState.notAvailable())
         }
 

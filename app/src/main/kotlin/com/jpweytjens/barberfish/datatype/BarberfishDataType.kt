@@ -1,7 +1,6 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
-import android.util.Log
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
@@ -18,6 +17,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
     DataTypeImpl(extensionId, typeId) {
@@ -43,9 +43,8 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
         // headerSp omitted here: it depends on DataFieldDesignConfig (label size), which is
         // combined into the render flow below — logging toViewSizeConfig() with defaults would
         // misreport the live header size. See renderState for the design-aware sizing.
-        Log.d(
-            "Barberfish",
-            "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId",
+        Timber.d(
+            "density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId"
         )
         emitter.onNext(UpdateGraphicConfig(showHeader = false))
         val scope = CoroutineScope(Dispatchers.IO + Job())

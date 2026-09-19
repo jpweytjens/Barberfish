@@ -5,7 +5,6 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Typeface
 import android.os.Build
-import android.util.Log
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -27,6 +26,7 @@ import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
+import timber.log.Timber
 
 /** Render state for graphical fields: the bitmap plus whether to draw the header band. */
 data class SparklineRender(val bitmap: Bitmap?, val showHeader: Boolean)
@@ -206,13 +206,12 @@ private fun makeFieldRemoteViews(
         )
 
     if (DEBUG_LAYOUT) {
-        Log.d(
-            "Barberfish",
+        Timber.d(
             "makeFieldRemoteViews: label='$displayLabel' text='${field.primary}'" +
                 " fontSp=$fontSp valueFontSizeBase=${sizeConfig.valueFontSizeBase}" +
                 " cellWidthPx=$cellWidthPx" +
                 " headerFontSp=${sizeConfig.headerFontSize.value} headerIconSizeDp=${sizeConfig.headerIconSize.value}" +
-                " alignment=$alignment paddingHPx=$paddingHPx",
+                " alignment=$alignment paddingHPx=$paddingHPx"
         )
     }
 

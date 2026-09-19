@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.sample
+import timber.log.Timber
 
 // Max cross-track distance (metres) for a saved/global POI to count as "on this route". Matches
 // karoo-routegraph's poiDistanceToRouteMaxMeters default (issue #22).
@@ -88,7 +89,7 @@ internal fun sparklineBitmapFlow(
             .streamGlobalPOIs()
             .onStart { emit(OnGlobalPOIs(emptyList())) }
             .catch { e ->
-                android.util.Log.e("Barberfish", "OnGlobalPOIs stream threw", e)
+                Timber.e(e, "OnGlobalPOIs stream threw")
                 emit(OnGlobalPOIs(emptyList()))
             }
 
