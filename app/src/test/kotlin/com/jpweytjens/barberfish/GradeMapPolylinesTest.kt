@@ -24,6 +24,8 @@ import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -1046,12 +1048,14 @@ class GradeMapPolylinesTest {
             )
         val piece = specs.polylines.single()
         val trimmed =
-            trimPieceFrom(
-                piece,
-                fromM = 250.0,
-                index = index,
-                capTrimM = 10.0,
-                casingCapTrimM = 15.0,
+            checkNotNull(
+                trimPieceFrom(
+                    piece,
+                    fromM = 250.0,
+                    index = index,
+                    capTrimM = 10.0,
+                    casingCapTrimM = 15.0,
+                )
             )
         fun lenM(encoded: String) = cumulativeDistancesM(decodeGpsPolyline(encoded)).last()
         // The route-end trim still applies; only the start moved to progress.
@@ -1063,6 +1067,29 @@ class GradeMapPolylinesTest {
         assertEquals(piece.endM, trimmed.endM, 0.0)
         assertEquals(piece.depth, trimmed.depth)
         assertEquals(piece.visitKey, trimmed.visitKey)
+    }
+
+    @Test
+    fun trimPieceFrom_returns_null_once_progress_is_inside_the_end_trim() {
+        val route = RouteFixtures.straight(600.0, 100.0)
+        val index = buildRouteIndex(RouteFixtures.encoded(route), reversed = false)
+        val specs =
+            buildGradeMapSpecs(
+                routePolyline = RouteFixtures.encoded(route),
+                routeElevationPolyline = RouteFixtures.flatElevation(600.0),
+                palette = GradePalette.KAROO,
+                readable = true,
+                tuning = noneCfg.resolvedFor(GradePalette.KAROO),
+                includeChevrons = false,
+                capTrimM = 10.0,
+                casingCapTrimM = 15.0,
+                routeIndex = index,
+            )
+        val piece = specs.polylines.single()
+        // Inside the casing's 15 m trim but outside the fill's 10 m: nothing drawable for the
+        // casing, so the piece goes rather than regrowing to full length.
+        assertNull(trimPieceFrom(piece, index.lengthM - 12.0, index, 10.0, 15.0))
+        assertNotNull(trimPieceFrom(piece, index.lengthM - 20.0, index, 10.0, 15.0))
     }
 
     // Straight 2 km route east along the equator, for chevron cadence tests that only care
