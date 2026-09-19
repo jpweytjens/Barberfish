@@ -8,6 +8,7 @@ kotlin = "2.0.20"
 android-application = { id = "com.android.application", version = "8.13.2" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.8" }
 
 [libraries]
 hammerhead-karoo-ext = { module = "io.hammerhead:karoo-ext", version = "1.1.9" }

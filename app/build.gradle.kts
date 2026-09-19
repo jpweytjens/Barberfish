@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.detekt)
     kotlin("plugin.serialization") version "2.0.20"
 }
 
@@ -64,6 +65,12 @@ kotlin {
     compilerOptions {
         allWarningsAsErrors.set(true)
     }
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    baseline = rootProject.file("config/detekt/baseline.xml")
 }
 
 tasks.register("generateManifest") {
