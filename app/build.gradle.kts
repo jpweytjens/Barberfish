@@ -60,6 +60,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+
 tasks.register("generateManifest") {
     description = "Generates manifest.json with current version information"
     group = "build"
