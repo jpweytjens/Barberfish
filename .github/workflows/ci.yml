@@ -36,3 +36,9 @@ jobs:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon test
+
+      - name: Run detekt with type resolution
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --no-daemon detektDebug
