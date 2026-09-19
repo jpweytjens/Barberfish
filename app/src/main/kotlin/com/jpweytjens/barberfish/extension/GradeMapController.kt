@@ -1,7 +1,7 @@
 package com.jpweytjens.barberfish.extension
 
+import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_CASING_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
-import com.jpweytjens.barberfish.datatype.shared.gradeMapCasingId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapSegmentId
 import io.hammerhead.karooext.internal.Emitter
 import io.hammerhead.karooext.models.HidePolyline
@@ -25,7 +25,7 @@ import kotlinx.coroutines.delay
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine — not thread-safe.
  */
 internal class GradeMapController(
-    private val casingId: String = gradeMapCasingId(),
+    private val casingId: String = GRADE_MAP_CASING_ID,
     private val settleMs: Long = CASING_SETTLE_MS,
 ) {
     private var previousIds: Set<String> = emptySet()

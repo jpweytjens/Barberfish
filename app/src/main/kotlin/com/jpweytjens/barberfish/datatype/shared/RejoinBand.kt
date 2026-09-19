@@ -1,10 +1,10 @@
 package com.jpweytjens.barberfish.datatype.shared
 
 /** The reroute band's fill: the path back to the route, drawn in the rerouting red. */
-internal fun gradeMapRejoinId(): String = "barberfish-rejoin"
+internal const val GRADE_MAP_REJOIN_ID = "barberfish-rejoin"
 
 /** The reroute band's casing. */
-internal fun gradeMapRejoinCasingId(): String = "barberfish-rejoin-casing"
+internal const val GRADE_MAP_REJOIN_CASING_ID = "barberfish-rejoin-casing"
 
 /** Positional chevron ids along the rejoin path, separate from the route's own range. */
 internal fun gradeMapRejoinChevronId(index: Int): String = "barberfish-rejoin-chev-$index"
@@ -48,7 +48,7 @@ internal fun buildRejoinSpecs(
     val fill =
         if (fillPoints.size >= 2) {
             GradeMapPolylineSpec(
-                id = gradeMapRejoinId(),
+                id = GRADE_MAP_REJOIN_ID,
                 encoded = encodeGpsPolyline(fillPoints),
                 colorArgb = colorArgb,
                 trimStart = true,

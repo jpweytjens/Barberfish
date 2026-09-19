@@ -32,6 +32,8 @@ import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
+import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_CASING_ID
+import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
@@ -41,9 +43,7 @@ import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
-import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinCasingId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
-import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
 import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
@@ -165,7 +165,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         Timber.d("grademap: startMap invoked")
         val polylineController = GradeMapController()
         val chevronController = GradeMapChevronController()
-        val rejoinController = GradeMapController(casingId = gradeMapRejoinCasingId())
+        val rejoinController = GradeMapController(casingId = GRADE_MAP_REJOIN_CASING_ID)
         val rejoinChevronController = GradeMapChevronController(::gradeMapRejoinChevronId)
         val zoomBand = ChevronZoomBand()
         val xdpi = applicationContext.resources.displayMetrics.xdpi
@@ -180,7 +180,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             polylineController.assumeStale(drawnIdSpans.segments)
             chevronController.assumeStale(drawnIdSpans.chevrons)
             // The rejoin fill has one fixed id; hiding it when nothing is painted is a no-op.
-            rejoinController.assumeStale(setOf(gradeMapRejoinId()))
+            rejoinController.assumeStale(setOf(GRADE_MAP_REJOIN_ID))
             rejoinChevronController.assumeStale(drawnIdSpans.rejoinChevrons)
             // Invariant: the persisted spans always cover the painted ids, whatever instant
             // the process dies. Raised to the ceiling of old and new before a draw, settled
