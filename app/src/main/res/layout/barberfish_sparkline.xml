@@ -19,7 +19,7 @@
         android:fontFamily="ibm-plex-sans-condensed"
         android:includeFontPadding="false"
         android:lineSpacingMultiplier="0.6"
-        android:text="M"
+        android:text="@string/header_probe"
         android:visibility="invisible" />
 
     <LinearLayout

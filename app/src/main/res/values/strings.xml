@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="extension_name">Barberfish</string>
+    <!-- Invisible one-line probe that anchors the value box in the field layouts. -->
+    <string name="header_probe" translatable="false">M</string>
     <string name="hud_name">HUD</string>
     <string name="hud_description">Heads-up display with speed, HR, and power in three columns with zone coloring</string>
     <string name="power_name">Power</string>
