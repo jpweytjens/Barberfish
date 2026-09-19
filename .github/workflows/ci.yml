@@ -42,3 +42,9 @@ jobs:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon detektDebug
+
+      - name: Run Android Lint
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --no-daemon lintDebug
