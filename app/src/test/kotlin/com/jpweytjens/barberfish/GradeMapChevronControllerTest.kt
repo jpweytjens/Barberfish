@@ -301,6 +301,24 @@ class GradeMapChevronControllerTest {
     }
 
     @Test
+    fun a_long_route_goes_out_in_several_messages() {
+        // One effect is one Binder transaction; thousands of symbols in one exceed its limit.
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        val specs = (0 until 1_200).map { spec("c$it") }
+        controller.emit(fake, specs, WHITE)
+        val shows = fake.events.filterIsInstance<ShowSymbols>()
+        assertEquals(3, shows.size)
+        assertTrue(shows.all { it.symbols.size <= 500 })
+        assertEquals(specs.map { it.id }, fake.shownIds())
+        fake.events.clear()
+        controller.emit(fake, emptyList(), WHITE)
+        val hides = fake.events.filterIsInstance<HideSymbols>()
+        assertEquals(3, hides.size)
+        assertEquals(specs.map { it.id }.toSet(), fake.hiddenIds().toSet())
+    }
+
+    @Test
     fun id_namespace_seeds_stale_ids() {
         val controller = GradeMapChevronController { "r-$it" }
         val fake = FakeEmitter()

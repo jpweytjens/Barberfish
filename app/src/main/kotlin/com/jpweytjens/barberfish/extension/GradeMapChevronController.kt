@@ -54,12 +54,10 @@ internal class GradeMapChevronController(private val idOf: (Int) -> String = ::g
         val redrawnStale =
             current.keys.filterTo(mutableSetOf()) { id -> previous[id]?.lat?.isNaN() == true }
         val hideIds = removed + (changed - redrawnStale) + reissued
-        if (hideIds.isNotEmpty()) {
-            emitter.onNext(HideSymbols(hideIds.toList()))
-        }
+        hideIds.chunked(SYMBOLS_PER_EFFECT).forEach { emitter.onNext(HideSymbols(it)) }
         val showSpecs = specs.filter { it.id !in previous || it.id in changed || it.id in restyled }
-        if (showSpecs.isNotEmpty()) {
-            val icons = showSpecs.map { spec ->
+        showSpecs
+            .map { spec ->
                 Symbol.Icon(
                     id = spec.id,
                     lat = spec.lat,
@@ -68,8 +66,8 @@ internal class GradeMapChevronController(private val idOf: (Int) -> String = ::g
                     orientation = spec.bearingDeg,
                 )
             }
-            emitter.onNext(ShowSymbols(icons))
-        }
+            .chunked(SYMBOLS_PER_EFFECT)
+            .forEach { emitter.onNext(ShowSymbols(it)) }
         recentlyRemoved =
             recentlyRemoved.mapNotNull { (ids, rounds) ->
                 if (rounds > 1) ids to rounds - 1 else null
@@ -126,5 +124,10 @@ internal class GradeMapChevronController(private val idOf: (Int) -> String = ::g
 
     private companion object {
         const val LOST_HIDE_REISSUE_ROUNDS = 3
+
+        // One effect is one Binder transaction, capped near 1 MB. A 295 km route at zoom 16
+        // put over 3 000 symbols in one ShowSymbols and killed the process; 500 keeps a
+        // message well under a fifth of that.
+        const val SYMBOLS_PER_EFFECT = 500
     }
 }
