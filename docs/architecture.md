@@ -322,3 +322,29 @@ overlay draws it as a second band of the same widths in the map's rerouting red,
 same red at the route's sparse cadence, since there is no grade to vary them with. It has its own
 ids, its own casing under the same first-emit rule, and clears when the path goes away. The
 rejoin polyline's hash is part of the rebuild signature, so a new reroute redraws it.
+
+## Wind sock
+
+Barberfish reads wind from the Headwind extension (`karoo-headwind`) through the
+same stream helper every field uses, with extension-qualified ids
+(`TYPE_EXT::karoo-headwind::windDirection` and so on). The rideapp serves any
+extension's streams to any other, and the Headwind README invites it.
+
+One glyph, a windsock seen from above, serves two surfaces. Its geometry lives
+in `WindSockGeometry`; the five drawables are generated from the same numbers by
+`scripts/gen_wind_sock_drawables.py`, and `WindSockDrawablesTest` pins the two.
+
+On the map, `WindSockController` keeps one symbol on a mast 53 dp ahead of the
+puck along the course, oriented to the absolute direction the wind blows toward.
+The map rotates symbols with itself, so the same bearing reads relative to the
+rider on a heading-up map and true on a north-up map; the rideapp does not
+expose which mode is active, and absolute is the choice that is right on a map
+in both. Calm hides the symbol.
+
+In the `Wind` field the sock is composed into the value bitmap by
+`renderWindSockValueBitmap`, rotated by the rider-relative angle about its own
+midpoint, in a box the height of the value; the number takes the remaining width
+through the usual `fontSizeForCell` shrink. Strength follows the airfield rule,
+one band per 3 knots, five at most. Speed arrives in the Headwind extension's
+configured unit, which Barberfish cannot read; it assumes that extension's
+default for the Karoo profile (km/h or mph).

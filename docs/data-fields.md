@@ -48,6 +48,8 @@ graphical Profile and Overview fields have [a page of their own](elevation-profi
     <tr><td>Avg Speed (Moving)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Cadence</th></tr>
     <tr><td>Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
+    <tr><th colspan="5" align="center">Wind</th></tr>
+    <tr><td>Wind</td><td>Threshold</td><td></td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Climbing</th></tr>
     <tr><td>Grade</td><td>Grade</td><td></td><td></td><td>OLS (30 m window)</td></tr>
     <tr><td>Profile</td><td>Grade</td><td></td><td></td><td></td></tr>

@@ -37,7 +37,7 @@ The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mod
 
 ## Data fields
 
-39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
+40 fields across eleven categories: power, heart rate, speed, cadence, wind, climbing, navigation, time, ETA, daylight, and the HUD. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
 ![Every Barberfish field, rendered as it appears in the Karoo field picker](docs/screenshots/all_fields.png)
 
