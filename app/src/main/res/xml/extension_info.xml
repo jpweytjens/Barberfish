@@ -123,6 +123,12 @@
         description="@string/cadence_description"
         graphical="true" />
     <DataType
+        icon="@drawable/ic_air"
+        typeId="wind"
+        displayName="@string/wind_name"
+        description="@string/wind_description"
+        graphical="true" />
+    <DataType
         icon="@drawable/ic_grade"
         typeId="grade"
         displayName="@string/grade_name"

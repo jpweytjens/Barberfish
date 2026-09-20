@@ -37,6 +37,8 @@
     <string name="time_to_civil_dusk_description">Time until civil dusk at current location</string>
     <string name="cadence_name">Cadence</string>
     <string name="cadence_description">Current cadence with optional smoothing</string>
+    <string name="wind_name">Wind</string>
+    <string name="wind_description">Headwind speed with a windsock, from the Headwind extension</string>
     <string name="avg_power_name">Avg Power</string>
     <string name="avg_power_description">Average power with zone coloring</string>
     <string name="np_name">NP</string>

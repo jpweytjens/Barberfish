@@ -32,6 +32,7 @@ import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
+import com.jpweytjens.barberfish.datatype.WindField
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_CASING_ID
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
@@ -134,6 +135,7 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
         AvgSpeedField(karooSystem, includePaused = false),
         // Other
         CadenceField(karooSystem),
+        WindField(karooSystem),
         GradeField(karooSystem),
         ElevationSparklineField(karooSystem),
         // Distance & route-remaining
