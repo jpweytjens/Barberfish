@@ -147,8 +147,6 @@
     <ID>VariableNaming:ElevationSparklineTest.kt$ElevationStripTest$// Precision-1 Google Encoded Polyline for (0m, 100m), (500m, 110m), (1000m, 95m). // Confirmed format from Task 5 spike: lat = cumulative distance m, lng = elevation m, divisor = // 10. // Computed manually: encode [(0,1000),(5000,1100),(10000,950)] as standard polyline deltas. private val FIXTURE_POLYLINE = "?o}@owHgEowHjH"</ID>
     <ID>VariableNaming:ElevationSparklineTest.kt$ElevationStripTest$private val ROUTE_LENGTH_M = 60_000f</ID>
     <ID>VariableNaming:GradeBandsTest.kt$GradeBandsTest$private val NEUTRAL = Color(0xFFC4C4C4)</ID>
-    <ID>VariableNaming:GradeMapChevronControllerTest.kt$GradeMapChevronControllerTest$private val WHITE = R.drawable.ic_climber_chevron</ID>
-    <ID>VariableNaming:GradeMapChevronControllerTest.kt$GradeMapChevronControllerTest$private val YELLOW = R.drawable.ic_climber_chevron_f0d800</ID>
     <ID>VariableNaming:GradeMapPolylinesTest.kt$GradeMapPolylinesTest$// Chevron spacing tests that only care about run/id/colour behaviour, not the cadence // blend itself, pin both spacing bounds to one value so placement is a fixed grid again. private val FIXED_CHEVRON_SPACING_M = 60.0</ID>
     <ID>VariableNaming:OverviewSparklineTest.kt$OverviewSparklineTest$private val SPAN_M = 42_000f</ID>
     <ID>VariableNaming:OverviewSparklineTest.kt$OverviewSparklineTest$private val START_M = 97.1f</ID>

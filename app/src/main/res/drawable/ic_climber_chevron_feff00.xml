@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The grade map's direction chevron in a palette's yellow climb band colour, so the glyph
-     reads as the palette's own. Same shape and size as ic_climber_chevron.xml. -->
+     reads as the palette's own. Same shape and size as ic_climber_chevron_f0d800.xml. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="16dp"

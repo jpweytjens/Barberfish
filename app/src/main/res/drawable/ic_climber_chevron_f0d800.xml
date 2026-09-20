@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The grade map's direction chevron in a palette's yellow climb band colour, so the glyph
-     reads as the palette's own. Same shape and size as ic_climber_chevron.xml. -->
+<!-- The grade map's direction chevron in the Barberfish yellow climb band colour with a black
+     outline, shared by the Barberfish, Karoo and HSLuv palettes. The other per-palette yellow
+     variants share this shape and size. Sized to overhang the 18 dp band by a few dp each side;
+     viewport 25x17 fixes the shape. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="16dp"

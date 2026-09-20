@@ -95,7 +95,7 @@ private const val CHEVRON_GRADE_FULL_PCT = 15.0
 private const val CHEVRON_CHANGE_WINDOW_M = 60.0
 private const val CHEVRON_CHANGE_FULL_PCT_PER_M = 0.2
 
-// Chevron icon height in dp — keep in sync with ic_climber_chevron.xml. Drives the
+// Chevron icon height in dp — keep in sync with ic_climber_chevron_f0d800.xml. Drives the
 // collision-dedup spacing so chevrons never overlap regardless of zoom.
 private const val CHEVRON_ICON_HEIGHT_DP = 16f
 
