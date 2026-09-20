@@ -1257,13 +1257,15 @@ private fun GradeMapCard(
             onChange = { onUpdate(config.copy(enabled = it)) },
         )
 
-        if (config.enabled) {
-            GradeMapPreview(
-                config = config,
-                sparklineConfig = sparklineConfig,
-                gradePalette = gradePalette,
-            )
+        // Always shown: when off it draws the route the way the Karoo map does, so the toggle
+        // compares the two looks in place.
+        GradeMapPreview(
+            config = config,
+            sparklineConfig = sparklineConfig,
+            gradePalette = gradePalette,
+        )
 
+        if (config.enabled) {
             ChoiceRow(
                 label = "TUNING",
                 options = GRADE_MAP_TUNING_OPTIONS,
