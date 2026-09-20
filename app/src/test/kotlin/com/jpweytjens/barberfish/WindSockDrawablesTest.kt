@@ -67,4 +67,52 @@ class WindSockDrawablesTest {
         assertEquals(6.4f, WindSockGeometry.lengthDp(1), 0.001f)
         assertEquals(32f, WindSockGeometry.lengthDp(5), 0.001f)
     }
+
+    @Test
+    fun mouth_and_tip_widths_match_geometry() {
+        for (bands in 1..WindSockGeometry.MAX_BANDS) {
+            val xml = drawable(bands)
+            val outline =
+                Regex("<!-- outline -->\\s*<path[^>]*android:pathData=\"([^\"]+)\"")
+                    .find(xml)
+                    ?.groupValues
+                    ?.get(1) ?: error("no outline path in sock $bands")
+            val coords =
+                Regex("[ML](-?[0-9.]+),(-?[0-9.]+)").findAll(outline).map {
+                    Pair(it.groupValues[1].toFloat(), it.groupValues[2].toFloat())
+                }
+            val xs = coords.map { it.first }.toList()
+            val ys = coords.map { it.second }.toList()
+            val centre = WindSockGeometry.ICON_SIZE_DP / 2f
+            // Mouth at center: min and max x should be centre ± MOUTH_HALF_WIDTH_DP
+            assertEquals(centre - WindSockGeometry.MOUTH_HALF_WIDTH_DP, xs.minOrNull()!!, 0.01f)
+            assertEquals(centre + WindSockGeometry.MOUTH_HALF_WIDTH_DP, xs.maxOrNull()!!, 0.01f)
+            // Tip points (at min y) should be centre ± TIP_HALF_WIDTH_DP
+            val minY = ys.minOrNull()!!
+            val tipPointsAtMinY = coords.filter { it.second == minY }.toList()
+            assertEquals(2, tipPointsAtMinY.size)
+            for (tipPoint in tipPointsAtMinY) {
+                assertTrue(
+                    tipPoint.first == centre - WindSockGeometry.TIP_HALF_WIDTH_DP ||
+                        tipPoint.first == centre + WindSockGeometry.TIP_HALF_WIDTH_DP
+                )
+            }
+        }
+    }
+
+    @Test
+    fun stroke_width_matches_geometry() {
+        for (bands in 1..WindSockGeometry.MAX_BANDS) {
+            val xml = drawable(bands)
+            val strokeWidth =
+                Regex(
+                        "<!-- outline -->.*android:strokeWidth=\"([^\"]+)\"",
+                        RegexOption.DOT_MATCHES_ALL,
+                    )
+                    .find(xml)
+                    ?.groupValues
+                    ?.get(1) ?: error("no stroke width in sock $bands")
+            assertEquals("2", strokeWidth)
+        }
+    }
 }
