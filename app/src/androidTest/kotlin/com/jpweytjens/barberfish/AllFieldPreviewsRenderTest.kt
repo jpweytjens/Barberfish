@@ -245,13 +245,19 @@ class AllFieldPreviewsRenderTest {
                 ) {
                     "overview render produced no bitmap"
                 }
+            val overviewSample =
+                Sample(overviewField, SparklineRender(ovBitmap, routeCfg.showHeader))
+            writePreviewPng(overviewSample, "overview", cellConfig, design, context, statesDir)
+            // Same as the Profile above: the grid tile came from the live-state preview flow,
+            // so the dot lands wherever the sweep and the device's route state put it (red
+            // when the device sits off a loaded route). Overwrite it with the pinned render.
             writePreviewPng(
-                Sample(overviewField, SparklineRender(ovBitmap, routeCfg.showHeader)),
-                "overview",
+                overviewSample,
+                overviewField.typeId,
                 cellConfig,
                 design,
                 context,
-                statesDir,
+                outDir,
             )
         } finally {
             karooSystem.disconnect()
