@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
 import androidx.core.content.ContextCompat
+import io.hammerhead.karooext.models.ViewConfig
 
 /** Gap between the sock box and the number, in dp. */
 internal const val WIND_SOCK_GAP_DP = 4f
@@ -21,10 +22,11 @@ private const val SOCK_SPAN = 0.9f
 /**
  * One value bitmap: the sock on the left, rotated by [WindSockGlyph.angleDeg] about its own
  * midpoint, and [text] on the right with its baseline on the bitmap's bottom edge, as
- * [renderValueBitmap] does. The number's font size is decided by the caller, which hands
- * [fontSizeForCell] the width left after the sock box and gap.
+ * [renderValueBitmap] does. The bitmap always spans the full cell width, so the sock's midpoint
+ * sits at a fixed x whatever the number's width. The number's font size is decided by the caller,
+ * which hands [fontSizeForCell] the width left after the sock box and gap.
  */
-// Suppressed: matches the sibling renderers in this file (renderTwoRowValueBitmap,
+// Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
 // renderHeaderBitmap) — one parameter per independent input, no grouping type would earn its keep.
 @Suppress("LongParameterList")
 fun renderWindSockValueBitmap(
@@ -34,6 +36,7 @@ fun renderWindSockValueBitmap(
     bitmapHeightPx: Int,
     cellWidthPx: Float,
     color: Int,
+    alignment: ViewConfig.Alignment,
     context: Context,
 ): Bitmap {
     val density = context.resources.displayMetrics.density
@@ -45,10 +48,14 @@ fun renderWindSockValueBitmap(
             textSize = fontSizePx
             this.color = color
             letterSpacing = LETTER_SPACING
-            textAlign = Paint.Align.LEFT
+            textAlign =
+                when (alignment) {
+                    ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
+                    ViewConfig.Alignment.CENTER -> Paint.Align.CENTER
+                    ViewConfig.Alignment.RIGHT -> Paint.Align.RIGHT
+                }
         }
-    val textWidth = paint.measureText(text).toInt().coerceAtLeast(1)
-    val width = (box + gap + textWidth).coerceIn(1, cellWidthPx.toInt().coerceAtLeast(1))
+    val width = cellWidthPx.toInt().coerceAtLeast(1)
     val bitmap = Bitmap.createBitmap(width, bitmapHeightPx, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
@@ -85,6 +92,12 @@ fun renderWindSockValueBitmap(
     val bounds = Rect()
     paint.getTextBounds(text, 0, text.length, bounds)
     val baselineY = (bitmapHeightPx - bounds.bottom).toFloat()
-    canvas.drawText(text, (box + gap).toFloat(), baselineY, paint)
+    val xPos =
+        when (alignment) {
+            ViewConfig.Alignment.LEFT -> (box + gap).toFloat()
+            ViewConfig.Alignment.CENTER -> (box + gap + width) / 2f
+            ViewConfig.Alignment.RIGHT -> width.toFloat()
+        }
+    canvas.drawText(text, xPos, baselineY, paint)
     return bitmap
 }

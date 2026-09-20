@@ -255,6 +255,7 @@ private fun makeFieldRemoteViews(
                 bitmapHeightPx = bitmapHeightPx,
                 cellWidthPx = cellWidthPx,
                 color = colors.valueText.toArgb(),
+                alignment = alignment,
                 context = context,
             )
         } else if (field.secondary != null) {
