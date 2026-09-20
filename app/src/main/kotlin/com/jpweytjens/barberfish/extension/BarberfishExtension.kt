@@ -300,7 +300,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 )
                 chevronController.emit(
                     emitter,
-                    selectChevrons(d.specs.chevrons, d.visibility, d.collisionRadiusM),
+                    selectChevrons(
+                        d.specs.chevrons,
+                        d.visibility,
+                        d.collisionRadiusM,
+                        // Before the first fix, the window sits on the route start.
+                        riderFix ?: d.index.gps.first(),
+                        d.viewRadiusM,
+                    ),
                     d.iconRes,
                 )
             }

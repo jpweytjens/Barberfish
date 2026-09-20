@@ -125,12 +125,12 @@ class RideVisibilityTest {
         val returning = chevron(short, 550.0)
         assertEquals(
             listOf(outbound),
-            selectChevrons(listOf(outbound, returning), visibility, 20.0),
+            selectChevrons(listOf(outbound, returning), visibility, 20.0, short.gps.first(), 1e6),
         )
         visibility.update(500.0, null, viewRadiusM = 100.0)
         assertEquals(
             listOf(returning),
-            selectChevrons(listOf(outbound, returning), visibility, 20.0),
+            selectChevrons(listOf(outbound, returning), visibility, 20.0, short.gps.first(), 1e6),
         )
     }
 
@@ -159,10 +159,34 @@ class RideVisibilityTest {
         }
         assertEquals(10, candidates.size)
         val visibility = RideVisibility(index)
-        val atStart = selectChevrons(candidates, visibility, 20.0)
+        val atStart = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6)
         assertEquals(listOf(50.0, 150.0, 250.0, 350.0, 450.0), atStart.map { it.distanceM })
         visibility.update(500.0, null, viewRadiusM = 1000.0)
-        val afterApex = selectChevrons(candidates, visibility, 20.0)
+        val afterApex = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6)
         assertEquals(listOf(550.0, 650.0, 750.0, 850.0, 950.0), afterApex.map { it.distanceM })
+    }
+
+    @Test
+    fun selection_keeps_only_marks_within_the_view_radius() {
+        // Same out-and-back; the rider stands at the start with a 200 m window, so only the
+        // marks on the first 200 m of ground qualify, on whichever visit is exposed.
+        val route = RouteFixtures.outAndBack(500.0, 100.0)
+        val index = index(route)
+        val candidates =
+            (50..950 step 100).map { m ->
+                val p = interpolateAt(index.gps, index.cumDist, m.toDouble())
+                ClimbChevronSpec("m$m", p.lat, p.lng, 0f, 0, m.toDouble())
+            }
+        val visibility = RideVisibility(index)
+        val start = index.gps.first()
+        assertEquals(
+            listOf(50.0, 150.0),
+            selectChevrons(candidates, visibility, 20.0, start, 200.0).map { it.distanceM },
+        )
+        visibility.update(500.0, null, viewRadiusM = 1000.0)
+        assertEquals(
+            listOf(850.0, 950.0),
+            selectChevrons(candidates, visibility, 20.0, start, 200.0).map { it.distanceM },
+        )
     }
 }

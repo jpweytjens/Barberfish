@@ -79,18 +79,25 @@ internal class RideVisibility(private val index: RouteIndex) {
 }
 
 /**
- * The chevrons to draw now: every drawable candidate in ride order, skipping one within
- * [collisionRadiusM] of a mark already kept. Collision is decided here, at draw time, so a
- * candidate suppressed by a mark that later hides is reconsidered on the next update.
+ * The chevrons to draw now: every drawable candidate within [viewRadiusM] of [rider], in ride
+ * order, skipping one within [collisionRadiusM] of a mark already kept. Collision is decided here,
+ * at draw time, so a candidate suppressed by a mark that later hides is reconsidered on the next
+ * update. The window keeps the symbol count near what fits on screen whatever the route length; the
+ * band itself is drawn whole.
  */
 internal fun selectChevrons(
     candidates: List<ClimbChevronSpec>,
     visibility: RideVisibility,
     collisionRadiusM: Double,
+    rider: LatLng,
+    viewRadiusM: Double,
 ): List<ClimbChevronSpec> {
     val kept = mutableListOf<ClimbChevronSpec>()
-    for (candidate in candidates) {
-        if (!visibility.chevronDrawable(candidate.distanceM)) continue
+    val inWindow = candidates.filter { candidate ->
+        visibility.chevronDrawable(candidate.distanceM) &&
+            latLngDistanceM(rider, LatLng(candidate.lat, candidate.lng)) <= viewRadiusM
+    }
+    for (candidate in inWindow) {
         val here = LatLng(candidate.lat, candidate.lng)
         val collides =
             collisionRadiusM > 0.0 &&
