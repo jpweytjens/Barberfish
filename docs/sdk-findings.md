@@ -439,3 +439,26 @@ cumulative equirectangular length is 34,113.5 m, a ratio of 1.0011. The distance
 the other. Thirty-eight metres at the far end of a 34 km route is inside one progress bucket
 but not inside the tolerance of a turnaround handoff, so progress is rescaled by the ratio of
 the two lengths before being compared with polyline distances.
+
+## One map effect is one Binder transaction, capped near 1 MB
+
+Observed on a Karoo 3 (2026-09-20) with a 295 km route at zoom 16. The chevron
+layer sent every symbol of the route in a single `ShowSymbols`, over 3,000 of
+them, and the extension process died with `TransactionTooLargeException: data
+parcel size 1053588 bytes`. It restarted, redrew the same effect and died again.
+Each `Emitter.onNext` is a synchronous Binder call, and Android caps one
+transaction near 1 MB, so an effect that grows with route length has to be
+split. Symbols now go out in messages of at most 500. Polylines are never at
+risk: each piece is its own effect, and even the whole 295 km route encodes to
+about 40 KB.
+
+## Sending an effect costs about a millisecond and a half
+
+On the same route the band's first draw sent 3,939 effects (1,779 pieces, each a
+casing and a fill, plus the stale hides) in 8.35 s, and a restart that first hid
+the previous generation's 3,559 polylines sent 7,117 in 10.2 s. Net of the three
+half-second settle waits that is 1.2 to 1.7 ms per effect, all of it in the
+Binder call. Cutting the pieces and planning the batches took 340 ms and the
+route index 2.0 s, so on a long route the wait before the band is complete is
+the send. The rideapp writes nothing to the log while it draws, so the time it
+takes to place the layers after they arrive can only be read off the screen.
