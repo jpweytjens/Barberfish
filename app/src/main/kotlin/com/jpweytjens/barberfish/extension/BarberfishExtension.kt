@@ -292,7 +292,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         "${batches.size} batches, " +
                         "hidden visits=${d.visibility.hiddenVisits.size}"
                 )
+                val emitStartMs = System.currentTimeMillis()
                 emitLayerBatches(emitter, batches)
+                Timber.d(
+                    "grademap: sent ${batches.sumOf { it.effects.size }} effects in " +
+                        "${System.currentTimeMillis() - emitStartMs} ms"
+                )
                 chevronController.emit(
                     emitter,
                     selectChevrons(d.specs.chevrons, d.visibility, d.collisionRadiusM),
