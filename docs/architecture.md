@@ -274,12 +274,13 @@ fills, and earlier visits above later ones, depends on two rules the map applies
 added above everything the extension has drawn, and an update to an existing id keeps its
 place. A batch is not processed in emission order, so a stacking pass hides everything already
 painted, waits, puts every casing down, waits, then shows the fills one depth at a time from the
-bottom, waiting between depths. After that, updates are in place and need no waiting. A change
-of layout, meaning any id whose visit, extent or depth differs from what is painted, or an id new
-to the map, triggers the stacking pass again. Zoomed in past about zoom 15 nothing structural
-changes on a zoom band crossing; coarser than that the cells and the profile simplification
-grow with the zoom, run counts change, and a crossing restacks. `docs/sdk-findings.md`
-records the measurements behind this.
+bottom, waiting between depths. After that, updates are in place and need no waiting. An id new
+to the map, or a painted id whose depth changed, triggers the stacking pass again; extent and
+owner changes update in place, because pieces of one depth never share ground and an update
+keeps a layer's position. A route with no repeated ground therefore never restacks after its
+first draw. On a repeated route a zoom re-cut coarser than about zoom 15 shifts positional ids,
+and an id that moves across a depth boundary restacks. `docs/sdk-findings.md` records the
+measurements behind this.
 
 Ground the route covers more than once is handled by a route index built once per route. A
 matcher finds GPS edges whose endpoints agree within 1.5 m, in either direction, and groups
@@ -295,14 +296,13 @@ covered once or this is the last pass over a repeated stretch, a piece hides as 
 its end and the piece under the rider is re-cut to start at progress, so the native grey trace
 trails the rider by one progress bucket. A ridden visit with a later pass beneath it is retained
 while it remains in view, so the colours behind the rider do not flip to the return leg's; it
-hides once the rider
-is more than a screen radius from it, or once its next visit starts within that radius of route
-distance ahead, which on a return leg is the moment the ground enters the screen. Chevrons are
-generated for the whole route without collision filtering and selected at draw time: a mark is
-drawn only on the exposed visit of its ground, and collisions are resolved among the drawable
-marks, so a return-leg mark suppressed by an outbound mark appears once the outbound visit
-hides. Same-direction laps look identical on every pass; there the only visible effect is the
-grey trace after the last lap.
+hides once the rider is more than a screen radius from it, or once its next visit starts within
+that radius of route distance ahead, which on a return leg is the moment the ground enters the
+screen. Chevrons are generated for the whole route without collision filtering and selected at
+draw time: a mark is drawn only on the exposed visit of its ground, and collisions are resolved
+among the drawable marks, so a return-leg mark suppressed by an outbound mark appears once the
+outbound visit hides. Same-direction laps look identical on every pass; there the only visible
+effect is the grey trace after the last lap.
 
 Chevrons carry direction only; grade stays in the band. Each palette draws its chevron in its
 own yellow climb band colour with a black outline, 24 by 16 dp, so the glyph reads as the

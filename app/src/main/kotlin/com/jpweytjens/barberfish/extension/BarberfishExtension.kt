@@ -380,13 +380,23 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         }
                         val index =
                             routeIndex?.takeIf { routeIndexKey == routeKey }
-                                ?: buildRouteIndex(route.routePolyline, route.reversed).also {
-                                    routeIndex = it
-                                    routeIndexKey = routeKey
-                                    visibility = RideVisibility(it)
-                                    Timber.d(
-                                        "grademap: route index ${it.visits.size} visits, ${it.visits.count { v -> v.nextVisitM != null }} repeated, deepest=${it.visits.maxOfOrNull { v -> v.depth }} axisRatio=${route.routeDistance / it.lengthM} scaledEnd=${polylineAxisProgressM(route.routeDistance, route.routeDistance, it.lengthM).toInt()}m"
-                                    )
+                                ?: run {
+                                    val builtAtMs = System.currentTimeMillis()
+                                    buildRouteIndex(route.routePolyline, route.reversed).also {
+                                        val buildMs = System.currentTimeMillis() - builtAtMs
+                                        routeIndex = it
+                                        routeIndexKey = routeKey
+                                        visibility = RideVisibility(it)
+                                        val repeated =
+                                            it.visits.filter { v -> v.nextVisitM != null }
+                                        val repeatSummary =
+                                            repeated.take(12).joinToString(",") { v ->
+                                                "${v.startM.toInt()}-${v.endM.toInt()}"
+                                            } + if (repeated.size > 12) "..." else ""
+                                        Timber.d(
+                                            "grademap: route index ${it.visits.size} visits, ${it.visits.count { v -> v.nextVisitM != null }} repeated, deepest=${it.visits.maxOfOrNull { v -> v.depth }} axisRatio=${route.routeDistance / it.lengthM} scaledEnd=${polylineAxisProgressM(route.routeDistance, route.routeDistance, it.lengthM).toInt()}m buildMs=$buildMs repeats=${repeatSummary}"
+                                        )
+                                    }
                                 }
                         val ride = visibility ?: RideVisibility(index).also { visibility = it }
                         // Spacing/window are zoom-driven; latitude only scales the cos(lat)
@@ -564,8 +574,9 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 // still deliver samples computed against the previous route.
 private const val PROGRESS_SETTLE_MS = 2_000L
 
-// The two things that can touch the map, merged into one serially-collected flow so the
-// single-consumer controllers never see concurrent calls.
+// The three event kinds the map collector consumes, one of which only stores the rider's fix,
+// merged into one serially-collected flow so the single-consumer controllers never see
+// concurrent calls.
 private sealed interface GradeMapEvent
 
 private data class GradeMapRebuild(
