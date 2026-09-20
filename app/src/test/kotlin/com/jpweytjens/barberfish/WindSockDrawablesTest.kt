@@ -78,25 +78,40 @@ class WindSockDrawablesTest {
                     ?.groupValues
                     ?.get(1) ?: error("no outline path in sock $bands")
             val coords =
-                Regex("[ML](-?[0-9.]+),(-?[0-9.]+)").findAll(outline).map {
-                    Pair(it.groupValues[1].toFloat(), it.groupValues[2].toFloat())
-                }
-            val xs = coords.map { it.first }.toList()
-            val ys = coords.map { it.second }.toList()
+                Regex("[ML](-?[0-9.]+),(-?[0-9.]+)")
+                    .findAll(outline)
+                    .map {
+                        Pair(it.groupValues[1].toFloat(), it.groupValues[2].toFloat())
+                    }
+                    .toList()
+            val xs = coords.map { it.first }
+            val ys = coords.map { it.second }
             val centre = WindSockGeometry.ICON_SIZE_DP / 2f
             // Mouth at center: min and max x should be centre ± MOUTH_HALF_WIDTH_DP
-            assertEquals(centre - WindSockGeometry.MOUTH_HALF_WIDTH_DP, xs.minOrNull()!!, 0.01f)
-            assertEquals(centre + WindSockGeometry.MOUTH_HALF_WIDTH_DP, xs.maxOrNull()!!, 0.01f)
+            assertEquals(
+                centre - WindSockGeometry.MOUTH_HALF_WIDTH_DP,
+                xs.minOrNull() ?: error("no x coords"),
+                0.01f,
+            )
+            assertEquals(
+                centre + WindSockGeometry.MOUTH_HALF_WIDTH_DP,
+                xs.maxOrNull() ?: error("no x coords"),
+                0.01f,
+            )
             // Tip points (at min y) should be centre ± TIP_HALF_WIDTH_DP
-            val minY = ys.minOrNull()!!
-            val tipPointsAtMinY = coords.filter { it.second == minY }.toList()
+            val minY = ys.minOrNull() ?: error("no y coords in sock $bands")
+            val tipPointsAtMinY = coords.filter { it.second == minY }
             assertEquals(2, tipPointsAtMinY.size)
-            for (tipPoint in tipPointsAtMinY) {
-                assertTrue(
-                    tipPoint.first == centre - WindSockGeometry.TIP_HALF_WIDTH_DP ||
-                        tipPoint.first == centre + WindSockGeometry.TIP_HALF_WIDTH_DP
-                )
-            }
+            assertEquals(
+                centre - WindSockGeometry.TIP_HALF_WIDTH_DP,
+                tipPointsAtMinY.minOf { it.first },
+                0.01f,
+            )
+            assertEquals(
+                centre + WindSockGeometry.TIP_HALF_WIDTH_DP,
+                tipPointsAtMinY.maxOf { it.first },
+                0.01f,
+            )
         }
     }
 
@@ -112,7 +127,7 @@ class WindSockDrawablesTest {
                     .find(xml)
                     ?.groupValues
                     ?.get(1) ?: error("no stroke width in sock $bands")
-            assertEquals("2", strokeWidth)
+            assertEquals(WindSockGeometry.STROKE_DP, strokeWidth.toFloat(), 0.01f)
         }
     }
 }
