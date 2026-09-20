@@ -724,6 +724,31 @@ fun Context.streamGradeFieldConfig(): Flow<GradeFieldConfig> =
 suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) =
     saveConfig(gradeFieldConfigKey, config)
 
+// --- WindFieldConfig ---
+
+@Serializable data class WindFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+
+private val windFieldConfigKey = stringPreferencesKey("wind_field_config")
+
+fun Context.streamWindFieldConfig(): Flow<WindFieldConfig> =
+    streamConfig(windFieldConfigKey, WindFieldConfig())
+
+suspend fun Context.saveWindFieldConfig(config: WindFieldConfig) =
+    saveConfig(windFieldConfigKey, config)
+
+// --- WindSockConfig ---
+
+/** The map sock. Off by default: it needs the Headwind extension installed. */
+@Serializable data class WindSockConfig(val enabled: Boolean = false)
+
+private val windSockConfigKey = stringPreferencesKey("wind_sock_config")
+
+fun Context.streamWindSockConfig(): Flow<WindSockConfig> =
+    streamConfig(windSockConfigKey, WindSockConfig())
+
+suspend fun Context.saveWindSockConfig(config: WindSockConfig) =
+    saveConfig(windSockConfigKey, config)
+
 // --- ETAConfig ---
 
 @Serializable data class ETAConfig(val priorSpeedKph: Double = 25.0)
@@ -804,6 +829,8 @@ data class ConfigSnapshot(
     val powerZoneField: PowerZoneFieldConfig,
     val maxPowerField: MaxPowerFieldConfig,
     val gradeField: GradeFieldConfig,
+    val windField: WindFieldConfig,
+    val windSock: WindSockConfig,
     val avgSpeedTotal: AvgSpeedConfig,
     val avgSpeedMoving: AvgSpeedConfig,
     val time: TimeConfig,
@@ -840,6 +867,8 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 powerZoneField = prefs.config(powerZoneFieldConfigKey, PowerZoneFieldConfig()),
                 maxPowerField = prefs.config(maxPowerFieldConfigKey, MaxPowerFieldConfig()),
                 gradeField = prefs.config(gradeFieldConfigKey, GradeFieldConfig()),
+                windField = prefs.config(windFieldConfigKey, WindFieldConfig()),
+                windSock = prefs.config(windSockConfigKey, WindSockConfig()),
                 avgSpeedTotal = prefs.config(avgSpeedTotalConfigKey, AvgSpeedConfig()),
                 avgSpeedMoving = prefs.config(avgSpeedMovingConfigKey, AvgSpeedConfig()),
                 time = prefs.config(timeConfigKey, TimeConfig()),
