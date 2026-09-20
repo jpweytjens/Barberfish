@@ -19,24 +19,15 @@ class GradeMapLayerPlannerTest {
     private val red = 0xFFFF0000.toInt()
     private val green = 0xFF00FF00.toInt()
 
-    private fun piece(
-        index: Int,
-        visit: Int,
-        depth: Int,
-        startM: Double = index * 100.0,
-        endM: Double = startM + 100.0,
-        encoded: String = "fill$index",
-        casing: String = "casing$index",
-        color: Int = red,
-    ) =
+    private fun piece(index: Int, visit: Int, depth: Int) =
         GradeMapPolylineSpec(
             id = "barberfish-seg-$index",
-            encoded = encoded,
-            colorArgb = color,
-            casingEncoded = casing,
+            encoded = "fill$index",
+            colorArgb = red,
+            casingEncoded = "casing$index",
             visitKey = visit,
-            startM = startM,
-            endM = endM,
+            startM = index * 100.0,
+            endM = index * 100.0 + 100.0,
             depth = depth,
         )
 
@@ -61,7 +52,10 @@ class GradeMapLayerPlannerTest {
     fun first_plan_puts_every_casing_down_then_fills_by_depth_with_settles_between() {
         val batches = GradeMapLayerPlanner().plan(outAndBack, 18, 21)
         assertEquals(4, batches.size)
-        val (legacy, casings, depth1, depth2) = batches
+        val legacy = batches[0]
+        val casings = batches[1]
+        val depth1 = batches[2]
+        val depth2 = batches[3]
         // Nothing of ours is painted, but a previous version's whole-route casing might be.
         assertEquals(listOf("barberfish-casing"), legacy.hideIds())
         assertTrue(legacy.settleAfter)

@@ -315,6 +315,9 @@ internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): 
  *
  * Returns empty lists if either polyline is missing.
  */
+// Suppressed: the shape of this function is unchanged; taking one more input re-keyed the
+// findings the baseline already carried for it.
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "ReturnCount")
 internal fun buildGradeMapSpecs(
     routePolyline: String,
     routeElevationPolyline: String?,

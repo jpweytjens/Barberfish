@@ -288,7 +288,9 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 val batches =
                     layerPlanner.plan(pieces, GRADE_BAND_WIDTH_DP, GRADE_BAND_CASING_WIDTH_DP)
                 Timber.d(
-                    "grademap: draw ${pieces.size}/${d.specs.polylines.size} pieces in ${batches.size} batches, hidden visits=${d.visibility.hiddenVisits.size}"
+                    "grademap: draw ${pieces.size}/${d.specs.polylines.size} pieces in " +
+                        "${batches.size} batches, " +
+                        "hidden visits=${d.visibility.hiddenVisits.size}"
                 )
                 emitLayerBatches(emitter, batches)
                 chevronController.emit(
@@ -393,8 +395,19 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                             repeated.take(12).joinToString(",") { v ->
                                                 "${v.startM.toInt()}-${v.endM.toInt()}"
                                             } + if (repeated.size > 12) "..." else ""
+                                        val scaledEndM =
+                                            polylineAxisProgressM(
+                                                route.routeDistance,
+                                                route.routeDistance,
+                                                it.lengthM,
+                                            )
                                         Timber.d(
-                                            "grademap: route index ${it.visits.size} visits, ${it.visits.count { v -> v.nextVisitM != null }} repeated, deepest=${it.visits.maxOfOrNull { v -> v.depth }} axisRatio=${route.routeDistance / it.lengthM} scaledEnd=${polylineAxisProgressM(route.routeDistance, route.routeDistance, it.lengthM).toInt()}m buildMs=$buildMs repeats=${repeatSummary}"
+                                            "grademap: route index ${it.visits.size} visits, " +
+                                                "${repeated.size} repeated, " +
+                                                "deepest=${it.visits.maxOfOrNull { v -> v.depth }} " +
+                                                "axisRatio=${route.routeDistance / it.lengthM} " +
+                                                "scaledEnd=${scaledEndM.toInt()}m " +
+                                                "buildMs=$buildMs repeats=$repeatSummary"
                                         )
                                     }
                                 }
@@ -592,6 +605,9 @@ private data class GradeMapProgressTick(
 private data class GradeMapLocationTick(val fix: LatLng) : GradeMapEvent
 
 // Everything a progress tick needs to redraw the route without rebuilding it.
+// Suppressed: a snapshot holder, one field per independent input; bundling them would
+// invent types that mean nothing outside this call.
+@Suppress("LongParameterList")
 private class RouteDrawing(
     val index: RouteIndex,
     val visibility: RideVisibility,

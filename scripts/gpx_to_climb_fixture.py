@@ -200,6 +200,8 @@ def main():
             f'/** Route fixture for the climb overlay config preview. {rng} of "Reina":'
         )
         print(" *  the Collao Laguar por Castells climb. */")
+    print("// An encoded polyline is one token; it cannot be wrapped.")
+    print('@Suppress("MaxLineLength")')
     print(f"internal object {args.object} {{")
     print(f'    const val routePolyline = "{esc(route_poly)}"')
     print(f'    const val elevationPolyline = "{esc(elev_poly)}"')

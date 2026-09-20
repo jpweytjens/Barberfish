@@ -34,7 +34,7 @@ internal class RouteIndex(
 
     fun visit(key: Int): RouteVisit = visits[key]
 
-    fun visitsOfUnit(unit: Int): List<RouteVisit> = byUnit[unit] ?: emptyList()
+    fun visitsOfUnit(unit: Int): List<RouteVisit> = byUnit[unit].orEmpty()
 
     /** The visit covering [distanceM]: start inclusive, end exclusive, closed at the route end. */
     fun visitAt(distanceM: Double): RouteVisit? {

@@ -26,6 +26,86 @@ internal data class EdgeGroup(val occurrences: List<EdgeOccurrence>)
 
 private class Metres(val x: Double, val y: Double)
 
+private fun dist(a: Metres, b: Metres) = hypot(a.x - b.x, a.y - b.y)
+
+/** Which group an edge joins, and how it runs against that group's first occurrence. */
+private class GroupMatch(val group: Int, val traversal: Traversal)
+
+/**
+ * Builds the groups edge by edge in ride order. The cell index holds, per group, the cells of the
+ * endpoints of its first occurrence, so a lookup only tests the groups that start near the edge.
+ */
+private class EdgeGrouper(private val pts: List<Metres>, private val matchM: Double) {
+    val groups = mutableListOf<MutableList<EdgeOccurrence>>()
+    private val cells = HashMap<Pair<Long, Long>, MutableList<Int>>()
+
+    fun add(edge: Int) {
+        val a = pts[edge]
+        val b = pts[edge + 1]
+        if (dist(a, b) <= 2.0 * matchM) return
+        val match = bestMatch(a, b)
+        if (match != null) {
+            groups[match.group] += EdgeOccurrence(edge, match.traversal)
+        } else {
+            groups += mutableListOf(EdgeOccurrence(edge, Traversal.SAME))
+            val group = groups.lastIndex
+            cells.getOrPut(cell(a)) { mutableListOf() } += group
+            cells.getOrPut(cell(b)) { mutableListOf() } += group
+        }
+    }
+
+    private fun cell(p: Metres) = floor(p.x / matchM).toLong() to floor(p.y / matchM).toLong()
+
+    private fun endpoints(o: EdgeOccurrence): Pair<Metres, Metres> {
+        val start = pts[o.edge]
+        val end = pts[o.edge + 1]
+        return if (o.traversal == Traversal.SAME) start to end else end to start
+    }
+
+    /** The groups indexed in [p]'s cell or one of its eight neighbours, in group order. */
+    private fun candidatesNear(p: Metres): Set<Int> {
+        val (cx, cy) = cell(p)
+        val candidates = sortedSetOf<Int>()
+        for (dx in -1L..1L) {
+            for (dy in -1L..1L) {
+                cells[(cx + dx) to (cy + dy)]?.let { candidates += it }
+            }
+        }
+        return candidates
+    }
+
+    /**
+     * The largest endpoint error between the edge [start]-[end] and any member of group [group],
+     * giving up as soon as it passes [matchM].
+     */
+    private fun endpointError(start: Metres, end: Metres, group: Int): Double {
+        var err = 0.0
+        for (member in groups[group]) {
+            val (memberStart, memberEnd) = endpoints(member)
+            err = maxOf(err, dist(start, memberStart), dist(end, memberEnd))
+            if (err > matchM) break
+        }
+        return err
+    }
+
+    /** The group the edge [a]-[b] joins: smallest maximum endpoint error, ties to the earliest. */
+    private fun bestMatch(a: Metres, b: Metres): GroupMatch? {
+        var best: GroupMatch? = null
+        var bestErr = Double.MAX_VALUE
+        for (group in candidatesNear(a)) {
+            for (traversal in Traversal.entries) {
+                val (start, end) = if (traversal == Traversal.SAME) a to b else b to a
+                val err = endpointError(start, end, group)
+                if (err <= matchM && err < bestErr) {
+                    best = GroupMatch(group, traversal)
+                    bestErr = err
+                }
+            }
+        }
+        return best
+    }
+}
+
 /**
  * Groups the edges of [gps] that the route rides more than once. An edge A-B joins an earlier group
  * when both its endpoints lie within [matchM] of the group's endpoints, in either orientation,
@@ -45,54 +125,7 @@ internal fun matchRepeatedEdges(gps: List<LatLng>, matchM: Double = MATCH_M): Li
     val midLat = (gps.minOf { it.lat } + gps.maxOf { it.lat }) * 0.5
     val lngScale = cos(midLat * PI / 180.0)
     val pts = gps.map { Metres(it.lng * lngScale * degToM, it.lat * degToM) }
-    fun dist(a: Metres, b: Metres) = hypot(a.x - b.x, a.y - b.y)
-    fun cell(p: Metres) = floor(p.x / matchM).toLong() to floor(p.y / matchM).toLong()
-    fun endpoints(o: EdgeOccurrence): Pair<Metres, Metres> {
-        val start = pts[o.edge]
-        val end = pts[o.edge + 1]
-        return if (o.traversal == Traversal.SAME) start to end else end to start
-    }
-
-    val groups = mutableListOf<MutableList<EdgeOccurrence>>()
-    val cells = HashMap<Pair<Long, Long>, MutableList<Int>>()
-    for (edge in 0 until gps.size - 1) {
-        val a = pts[edge]
-        val b = pts[edge + 1]
-        if (dist(a, b) <= 2.0 * matchM) continue
-        val (cx, cy) = cell(a)
-        val candidates = sortedSetOf<Int>()
-        for (dx in -1L..1L) {
-            for (dy in -1L..1L) {
-                cells[(cx + dx) to (cy + dy)]?.let { candidates += it }
-            }
-        }
-        var bestGroup = -1
-        var bestErr = Double.MAX_VALUE
-        var bestTraversal = Traversal.SAME
-        for (group in candidates) {
-            for (traversal in Traversal.entries) {
-                val (start, end) = if (traversal == Traversal.SAME) a to b else b to a
-                var err = 0.0
-                for (member in groups[group]) {
-                    val (memberStart, memberEnd) = endpoints(member)
-                    err = maxOf(err, dist(start, memberStart), dist(end, memberEnd))
-                    if (err > matchM) break
-                }
-                if (err <= matchM && err < bestErr) {
-                    bestGroup = group
-                    bestErr = err
-                    bestTraversal = traversal
-                }
-            }
-        }
-        if (bestGroup >= 0) {
-            groups[bestGroup] += EdgeOccurrence(edge, bestTraversal)
-        } else {
-            groups += mutableListOf(EdgeOccurrence(edge, Traversal.SAME))
-            val group = groups.lastIndex
-            cells.getOrPut(cell(a)) { mutableListOf() } += group
-            cells.getOrPut(cell(b)) { mutableListOf() } += group
-        }
-    }
-    return groups.filter { it.size > 1 }.map { EdgeGroup(it.toList()) }
+    val grouper = EdgeGrouper(pts, matchM)
+    for (edge in 0 until gps.size - 1) grouper.add(edge)
+    return grouper.groups.filter { it.size > 1 }.map { EdgeGroup(it.toList()) }
 }

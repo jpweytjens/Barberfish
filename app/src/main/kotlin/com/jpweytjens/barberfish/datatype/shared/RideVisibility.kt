@@ -40,8 +40,8 @@ internal class RideVisibility(private val index: RouteIndex) {
         var changed = progressM > this.progressM
         this.progressM = maxOf(this.progressM, progressM)
         for (visit in index.visits) {
-            val nextM = visit.nextVisitM ?: continue
-            if (visit.key in hidden || this.progressM < visit.endM) continue
+            val nextM = visit.nextVisitM
+            if (nextM == null || visit.key in hidden || this.progressM < visit.endM) continue
             val outOfView = rider != null && distanceToBoundsM(rider, visit.bounds) > viewRadiusM
             if (outOfView || this.progressM >= nextM - viewRadiusM) {
                 hidden += visit.key
@@ -73,8 +73,8 @@ internal class RideVisibility(private val index: RouteIndex) {
      */
     fun chevronDrawable(distanceM: Double): Boolean {
         val visit = index.visitAt(distanceM) ?: return false
-        if (exposedVisit(visit.unit)?.key != visit.key) return false
-        return visit.nextVisitM != null || distanceM >= progressM
+        return exposedVisit(visit.unit)?.key == visit.key &&
+            (visit.nextVisitM != null || distanceM >= progressM)
     }
 }
 
