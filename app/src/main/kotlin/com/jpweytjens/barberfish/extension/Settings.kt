@@ -100,6 +100,8 @@ sealed interface HUDSlotField {
 
     @Serializable data object Grade : HUDSlotField
 
+    @Serializable data object Wind : HUDSlotField
+
     @Serializable data object Distance : HUDSlotField
 
     @Serializable data object DistanceRemaining : HUDSlotField

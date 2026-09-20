@@ -32,6 +32,7 @@ import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
+import com.jpweytjens.barberfish.extension.WindFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
@@ -394,6 +395,8 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         zones.gradePalette,
                     )
                 }
+            HUDSlotField.Wind ->
+                WindField.liveStates(karooSystem, profile, WindFieldConfig(slot.colorMode))
             HUDSlotField.Distance ->
                 karooSystem.streamDataFlow(ValueKind.DISTANCE.sourceType).map {
                     ValueField.toFieldState(it, ValueKind.DISTANCE, profile)
@@ -558,6 +561,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             ),
                             zones,
                         )
+                    HUDSlotField.Wind -> WindField.previewStates(WindFieldConfig(slotCfg.colorMode))
                     HUDSlotField.Distance -> ValueField.previewStates(ValueKind.DISTANCE, profile)
                     HUDSlotField.DistanceRemaining ->
                         ValueField.previewStates(ValueKind.DISTANCE_REMAINING, profile)
