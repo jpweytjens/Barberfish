@@ -14,7 +14,7 @@ import io.hammerhead.karooext.models.ViewConfig
 import kotlin.math.roundToInt
 
 private const val MIN_BITMAP_HEIGHT_PX = 30
-private const val LETTER_SPACING = -0.04f
+internal const val LETTER_SPACING = -0.04f
 
 /**
  * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow

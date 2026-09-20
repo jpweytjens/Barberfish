@@ -21,6 +21,8 @@ data class FieldState(
     // true only for the "No sensor" state: the source sensor is not paired at all. The HUD
     // drops such a slot's column. Searching and idle states keep theirs.
     val noSensor: Boolean = false,
+    // The wind field's sock, drawn beside the number. Null for every other field and for calm.
+    val windSock: WindSockGlyph? = null,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =
