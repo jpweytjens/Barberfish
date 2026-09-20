@@ -1,6 +1,6 @@
 """Generate the windsock drawables, one per standing band count.
 
-Geometry (dp, must match WindSockGeometry in WindSock.kt): a 64 dp square with the sock's
+Geometry (dp, must match the WindSockGeometry object): a 64 dp square with the sock's
 mouth at the centre and the sock extending upward. Mouth half-width 5.3, tip half-width 1.3,
 band length 6.4, five bands at most, orange first. The taper runs mouth to tip over the whole
 length, so every sock is a complete sock; only the length and the band count change.
