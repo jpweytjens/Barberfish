@@ -66,7 +66,7 @@ private const val CHEVRON_HEIGHT_RATIO = 17f / 25f
 private val NATIVE_ROUTE_COLOR = Color(0xFFF0D800)
 private val NATIVE_LINE_WIDTH = 4.dp
 private val NATIVE_LINE_CASING_WIDTH = 5.5.dp
-private val NATIVE_CHEVRON_WIDTH = 7.dp
+private val NATIVE_CHEVRON_WIDTH = 9.dp
 private const val NATIVE_CHEVRON_SPACING_M = PREVIEW_CHEVRON_SPACING_MAX_M
 
 @Composable
@@ -204,10 +204,9 @@ private fun NativeRoutePreview(modifier: Modifier) {
             return Offset((u * size.width).toFloat(), (v * size.height).toFloat())
         }
 
+        // No road beneath: the line is narrower than the card's road, and the road's own rings
+        // would read as a second, wider outline around it.
         val routePx = routePoints.map { project(it.lat, it.lng) }
-        drawConnected(routePx, MAP_ROAD_CASING, 9.dp.toPx())
-        drawConnected(routePx, MAP_ROAD_FILL, 6.dp.toPx())
-
         drawConnected(routePx, Color.Black, NATIVE_LINE_CASING_WIDTH.toPx())
         drawConnected(routePx, NATIVE_ROUTE_COLOR, NATIVE_LINE_WIDTH.toPx())
 
