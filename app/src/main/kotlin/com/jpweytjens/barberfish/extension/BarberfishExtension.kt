@@ -175,6 +175,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         super.onDestroy()
     }
 
+    // The route index is a property of the route geometry and direction; it is built once per
+    // route identity and shared by every rebuild. Visibility lives with it. Both outlive one map
+    // session, so a map page reopened on the same route does not rebuild the index (2 s on a
+    // 295 km route) or forget which visits are hidden. Touched only from the startMap job.
+    private var routeIndex: RouteIndex? = null
+    private var routeIndexKey: Long? = null
+    private var visibility: RideVisibility? = null
+
     override fun startMap(emitter: Emitter<MapEffect>) {
         Timber.d("grademap: startMap invoked")
         val layerPlanner = GradeMapLayerPlanner()
@@ -255,11 +263,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             // commit a bogus monotonic jump on the new one. Hold ticks briefly after every
             // reset until the stream reflects the new route.
             var progressSettleUntilMs = 0L
-            // The route index is a property of the route geometry and direction; it is built
-            // once per route identity and shared by every rebuild. Visibility lives with it.
-            var routeIndex: RouteIndex? = null
-            var routeIndexKey: Long? = null
-            var visibility: RideVisibility? = null
             var drawing: RouteDrawing? = null
             // The rider's last fix, for the out-of-view clause; null until the first one.
             var riderFix: LatLng? = null
