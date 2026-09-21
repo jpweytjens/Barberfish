@@ -156,9 +156,14 @@ replay_load() { # open replay, pick tranquilo, start playback
         tap text* "tranquilo"; settle 2
     fi
     dump
-    ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 2; }
+    # `if`, not `&&`: a false check as a function's last command is its exit status, and under
+    # `set -e` that ends the run (seen when the replay was already playing).
+    if ui has text "Play" >/dev/null 2>&1; then tap text "Play"; settle 2; fi
 }
-replay_pause() { replay_open; ui has text "Pause" >/dev/null 2>&1 && { tap text "Pause"; settle 1; }; }
+replay_pause() {
+    replay_open; dump
+    if ui has text "Pause" >/dev/null 2>&1; then tap text "Pause"; settle 1; fi
+}
 replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that fraction
     replay_open
     local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 55 + f*(455-55)}')
@@ -166,7 +171,8 @@ replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that
     # Scrubbing pauses playback and leaves the replay app in front; resume and go back to the
     # ride, or the next capture shows the replay screen with the HUD reading "No data".
     dump; ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 1; }
-    dump; ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
+    dump
+    if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi
 }
 
 # ---- rideapp ride lifecycle (fixed coords where the ride screen won't dump) --
