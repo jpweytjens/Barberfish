@@ -10,9 +10,11 @@ import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -201,23 +203,37 @@ class WindFieldStateTest {
     @Test
     fun the_live_flow_holds_the_reading_when_a_later_fix_has_no_course() = runBlocking {
         val here = LatLng(51.0, 4.0)
-        val fixes =
-            flowOf(
-                RiderFix(null, null, null),
-                RiderFix(here, 90.0, 90.0),
-                RiderFix(here, 90.0, null),
-            )
-        val states =
-            WindField.heldStates(
-                    fixes = fixes,
-                    angle = flowOf(streaming("a", 225.0)),
-                    headwindSpeed = flowOf(streaming("h", 12.4)),
-                    windSpeed = flowOf(streaming("w", 15.0)),
-                    profile = metric,
-                    cfg = cfg,
-                )
-                .toList()
-        // Searching before any course, the reading once moving, the same reading held at rest.
-        assertEquals(listOf("Searching…", "12", "12"), states.map { it.primary })
+        val fixes = MutableStateFlow(RiderFix(null, null, null))
+        val headwindSpeed = MutableStateFlow(streaming("h", 12.4))
+        val seen = mutableListOf<String>()
+        val collector =
+            launch(Dispatchers.Unconfined) {
+                WindField.heldStates(
+                        fixes = fixes,
+                        angle = MutableStateFlow(streaming("a", 225.0)),
+                        headwindSpeed = headwindSpeed,
+                        windSpeed = MutableStateFlow(streaming("w", 15.0)),
+                        profile = metric,
+                        cfg = cfg,
+                    )
+                    .collect { seen += it.primary }
+            }
+        yield()
+        assertEquals(listOf("Searching…"), seen)
+
+        fixes.value = RiderFix(here, 90.0, 90.0)
+        yield()
+        assertEquals("12", seen.last())
+
+        // At rest the fix carries no course and the extension reports a dead tailwind at full
+        // strength; the field must keep the last reading, not show the tailwind.
+        fixes.value = RiderFix(here, 90.0, null)
+        yield()
+        headwindSpeed.value = streaming("h", -15.0)
+        yield()
+        assertEquals("12", seen.last())
+        assertTrue("-15" !in seen)
+
+        collector.cancel()
     }
 }

@@ -103,7 +103,7 @@ class WindField(private val karooSystem: KarooSystemService) :
          * [heldWindState] with whether the latest fix itself carried a course.
          */
         // Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
-        // renderHeaderBitmap) — one parameter per independent input, no grouping type earns its
+        // renderHeaderBitmap): one parameter per independent input, no grouping type earns its
         // keep.
         @Suppress("LongParameterList")
         internal fun heldStates(
