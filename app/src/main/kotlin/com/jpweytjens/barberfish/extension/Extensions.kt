@@ -1,10 +1,12 @@
 package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.LatLng
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.KarooEvent
 import io.hammerhead.karooext.models.OnGlobalPOIs
+import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.OnStreamState
 import io.hammerhead.karooext.models.RideState
@@ -14,6 +16,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.scan
 
 fun KarooSystemService.streamDataFlow(dataTypeId: String): Flow<StreamState> = callbackFlow {
     val listenerId =
@@ -33,6 +36,18 @@ fun KarooSystemService.streamUserProfile(): Flow<UserProfile> = consumerFlow()
 fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consumerFlow()
 
 fun KarooSystemService.streamRideState(): Flow<RideState> = consumerFlow()
+
+/**
+ * Position and course from location fixes. The course is held at the last non-null value: at rest
+ * the fix carries none, and the map keeps its last rotation the same way. Both null before the
+ * first fix.
+ */
+internal data class RiderFix(val position: LatLng?, val courseDeg: Double?)
+
+internal fun KarooSystemService.streamRiderFix(): Flow<RiderFix> =
+    consumerFlow<OnLocationChanged>().scan(RiderFix(null, null)) { held, loc ->
+        RiderFix(LatLng(loc.lat, loc.lng), loc.orientation ?: held.courseDeg)
+    }
 
 /**
  * Global (saved) POIs, delivered independently of the active route. Uses the explicit

@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.windSockBands
 import com.jpweytjens.barberfish.datatype.shared.windUnitFor
 import com.jpweytjens.barberfish.extension.WindFieldConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamRiderFix
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamWindFieldConfig
 import com.jpweytjens.barberfish.extension.toErrorFieldState
@@ -26,7 +27,9 @@ import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.scan
 
 /**
  * Wind from the Headwind extension: the sock turned by the rider-relative angle beside the signed
@@ -63,6 +66,24 @@ class WindField(private val karooSystem: KarooSystemService) :
                 noSensor = true,
             )
 
+        /**
+         * What to show given the fresh reading and whether the fix carries a course. A text state
+         * always shows. With a course the fresh reading shows. Without one the last live reading is
+         * held, not greyed: the wind has not changed, only our heading is undefined, and the
+         * extension reports a dead tailwind at rest. Before any live reading, "Searching…".
+         */
+        fun heldWindState(
+            previous: FieldState?,
+            hasCourse: Boolean,
+            fresh: FieldState,
+        ): FieldState =
+            when {
+                fresh.color == FieldColor.StreamState -> fresh
+                hasCourse -> fresh
+                previous != null && previous.color != FieldColor.StreamState -> previous
+                else -> FieldState.searching(LABEL, ICON)
+            }
+
         /** Shared by the standalone field and the HUD slot. */
         fun liveStates(
             karooSystem: KarooSystemService,
@@ -70,12 +91,18 @@ class WindField(private val karooSystem: KarooSystemService) :
             cfg: WindFieldConfig,
         ): Flow<FieldState> =
             combine(
-                karooSystem.streamDataFlow(HEADWIND_ANGLE_STREAM),
-                karooSystem.streamDataFlow(HEADWIND_SPEED_STREAM),
-                karooSystem.streamDataFlow(WIND_SPEED_STREAM),
-            ) { angle, headwindSpeed, windSpeed ->
-                toFieldState(angle, headwindSpeed, windSpeed, profile, cfg)
-            }
+                    karooSystem.streamRiderFix(),
+                    karooSystem.streamDataFlow(HEADWIND_ANGLE_STREAM),
+                    karooSystem.streamDataFlow(HEADWIND_SPEED_STREAM),
+                    karooSystem.streamDataFlow(WIND_SPEED_STREAM),
+                ) { rider, angle, headwindSpeed, windSpeed ->
+                    (rider.courseDeg != null) to
+                        toFieldState(angle, headwindSpeed, windSpeed, profile, cfg)
+                }
+                .scan<Pair<Boolean, FieldState>, FieldState?>(null) { held, (hasCourse, fresh) ->
+                    heldWindState(held, hasCourse, fresh)
+                }
+                .filterNotNull()
 
         // Suppressed: the three-stream toErrorFieldState early-return pattern (see
         // Extensions.kt) is required so streaming, error and unavailable states share one

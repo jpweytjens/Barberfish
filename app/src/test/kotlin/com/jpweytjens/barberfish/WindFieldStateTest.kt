@@ -119,4 +119,64 @@ class WindFieldStateTest {
         assertTrue(states.any { it.windSock == null })
         assertTrue(states.any { it.windSock?.bands == 5 })
     }
+
+    private val live =
+        WindField.toFieldState(
+            angle = streaming("a", 225.0),
+            headwindSpeed = streaming("h", 12.4),
+            windSpeed = streaming("w", 15.0),
+            profile = metric,
+            cfg = cfg,
+        )
+
+    @Test
+    fun before_any_course_the_field_is_searching() {
+        val state = WindField.heldWindState(previous = null, hasCourse = false, fresh = live)
+        assertEquals("Searching…", state.primary)
+        assertEquals("Wind", state.label)
+    }
+
+    @Test
+    fun with_a_course_the_fresh_reading_shows() {
+        val state = WindField.heldWindState(previous = null, hasCourse = true, fresh = live)
+        assertEquals(live, state)
+    }
+
+    @Test
+    fun without_a_course_the_last_live_reading_is_held_ungreyed() {
+        // At rest the extension reports a dead tailwind at full strength; ignore it.
+        val restingTailwind =
+            WindField.toFieldState(
+                angle = streaming("a", 0.0),
+                headwindSpeed = streaming("h", -15.0),
+                windSpeed = streaming("w", 15.0),
+                profile = metric,
+                cfg = cfg,
+            )
+        val state =
+            WindField.heldWindState(previous = live, hasCourse = false, fresh = restingTailwind)
+        assertEquals(live, state)
+    }
+
+    @Test
+    fun a_text_state_always_shows_even_without_a_course() {
+        val state =
+            WindField.heldWindState(
+                previous = live,
+                hasCourse = false,
+                fresh = WindField.noWindData(),
+            )
+        assertEquals("No wind data", state.primary)
+    }
+
+    @Test
+    fun a_held_text_state_is_not_treated_as_a_reading() {
+        val state =
+            WindField.heldWindState(
+                previous = WindField.noWindData(),
+                hasCourse = false,
+                fresh = live,
+            )
+        assertEquals("Searching…", state.primary)
+    }
 }

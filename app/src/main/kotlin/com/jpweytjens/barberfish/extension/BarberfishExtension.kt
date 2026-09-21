@@ -85,7 +85,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -603,17 +602,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         val windJob: Job = scope.launch {
             // A dead generation may have left the sock painted; start clean.
             windSockController.clear(emitter)
-            // The course is held at the last non-null value: at rest the fix carries none,
-            // and the map keeps its last rotation the same way.
-            val fixFlow =
-                karooSystem.consumerFlow<OnLocationChanged>().scan<
-                    OnLocationChanged,
-                    Pair<LatLng?, Double?>,
-                >(
-                    null to null
-                ) { acc, loc ->
-                    LatLng(loc.lat, loc.lng) to (loc.orientation ?: acc.second)
-                }
+            val fixFlow = karooSystem.streamRiderFix()
             val zoomFlow =
                 karooSystem
                     .consumerFlow<OnMapZoomLevel>()
