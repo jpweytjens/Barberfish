@@ -3,7 +3,6 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.RouteFixtures.point
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.PieceVisibility
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
 import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
@@ -36,7 +35,7 @@ class RideVisibilityTest {
     fun at_progress_zero_the_first_visits_are_exposed_and_return_chevrons_are_ineligible() {
         val visibility = RideVisibility(short)
         short.visits.forEach { v ->
-            assertEquals(PieceVisibility.Shown, visibility.visibilityOf(v.key, v.startM, v.endM))
+            assertTrue(visibility.pieceDrawable(v.key))
         }
         assertEquals(0, visibility.exposedVisit(short.visit(0).unit)?.key)
         assertTrue(visibility.chevronDrawable(50.0))
@@ -60,8 +59,8 @@ class RideVisibilityTest {
         // inside the 100 m radius; visit 0 returns at 500 m, outside it.
         assertEquals(setOf(1, 2), visibility.hiddenVisits)
         assertEquals(3, visibility.exposedVisit(short.visit(2).unit)?.key)
-        assertEquals(PieceVisibility.Hidden, visibility.visibilityOf(2, 200.0, 300.0))
-        assertEquals(PieceVisibility.Shown, visibility.visibilityOf(0, 0.0, 100.0))
+        assertFalse(visibility.pieceDrawable(2))
+        assertTrue(visibility.pieceDrawable(0))
         visibility.update(400.0, null, viewRadiusM = 100.0)
         assertEquals(setOf(0, 1, 2), visibility.hiddenVisits)
     }
@@ -82,15 +81,16 @@ class RideVisibilityTest {
     }
 
     @Test
-    fun a_final_visit_hides_by_piece_and_trims_the_piece_under_the_rider() {
+    fun a_final_visit_stays_drawn_behind_the_rider_and_loses_only_its_passed_chevrons() {
         val visibility = RideVisibility(short)
         visibility.update(350.0, null, viewRadiusM = 100.0)
-        // Visit 3 (300-400 m) has no successor: a piece ending before progress is hidden, the
-        // piece straddling progress is trimmed, a piece ahead is shown.
-        assertEquals(PieceVisibility.Hidden, visibility.visibilityOf(3, 300.0, 340.0))
-        assertEquals(PieceVisibility.Trimmed(350.0), visibility.visibilityOf(3, 300.0, 400.0))
-        assertEquals(PieceVisibility.Shown, visibility.visibilityOf(4, 400.0, 500.0))
+        // Visit 3 (300-400 m) has no successor, so nothing beneath it needs uncovering: its
+        // pieces stay although the rider is halfway along it.
+        assertTrue(visibility.pieceDrawable(3))
+        assertTrue(visibility.pieceDrawable(4))
         assertTrue(visibility.hiddenVisits.none { it == 3 })
+        assertFalse(visibility.chevronDrawable(320.0))
+        assertTrue(visibility.chevronDrawable(380.0))
     }
 
     @Test

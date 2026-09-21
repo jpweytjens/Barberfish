@@ -38,7 +38,6 @@ import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.PieceVisibility
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
@@ -58,7 +57,6 @@ import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
-import com.jpweytjens.barberfish.datatype.shared.trimPieceFrom
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -277,17 +275,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     riderFix,
                     d.viewRadiusM,
                 )
-                val pieces =
-                    d.specs.polylines.mapNotNull { spec ->
-                        when (
-                            val v = d.visibility.visibilityOf(spec.visitKey, spec.startM, spec.endM)
-                        ) {
-                            PieceVisibility.Hidden -> null
-                            PieceVisibility.Shown -> spec
-                            is PieceVisibility.Trimmed ->
-                                trimPieceFrom(spec, v.fromM, d.index, d.capTrimM, d.casingCapTrimM)
-                        }
-                    }
+                val pieces = d.specs.polylines.filter { d.visibility.pieceDrawable(it.visitKey) }
                 val batches =
                     layerPlanner.plan(pieces, GRADE_BAND_WIDTH_DP, GRADE_BAND_CASING_WIDTH_DP)
                 Timber.d(
@@ -559,8 +547,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 index = index,
                                 visibility = ride,
                                 specs = specs,
-                                capTrimM = capTrimM,
-                                casingCapTrimM = casingCapTrimM,
                                 collisionRadiusM = chevronCollision,
                                 viewRadiusM = VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
                                 sdkRouteDistanceM = route.routeDistance,
@@ -627,8 +613,6 @@ private class RouteDrawing(
     val index: RouteIndex,
     val visibility: RideVisibility,
     val specs: GradeMapSpecs,
-    val capTrimM: Double,
-    val casingCapTrimM: Double,
     val collisionRadiusM: Double,
     val viewRadiusM: Double,
     // The rideapp's route length, for rescaling latch progress onto the polyline axis.
