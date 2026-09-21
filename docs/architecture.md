@@ -330,8 +330,8 @@ same stream helper every field uses, with extension-qualified ids
 (`TYPE_EXT::karoo-headwind::windDirection` and so on). The rideapp serves any
 extension's streams to any other, and the Headwind README invites it.
 
-One glyph, a windsock seen from above, serves two surfaces. Its geometry lives
-in `WindSockGeometry`; the five drawables are generated from the same numbers by
+The map gets a windsock seen from above. Its geometry lives in
+`WindSockGeometry`; the five drawables are generated from the same numbers by
 `scripts/gen_wind_sock_drawables.py`, and `WindSockDrawablesTest` pins the two.
 
 On the map, `WindSockController` keeps one symbol on a mast 53 dp ahead of the
@@ -341,10 +341,29 @@ rider on a heading-up map and true on a north-up map; the rideapp does not
 expose which mode is active, and absolute is the choice that is right on a map
 in both. Calm hides the symbol.
 
-In the `Wind` field the sock is composed into the value bitmap by
-`renderWindSockValueBitmap`, rotated by the rider-relative angle about its own
-midpoint, in a box the height of the value; the number takes the remaining width
-through the usual `fontSizeForCell` shrink. Strength follows the airfield rule,
-one band per 3 knots, five at most. Speed arrives in the Headwind extension's
-configured unit, which Barberfish cannot read; it assumes that extension's
-default for the Karoo profile (km/h or mph).
+The `Wind` field gets a plain line arrow, not the sock: the number beside it
+already carries strength, so the glyph carries direction only. `WindArrowGeometry`
+holds its proportions and `renderWindArrowValueBitmap` composes it into the value
+bitmap, rotated by the rider-relative angle about the centre of a box the height
+of the value, in the cell's header text colour so colour stays on the number.
+The number takes the remaining width through the usual `fontSizeForCell` shrink.
+Strength on the map follows the airfield rule, one band per 3 knots, five at
+most; calm draws no arrow in the field. Speed arrives in the Headwind
+extension's configured unit, which Barberfish cannot read; it assumes that
+extension's default for the Karoo profile (km/h or mph).
+
+Non-streaming states. The Headwind extension caches its forecast, interpolates
+between forecast hours by the clock, and reports no data age, so staleness is
+not detectable from outside and Barberfish does not fake one. Its streams keep
+emitting while a forecast is missing (zeros) and while the fix has no course
+(a tailwind at full strength), so `WindField` applies its own rule,
+`heldWindState`: a text state always shows; with a course the fresh reading
+shows; without one the last live reading is held, ungreyed; before any live
+reading, "Searching…". The course comes from `streamRiderFix`, shared with the
+map sock, which holds it at the last non-null value. The one text state is "No
+wind data", with `noSensor` so a HUD column collapses.
+
+App detection lives in the config screen only: `MainActivity` asks the package
+manager for the Headwind package on every resume (the manifest's `<queries>`
+entry makes it visible) and greys the Wind card with an install hint when it is
+absent. The field and the map sock work from the streams alone.
