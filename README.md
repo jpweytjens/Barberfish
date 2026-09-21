@@ -56,7 +56,7 @@ Two Barberfish-designed grade palettes, shown in Text mode on light and dark, th
 
 Every field is set up in the Barberfish app on your Karoo, with live previews and no companion app. Changes apply mid-ride. The [data fields](docs/data-fields.md) page lists every option.
 
-<img src="docs/screenshots/hud_config.jpg" alt="HUD config with live preview, 4-column layout, and fill-mode zones" width="480">
+<img src="docs/screenshots/hud_config.jpg" alt="HUD config with a 4-column live preview and the Power column selected, its data field, smoothing, and zone color options below" width="480">
 
 ## Compatibility
 

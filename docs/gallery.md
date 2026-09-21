@@ -9,11 +9,11 @@ Slots, columns, and the profile modes are set per field in the Barberfish app ([
 <table>
   <tr>
     <td align="center">Elevation profile below a 3-column HUD on the map view</td>
-    <td align="center">4-column HUD config with fill-mode zone coloring</td>
+    <td align="center">HUD config with the Power column tapped to set its smoothing and zone color</td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
-    <td align="center"><img src="screenshots/hud_config.jpg" alt="HUD config screen with 4-column layout and fill-mode zones"></td>
+    <td align="center" valign="top"><img src="screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
+    <td align="center" valign="top"><img src="screenshots/hud_config.jpg" alt="HUD config screen with a 4-column preview, the Power column selected, and its data field, smoothing, and zone color options below"></td>
   </tr>
 </table>
 
