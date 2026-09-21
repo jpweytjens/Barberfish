@@ -59,25 +59,54 @@ built.
 | HSLuv      | ![](palettes/palette-grade-hsluv.svg)  |
 | Zwift      | ![](palettes/palette-grade-zwift.svg)  |
 
-Barberfish is the default grade palette. It keeps the Karoo climb ramp above 2
-per cent, folds terrain between -2 and 2 into a quiet green-grey, and adds
-three teal-to-slate descent bands at -2, -6 and -10. Flat and descent share a
-colour family so the whole downhill side reads as one limb, while the flat
-band stays muted enough that only real grades draw attention. The descent
-thresholds mirror the climb side: measured ride data from the
-[GoldenCheetah OpenData](https://osf.io/6hfpz/) corpus shows grade occupancy
-puts -10 at the same within-side time share as +8, so descents and climbs
-carry matching visual resolution.
+## Perceptually uniform palettes
 
-Surgeonfish is the second Barberfish take on the Karoo ramp, one step further
-from the original. Neither is a true perceptual color map: the goal is a
-hazard scale that still reads as cycling, from easy green up through yellow,
-orange and red to a dark purple band above 20 per cent, with perceptual ideas
-applied where they sharpen it. Where Barberfish reuses the Karoo zone colors,
-Surgeonfish respaces the same reading in even HSLuv steps and mutes the flat
-band, so color builds only as the road tilts. Its descents keep Barberfish's
--2, -6 and -10 and turn blue, deepening toward navy, after the blue limb of
-[Peter Kovesi's](https://colorcet.com/) perceptual rainbow maps.
+A grade palette is read at a glance, at speed, on a screen the size of a
+hand. What matters is that neighbouring bands look different: 8 and 11 per
+cent should be told apart by color alone, before the number is read. Palettes
+made for a phone or a website do not always manage that on the bike. Several
+stack their steepest bands as ever darker reds, and two darks side by side
+stop reading as two bands. Perceptual color spaces measure color by how it
+looks rather than by how a screen mixes it, so equal steps in grade can be
+given equally visible steps in color. Four of the palettes above take that
+idea, in four directions.
+
+HSLuv is the strictest of the four, built in the
+[HSLuv](https://www.hsluv.org/) color space it is named after, with the
+brightness stepping evenly from zone to zone. It runs from a cool grey through
+green to reddish pink, and because it was made to read on either theme it is
+the one palette that renders the same color in Text and Fill mode, day and
+night. The grade variant lays the same colors over seven climb bands from flat
+to 18 per cent, spaced like Garmin's grade categories, and leaves descents
+uncolored.
+
+Turbo is [Google's rainbow
+colormap](https://research.google/blog/turbo-an-improved-rainbow-colormap-for-visualization/),
+tuned so that no two steps blur together. Its ten bands run from deep blue at
+-9 per cent through green on the flat to red at 15 and beyond, which lands
+close to Garmin's grade progression with a descent side added. Barberfish
+uses it for grade only.
+
+Barberfish, the default grade palette, brings the same idea to the Karoo's
+own colors. The climb ramp above 2 per cent is the Karoo's, so a climb looks
+the way the native map has taught you to expect. Below it the Karoo's neutral
+band gives way to a quiet sage, which hands over more smoothly to the
+descents: three teal-to-slate bands at -2, -6 and -10 per cent, so flat and
+downhill read as one limb and only real grades draw the eye. The descent
+thresholds mirror the climb side by time rather than by number: in the
+[GoldenCheetah OpenData](https://osf.io/6hfpz/) ride corpus, -10 per cent
+takes the same share of downhill time as +8 does of uphill, so both sides get
+the same resolution.
+
+Surgeonfish takes the same reading with more freedom. Its hazard scale still
+climbs from green through yellow, orange and red to a dark purple above 20
+per cent, but the steps between are even in HSLuv rather than the Karoo's,
+and the flat band is muted so color builds only as the road tilts. The
+descents keep Barberfish's -2, -6 and -10 and turn blue, deepening toward
+navy, after the blue limb of [Peter Kovesi's](https://colorcet.com/)
+perceptual rainbow maps. Neither house palette is a true perceptual map; both
+borrow perceptual spacing where it sharpens a scale that still reads as
+cycling.
 
 ## Text mode: auto contrast-tuning
 
@@ -123,32 +152,3 @@ The strips show fill mode against the dark theme, with the value text
 picked per position as in the palette previews. Text mode draws the scale
 as the value color instead, contrast-tuned per theme like the zone palettes
 above.
-
-## HSLuv palette
-
-The HSLuv palette is Barberfish's own. Where the brand palettes need
-per-theme adjustment, this one was built to read clearly everywhere from the
-start: every zone renders the same color in Text and Fill mode, on the light
-and dark theme alike, with evenly spaced brightness steps from zone to zone.
-The progression follows the Wahoo palette's character, cool grey through
-green into reddish pink. It takes its name from
-[HSLuv](https://www.hsluv.org/), the color space it was designed in, the
-same one the contrast tuning above works in.
-
-The grade variant reuses the power colors across seven bands from flat to
-steep, spaced like Garmin's grade categories.
-
-## Turbo palette
-
-Grade is one of the few cycling numbers that goes negative, and Turbo colors
-descents too. It runs from deep blue around
-`-9%` through green at `0%` to red at `15%` and beyond, in ten bands that
-each read as their own color. The palette is
-[Google's Turbo](https://research.google/blog/turbo-an-improved-rainbow-colormap-for-visualization/),
-a rainbow colormap tuned so no two steps blur together. Barberfish uses it
-for the grade field only.
-
-Turbo's middle greens are brighter than its blue and red ends, so Text mode
-gets the same per-theme tuning as the other palettes: the dark blues are
-raised at night, the bright yellows and greens lowered in daylight. Fill
-mode keeps the original hues and picks black or white text per band.
