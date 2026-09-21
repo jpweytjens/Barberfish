@@ -25,7 +25,7 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 
 ## Highlights
 
-- A 3- or 4-column HUD groups any fields side by side, with zone coloring, smoothing, and formatting set per slot.
+- A 3- or 4-column HUD groups any fields side by side, with zone coloring, smoothing, and formatting set per slot. A slot whose sensor is not paired is hidden and the others widen to fill the strip.
 - With a route loaded, the elevation profile below the HUD shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
 - Grade is [smoothed over the last 30 m of road](docs/algorithms.md#grade) rather than a time window, so it holds steady at any speed and stops moving when you do.
 - ETA [learns from how you have actually been riding](docs/algorithms.md#eta), so the estimate sharpens as the ride goes on instead of starting from a generic guess.

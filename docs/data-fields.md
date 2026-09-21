@@ -10,6 +10,11 @@ columns list the options each field supports. All of them are set per field
 in the Barberfish app, with live previews; changes apply mid-ride. The
 graphical Profile and Overview fields have [a page of their own](elevation-profile.md).
 
+The HUD hides a slot whose sensor is not paired and widens the remaining
+columns to fill the strip, so a ride without the power meter shows a
+two-column HUD rather than a blank cell. When no slot has a sensor, every
+slot stays so the strip never goes empty.
+
 <table>
   <thead>
     <tr>
