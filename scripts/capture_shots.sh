@@ -35,7 +35,10 @@
 # Shots (increment 2, share one discardable ride session):
 #   hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode
 #   karoo_vs_barberfish grade_map
-set -euo pipefail
+set -Eeuo pipefail
+# Most helpers discard adb's output, so an unhandled failure would end the run without a word.
+# Name the line and command instead. Quiet inside $(...), where the caller handles the failure.
+trap 'rc=$? cmd=$BASH_COMMAND; if [[ $BASH_SUBSHELL -eq 0 ]]; then echo "  ! line $LINENO: $cmd (exit $rc)" >&2; fi' ERR
 cd "$(dirname "$0")/.."
 
 OUTDIR="${OUTDIR:-screencaps/shots}"
