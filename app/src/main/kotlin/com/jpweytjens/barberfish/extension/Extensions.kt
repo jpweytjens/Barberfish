@@ -38,15 +38,20 @@ fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consum
 fun KarooSystemService.streamRideState(): Flow<RideState> = consumerFlow()
 
 /**
- * Position and course from location fixes. The course is held at the last non-null value: at rest
- * the fix carries none, and the map keeps its last rotation the same way. Both null before the
- * first fix.
+ * Position and course from location fixes. [courseDeg] is held at the last non-null value: at rest
+ * the fix carries none, and the map keeps its last rotation the same way. [fixCourseDeg] is the
+ * course this fix itself carried, null at rest, for callers that must know whether the rider is
+ * moving. All null before the first fix.
  */
-internal data class RiderFix(val position: LatLng?, val courseDeg: Double?)
+internal data class RiderFix(
+    val position: LatLng?,
+    val courseDeg: Double?,
+    val fixCourseDeg: Double?,
+)
 
 internal fun KarooSystemService.streamRiderFix(): Flow<RiderFix> =
-    consumerFlow<OnLocationChanged>().scan(RiderFix(null, null)) { held, loc ->
-        RiderFix(LatLng(loc.lat, loc.lng), loc.orientation ?: held.courseDeg)
+    consumerFlow<OnLocationChanged>().scan(RiderFix(null, null, null)) { held, loc ->
+        RiderFix(LatLng(loc.lat, loc.lng), loc.orientation ?: held.courseDeg, loc.orientation)
     }
 
 /**

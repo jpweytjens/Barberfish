@@ -13,6 +13,7 @@ import com.jpweytjens.barberfish.datatype.shared.formatHeadwind
 import com.jpweytjens.barberfish.datatype.shared.windFieldColor
 import com.jpweytjens.barberfish.datatype.shared.windSockBands
 import com.jpweytjens.barberfish.datatype.shared.windUnitFor
+import com.jpweytjens.barberfish.extension.RiderFix
 import com.jpweytjens.barberfish.extension.WindFieldConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamRiderFix
@@ -89,14 +90,33 @@ class WindField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             cfg: WindFieldConfig,
         ): Flow<FieldState> =
-            combine(
-                    karooSystem.streamRiderFix(),
-                    karooSystem.streamDataFlow(HEADWIND_ANGLE_STREAM),
-                    karooSystem.streamDataFlow(HEADWIND_SPEED_STREAM),
-                    karooSystem.streamDataFlow(WIND_SPEED_STREAM),
-                ) { rider, angle, headwindSpeed, windSpeed ->
-                    (rider.courseDeg != null) to
-                        toFieldState(angle, headwindSpeed, windSpeed, profile, cfg)
+            heldStates(
+                karooSystem.streamRiderFix(),
+                karooSystem.streamDataFlow(HEADWIND_ANGLE_STREAM),
+                karooSystem.streamDataFlow(HEADWIND_SPEED_STREAM),
+                karooSystem.streamDataFlow(WIND_SPEED_STREAM),
+                profile,
+                cfg,
+            )
+
+        /**
+         * The field's states over time: the fresh reading from the three streams, passed through
+         * [heldWindState] with whether the latest fix itself carried a course.
+         */
+        // Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
+        // renderHeaderBitmap) — one parameter per independent input, no grouping type earns its
+        // keep.
+        @Suppress("LongParameterList")
+        internal fun heldStates(
+            fixes: Flow<RiderFix>,
+            angle: Flow<StreamState>,
+            headwindSpeed: Flow<StreamState>,
+            windSpeed: Flow<StreamState>,
+            profile: UserProfile,
+            cfg: WindFieldConfig,
+        ): Flow<FieldState> =
+            combine(fixes, angle, headwindSpeed, windSpeed) { rider, a, h, w ->
+                    (rider.fixCourseDeg != null) to toFieldState(a, h, w, profile, cfg)
                 }
                 .scan<Pair<Boolean, FieldState>, FieldState?>(null) { held, (hasCourse, fresh) ->
                     heldWindState(held, hasCourse, fresh)
