@@ -34,7 +34,7 @@
 #   design_karoo
 # Shots (increment 2, share one discardable ride session):
 #   hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode
-#   karoo_vs_barberfish
+#   karoo_vs_barberfish grade_map
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -137,7 +137,9 @@ set_hud() { config_set hud "$1"; }
 get_hud() { config_get hud "$1"; }
 # The replay drives GPS, not the barometer, so a live Grade reads 0.0% all ride; pin it for
 # shots that show the field, and clear it again (session_end clears it too).
-pin_grade()   { config_set grade_pin scripts/fixtures/grade_pin_descent.json; }
+# Cleared before it is set: a pin written over a running Grade view was seen not to reach it
+# until the pin was cleared and written again (K3, 2026-09-21).
+pin_grade()   { unpin_grade; config_set grade_pin scripts/fixtures/grade_pin_descent.json; }
 unpin_grade() { config_set grade_pin scripts/fixtures/grade_pin_off.json; }
 
 # ---- ride-replay control (it.gangitano.karooridereplay) ----------------------
@@ -158,6 +160,10 @@ replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that
     replay_open
     local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 55 + f*(455-55)}')
     tap_xy "$x" 312; settle 1   # track y verified on-device; adjust if the thumb does not move
+    # Scrubbing pauses playback and leaves the replay app in front; resume and go back to the
+    # ride, or the next capture shows the replay screen with the HUD reading "No data".
+    dump; ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 1; }
+    dump; ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
 }
 
 # ---- rideapp ride lifecycle (fixed coords where the ride screen won't dump) --
@@ -166,9 +172,12 @@ ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
     tap_xy 429 732; settle 6   # green play FAB on the profile carousel
 }
-ride_load_route() { # ride_load_route <route name> — control center -> ADD Route -> Follow
+ride_load_route() { # ride_load_route <route name> — control center -> ADD Route -> search -> Follow
     press_button control_center; settle 1
     tap_xy 239 184; settle 3            # ADD Route tile
+    tap_xy 37 89; settle 2              # search (the full list is too long to scroll through)
+    A shell input text "$1"; settle 2
+    tap_xy 443 747; settle 3            # keyboard search key
     scroll_to text* "$1" || { echo "  ! route not found: $1" >&2; return 1; }
     local xy; xy=$(ui tap text* "$1"); tap_xy $xy; settle 3   # open the route detail
     dump
@@ -189,6 +198,11 @@ goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), fro
     for (( i=1; i<$1; i++ )); do A shell input swipe 400 400 80 400 250; settle 1; done
 }
 settle_drawer() { settle "${1:-6}"; }   # the bottom pill auto-hides after a few idle seconds
+map_extensions_toggle() { # flip the puzzle toggle (extension map effects) in the map layers menu
+    tap_xy 63 452; settle 1             # layers button, left edge of the map
+    tap_xy 160 548; settle 1            # puzzle icon, second row of the menu
+    tap_xy 63 452; settle 1             # close the menu
+}
 
 # ---- capture / crop ----------------------------------------------------------
 cap() { wake; A exec-out screencap -p > "$STAGE/$1.png"; }
@@ -226,7 +240,7 @@ restore_theme() {
 # The ride shots share one discardable ride: snapshot the user's HUD, start the
 # replay + ride, load the route once (RIDE REMAINING / OVERVIEW / PROFILE / climbs
 # all need it), capture, then end+discard and restore the HUD.
-RIDE_SHOTS=(hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish)
+RIDE_SHOTS=(hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map)
 SESSION_UP=0
 session_start() {
     (( SESSION_UP )) && return 0
@@ -353,8 +367,26 @@ shot_karoo_vs_barberfish() { # page 4: native vs Barberfish paired single fields
     echo "  -> $OUTDIR/karoo_vs_barberfish.jpg"
 }
 
+shot_grade_map() { # page 1: the same map view with the grade map on, then off (grade map page hero pair)
+    echo "grade_map: map page, grade map on then off"
+    session_start
+    set_hud scripts/fixtures/hud/hud_sparkline.json
+    # Park around the 10 km mark, where the route climbs; tune against the reference. Assumes the
+    # map's extension effects are on at entry (the puzzle toggle is a flip, its state cannot be read).
+    replay_seek 0.2
+    goto_page 1; settle_drawer
+    cap grade_map_on
+    magick "$STAGE/grade_map_on.png" -quality 92 "$OUTDIR/grade_map_on.jpg"
+    echo "  -> $OUTDIR/grade_map_on.jpg"
+    map_extensions_toggle; settle 3
+    cap grade_map_off
+    magick "$STAGE/grade_map_off.png" -quality 92 "$OUTDIR/grade_map_off.jpg"
+    echo "  -> $OUTDIR/grade_map_off.jpg"
+    map_extensions_toggle; settle 3    # leave the map as found
+}
+
 # ============================= main ==========================================
-ALL=(design_karoo hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish)
+ALL=(design_karoo hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map)
 targets=("$@"); [[ ${#targets[@]} -eq 0 ]] && targets=("${ALL[@]}")
 
 require_device || { echo "no device" >&2; exit 1; }
