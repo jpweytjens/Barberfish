@@ -250,12 +250,13 @@ class MainActivity : ComponentActivity() {
     }
 
     // The two-argument overload is the one that runs on the Karoo's Android versions;
-    // the flags overload exists only from API 33.
+    // the flags overload exists only from API 33. A disabled Headwind cannot stream either,
+    // so it counts as absent.
     @Suppress("DEPRECATION")
     private fun isHeadwindInstalled(): Boolean = runCatching {
-        packageManager.getPackageInfo(HEADWIND_PACKAGE, 0)
+        packageManager.getApplicationInfo(HEADWIND_PACKAGE, 0).enabled
     }
-        .isSuccess
+        .getOrDefault(false)
 
     override fun onDestroy() {
         karooSystem.disconnect()
