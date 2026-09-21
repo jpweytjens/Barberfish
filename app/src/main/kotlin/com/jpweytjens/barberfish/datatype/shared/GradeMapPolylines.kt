@@ -146,29 +146,6 @@ internal fun drawnExtent(
     return drawStart to drawEnd
 }
 
-/**
- * [spec] re-cut to start at [fromM]: the piece the rider is on, with the ridden part removed. Its
- * id, extent and depth are unchanged, so the planner updates it in place. If nothing drawable is
- * left (progress inside the route-end trim), returns null and the caller hides the piece, one
- * bucket early rather than a bucket late.
- */
-internal fun trimPieceFrom(
-    spec: GradeMapPolylineSpec,
-    fromM: Double,
-    index: RouteIndex,
-    capTrimM: Double,
-    casingCapTrimM: Double,
-): GradeMapPolylineSpec? {
-    val (drawStart, drawEnd) =
-        drawnExtent(spec.startM, spec.endM, spec.trimStart, spec.trimEnd, capTrimM)
-    val (casingStart, casingEnd) =
-        drawnExtent(spec.startM, spec.endM, spec.trimStart, spec.trimEnd, casingCapTrimM)
-    val fill = extractSubPolyline(index.gps, index.cumDist, maxOf(fromM, drawStart), drawEnd)
-    val casing = extractSubPolyline(index.gps, index.cumDist, maxOf(fromM, casingStart), casingEnd)
-    if (fill.size < 2 || casing.size < 2) return null
-    return spec.copy(encoded = encodeGpsPolyline(fill), casingEncoded = encodeGpsPolyline(casing))
-}
-
 /** One stroke width on screen: the width the run is drawn at is the length it must own. */
 internal const val MIN_RUN_PX = 12.0
 
