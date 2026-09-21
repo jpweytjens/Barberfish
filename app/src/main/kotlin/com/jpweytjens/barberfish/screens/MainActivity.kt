@@ -66,6 +66,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
@@ -121,6 +122,7 @@ import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.Grey500
+import com.jpweytjens.barberfish.datatype.shared.HEADWIND_PACKAGE
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
@@ -217,6 +219,9 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var karooSystem: KarooSystemService
 
+    // Re-checked on every resume: the rider may install Headwind and come straight back.
+    private var headwindInstalled by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         karooSystem = KarooSystemService(applicationContext)
@@ -238,6 +243,19 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        headwindInstalled = isHeadwindInstalled()
+    }
+
+    // The two-argument overload is the one that runs on the Karoo's Android versions;
+    // the flags overload exists only from API 33.
+    @Suppress("DEPRECATION")
+    private fun isHeadwindInstalled(): Boolean = runCatching {
+        packageManager.getPackageInfo(HEADWIND_PACKAGE, 0)
+    }
+        .isSuccess
 
     override fun onDestroy() {
         karooSystem.disconnect()
@@ -1053,41 +1071,52 @@ class MainActivity : ComponentActivity() {
                         }
 
                         ControlLabel("WIND", modifier = Modifier.padding(top = 8.dp))
-                        FieldCard(
-                            title = "WIND",
-                            typeId = "wind",
-                            description =
-                                "Headwind speed with a windsock, from the Headwind extension.",
-                            previewFields = windPreviewStates,
-                            colorMode = windFieldConfig.colorMode,
-                            selected = selectedDataField == "WIND",
-                            onSelect = {
-                                selectedDataField =
-                                    if (selectedDataField == "WIND") null else "WIND"
-                            },
-                        ) {
-                            HelperText(
-                                "Needs the Headwind extension. Speed bins assume its default unit " +
-                                    "for your profile (km/h or mph)."
-                            )
-                            ZoneColorSlider(
-                                selected = windFieldConfig.colorMode,
-                                onSelected = { mode ->
-                                    windFieldConfig = windFieldConfig.copy(colorMode = mode)
-                                    lifecycleScope.launch { saveWindFieldConfig(windFieldConfig) }
+                        Box(Modifier.alpha(if (headwindInstalled) 1f else 0.45f)) {
+                            FieldCard(
+                                title = "WIND",
+                                typeId = "wind",
+                                description =
+                                    "Headwind speed with a windsock, from the Headwind extension.",
+                                previewFields = windPreviewStates,
+                                colorMode = windFieldConfig.colorMode,
+                                selected = selectedDataField == "WIND",
+                                onSelect = {
+                                    selectedDataField =
+                                        if (selectedDataField == "WIND") null else "WIND"
                                 },
-                            )
-                            BoolToggleRow(
-                                label = "SHOW ON MAP",
-                                value = windSockConfig.enabled,
-                                onChange = { on ->
-                                    windSockConfig = windSockConfig.copy(enabled = on)
-                                    lifecycleScope.launch { saveWindSockConfig(windSockConfig) }
-                                },
-                                help =
-                                    "A windsock ahead of your position, longer with more wind. " +
-                                        "On a north-up map it shows true wind direction.",
-                            )
+                            ) {
+                                if (!headwindInstalled) {
+                                    HelperText("Install the Headwind extension to use wind.")
+                                } else {
+                                    HelperText(
+                                        "Speed bins assume the Headwind extension's default unit " +
+                                            "for your profile (km/h or mph)."
+                                    )
+                                    ZoneColorSlider(
+                                        selected = windFieldConfig.colorMode,
+                                        onSelected = { mode ->
+                                            windFieldConfig = windFieldConfig.copy(colorMode = mode)
+                                            lifecycleScope.launch {
+                                                saveWindFieldConfig(windFieldConfig)
+                                            }
+                                        },
+                                    )
+                                    BoolToggleRow(
+                                        label = "SHOW ON MAP",
+                                        value = windSockConfig.enabled,
+                                        onChange = { on ->
+                                            windSockConfig = windSockConfig.copy(enabled = on)
+                                            lifecycleScope.launch {
+                                                saveWindSockConfig(windSockConfig)
+                                            }
+                                        },
+                                        help =
+                                            "A windsock ahead of your position, longer with more " +
+                                                "wind. On a north-up map it shows true wind " +
+                                                "direction.",
+                                    )
+                                }
+                            }
                         }
 
                         ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))

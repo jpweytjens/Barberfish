@@ -30,6 +30,9 @@ object WindSockGeometry {
 
 /** The headwind extension's id and the four streams Barberfish reads from it. */
 const val HEADWIND_EXTENSION = "karoo-headwind"
+
+/** The headwind extension's Android package, for the config screen's installed check. */
+const val HEADWIND_PACKAGE = "de.timklge.karooheadwind"
 val WIND_DIRECTION_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windDirection")
 val HEADWIND_ANGLE_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "headwind")
 val WIND_SPEED_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windSpeed")

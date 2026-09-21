@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Package-visibility filter (API 30+): the config screen asks whether Headwind is installed. -->
+    <queries>
+        <package android:name="de.timklge.karooheadwind" />
+    </queries>
+
     <application
         android:name=".BarberfishApplication"
         android:icon="@drawable/ic_extension"
