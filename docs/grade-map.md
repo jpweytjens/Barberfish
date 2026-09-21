@@ -2,6 +2,17 @@
 
 The Karoo's map shows where the route goes. With the grade map on, it also shows how steep. The route is drawn as a band colored by grade, in the same palette as the Grade field and the elevation profile, with chevrons on top for direction. A glance at the map ahead tells you whether the next bend hides a climb and how hard it bites, without swiping to the profile page.
 
+<table>
+  <tr>
+    <td align="center">The Karoo's own route line on a switchback climb</td>
+    <td align="center">The same switchbacks with the grade map on</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/grade_map_off.jpg" alt="Karoo map page with the route drawn as a thin blue line with small direction chevrons up a series of switchbacks"></td>
+    <td align="center"><img src="screenshots/grade_map_on.jpg" alt="The same map with the route drawn as a wide band colored green, yellow, orange, and red by grade, with yellow direction chevrons on top"></td>
+  </tr>
+</table>
+
 The grade map is one switch in the Barberfish app, under Climbing. It draws whenever you follow a route, and switching it off hands the map back to the Karoo's own route line. The card's preview shows the band on a sample route and, with the map off, the Karoo's line in its place, so the toggle compares the two looks in place.
 
 <img src="screenshots/grade_map_config.jpg" alt="Grade map config card with the enabled toggle, the band preview, tuning, emphasis handles, simplification, and chevron spacing" width="480">
