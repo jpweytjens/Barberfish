@@ -291,10 +291,10 @@ first pass draws on top and the last at the bottom. Removing a ridden visit expo
 a last-in-first-out stack at each shared stretch.
 
 Visibility follows the rider's accepted progress, rescaled from the navigation distance onto
-the polyline's own axis. On a visit with no later pass over its ground, whether the ground is
-covered once or this is the last pass over a repeated stretch, a piece hides as progress passes
-its end and the piece under the rider is re-cut to start at progress, so the native grey trace
-trails the rider by one progress bucket. A ridden visit with a later pass beneath it is retained
+the polyline's own axis. A visit hides only to uncover a later pass over the same ground. On a
+visit with no later pass, whether the ground is covered once or this is the last pass over a
+repeated stretch, the band stays drawn behind the rider and only the passed chevrons go, so a
+progress tick there sends no polyline. A ridden visit with a later pass beneath it is retained
 while it remains in view, so the colours behind the rider do not flip to the return leg's; it
 hides once the rider is more than a screen radius from it, or once its next visit starts within
 that radius of route distance ahead, which on a return leg is the moment the ground enters the
@@ -302,7 +302,7 @@ screen. Chevrons are generated for the whole route without collision filtering a
 draw time: a mark is drawn only on the exposed visit of its ground, and collisions are resolved
 among the drawable marks, so a return-leg mark suppressed by an outbound mark appears once the
 outbound visit hides. Same-direction laps look identical on every pass; there the only visible
-effect is the grey trace after the last lap.
+effect is the chevrons clearing behind the rider on the last lap.
 
 Chevrons carry direction only; grade stays in the band. Each palette draws its chevron in its
 own yellow climb band colour with a black outline, 24 by 16 dp, so the glyph reads as the
