@@ -140,9 +140,14 @@ set_hud() { config_set hud "$1"; }
 get_hud() { config_get hud "$1"; }
 # The replay drives GPS, not the barometer, so a live Grade reads 0.0% all ride; pin it for
 # shots that show the field, and clear it again (session_end clears it too).
-# Cleared before it is set: a pin written over a running Grade view was seen not to reach it
-# until the pin was cleared and written again (K3, 2026-09-21).
-pin_grade()   { unpin_grade; config_set grade_pin scripts/fixtures/grade_pin_descent.json; }
+# Written twice: the first pin after a live reading was seen not to reach a running Grade view,
+# while a pin replacing another pin did, every time (K3, 2026-09-21). The first write is a
+# throwaway value, which has to differ or the second write changes nothing.
+pin_grade() {
+    echo '{"percent": -4.1}' > "$STAGE/grade_pin_first.json"
+    config_set grade_pin "$STAGE/grade_pin_first.json"
+    config_set grade_pin scripts/fixtures/grade_pin_descent.json
+}
 unpin_grade() { config_set grade_pin scripts/fixtures/grade_pin_off.json; }
 
 # ---- ride-replay control (it.gangitano.karooridereplay) ----------------------
