@@ -751,6 +751,19 @@ fun Context.streamTimeConfig(): Flow<TimeConfig> = streamConfig(timeConfigKey, T
 
 suspend fun Context.saveTimeConfig(config: TimeConfig) = saveConfig(timeConfigKey, config)
 
+// --- GradePin ---
+// A pinned grade reading for screenshot captures. The ride-replay app drives GPS but not the
+// barometer the Grade field fits, so a replayed ride reads 0.0% throughout. Set through the
+// debug ConfigReceiver and honoured by debug builds only; a null percent means live.
+
+@Serializable data class GradePin(val percent: Float? = null)
+
+private val gradePinKey = stringPreferencesKey("grade_pin")
+
+fun Context.streamGradePin(): Flow<GradePin> = streamConfig(gradePinKey, GradePin())
+
+suspend fun Context.saveGradePin(pin: GradePin) = saveConfig(gradePinKey, pin)
+
 // --- DataFieldDesignConfig ---
 // Mirrors Karoo OS "Data Field Design" options the SDK does not expose to extensions
 // (Show Icons, Label Size). See docs/superpowers/specs/2026-06-07-data-field-design-design.md.

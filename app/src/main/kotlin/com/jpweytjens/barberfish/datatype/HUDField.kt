@@ -383,7 +383,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     )
                 }
             HUDSlotField.Grade ->
-                GradeField.gradeOlsFlow(karooSystem).map {
+                GradeField.gradeFlow(context, karooSystem).map {
                     GradeField.toGradeFieldState(
                         it,
                         GradeFieldConfig(
