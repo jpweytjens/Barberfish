@@ -129,8 +129,14 @@ internal fun HUDConfigSection(
     profile: UserProfile,
     onUpdate: (HUDConfig) -> Unit,
     onSparklineUpdate: (SparklineConfig) -> Unit,
+    initialSelectedSlot: Int? = null,
 ) {
-    var selection by remember { mutableStateOf<HudSelection?>(null) }
+    // initialSelectedSlot is the column selected when the section first composes, so a screenshot
+    // can show a slot's card open. The config screen leaves it null: nothing is selected until
+    // the user taps.
+    var selection by remember {
+        mutableStateOf<HudSelection?>(initialSelectedSlot?.let { HudSelection.Slot(it) })
+    }
     val selectedSlot = (selection as? HudSelection.Slot)?.index
     val stripSelected = selection is HudSelection.Strip
 

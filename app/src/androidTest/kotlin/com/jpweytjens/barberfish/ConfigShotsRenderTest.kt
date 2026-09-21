@@ -256,7 +256,10 @@ class ConfigShotsRenderTest {
 
     @Test
     fun hudConfig() {
-        setShotContent(fixedHeight = true) {
+        // The Power column is selected so its slot card shows below the preview. With the card
+        // open the section is taller than the K3 screen, so paged and stitched like the palettes.
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
             var hudConfig by remember {
                 mutableStateOf(
                     HUDConfig(
@@ -294,10 +297,11 @@ class ConfigShotsRenderTest {
                     profile = shotProfile,
                     onUpdate = { hudConfig = it },
                     onSparklineUpdate = { sparklineConfig = it },
+                    initialSelectedSlot = 2,
                 )
             }
         }
-        capture("hud_config")
+        captureTall("hud_config", scrollState)
     }
 
     @Test
