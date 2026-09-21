@@ -135,6 +135,10 @@ config_get() { # config_get <name> <local out file> — dump live config and pul
 }
 set_hud() { config_set hud "$1"; }
 get_hud() { config_get hud "$1"; }
+# The replay drives GPS, not the barometer, so a live Grade reads 0.0% all ride; pin it for
+# shots that show the field, and clear it again (session_end clears it too).
+pin_grade()   { config_set grade_pin scripts/fixtures/grade_pin_descent.json; }
+unpin_grade() { config_set grade_pin scripts/fixtures/grade_pin_off.json; }
 
 # ---- ride-replay control (it.gangitano.karooridereplay) ----------------------
 RR=it.gangitano.karooridereplay/.MainActivity
@@ -234,6 +238,7 @@ session_start() {
 }
 session_end() {
     (( SESSION_UP )) || return 0
+    unpin_grade
     ride_end
     [[ -f "$STAGE/hud_saved.json" ]] && set_hud "$STAGE/hud_saved.json"
     SESSION_UP=0
@@ -319,8 +324,10 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     echo "barberfish_fields: data page 2"
     session_start
     set_hud scripts/fixtures/hud/barberfish_fields.json
+    pin_grade
     goto_page 2; settle_drawer
     cap barberfish_fields
+    unpin_grade
     magick "$STAGE/barberfish_fields.png" -quality 92 "$OUTDIR/barberfish_fields.jpg"
     echo "  -> $OUTDIR/barberfish_fields.jpg"
 }
