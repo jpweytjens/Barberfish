@@ -3,57 +3,48 @@
 ## 4.0
 
 New data fields:
-- Distance, the ride odometer
-- Distance Remaining to the destination
-- Ascent Remaining, the climbing left to the destination
-- Descent Remaining to the destination
+- Distance, Distance Remaining, Ascent Remaining and Descent Remaining, also selectable as HUD slots
 - Ride Remaining, the distance and climbing left stacked in one field
-- Overview, a plain elevation profile of the whole route with a dot for where you are
-- Distance and the remaining fields also selectable as HUD slots
+- Overview, the whole route's elevation profile with a dot for where you are
 - The standalone elevation sparkline is now called Profile
 
-Data Field Design:
-- Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
+Grade map (beta, feedback welcome):
+- While navigating, the map's route line is painted in the same grade colors as the elevation profile, so you can see the climbs and descents without leaving the map
+- The new Grade Map card under Climbing turns it on and sets which grade bands are painted
+- Out-and-backs and laps are painted per pass
 
-Config previews:
-- Field previews now play one simulated ride: power, heart rate, cadence, and grade rise and fall together, elapsed time is moving plus paused, and dawn and dusk track sunrise and sunset
-- Similar fields preview different values: average speed Total reads below Moving, last lap trails the current lap
+Palettes and colors:
+- New Surgeonfish palette for grade and for power and HR zones: Karoo's climb colors respaced in even steps, with blue descents
+- The Barberfish grade palette now colors descents, in three teal-to-slate bands mirroring the climbs, and its flat band is a green-grey
+- Emphasis is set by dragging handles on the palette bar, separately for climbs and descents, and can now include the flat band
+- Threshold text colors adjust per theme like the zone palettes
 
-Colors:
-- Threshold text colors now adjust per theme like the zone palettes: red and green read clearly at night, the range warning orange in daylight
-- A one-sided min or max range in text mode no longer fades from white in light mode, where it was invisible
+Fields:
+- Fields can match Karoo's Data Icons and Label Size settings, set once in the new Data Field Design section
+- Grade shows a whole number or one decimal, with or without the % sign, on the field and on the HUD column
+- Profile and Overview can hide their header to give the elevation trace the whole cell
+- Fields say why data is missing, like the native ones: No sensor, No route, Off route
+- Time field icons turn green when the ride starts, like the native Ride Time field
+- A HUD column whose sensor is not paired is dropped and the others share its width
+
+Config screen:
+- Previews play one simulated ride, so related fields show values that belong together
+- The Global section is split into Palettes and Time
 
 New defaults, saved settings stay as they are:
 - Speed starts at instant rather than 3s smoothing
 - Power Zone and HR Zone start with one decimal
 
-Grade map (beta):
-- While navigating a route, the map's route line and direction chevrons take the same grade colors as the elevation profile, so you can see where the climbs are without leaving the map
-- The new Grade Map card under Climbing turns it on and picks what gets colored, the line or the chevrons. Its emphasis and detail follow the elevation profile by default, or can be set on their own
-- Beta means less riding than the rest of 4.0; if the map misbehaves, turn it off and report what you saw
-
-Grade:
-- Shows a whole number or one decimal, with or without the % sign
-- The HUD grade column has the same choices, set on the column itself
-
-Profile and Overview:
-- Hide the header to give the elevation trace the whole cell
-
-Placeholders and icons:
-- The generic Not available is gone; fields now say why data is missing, like the native ones: No sensor for an unpaired sensor, No route and Off route on route fields, Needs 30s power data on NP
-- Time field icons stay plain until the ride starts, then turn green, matching the native Ride Time field
-- The green icon tint now uses Karoo's darker shade in light mode
-
 Fixes:
-- A route ridden in reverse now shows saved POIs on the elevation profile where you meet them, rather than mirrored to the far end of the route
-- The position dot on the elevation profile no longer sits half outside the field at the very start and end of a route
-- Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
+- Global POIs now show on the elevation profile, not only the route's own. Thanks to Theolean for the report.
 - The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
-- Profile climb highlights no longer vanish when you enter the climb. Barberfish now keeps a ride-long climb inventory per route, using the caching approach worked out in timklge's karoo-routegraph.
-- POI dots on the elevation profile are now solid instead of slightly see-through
-- Grade in fill mode keeps its color while holding the last value, instead of dropping to grey text
-- The held-grey grade reading is now readable in light mode, not only dark
-- Searching and other placeholder text now sits at the same height as in the native fields, instead of slightly low
+- Climb highlights on the profile no longer vanish as you enter the climb, and hold steady while off route. Thanks to timklge's karoo-routegraph for the inspiration.
+- Off route, the profile holds your last on-route position instead of jumping back to the start
+- A route ridden in reverse shows POIs where you meet them, not mirrored to the far end
+- Dead-flat road at exactly 0% is colored on the elevation profile when Emphasis is off, instead of leaving black gaps
+- A one-sided min or max range in text mode is no longer invisible in light mode
+- Grade keeps its color in fill mode while holding the last value, and the held grey is readable in light mode
+- Smaller touch-ups: the position dot stays inside the field at the route ends, POI dots are solid, placeholder text sits at the native height, the green icon tint uses Karoo's darker shade in light mode
 
 ## 3.3.1
 
