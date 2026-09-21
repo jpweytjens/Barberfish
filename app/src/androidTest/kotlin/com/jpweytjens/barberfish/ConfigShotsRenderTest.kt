@@ -43,6 +43,8 @@ import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
@@ -58,6 +60,7 @@ import com.jpweytjens.barberfish.screens.CadenceThresholdControls
 import com.jpweytjens.barberfish.screens.CollapsibleSection
 import com.jpweytjens.barberfish.screens.ConfigSection
 import com.jpweytjens.barberfish.screens.DataFieldDesignSectionContent
+import com.jpweytjens.barberfish.screens.GradeMapCard
 import com.jpweytjens.barberfish.screens.HUDConfigSection
 import com.jpweytjens.barberfish.screens.LocalDataFieldDesign
 import com.jpweytjens.barberfish.screens.LocalScreenshotMode
@@ -295,6 +298,27 @@ class ConfigShotsRenderTest {
             }
         }
         capture("hud_config")
+    }
+
+    @Test
+    fun gradeMapConfig() {
+        // Own tuning rather than the default sync with the profile, so the shot shows every
+        // control the card has. Taller than the K3 screen, so paged and stitched like the palettes.
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
+            var gradeMapConfig by remember {
+                mutableStateOf(GradeMapConfig(syncWithSparkline = false))
+            }
+            GradeMapCard(
+                config = gradeMapConfig,
+                sparklineConfig = SparklineConfig(),
+                gradePalette = GradePalette.BARBERFISH,
+                selected = true,
+                onSelect = {},
+                onUpdate = { gradeMapConfig = it },
+            )
+        }
+        captureTall("grade_map_config", scrollState)
     }
 
     @Test

@@ -1235,7 +1235,7 @@ internal const val SECTION_ANIM_MS = 200
 private val GRADE_MAP_TUNING_OPTIONS = listOf(true to "Sync", false to "Independent")
 
 @Composable
-private fun GradeMapCard(
+internal fun GradeMapCard(
     config: GradeMapConfig,
     sparklineConfig: SparklineConfig,
     gradePalette: GradePalette,

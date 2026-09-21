@@ -53,7 +53,7 @@
     <ID>LongMethod:HUDField.kt$HUDField.Companion$fun slot(slotCfg: HUDSlotConfig): List&lt;FieldState&gt;</ID>
     <ID>LongMethod:MainActivity.kt$@Composable internal fun &lt;T&gt; SmoothingSlider( options: List&lt;T&gt;, selected: T, label: (T) -&gt; String, onSelected: (T) -&gt; Unit, thumbIcon: Int? = null, )</ID>
     <ID>LongMethod:MainActivity.kt$@Composable internal fun CollapsibleSection( section: ConfigSection, expanded: Boolean, onToggle: () -&gt; Unit, content: @Composable ColumnScope.() -&gt; Unit, )</ID>
-    <ID>LongMethod:MainActivity.kt$@Composable private fun GradeMapCard( config: GradeMapConfig, sparklineConfig: SparklineConfig, gradePalette: GradePalette, selected: Boolean, onSelect: () -&gt; Unit, onUpdate: (GradeMapConfig) -&gt; Unit, )</ID>
+    <ID>LongMethod:MainActivity.kt$@Composable internal fun GradeMapCard( config: GradeMapConfig, sparklineConfig: SparklineConfig, gradePalette: GradePalette, selected: Boolean, onSelect: () -&gt; Unit, onUpdate: (GradeMapConfig) -&gt; Unit, )</ID>
     <ID>LongMethod:MainActivity.kt$MainActivity$@OptIn(ExperimentalComposeUiApi::class) @Composable private fun ConfigScreen()</ID>
     <ID>LongMethod:OverviewSparkline.kt$@OptIn(FlowPreview::class) fun overviewBitmapFlow( karooSystem: KarooSystemService, context: Context, widthPx: Int, heightPx: Int, isPreview: Boolean, ): Flow&lt;Bitmap?&gt;</ID>
     <ID>LongMethod:SparklineDataFlow.kt$@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow( karooSystem: KarooSystemService, context: Context, configFlow: Flow&lt;SparklineConfig&gt;, widthPx: Int, heightPx: Int, isPreview: Boolean, ): Flow&lt;SparklineFrame&gt;</ID>
