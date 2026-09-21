@@ -360,8 +360,9 @@ emitting while a forecast is missing (zeros) and while the fix has no course
 `heldWindState`: a text state always shows; with a course the fresh reading
 shows; without one the last live reading is held, ungreyed; before any live
 reading, "Searching…". The course comes from `streamRiderFix`, shared with the
-map sock, which holds it at the last non-null value. The one text state is "No
-wind data", with `noSensor` so a HUD column collapses.
+map sock, which holds it at the last non-null value. Every stream state other
+than streaming reads "No wind data", with `noSensor` so a HUD column
+collapses.
 
 App detection lives in the config screen only: `MainActivity` asks the package
 manager for the Headwind package on every resume (the manifest's `<queries>`

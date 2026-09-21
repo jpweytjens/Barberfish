@@ -103,6 +103,20 @@ class WindFieldStateTest {
     }
 
     @Test
+    fun a_searching_stream_also_reads_no_wind_data() {
+        val state =
+            WindField.toFieldState(
+                angle = StreamState.Searching,
+                headwindSpeed = streaming("h", 0.0),
+                windSpeed = streaming("w", 0.0),
+                profile = metric,
+                cfg = cfg,
+            )
+        assertEquals("No wind data", state.primary)
+        assertTrue(state.noSensor)
+    }
+
+    @Test
     fun colour_off_keeps_the_arrow_but_not_the_colour() {
         val state =
             WindField.toFieldState(

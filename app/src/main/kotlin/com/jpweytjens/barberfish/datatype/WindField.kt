@@ -19,7 +19,6 @@ import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamRiderFix
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamWindFieldConfig
-import com.jpweytjens.barberfish.extension.toErrorFieldState
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
@@ -123,9 +122,9 @@ class WindField(private val karooSystem: KarooSystemService) :
                 }
                 .filterNotNull()
 
-        // Suppressed: the three-stream toErrorFieldState early-return pattern (see
-        // Extensions.kt) is required so streaming, error and unavailable states share one
-        // label; that is inherently more returns than the default threshold allows.
+        // Suppressed: the stream guard plus the three value fallbacks share one text state
+        // for every non-streaming case, which is inherently more returns than the default
+        // threshold allows.
         @Suppress("ReturnCount")
         fun toFieldState(
             angle: StreamState,
@@ -134,14 +133,12 @@ class WindField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             cfg: WindFieldConfig,
         ): FieldState {
-            angle.toErrorFieldState(LABEL, ICON, noWindData())?.let {
-                return it
-            }
-            headwindSpeed.toErrorFieldState(LABEL, ICON, noWindData())?.let {
-                return it
-            }
-            windSpeed.toErrorFieldState(LABEL, ICON, noWindData())?.let {
-                return it
+            if (
+                angle !is StreamState.Streaming ||
+                    headwindSpeed !is StreamState.Streaming ||
+                    windSpeed !is StreamState.Streaming
+            ) {
+                return noWindData()
             }
             val angleDeg = angle.single() ?: return noWindData()
             val headwind = headwindSpeed.single() ?: return noWindData()
