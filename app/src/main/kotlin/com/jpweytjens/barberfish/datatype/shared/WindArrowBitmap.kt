@@ -87,7 +87,7 @@ private fun drawWindArrow(canvas: Canvas, angleDeg: Float, box: Float, color: In
         }
     val centre = box / 2f
     val halfShaft = WindArrowGeometry.shaftPx(box) / 2f
-    val arm = WindArrowGeometry.headArmPx(box)
+    val arm = WindArrowGeometry.headOffsetPx(box)
     val top = centre - halfShaft
     val head =
         Path().apply {

@@ -62,10 +62,7 @@ fun windSockBands(speed: Double, unit: WindUnit): Int =
     (speed / unit.perBand).roundToInt().coerceIn(0, WindSockGeometry.MAX_BANDS)
 
 /** Grade-field convention: bare into the wind, minus with it, no decimals. */
-fun formatHeadwind(speed: Double): String {
-    val rounded = speed.roundToInt()
-    return if (rounded == 0) "0" else rounded.toString()
-}
+fun formatHeadwind(speed: Double): String = speed.roundToInt().toString()
 
 /** Headwind speed at which the colour saturates: 20 km/h, the same wind in mph. */
 private const val WIND_COLOR_FULL_SCALE_KPH = 20.0

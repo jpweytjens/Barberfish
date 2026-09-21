@@ -13,7 +13,7 @@ class WindArrowTest {
     fun proportions_match_the_mockup() {
         assertEquals(78f, WindArrowGeometry.shaftPx(box), 0.001f)
         assertEquals(11f, WindArrowGeometry.strokePx(box), 0.001f)
-        assertEquals(24f, WindArrowGeometry.headArmPx(box), 0.001f)
+        assertEquals(24f, WindArrowGeometry.headOffsetPx(box), 0.001f)
     }
 
     @Test
@@ -23,7 +23,7 @@ class WindArrowTest {
     }
 
     @Test
-    fun the_head_does_not_reach_past_the_midpoint() {
-        assertTrue(WindArrowGeometry.headArmPx(box) < WindArrowGeometry.shaftPx(box) / 2f)
+    fun the_head_offset_stays_short_of_the_half_shaft() {
+        assertTrue(WindArrowGeometry.headOffsetPx(box) < WindArrowGeometry.shaftPx(box) / 2f)
     }
 }
