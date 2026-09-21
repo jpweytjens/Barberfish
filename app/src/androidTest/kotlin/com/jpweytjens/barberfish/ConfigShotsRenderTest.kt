@@ -103,10 +103,14 @@ class ConfigShotsRenderTest {
                 ),
             maxHr = 190,
             restingHr = 60,
-            heartRateZones = emptyList(),
-            ftp = 250,
-            powerZones = emptyList(),
+            // Zone ceilings at 60/70/80/90/100 % of max HR and 55/75/90/105/120/150 % of FTP,
+            // so the preview ride's moments land in distinct zones instead of all in zone 1.
+            heartRateZones = zones(114, 133, 152, 171, 190),
+            ftp = 220,
+            powerZones = zones(121, 165, 198, 231, 264, 330, 2000),
         )
+
+    private fun zones(vararg maxes: Int) = maxes.map { UserProfile.Zone(min = 0, max = it) }
 
     private fun setShotContent(
         fixedHeight: Boolean = false,
@@ -254,16 +258,14 @@ class ConfigShotsRenderTest {
                 mutableStateOf(
                     HUDConfig(
                         columns = 4,
+                        // One slot per colour mode, so the shot shows all three at once.
                         leftSlot =
                             HUDSlotConfig(
                                 field = HUDSlotField.Speed,
-                                colorMode = ZoneColorMode.BACKGROUND,
+                                colorMode = ZoneColorMode.NONE,
                             ),
                         middleSlot =
-                            HUDSlotConfig(
-                                field = HUDSlotField.HR,
-                                colorMode = ZoneColorMode.BACKGROUND,
-                            ),
+                            HUDSlotConfig(field = HUDSlotField.HR, colorMode = ZoneColorMode.TEXT),
                         rightSlot =
                             HUDSlotConfig(
                                 field = HUDSlotField.Power,

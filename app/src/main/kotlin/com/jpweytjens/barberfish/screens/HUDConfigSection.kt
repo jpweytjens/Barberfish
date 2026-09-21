@@ -113,6 +113,11 @@ private val HUD_PREVIEW_HEIGHT = 90.dp
 // the screenshot always shows the same recognisable climb profile.
 private const val SCREENSHOT_SWEEP_POSITION_M = 5300f
 
+// Preview moment the slot row freezes at in screenshot mode: the steep climb of the preview ride
+// (PreviewRide index 4), where power, heart rate and grade all sit in coloured bands rather than
+// the uniform zone 1 of the warm-up moment.
+private const val SCREENSHOT_MOMENT_INDEX = 4
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HUDConfigSection(
@@ -388,8 +393,11 @@ private fun HUDPreview(
     var index by remember { mutableIntStateOf(0) }
     LaunchedEffect(states, screenshotMode) {
         index = 0
-        if (screenshotMode)
-            return@LaunchedEffect // freeze on the first state for reproducible shots
+        if (screenshotMode) {
+            // Freeze on the climb moment for reproducible shots (see SCREENSHOT_MOMENT_INDEX).
+            index = SCREENSHOT_MOMENT_INDEX.coerceIn(states.indices)
+            return@LaunchedEffect
+        }
         while (true) {
             delay(PREVIEW_DELAY_MS)
             index = (index + 1) % states.size
