@@ -50,10 +50,13 @@ class WindField(private val karooSystem: KarooSystemService) :
         private const val LABEL = "Wind"
         private val ICON = R.drawable.ic_air
 
-        /** The Headwind extension is absent or silent. noSensor drops the HUD column. */
-        fun noHeadwindApp(): FieldState =
+        /**
+         * No forecast yet, no internet before the first one, or the Headwind app missing; the
+         * streams look the same from outside. noSensor drops the HUD column.
+         */
+        fun noWindData(): FieldState =
             FieldState(
-                "No Headwind app",
+                "No wind data",
                 LABEL,
                 FieldColor.StreamState,
                 iconRes = ICON,
@@ -85,18 +88,18 @@ class WindField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             cfg: WindFieldConfig,
         ): FieldState {
-            angle.toErrorFieldState(LABEL, ICON, noHeadwindApp())?.let {
+            angle.toErrorFieldState(LABEL, ICON, noWindData())?.let {
                 return it
             }
-            headwindSpeed.toErrorFieldState(LABEL, ICON, noHeadwindApp())?.let {
+            headwindSpeed.toErrorFieldState(LABEL, ICON, noWindData())?.let {
                 return it
             }
-            windSpeed.toErrorFieldState(LABEL, ICON, noHeadwindApp())?.let {
+            windSpeed.toErrorFieldState(LABEL, ICON, noWindData())?.let {
                 return it
             }
-            val angleDeg = angle.single() ?: return noHeadwindApp()
-            val headwind = headwindSpeed.single() ?: return noHeadwindApp()
-            val speed = windSpeed.single() ?: return noHeadwindApp()
+            val angleDeg = angle.single() ?: return noWindData()
+            val headwind = headwindSpeed.single() ?: return noWindData()
+            val speed = windSpeed.single() ?: return noWindData()
             val unit = windUnitFor(profile)
             val bands = windSockBands(speed, unit)
             return FieldState(

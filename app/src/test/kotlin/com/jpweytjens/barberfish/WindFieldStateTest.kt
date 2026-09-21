@@ -82,16 +82,18 @@ class WindFieldStateTest {
     }
 
     @Test
-    fun missing_extension_is_the_no_headwind_app_state_and_drops_the_hud_column() {
+    fun no_forecast_is_the_no_wind_data_state_and_drops_the_hud_column() {
+        // Before the first forecast the extension's windSpeed stream is silent while the other
+        // two already stream zeros; the SDK reports the silent one as NotAvailable.
         val state =
             WindField.toFieldState(
-                angle = StreamState.NotAvailable,
-                headwindSpeed = StreamState.NotAvailable,
+                angle = streaming("a", 0.0),
+                headwindSpeed = streaming("h", 0.0),
                 windSpeed = StreamState.NotAvailable,
                 profile = metric,
                 cfg = cfg,
             )
-        assertEquals("No Headwind app", state.primary)
+        assertEquals("No wind data", state.primary)
         assertTrue(state.noSensor)
         assertEquals(FieldColor.StreamState, state.color)
     }
