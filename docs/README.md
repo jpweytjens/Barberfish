@@ -4,6 +4,7 @@
 
 - [Data fields](data-fields.md): every field with its palette, threshold, format, and smoothing options
 - [Elevation profile](elevation-profile.md): the terrain ahead, the position dot over a ride, and rerouting
+- [Grade map](grade-map.md): the route colored by grade on the map, out-and-back routes, and what to expect on a redraw
 - [Color palettes](color-palettes.md): every palette in both modes, and the contrast tuning behind them
 - [Algorithms](algorithms.md): the grade and ETA estimators explained
 - [Gallery](gallery.md): screenshots, including the states a short ride might not show
