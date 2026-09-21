@@ -82,9 +82,6 @@ fun windFieldColor(
     return FieldColor.Threshold(factor)
 }
 
-/** What the field renderer needs to draw the sock: standing bands and the rotation, 0 = up. */
-data class WindSockGlyph(val bands: Int, val angleDeg: Float)
-
 private const val METRES_PER_DEGREE_LAT = 111_320.0
 
 /**

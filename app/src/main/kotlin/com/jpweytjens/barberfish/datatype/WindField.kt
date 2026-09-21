@@ -7,7 +7,6 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HEADWIND_ANGLE_STREAM
 import com.jpweytjens.barberfish.datatype.shared.HEADWIND_SPEED_STREAM
 import com.jpweytjens.barberfish.datatype.shared.WIND_SPEED_STREAM
-import com.jpweytjens.barberfish.datatype.shared.WindSockGlyph
 import com.jpweytjens.barberfish.datatype.shared.WindUnit
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.formatHeadwind
@@ -32,9 +31,9 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.scan
 
 /**
- * Wind from the Headwind extension: the sock turned by the rider-relative angle beside the signed
- * headwind component. Three of that extension's streams feed it; the profile decides the unit the
- * bands assume (see WindUnit).
+ * Wind from the Headwind extension: a plain arrow turned by the rider-relative angle beside the
+ * signed headwind component. Three of that extension's streams feed it; the profile decides the
+ * unit the bands assume (see WindUnit).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WindField(private val karooSystem: KarooSystemService) :
@@ -135,7 +134,7 @@ class WindField(private val karooSystem: KarooSystemService) :
                 color = windFieldColor(headwind, unit, cfg.colorMode),
                 iconRes = ICON,
                 colorMode = cfg.colorMode,
-                windSock = if (bands > 0) WindSockGlyph(bands, angleDeg.toFloat()) else null,
+                windArrowDeg = if (bands > 0) angleDeg.toFloat() else null,
             )
         }
 
@@ -161,7 +160,7 @@ class WindField(private val karooSystem: KarooSystemService) :
                         color = windFieldColor(s.headwind, unit, cfg.colorMode),
                         iconRes = ICON,
                         colorMode = cfg.colorMode,
-                        windSock = if (bands > 0) WindSockGlyph(bands, s.angleDeg) else null,
+                        windArrowDeg = if (bands > 0) s.angleDeg else null,
                     )
                 }
         }

@@ -17,16 +17,16 @@ import com.jpweytjens.barberfish.datatype.shared.ColorConfig
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
-import com.jpweytjens.barberfish.datatype.shared.WIND_SOCK_GAP_DP
+import com.jpweytjens.barberfish.datatype.shared.WIND_ARROW_GAP_DP
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
-import com.jpweytjens.barberfish.datatype.shared.renderWindSockValueBitmap
+import com.jpweytjens.barberfish.datatype.shared.renderWindArrowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
-import com.jpweytjens.barberfish.datatype.shared.windSockBoxPx
+import com.jpweytjens.barberfish.datatype.shared.windArrowBoxPx
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 import timber.log.Timber
@@ -200,11 +200,11 @@ private fun makeFieldRemoteViews(
     // single point every field value (standalone, HUD slot, preview) flows through.
     val valueText = field.primary.replace(',', '.')
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
-    // The wind sock takes a square box of the value's height on the left; the number gets the
+    // The wind arrow takes a square box of the value's height on the left; the number gets the
     // rest and shrinks only if that is not enough.
     val valueWidthPx =
-        if (field.windSock != null)
-            cellWidthPx - windSockBoxPx(bitmapHeightPx) - WIND_SOCK_GAP_DP * density
+        if (field.windArrowDeg != null)
+            cellWidthPx - windArrowBoxPx(bitmapHeightPx) - WIND_ARROW_GAP_DP * density
         else cellWidthPx
     val (fontSp, maxLines) =
         fontSizeForCell(
@@ -247,14 +247,17 @@ private fun makeFieldRemoteViews(
         )
 
     val valueBitmap =
-        if (field.windSock != null) {
-            renderWindSockValueBitmap(
-                sock = field.windSock,
+        if (field.windArrowDeg != null) {
+            renderWindArrowValueBitmap(
+                angleDeg = field.windArrowDeg,
                 text = valueText,
                 fontSizePx = fontSp * density,
                 bitmapHeightPx = bitmapHeightPx,
                 cellWidthPx = cellWidthPx,
-                color = colors.valueText.toArgb(),
+                textColor = colors.valueText.toArgb(),
+                // Theme default text, or the on-fill pick in BACKGROUND mode: the arrow never
+                // takes the zone colour.
+                arrowColor = colors.headerText.toArgb(),
                 alignment = alignment,
                 context = context,
             )

@@ -1077,7 +1077,7 @@ class MainActivity : ComponentActivity() {
                                 title = "WIND",
                                 typeId = "wind",
                                 description =
-                                    "Headwind speed with a windsock, from the Headwind extension.",
+                                    "Headwind speed and direction, from the Headwind extension.",
                                 previewFields = windPreviewStates,
                                 colorMode = windFieldConfig.colorMode,
                                 selected = selectedDataField == "WIND",

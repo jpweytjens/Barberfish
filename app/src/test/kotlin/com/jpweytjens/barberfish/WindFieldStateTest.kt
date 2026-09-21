@@ -37,7 +37,7 @@ class WindFieldStateTest {
     private val cfg = WindFieldConfig(colorMode = ZoneColorMode.TEXT)
 
     @Test
-    fun front_right_headwind_gives_number_sock_and_red() {
+    fun front_right_headwind_gives_number_arrow_and_red() {
         val state =
             WindField.toFieldState(
                 angle = streaming("a", 225.0),
@@ -48,8 +48,7 @@ class WindFieldStateTest {
             )
         assertEquals("12", state.primary)
         assertEquals("Wind", state.label)
-        assertEquals(3, state.windSock?.bands)
-        assertEquals(225f, state.windSock?.angleDeg ?: -1f, 0.001f)
+        assertEquals(225f, state.windArrowDeg ?: -1f, 0.001f)
         assertTrue((state.color as FieldColor.Threshold).factor < 0f)
     }
 
@@ -68,7 +67,7 @@ class WindFieldStateTest {
     }
 
     @Test
-    fun calm_draws_no_sock_and_prints_zero() {
+    fun calm_draws_no_arrow_and_prints_zero() {
         val state =
             WindField.toFieldState(
                 angle = streaming("a", 90.0),
@@ -78,7 +77,7 @@ class WindFieldStateTest {
                 cfg = cfg,
             )
         assertEquals("0", state.primary)
-        assertNull(state.windSock)
+        assertNull(state.windArrowDeg)
     }
 
     @Test
@@ -99,7 +98,7 @@ class WindFieldStateTest {
     }
 
     @Test
-    fun colour_off_keeps_the_sock_but_not_the_colour() {
+    fun colour_off_keeps_the_arrow_but_not_the_colour() {
         val state =
             WindField.toFieldState(
                 angle = streaming("a", 180.0),
@@ -109,15 +108,15 @@ class WindFieldStateTest {
                 cfg = WindFieldConfig(colorMode = ZoneColorMode.NONE),
             )
         assertEquals(FieldColor.Default, state.color)
-        assertEquals(4, state.windSock?.bands)
+        assertEquals(180f, state.windArrowDeg ?: -1f, 0.001f)
     }
 
     @Test
     fun preview_cycles_through_the_spectrum() {
         val states = WindField.previewStates(cfg)
         assertTrue(states.size >= 4)
-        assertTrue(states.any { it.windSock == null })
-        assertTrue(states.any { it.windSock?.bands == 5 })
+        assertTrue(states.any { it.windArrowDeg == null })
+        assertTrue(states.any { it.windArrowDeg == 180f })
     }
 
     private val live =
