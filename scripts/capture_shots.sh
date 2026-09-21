@@ -181,10 +181,14 @@ ride_load_route() { # ride_load_route <route name> — control center -> ADD Rou
     tap_xy 37 89; settle 2              # search (the full list is too long to scroll through)
     A shell input text "$1"; settle 2
     tap_xy 443 747; settle 3            # keyboard search key
-    scroll_to text* "$1" || { echo "  ! route not found: $1" >&2; return 1; }
-    local xy; xy=$(ui tap text* "$1"); tap_xy $xy; settle 3   # open the route detail
+    # Open the first result by position: in a dump the route name matches the search box first,
+    # and tapping that only reopens the keyboard. The detail screen confirms it is the right route.
+    tap_xy 240 600; settle 3
     dump
-    ui has text "Follow route" >/dev/null 2>&1 && { tap text "Follow route"; settle 5; }
+    if ! { ui has text "$1" && ui has text "Follow route"; } >/dev/null 2>&1; then
+        echo "  ! route not found: $1" >&2; return 1
+    fi
+    tap text "Follow route"; settle 5
 }
 ride_end() { # finish flag -> confirm -> Delete -> confirm (discard the throwaway recording)
     tap_xy 40 732; settle 2             # finish flag (bottom-left of the map overlay)
