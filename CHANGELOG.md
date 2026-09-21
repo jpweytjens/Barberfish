@@ -32,6 +32,11 @@ Grade map (beta):
 - The new Grade Map card under Climbing turns it on and picks what gets colored, the line or the chevrons. Its emphasis and detail follow the elevation profile by default, or can be set on their own
 - Beta means less riding than the rest of 4.0; if the map misbehaves, turn it off and report what you saw
 
+Wind (needs the Headwind extension):
+- A Wind field and HUD slot: the headwind or tailwind speed, coloured by the threshold scale, with an arrow showing where the wind blows relative to you
+- A windsock on the map ahead of your position, longer with more wind, switched on in the Wind card
+- The Wind card greys out with an install hint when the Headwind extension is missing
+
 Grade:
 - Shows a whole number or one decimal, with or without the % sign
 - The HUD grade column has the same choices, set on the column itself
