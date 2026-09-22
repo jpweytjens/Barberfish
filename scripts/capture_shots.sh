@@ -204,8 +204,9 @@ ride_load_route() { # ride_load_route <route name> — control center -> ADD Rou
     fi
     tap text "Follow route"; settle 5
 }
-ride_end() { # finish flag -> confirm -> Delete -> confirm (discard the throwaway recording)
-    tap_xy 40 732; settle 2             # finish flag (bottom-left of the map overlay)
+ride_end() { # pause -> finish flag -> confirm -> Delete -> confirm (discard the recording)
+    press_button bottom_right; settle 2 # pause: shows the finish flag on any data page
+    tap_xy 40 732; settle 2             # finish flag (bottom-left of the pause overlay)
     tap_xy 429 732; settle 4            # confirm end
     scroll_to text "Delete" || { echo "  ! Delete not found on summary" >&2; return 1; }
     tap text "Delete"; settle 2
@@ -362,9 +363,11 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     config_get time "$STAGE/time_saved.json"
     config_set time scripts/fixtures/time_racing.json
     pin_grade
-    # Hold the replay for a minute so ride time falls behind elapsed time and the two
-    # average speeds separate; with no stop they read the same to one decimal.
-    replay_pause; settle 60; replay_resume
+    # Pause the ride for a minute so ride time falls behind elapsed time and the two
+    # average speeds separate; with no stop they read the same to one decimal. Pausing
+    # the replay app instead does not pause the ride (paused time stayed at 6 s, K3
+    # 2026-09-22).
+    press_button bottom_right; settle 60; press_button bottom_right; settle 3
     goto_page 2; settle_drawer
     cap barberfish_fields
     unpin_grade
