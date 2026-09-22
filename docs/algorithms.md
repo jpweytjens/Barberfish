@@ -3,8 +3,7 @@
 Most GPS bike computer manufacturers, Hammerhead included, don't publish the
 algorithms behind their built-in smoothing and ETA fields. Barberfish uses
 explicit, documented ones so the field's behaviour is something you can
-predict. This page holds the mechanisms behind the
-[README highlights](../README.md#highlights).
+predict. This page holds the mechanisms behind the Grade and ETA fields.
 
 ## Grade
 
@@ -25,4 +24,6 @@ Grade is smoothed over distance rather than time, fitting an [ordinary least squ
 
 ## ETA
 
-ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens/godot) of recent speed with a configurable prior, so the estimate sharpens as the ride goes on rather than starting from a generic guess. It is not yet gradient-aware, so the climb you can see coming will still pull the arrival time inward. The forward-looking replacement lives in [Godot](https://github.com/jpweytjens/godot).
+An arrival estimate that assumes the rest of the ride goes as fast as the part behind you is fine on flat roads and wrong on hilly ones: a fast descent pulls the arrival time in just before the climb pushes it back out. The current field narrows that error without removing it. It blends a 5-minute and a 1-hour [DEWMA](https://en.wikipedia.org/wiki/Exponential_smoothing#Double_exponential_smoothing) of recent speed with a configurable prior, so the estimate sharpens as the ride goes on rather than starting from a generic guess, and the slow average damps the swing a single descent would otherwise cause. It still only looks backward, so a climb you can see coming does not move the estimate until you are on it.
+
+Riding with it made the limit clear: on hilly terrain, the history of the ride says less about the road ahead than the route's elevation profile does. The next ETA, [Godot](https://github.com/jpweytjens/godot), weights the distance still to ride by its gradient, so a climb ahead pushes the arrival time out before you reach it. It is the planned replacement for this field.
