@@ -25,13 +25,14 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 ## Highlights
 
 - A 3- or 4-column HUD [groups any fields side by side](docs/gallery.md#hud-and-elevation-profile), with zone coloring, smoothing, and formatting set per slot.
-- With a route loaded, the elevation profile shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
+- With a route loaded, the [elevation profile](docs/elevation-profile.md) shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
+- [Overview](docs/elevation-profile.md#the-overview-field) draws the whole route with a dot for where you are, and Ride Remaining stacks the distance and climbing left.
 - The grade map [colors the route on the map page by grade](docs/grade-map.md), with direction chevrons on top.
 - Grade is [fitted to the road rather than the clock](docs/algorithms.md#grade): steady at any speed, and unmoved by a stop, a pause at a light, or barometer drift while you wait.
 - Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md).
-- Threshold coloring for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
+- [Threshold coloring](docs/data-fields.md#thresholds) for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
 
-The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mode, light mode, the native comparison, and the config screens.
+The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mode, light mode, the native comparison, and the config screens. The [documentation index](docs/README.md) lists every guide.
 
 ## Data fields
 
