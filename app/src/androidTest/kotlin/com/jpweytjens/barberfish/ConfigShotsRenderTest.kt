@@ -60,6 +60,7 @@ import com.jpweytjens.barberfish.screens.CadenceThresholdControls
 import com.jpweytjens.barberfish.screens.CollapsibleSection
 import com.jpweytjens.barberfish.screens.ConfigSection
 import com.jpweytjens.barberfish.screens.DataFieldDesignSectionContent
+import com.jpweytjens.barberfish.screens.GradeBandSlider
 import com.jpweytjens.barberfish.screens.GradeMapCard
 import com.jpweytjens.barberfish.screens.HUDConfigSection
 import com.jpweytjens.barberfish.screens.LocalDataFieldDesign
@@ -324,6 +325,46 @@ class ConfigShotsRenderTest {
         }
         captureTall("grade_map_config", scrollState)
     }
+
+    // The Emphasis bar on its own, one shot per setting the algorithms page contrasts. One test
+    // each: the compose rule takes a single setContent per test.
+    private fun emphasisShot(
+        name: String,
+        palette: GradePalette,
+        climbEdge: Double,
+        descentEdge: Double?,
+    ) {
+        setShotContent {
+            GradeBandSlider(
+                palette = palette,
+                climbEdge = climbEdge,
+                descentEdge = descentEdge,
+                onEdgesChange = { _, _ -> },
+                neutral = null,
+            )
+        }
+        capture(name)
+    }
+
+    // Handles met at the flat band's lower edge: every band takes a colour.
+    @Test
+    fun emphasisAll() =
+        emphasisShot("emphasis_all", GradePalette.BARBERFISH, climbEdge = -2.0, descentEdge = -2.0)
+
+    // The default one-band skip: the flat band between the handles stays quiet.
+    @Test
+    fun emphasisDefault() =
+        emphasisShot(
+            "emphasis_default",
+            GradePalette.BARBERFISH,
+            climbEdge = 2.0,
+            descentEdge = -2.0,
+        )
+
+    // A one-sided palette: no descent takes a colour, so the bar has a climb handle only.
+    @Test
+    fun emphasisClimbs() =
+        emphasisShot("emphasis_climbs", GradePalette.KAROO, climbEdge = 2.0, descentEdge = null)
 
     @Test
     fun paletteConfig() {
