@@ -63,7 +63,7 @@ The dot is yellow while you are on the route, purple when Karoo is routing you t
 
 ## Rerouting
 
-Leaving the route turns the dot red. Karoo plots a rejoin path back to your route (the red line on the map) but provides no elevation data for it, so the detour itself cannot be drawn. While the rejoin line is active the profile currently jumps back to the start of the route; once you rejoin, your position is recalculated and the window lands back where you actually are. The jump is a known bug, tracked in [#24](https://github.com/jpweytjens/Barberfish/issues/24).
+Leaving the route turns the dot red. Karoo plots a rejoin path back to your route (the red line on the map) but provides no elevation data for it, so the detour itself cannot be drawn. While the rejoin line is active the profile holds your last on-route position, so the window stays put; once you rejoin, your position is recalculated and the window lands back where you actually are.
 
 ## The Overview field
 
