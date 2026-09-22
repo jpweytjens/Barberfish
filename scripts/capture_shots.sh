@@ -169,15 +169,18 @@ replay_pause() {
     replay_open; dump
     if ui has text "Pause" >/dev/null 2>&1; then tap text "Pause"; settle 1; fi
 }
+replay_resume() { # resume playback and go back to the ride; otherwise the next capture
+    # shows the replay screen with the HUD reading "No data"
+    dump; ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 1; }
+    dump
+    if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi
+}
 replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that fraction
     replay_open
     local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 55 + f*(455-55)}')
     tap_xy "$x" 312; settle 1   # track y verified on-device; adjust if the thumb does not move
-    # Scrubbing pauses playback and leaves the replay app in front; resume and go back to the
-    # ride, or the next capture shows the replay screen with the HUD reading "No data".
-    dump; ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 1; }
-    dump
-    if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi
+    # Scrubbing pauses playback and leaves the replay app in front.
+    replay_resume
 }
 
 # ---- rideapp ride lifecycle (fixed coords where the ride screen won't dump) --
@@ -356,10 +359,16 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     echo "barberfish_fields: data page 2"
     session_start
     set_hud scripts/fixtures/hud/barberfish_fields.json
+    config_get time "$STAGE/time_saved.json"
+    config_set time scripts/fixtures/time_racing.json
     pin_grade
+    # Hold the replay for a minute so ride time falls behind elapsed time and the two
+    # average speeds separate; with no stop they read the same to one decimal.
+    replay_pause; settle 60; replay_resume
     goto_page 2; settle_drawer
     cap barberfish_fields
     unpin_grade
+    [[ -f "$STAGE/time_saved.json" ]] && config_set time "$STAGE/time_saved.json"
     magick "$STAGE/barberfish_fields.png" -quality 92 "$OUTDIR/barberfish_fields.jpg"
     echo "  -> $OUTDIR/barberfish_fields.jpg"
 }
