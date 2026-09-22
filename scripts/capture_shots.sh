@@ -219,6 +219,25 @@ goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), fro
     local i
     for (( i=1; i<$1; i++ )); do A shell input swipe 400 400 80 400 250; settle 1; done
 }
+goto_fields_page() { # swipe left until the fields page is on screen
+    # "To ride" returns to whichever data page the ride was last on, so counting swipes from
+    # page 1 lands anywhere. Recognize the page instead: its Grade / Elapsed time label row is
+    # fixed, so a crop of that band matches the committed shot closely (RMSE 0.007 seen on a
+    # match, 0.27 or more on every other page). `magick compare` exits 1 whenever the images
+    # differ, so its status is ignored and only the printed distance is read.
+    local i d
+    magick docs/screenshots/barberfish_fields.jpg -crop 480x40+0+362 +repage "$STAGE/fields_ref.png"
+    tap_xy 240 400; settle 1
+    for i in 1 2 3 4 5 6; do
+        A exec-out screencap -p > "$STAGE/fields_probe.png"
+        magick "$STAGE/fields_probe.png" -crop 480x40+0+362 +repage "$STAGE/fields_band.png"
+        d=$(magick compare -metric RMSE "$STAGE/fields_band.png" "$STAGE/fields_ref.png" null: 2>&1 \
+            | sed 's/.*(\(.*\))/\1/' || true)
+        if awk -v d="$d" 'BEGIN{exit !(d < 0.2)}'; then return 0; fi
+        A shell input swipe 400 400 80 400 250; settle 1.5
+    done
+    echo "  ! fields page not found" >&2; return 1
+}
 settle_drawer() { settle "${1:-6}"; }   # the bottom pill auto-hides after a few idle seconds
 map_extensions_toggle() { # flip the puzzle toggle (extension map effects) in the map layers menu
     tap_xy 63 452; settle 1             # layers button, left edge of the map
@@ -363,12 +382,15 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     config_get time "$STAGE/time_saved.json"
     config_set time scripts/fixtures/time_racing.json
     pin_grade
+    # Scrub to the long descent after minute 45 so the profile ahead matches the pinned
+    # grade, and ride it for a few minutes so the elapsed time is not seconds.
+    replay_seek 0.30; settle 240
     # Pause the ride for a minute so ride time falls behind elapsed time and the two
     # average speeds separate; with no stop they read the same to one decimal. Pausing
     # the replay app instead does not pause the ride (paused time stayed at 6 s, K3
     # 2026-09-22).
     press_button bottom_right; settle 60; press_button bottom_right; settle 3
-    goto_page 2; settle_drawer
+    goto_fields_page; settle_drawer
     cap barberfish_fields
     unpin_grade
     [[ -f "$STAGE/time_saved.json" ]] && config_set time "$STAGE/time_saved.json"
