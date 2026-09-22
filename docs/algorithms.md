@@ -34,6 +34,19 @@ The stretches are the trace with its least significant points dropped. The point
 
 Every segment now has a grade, and Emphasis sets the grade at which color starts. The control is a handle on the palette bar. It snaps to the palette's band boundaries, so it colors whole bands: from the handle's band up on the climb side, and from its band down on the descent side. Gentler road stays quiet, unfilled on the profile and drawn in the map's neutral, so flat road stays flat and the climbs stand out. Parking a handle at the end of the bar turns that side off.
 
+<table>
+  <tr>
+    <td align="center">Handles met at the flat band: every band takes a color</td>
+    <td align="center">The default: the flat band between the handles stays quiet</td>
+    <td align="center">Karoo colors no descents, so its bar has a climb handle only</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/emphasis_all.jpg" alt="Barberfish palette bar with both handles at -2 percent, so every band from the flat band up and every descent band is colored"></td>
+    <td align="center"><img src="screenshots/emphasis_default.jpg" alt="Barberfish palette bar with the climb handle at 2 percent and the descent handle at -2 percent, the flat band between them greyed out"></td>
+    <td align="center"><img src="screenshots/emphasis_climbs.jpg" alt="Karoo palette bar starting at 0 percent with a single climb handle at 2 percent and no descent side"></td>
+  </tr>
+</table>
+
 What a handle can reach depends on the palette, which is why the [palettes page](color-palettes.md#grade-palettes) lists two properties per palette. A descent handle exists only on a palette that colors descents (Barberfish, Surgeonfish, Turbo); on the others no descent takes a color anywhere, and the bar has a climb handle only. And on a palette whose flat band spans zero (Barberfish, Surgeonfish), the climb handle has one more stop, at the lower edge of that band, which colors the flat band too and puts every color in the palette on the road. A palette whose bands start at zero has no such stop, because its flat band is already the first climb band.
 
 ### One pipeline, three surfaces
