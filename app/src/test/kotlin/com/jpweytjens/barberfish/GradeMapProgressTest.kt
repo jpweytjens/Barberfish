@@ -24,18 +24,18 @@ class GradeMapProgressTest {
     @Test
     fun advance_moves_in_buckets() {
         val progress = tracked()
-        // 10 km route, 9880 m remaining -> 120 m ridden -> bucket 2 -> 100 m.
-        assertTrue(progress.advance(9_880.0, onRoute = true, routeDistanceM = 10_000.0))
-        assertEquals(100.0, progress.progressM, 0.0)
+        // 10 km route, 9875 m remaining -> 125 m ridden -> bucket 12 -> 120 m.
+        assertTrue(progress.advance(9_875.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertEquals(120.0, progress.progressM, 0.0)
     }
 
     @Test
     fun sub_bucket_movement_does_not_advance() {
         val progress = tracked()
         assertTrue(progress.advance(9_880.0, onRoute = true, routeDistanceM = 10_000.0))
-        // 130 m ridden is still bucket 2.
-        assertFalse(progress.advance(9_870.0, onRoute = true, routeDistanceM = 10_000.0))
-        assertEquals(100.0, progress.progressM, 0.0)
+        // 125 m ridden is still bucket 12.
+        assertFalse(progress.advance(9_875.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertEquals(120.0, progress.progressM, 0.0)
     }
 
     @Test
@@ -86,10 +86,20 @@ class GradeMapProgressTest {
     fun a_repeated_jump_is_committed() {
         val progress = tracked()
         // Loading a route mid-way, or a long GPS gap: the jump is real when the next
-        // sample lands within a bucket of it.
+        // sample lands close to it.
         assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
         assertTrue(progress.advance(19_980.0, onRoute = true, routeDistanceM = 34_151.0))
-        assertEquals(14_150.0, progress.progressM, 0.0)
+        assertEquals(14_170.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_repeated_jump_is_committed_at_speed() {
+        val progress = tracked()
+        // Between two one-second samples a fast descent covers several buckets; the
+        // confirming sample still counts as agreeing with the held jump.
+        assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertTrue(progress.advance(19_960.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(14_190.0, progress.progressM, 0.0)
     }
 
     @Test
@@ -100,7 +110,7 @@ class GradeMapProgressTest {
         assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
         assertEquals(0.0, progress.progressM, 0.0)
         assertTrue(progress.advance(19_990.0, onRoute = true, routeDistanceM = 34_151.0))
-        assertEquals(14_150.0, progress.progressM, 0.0)
+        assertEquals(14_160.0, progress.progressM, 0.0)
     }
 
     @Test
@@ -108,10 +118,10 @@ class GradeMapProgressTest {
         val progress = tracked()
         assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
         assertTrue(progress.advance(34_031.0, onRoute = true, routeDistanceM = 34_151.0))
-        assertEquals(100.0, progress.progressM, 0.0)
+        assertEquals(120.0, progress.progressM, 0.0)
         // A later sample near the old held value is again a lone jump.
         assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
-        assertEquals(100.0, progress.progressM, 0.0)
+        assertEquals(120.0, progress.progressM, 0.0)
     }
 
     @Test
@@ -169,8 +179,8 @@ class GradeMapProgressTest {
     @Test
     fun arrival_covers_the_final_partial_bucket() {
         val progress = tracked()
-        // 998 m route: floor bucketing alone would cap progress at 950 m and never
-        // reach a chevron placed in the last 48 m.
+        // 998 m route: floor bucketing alone would cap progress at 990 m and never
+        // reach a chevron placed in the last 8 m.
         assertTrue(progress.advance(0.0, onRoute = true, routeDistanceM = 998.0))
         assertTrue(progress.progressM >= 998.0)
     }
