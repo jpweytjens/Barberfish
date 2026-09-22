@@ -2,16 +2,18 @@
 
 ## 4.0
 
+Grade map (beta, feedback welcome):
+- While navigating, the map's route line is painted in the same grade colors as the elevation profile, so you can see the climbs and descents without leaving the map
+- Chevrons on the band show direction. Their spacing is a setting: bunched on the steepest road, where the gradient changes, or in between
+- Behind you the band stays and its chevrons clear, so the road already ridden is the stretch without them
+- Out-and-backs and laps are painted per pass, with the road ahead on top
+- Off route, the Karoo's path back is drawn as a red band and clears once you rejoin
+- The new Grade Map card under Climbing turns it on, sets which grade bands are painted, and picks the chevron spacing
+
 New data fields:
 - Distance, Distance Remaining, Ascent Remaining and Descent Remaining, also selectable as HUD slots
 - Ride Remaining, the distance and climbing left stacked in one field
 - Overview, the whole route's elevation profile with a dot for where you are
-- The standalone elevation sparkline is now called Profile
-
-Grade map (beta, feedback welcome):
-- While navigating, the map's route line is painted in the same grade colors as the elevation profile, so you can see the climbs and descents without leaving the map
-- The new Grade Map card under Climbing turns it on and sets which grade bands are painted
-- Out-and-backs and laps are painted per pass
 
 Palettes and colors:
 - New Surgeonfish palette for grade and for power and HR zones: Karoo's climb colors respaced in even steps, with blue descents
@@ -20,6 +22,7 @@ Palettes and colors:
 - Threshold text colors adjust per theme like the zone palettes
 
 Fields:
+- The standalone elevation sparkline is now called Profile
 - Fields can match Karoo's Data Icons and Label Size settings, set once in the new Data Field Design section
 - Grade shows a whole number or one decimal, with or without the % sign, on the field and on the HUD column
 - Profile and Overview can hide their header to give the elevation trace the whole cell
