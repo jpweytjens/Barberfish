@@ -120,7 +120,17 @@ class GradeMapTuningTest {
                 GradePalette.BARBERFISH,
             )
 
-        assertEquals(-3.0, tuning.descentEdge)
+        // The stored -3.0 wins over the sparkline's edge, snapped to Barberfish's nearest
+        // descent stop.
+        assertEquals(-2.0, tuning.descentEdge)
+    }
+
+    @Test
+    fun `unsynced overlay snaps its own stored descent edge`() {
+        val map = GradeMapConfig(syncWithSparkline = false, climbEdge = 3.0, descentEdge = -3.0)
+        val tuning = resolveGradeMapTuning(map, SparklineConfig(), GradePalette.SURGEONFISH)
+        assertEquals(2.0, tuning.climbEdge)
+        assertEquals(-2.0, tuning.descentEdge)
     }
 
     // BarberfishExtension's map overlay de-dupes rebuilds by comparing GradeMapConfigInputs'

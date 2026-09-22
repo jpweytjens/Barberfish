@@ -41,11 +41,16 @@ fun resolveGradeMapTuning(
     } else {
         val (climbEdge, _) = map.gradeEdges(palette)
         val (_, sparklineDescentEdge) = sparkline.gradeEdges(palette)
+        // Snap the combined pair: the map's own stored descent edge has not been through
+        // gradeEdges, and the sparkline's was bounded by the sparkline's climb handle, not
+        // this one.
+        val (climb, descent) =
+            snapGradeEdges(palette, climbEdge, map.descentEdge ?: sparklineDescentEdge)
         EffectiveGradeMapTuning(
             map.skipBands,
             map.simplification,
-            climbEdge,
-            map.descentEdge ?: sparklineDescentEdge,
+            climb,
+            descent,
         )
     }
 
