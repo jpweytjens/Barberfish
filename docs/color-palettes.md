@@ -48,22 +48,24 @@ built.
 
 ## Grade palettes
 
-| Palette    | Grade bands                            |
-| ---------- | -------------------------------------- |
-| Karoo      | ![](palettes/palette-grade-karoo.svg)  |
-| Barberfish | ![](palettes/palette-grade-barberfish.svg) |
-| Surgeonfish | ![](palettes/palette-grade-surgeonfish.svg) |
-| Turbo      | ![](palettes/palette-grade-turbo.svg)  |
-| Wahoo      | ![](palettes/palette-grade-wahoo.svg)  |
-| Garmin     | ![](palettes/palette-grade-garmin.svg) |
-| HSLuv      | ![](palettes/palette-grade-hsluv.svg)  |
-| Zwift      | ![](palettes/palette-grade-zwift.svg)  |
+| Palette    | Grade bands                            | Descents | Flat band  |
+| ---------- | -------------------------------------- | -------- | ---------- |
+| Karoo      | ![](palettes/palette-grade-karoo.svg)  |          | from 0     |
+| Barberfish | ![](palettes/palette-grade-barberfish.svg) | colored | spans zero |
+| Surgeonfish | ![](palettes/palette-grade-surgeonfish.svg) | colored | spans zero |
+| Turbo      | ![](palettes/palette-grade-turbo.svg)  | colored  | from 0     |
+| Wahoo      | ![](palettes/palette-grade-wahoo.svg)  |          | from 0     |
+| Garmin     | ![](palettes/palette-grade-garmin.svg) |          | from 0     |
+| HSLuv      | ![](palettes/palette-grade-hsluv.svg)  |          | from 0     |
+| Zwift      | ![](palettes/palette-grade-zwift.svg)  |          | from 0     |
 
 Barberfish, Surgeonfish, and Turbo color descents; the other palettes stop
 at flat. On those a descent takes no color anywhere: the Grade field shows
 its value plain, the elevation profile leaves the stretch unfilled, and the
 [grade map](grade-map.md#reading-it) draws it in its neutral, the same as
-flat road.
+flat road. The two columns also set what [Emphasis](algorithms.md#emphasis)
+can reach: a descent handle only where descents are colored, and a stop that
+colors the flat band only where it spans zero.
 
 ## Perceptually uniform palettes
 
