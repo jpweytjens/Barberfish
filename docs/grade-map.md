@@ -37,9 +37,9 @@ Leave the route and the Karoo plots a path back. The grade map draws that path a
 
 ## How it is drawn
 
-An extension can only draw on top of the Karoo's route line, never beneath it or in its place. The line and its chevrons stay on the map, so the only way to decide what the route looks like is to cover them. That is why the band is broader than the line it stands in for: it is just wide enough to hide both.
+The band is wider than the Karoo's route line because it has to hide it: an extension can only draw on top of the line and its chevrons, never beneath them or in their place.
 
-The band is also many pieces rather than one line. Each stretch of color is its own segment, with a black casing beneath it that keeps the edge crisp against the map, and the map adds them in its own time. On the first draw, and after a zoom on a long route or one that repeats ground, that takes a second or two, and the Karoo's line may show through until the band settles. Nothing needs restarting.
+It is also many pieces rather than one line, each stretch of color its own segment with a black casing that keeps its edge crisp against the map, and the map adds them in its own time. On the first draw, and after a zoom on a long route or one that repeats ground, that takes a second or two, and the Karoo's line may show through until the band settles. Nothing needs restarting.
 
 ## Settings
 
