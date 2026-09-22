@@ -219,25 +219,29 @@ goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), fro
     local i
     for (( i=1; i<$1; i++ )); do A shell input swipe 400 400 80 400 250; settle 1; done
 }
-goto_fields_page() { # swipe left until the fields page is on screen
+goto_page_like() { # goto_page_like <reference jpg> <crop WxH+X+Y> <max RMSE> — swipe left until
+    # a crop of the screen matches the same crop of a committed shot.
     # "To ride" returns to whichever data page the ride was last on, so counting swipes from
-    # page 1 lands anywhere. Recognize the page instead: its Grade / Elapsed time label row is
-    # fixed, so a crop of that band matches the committed shot closely (RMSE 0.007 seen on a
-    # match, 0.27 or more on every other page). `magick compare` exits 1 whenever the images
-    # differ, so its status is ignored and only the printed distance is read.
+    # page 1 lands anywhere. Recognize the page instead by a region that is fixed on it: the
+    # Grade / Elapsed time label row on the fields page (RMSE 0.007 on a match, 0.27 or more
+    # elsewhere), the column of map buttons on the map page (0.25 to 0.33 on a match, 0.85
+    # elsewhere). `magick compare` exits 1 whenever the images differ, so its status is ignored
+    # and only the printed distance is read.
     local i d
-    magick docs/screenshots/barberfish_fields.jpg -crop 480x40+0+362 +repage "$STAGE/fields_ref.png"
+    magick "$1" -crop "$2" +repage "$STAGE/page_ref.png"
     tap_xy 240 400; settle 1
     for i in 1 2 3 4 5 6; do
-        A exec-out screencap -p > "$STAGE/fields_probe.png"
-        magick "$STAGE/fields_probe.png" -crop 480x40+0+362 +repage "$STAGE/fields_band.png"
-        d=$(magick compare -metric RMSE "$STAGE/fields_band.png" "$STAGE/fields_ref.png" null: 2>&1 \
+        A exec-out screencap -p > "$STAGE/page_probe.png"
+        magick "$STAGE/page_probe.png" -crop "$2" +repage "$STAGE/page_band.png"
+        d=$(magick compare -metric RMSE "$STAGE/page_band.png" "$STAGE/page_ref.png" null: 2>&1 \
             | sed 's/.*(\(.*\))/\1/' || true)
-        if awk -v d="$d" 'BEGIN{exit !(d < 0.2)}'; then return 0; fi
+        if awk -v d="$d" -v m="$3" 'BEGIN{exit !(d < m)}'; then return 0; fi
         A shell input swipe 400 400 80 400 250; settle 1.5
     done
-    echo "  ! fields page not found" >&2; return 1
+    echo "  ! page like $1 not found" >&2; return 1
 }
+goto_map_page()    { goto_page_like docs/screenshots/hud_sparkline.jpg    90x280+18+405 0.5; }
+goto_fields_page() { goto_page_like docs/screenshots/barberfish_fields.jpg 480x40+0+362  0.2; }
 settle_drawer() { settle "${1:-6}"; }   # the bottom pill auto-hides after a few idle seconds
 map_extensions_toggle() { # flip the puzzle toggle (extension map effects) in the map layers menu
     tap_xy 63 452; settle 1             # layers button, left edge of the map
@@ -339,7 +343,9 @@ shot_hud_sparkline() { # page 1: map + 3-col HUD + elevation profile strip (READ
     echo "hud_sparkline: map page, HUD 3-col Speed/HR/Power, sparkline on"
     session_start
     set_hud scripts/fixtures/hud/hud_sparkline.json
-    goto_page 1; settle_drawer
+    # Minute 31 of the replay: a hairpin on the climb, so the band and the profile both show it.
+    replay_seek 0.19; settle 20
+    goto_map_page; settle_drawer
     cap hud_sparkline
     magick "$STAGE/hud_sparkline.png" -quality 92 "$OUTDIR/hud_sparkline.jpg"
     echo "  -> $OUTDIR/hud_sparkline.jpg"
