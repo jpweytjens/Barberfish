@@ -44,9 +44,7 @@ The strip shows a fixed window of road ahead: 5, 10, or 20 km. Tapping the profi
 
 ## The position dot
 
-At the start of a route the dot sits at the far left edge, the whole window ahead of it. As distance accumulates the dot slides right until it settles about an eighth of the way in, and there it stays for most of the ride. From that anchor the road scrolls past the dot rather than the dot moving across the road: a short stretch of road behind you stays visible on the left, and the terrain ahead compresses gently into the distance, so the road right in front of you gets the most pixels.
-
-The anchor holds until less than one window of route remains. Then the window pins to the end of the route, stops scrolling, and the dot moves again, traversing from its anchor to the right edge over the final kilometers.
+For most of a ride the dot sits an eighth of the way in from the left and the road scrolls past it, so a short stretch behind you stays in view and the road in front gets the most pixels, with the terrain ahead compressing gently into the distance. Only the ends differ: the dot starts at the left edge with the whole window ahead and slides to its anchor over the first kilometres, and once less than one window of route remains the window pins to the finish and the dot travels on to the right edge.
 
 <table>
   <tr>
