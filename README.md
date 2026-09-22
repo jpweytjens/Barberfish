@@ -9,7 +9,6 @@
 
 [Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keep Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.
 Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
-
 Barberfish fields sit alongside the native ones, match their look, and quietly add a bit more.
 
 <table>
