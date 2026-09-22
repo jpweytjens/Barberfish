@@ -80,3 +80,42 @@ internal fun reachableDescentStops(stops: List<EdgeStop>, climbSel: EdgeStop): L
     stops.filter {
         it.axisGrade <= climbSel.axisGrade
     }
+
+/**
+ * The stops a stored (climb, descent) pair lands on. Null descent: the palette has no descent
+ * stops.
+ */
+internal data class GradeEdgeSelection(val climb: EdgeStop, val descent: EdgeStop?)
+
+/**
+ * The one resolution of a stored edge pair against [palette]: the slider's handles and every
+ * renderer read through this, so they cannot disagree. Climb resolves first, from the full stop
+ * list, then bounds the descent side: a crossed stored pair (hand-edited DataStore, version skew, a
+ * palette switch) normalizes into a legal meet instead of crossed handles. Climb-first is arbitrary
+ * but deterministic.
+ */
+internal fun selectGradeEdges(
+    palette: GradePalette,
+    climbEdge: Double?,
+    descentEdge: Double?,
+): GradeEdgeSelection {
+    val climb = nearestEdgeStop(climbEdgeStops(palette), climbEdge)
+    val descentStops = descentEdgeStops(palette).takeIf { it.size > 1 }
+    val descent = descentStops?.let {
+        nearestEdgeStop(reachableDescentStops(it, climb), descentEdge)
+    }
+    return GradeEdgeSelection(climb, descent)
+}
+
+/**
+ * [selectGradeEdges] as the edge pair the renderers consume. A null side stays null (that side is
+ * uncoloured); a stored descent edge on a palette with no descent stops resolves to null too.
+ */
+internal fun snapGradeEdges(
+    palette: GradePalette,
+    climbEdge: Double?,
+    descentEdge: Double?,
+): Pair<Double?, Double?> {
+    val selection = selectGradeEdges(palette, climbEdge, descentEdge)
+    return climbEdge?.let { selection.climb.edge } to descentEdge?.let { selection.descent?.edge }
+}
