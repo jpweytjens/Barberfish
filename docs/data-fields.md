@@ -5,10 +5,10 @@ the single-cell fields first, then the 3- and 4-column HUD strips.
 
 <img src="screenshots/all_fields.png" alt="Every Barberfish field rendered from its live preview, with the 3-column and 4-column HUD strips at the bottom">
 
-The table lists the same fields grouped by category. The Enhancements
-columns list the options each field supports. All of them are set per field
-in the Barberfish app, with live previews; changes apply mid-ride. The
-graphical Profile and Overview fields have [a page of their own](elevation-profile.md).
+Below, the same fields by category, with the palette, threshold, format and
+smoothing options each one supports; all are set per field in the Barberfish
+app, with live previews, and apply mid-ride. Profile and Overview have
+[a page of their own](elevation-profile.md).
 
 The HUD hides a slot whose sensor is not paired and widens the remaining
 columns to fill the strip, so a ride without the power meter shows a
