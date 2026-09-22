@@ -25,7 +25,7 @@ The fill uses the same [gradient palette](color-palettes.md) as the Grade field,
   </tr>
 </table>
 
-The color reflects the trend of the road, not the number on a grade field. Before coloring, the profile merges small elevation wiggles into longer stretches (the Simplification setting) and colors each stretch by its average grade. On rolling terrain the two can disagree: a gentle descent broken by short rises can average out slightly uphill, land inside the emphasis handles, and stay uncolored even though the grade field read negative most of the way. Turning Simplification down narrows the gap by keeping more of the small detail, at the cost of a busier profile that changes color more often.
+Each colored stretch is a simplified segment averaged over its length, so the color reflects the trend of the road rather than the number on the Grade field, and on rolling terrain the two can disagree ([how the coloring works](algorithms.md#grade-coloring)).
 
 Climbs detected by Karoo tint the outline blue, and points of interest on the route appear as markers at their distance down the road.
 
@@ -82,8 +82,8 @@ The HUD strip and the Profile field carry the same settings, kept separately per
 | Setting | Options | Effect |
 | --- | --- | --- |
 | Lookahead | 5 / 10 / 20 km | Distance shown ahead of your position. Tapping the profile cycles it. |
-| Emphasis | Handles on the palette bar | Color starts at each handle's grade; gentler grades stay uncolored so meaningful climbs stand out. Parking a handle at the end of the bar turns that side off. On palettes with a flat band spanning zero, dragging a handle past the flat band colors it too, so every color in the palette can be shown. Climb and descent handles are separate when the palette colors descents. |
-| Simplification | Off / Mild / Medium / Max | Merges small elevation wiggles into larger same-color blocks. |
+| Emphasis | Handles on the palette bar | Grade at which color starts; gentler grades stay unfilled. What a handle can reach depends on the palette ([Emphasis](algorithms.md#emphasis)). |
+| Simplification | Off / Mild / Medium / Max | Floor on the smallest bump the profile keeps ([Simplification](algorithms.md#simplification)). |
 | X-warp | Off / Mild / Medium / Max | Fisheye magnification around the dot: nearby road gets more pixels, distant road fewer. |
 | Y-zoom | Close / Normal / Wide | Zoom on elevation changes. Close amplifies minor bumps, Wide smooths them out. |
 | Climbs | On / Off | Blue outline on climbs detected by Karoo. |
