@@ -10,7 +10,7 @@
 [Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keep Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.
 Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
 
-Barberfish fields sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, an elevation profile of the road ahead, a route colored by grade on the map, a grade that holds steady at any speed, an ETA that learns as you ride, and smoothing, color palettes, and thresholds set per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
+Barberfish fields sit alongside the native ones, match their look, and quietly add a bit more.
 
 <table>
   <tr>
@@ -25,36 +25,36 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 
 ## Highlights
 
-- A 3- or 4-column HUD [groups any fields side by side](docs/gallery.md#hud-and-elevation-profile), with zone coloring, smoothing, and formatting set per slot. A slot whose sensor is not paired is hidden and the others widen to fill the strip.
-- With a route loaded, the elevation profile below the HUD shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
-- The grade map colors the route on the map page by grade, with direction chevrons on top, and [keeps the road ahead colored on out-and-back routes](docs/grade-map.md).
-- Grade is [smoothed over the last 30 m of road](docs/algorithms.md#grade) rather than a time window, so it holds steady at any speed and stops moving when you do.
-- ETA [learns from how you have actually been riding](docs/algorithms.md#eta), so the estimate sharpens as the ride goes on instead of starting from a generic guess.
-- Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md) kept legible in light and dark mode.
+- A 3- or 4-column HUD [groups any fields side by side](docs/gallery.md#hud-and-elevation-profile), with zone coloring, smoothing, and formatting set per slot.
+- With a route loaded, the elevation profile shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
+- The grade map [colors the route on the map page by grade](docs/grade-map.md), with direction chevrons on top.
+- Grade is [fitted to the road rather than the clock](docs/algorithms.md#grade): steady at any speed, and unmoved by a stop, a pause at a light, or barometer drift while you wait.
+- Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md).
 - Threshold coloring for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
-- Per-field setup in the Barberfish app with live previews, covering [every field and its options](docs/data-fields.md).
 
 The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mode, light mode, the native comparison, and the config screens.
 
 ## Data fields
 
-39 fields across ten categories: power, heart rate, speed, cadence, climbing, navigation, time, ETA, daylight, and the HUD. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
+39 fields, from power and heart rate to navigation, ETA, and daylight. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
 ![Every Barberfish field, rendered as it appears in the Karoo field picker](docs/screenshots/all_fields.png)
 
 ## Color palettes
 
-Zone and grade palettes designed for Barberfish, alongside palettes matching other bike computers and training apps, each kept legible in light and dark mode. The [palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
+Two grade palettes designed for Barberfish, shown in Text mode on light and dark, then Fill. Both color descents as well as climbs, where most palettes stop at flat. The [palettes page](docs/color-palettes.md) has the full set, including palettes matching other bike computers and training apps, each kept legible in both themes.
 
-Two Barberfish-designed grade palettes, shown in Text mode on light and dark, then Fill. Both color descents, with a limb down to -10% and steeper, teal on Barberfish and blue on Surgeonfish; Turbo does too, and the other palettes stop at flat. Surgeonfish respaces the same reading in [even perceptual steps](docs/color-palettes.md#perceptually-uniform-palettes) and also comes as a power and HR zone palette.
+Barberfish
 
 ![Barberfish grade palette in both themes and fill mode](docs/palettes/palette-grade-barberfish.svg)
+
+Surgeonfish, the same reading in [even perceptual steps](docs/color-palettes.md#perceptually-uniform-palettes)
 
 ![Surgeonfish grade palette in both themes and fill mode](docs/palettes/palette-grade-surgeonfish.svg)
 
 ## Configuration
 
-Every field is set up in the Barberfish app on your Karoo, with live previews and no companion app. Changes apply mid-ride. The [data fields](docs/data-fields.md) page lists every option.
+Every field is set up in the Barberfish app on your Karoo, with live previews. Changes apply mid-ride.
 
 <img src="docs/screenshots/hud_config.jpg" alt="HUD config with a 4-column live preview and the Power column selected, its data field, smoothing, and zone color options below" width="480">
 
