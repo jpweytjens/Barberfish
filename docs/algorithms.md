@@ -7,7 +7,7 @@ predict. This page holds the mechanisms behind the Grade field, the grade colori
 
 ## Grade
 
-Grade is smoothed over distance rather than time, fitting an [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) line through the last 30 m of elevation. A fixed-window time average has to pick between jittering with every cadence stroke (short window) and smearing the start and end of a climb (long window). The OLS-over-distance variant sidesteps the trade by following the road instead of the clock: it holds steady at any speed and stops moving when you do. At the start of a ride, before it has 30 m of road to fit, it shows "Searching…"; when you stop, it holds the last reading in grey rather than going blank.
+Grade is the slope of a [least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) line fitted through the last 30 m of road, so it reads the same at any speed and stops moving when you do; an average over the last few seconds would instead jitter with every pedal stroke when short and smear the foot and crest of a climb when long. Before the first 30 m it shows "Searching…", and when you stop it holds the last reading in grey rather than going blank.
 
 <table>
   <tr>
