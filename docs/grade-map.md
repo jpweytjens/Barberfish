@@ -19,11 +19,11 @@ The grade map is a single switch under Climbing in the Barberfish app, and it dr
 
 ## Reading it
 
-The band uses the same [gradient palette](color-palettes.md) as the Grade field and the elevation profile, so a color means the same grade on all three. Two controls decide how much of the route takes a color, and they are the ones the Profile field and the HUD strip carry. Emphasis leaves the gentlest grades in a neutral so that flat road stays quiet and the climbs stand out. Simplification merges small elevation wiggles into longer stretches, each colored by its average grade, which keeps a rolling road from flickering between colors. The elevation profile page [shows both at work](elevation-profile.md#reading-it). The map follows the Profile field's values so the two agree; set Tuning to Independent to give the map its own.
+The band uses the same [gradient palette](color-palettes.md) as the Grade field and the elevation profile, and the same Emphasis and Simplification decide how much of the route takes a color ([how the coloring works](algorithms.md#grade-coloring)), so a color means the same grade on all three. The map follows the Profile field's values so the two agree; set Tuning to Independent to give the map its own.
 
 Gentle road takes a neutral rather than going bare because of the Karoo's own colors. The Karoo draws its route line in yellow and turns it blue on the climbs it detects, as in the shot above. Blue says where a climb is, not how steep, and a ramp the Karoo does not count as a climb stays yellow. Nearly every grade palette has a yellow too, for a moderate climb, so a band that colored only the steep road and left the rest to the Karoo's line would make a yellow stretch ambiguous: plain route, or 6 per cent? So the band covers the whole route, and any yellow on the map is a grade.
 
-On Barberfish and Surgeonfish the neutral is the palette's own flat color, a sage and a muted green, so quiet road still looks like part of the palette. The [other palettes](color-palettes.md#grade-palettes) have no flat band to borrow and take a light grey. Barberfish, Surgeonfish, and Turbo color descents. The rest stop at flat, so on those every descent draws in the neutral as well, and the Emphasis bar has a climb handle only.
+On Barberfish and Surgeonfish the neutral is the palette's own flat color, a sage and a muted green, so quiet road still looks like part of the palette; the other palettes have no flat band to borrow and take a light grey. On a palette that [does not color descents](color-palettes.md#grade-palettes), every descent draws in the neutral as well.
 
 Chevrons show direction, and their spacing points at the road worth noticing. Under Gradient they sit closer together the steeper the road gets, up or down. The band's color already says that, so Changes spends them differently: they bunch where the gradient shifts, at the foot of a climb, a ramp, or a crest, and thin out where it holds steady. Balanced weighs the two equally.
 
@@ -47,6 +47,6 @@ The band is also many pieces rather than one line. Each stretch of color is its 
 | --- | --- | --- |
 | Enabled | On / Off | Draw the band and chevrons over the route. Off shows the Karoo's own line. |
 | Tuning | Sync / Independent | Take Emphasis and Simplification from the Profile field, or set them here. |
-| Emphasis | Handles on the palette bar | Color starts at each handle's grade; gentler road draws in the neutral. Works as it does [on the profile](elevation-profile.md#shaping-the-profile). |
-| Simplification | Off / Mild / Medium / Max | Merges small elevation wiggles into longer same-color stretches. |
+| Emphasis | Handles on the palette bar | Grade at which color starts; gentler road draws in the neutral ([Emphasis](algorithms.md#emphasis)). |
+| Simplification | Off / Mild / Medium / Max | Floor on the smallest bump the band keeps ([Simplification](algorithms.md#simplification)). |
 | Chevron spacing | Gradient / Balanced / Changes | Bunch chevrons on the steepest road, where the gradient shifts, or in between. |
