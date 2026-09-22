@@ -59,6 +59,12 @@ built.
 | HSLuv      | ![](palettes/palette-grade-hsluv.svg)  |
 | Zwift      | ![](palettes/palette-grade-zwift.svg)  |
 
+Barberfish, Surgeonfish, and Turbo color descents; the other palettes stop
+at flat. On those a descent takes no color anywhere: the Grade field shows
+its value plain, the elevation profile leaves the stretch unfilled, and the
+[grade map](grade-map.md#reading-it) draws it in its neutral, the same as
+flat road.
+
 ## Perceptually uniform palettes
 
 A grade palette is read at a glance, at speed, on a screen the size of a
@@ -92,7 +98,10 @@ own colors. The climb ramp above 2 per cent is the Karoo's, so a climb looks
 the way the native map has taught you to expect. Below it the Karoo's neutral
 band gives way to a quiet sage, which hands over more smoothly to the
 descents: three teal-to-slate bands at -2, -6 and -10 per cent, so flat and
-downhill read as one limb and only real grades draw the eye. The descent
+downhill read as one limb and only real grades draw the eye. On the [grade
+map](grade-map.md#reading-it) that sage is also the color of road too gentle
+to mark, so quiet stretches stay part of the palette where most palettes
+fall back to a grey. The descent
 thresholds mirror the climb side by time rather than by number: in the
 [GoldenCheetah OpenData](https://osf.io/6hfpz/) ride corpus, -10 per cent
 takes the same share of downhill time as +8 does of uphill, so both sides get
@@ -101,7 +110,8 @@ the same resolution.
 Surgeonfish takes the same reading with more freedom. Its hazard scale still
 climbs from green through yellow, orange and red to a dark purple above 20
 per cent, but the steps between are even in HSLuv rather than the Karoo's,
-and the flat band is muted so color builds only as the road tilts. The
+and the flat band is muted so color builds only as the road tilts, and
+serves as the grade map's neutral the same way. The
 descents keep Barberfish's -2, -6 and -10 and turn blue, deepening toward
 navy, after the blue limb of [Peter Kovesi's](https://colorcet.com/)
 perceptual rainbow maps. Neither house palette is a true perceptual map; both

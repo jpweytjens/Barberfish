@@ -1,10 +1,10 @@
 # Grade map
 
-The Karoo's map shows where the route goes. With the grade map on, it also shows how steep. The route is drawn as a band colored by grade, in the same palette as the Grade field and the elevation profile, with chevrons on top for direction. A glance at the map ahead tells you whether the next bend hides a climb and how hard it bites, without swiping to the profile page.
+The Karoo's map shows where the route goes. With the grade map on, it also shows how steep: the route is drawn as a band colored by grade, with chevrons on top for direction. A glance at the map tells you whether the next bend hides a climb and how hard it bites, without swiping to the profile page.
 
 <table>
   <tr>
-    <td align="center">The Karoo's own route line on a switchback climb</td>
+    <td align="center">The Karoo's own route line on the <a href="https://climbfinder.com/en/climbs/coll-de-la-garga-riu-de-xalo">Coll de la Garga</a>, blue for a detected climb</td>
     <td align="center">The same switchbacks with the grade map on</td>
   </tr>
   <tr>
@@ -13,34 +13,40 @@ The Karoo's map shows where the route goes. With the grade map on, it also shows
   </tr>
 </table>
 
-The grade map is one switch in the Barberfish app, under Climbing. It draws whenever you follow a route, and switching it off hands the map back to the Karoo's own route line. The card's preview shows the band on a sample route and, with the map off, the Karoo's line in its place, so the toggle compares the two looks in place.
+The grade map is a single switch under Climbing in the Barberfish app, and it draws whenever you follow a route. The preview on its card shows the band on a sample route.
 
 <img src="screenshots/grade_map_config.jpg" alt="Grade map config card with the enabled toggle, the band preview, tuning, emphasis handles, simplification, and chevron spacing" width="480">
 
 ## Reading it
 
-The band covers the whole route, but only grades past the Emphasis handles take a color. Gentler road draws in a neutral at the same width, so the band never thins and flat stretches stay quiet while the climbs stand out. Before coloring, small elevation wiggles are merged into longer stretches (Simplification), each colored by its average grade, the same way the [profile](elevation-profile.md#reading-it) does it. By default the map takes both settings from the elevation profile so the two agree; set Tuning to Independent to give the map its own.
+The band uses the same [gradient palette](color-palettes.md) as the Grade field and the elevation profile, so a color means the same grade on all three. Two controls decide how much of the route takes a color, and they are the ones the Profile field and the HUD strip carry. Emphasis leaves the gentlest grades in a neutral so that flat road stays quiet and the climbs stand out. Simplification merges small elevation wiggles into longer stretches, each colored by its average grade, which keeps a rolling road from flickering between colors. The elevation profile page [shows both at work](elevation-profile.md#reading-it). The map follows the Profile field's values so the two agree; set Tuning to Independent to give the map its own.
 
-Chevrons carry direction only, and grade stays in the band. Each palette draws its chevron in its own yellow climb color with a black outline, so on the yellow band the outline alone shows, as the Karoo's chevron does on its yellow line. How tightly they bunch is the Chevron spacing setting: Gradient packs them on the steepest ramps, Changes where the gradient shifts, and Balanced splits the difference.
+Gentle road takes a neutral rather than going bare because of the Karoo's own colors. The Karoo draws its route line in yellow and turns it blue on the climbs it detects, as in the shot above. Blue says where a climb is, not how steep, and a ramp the Karoo does not count as a climb stays yellow. Nearly every grade palette has a yellow too, for a moderate climb, so a band that colored only the steep road and left the rest to the Karoo's line would make a yellow stretch ambiguous: plain route, or 6 per cent? So the band covers the whole route, and any yellow on the map is a grade.
+
+On Barberfish and Surgeonfish the neutral is the palette's own flat color, a sage and a muted green, so quiet road still looks like part of the palette. The [other palettes](color-palettes.md#grade-palettes) have no flat band to borrow and take a light grey. Barberfish, Surgeonfish, and Turbo color descents. The rest stop at flat, so on those every descent draws in the neutral as well, and the Emphasis bar has a climb handle only.
+
+Chevrons show direction, and their spacing points at the road worth noticing. Under Gradient they sit closer together the steeper the road gets, up or down. The band's color already says that, so Changes spends them differently: they bunch where the gradient shifts, at the foot of a climb, a ramp, or a crest, and thin out where it holds steady. Balanced weighs the two equally.
 
 ## Behind you, and out and back
 
-As you ride, the band clears behind you and the Karoo's grey ridden trace shows through, so the map keeps its usual sense of where you have been. On a route that covers the same road twice, an out-and-back or a lap course, the first pass draws on top. Once ridden, that pass clears and the return leg's colors take its place, so the road ahead is always the one colored: the hill you just climbed shows its descent colors for the way back. Laps in the same direction look identical on every pass.
+Behind you the band stays drawn and only its chevrons clear, so the road already ridden is the stretch without them. On a route that covers the same road twice, an out-and-back or a lap course, the first pass draws on top. Its colors stay while that road is still on screen, then give way to the next pass's before you reach it again. The road ahead is always the one colored: the hill you climbed on the way out shows its descent colors on the way back. Laps in the same direction look identical on every pass.
 
 ## Off route
 
 Leave the route and the Karoo plots a path back. The grade map draws that path as a second band in the map's rerouting red, with red chevrons at a steady spacing since there is no grade to vary them with, and clears it once you rejoin.
 
-## What to expect
+## How it is drawn
 
-The band is drawn over the Karoo's own route line rather than replacing it, in layers the map applies in its own time. On the first draw, and again after a zoom on a long route or one that repeats ground, the layers land one after another, so the band can take a second or two to settle and the Karoo's line may show through until it does. Nothing needs restarting; the band catches up on its own.
+An extension can only draw on top of the Karoo's route line, never beneath it or in its place. The line and its chevrons stay on the map, so the only way to decide what the route looks like is to cover them. That is why the band is broader than the line it stands in for: it is just wide enough to hide both.
+
+The band is also many pieces rather than one line. Each stretch of color is its own segment, with a black casing beneath it that keeps the edge crisp against the map, and the map adds them in its own time. On the first draw, and after a zoom on a long route or one that repeats ground, that takes a second or two, and the Karoo's line may show through until the band settles. Nothing needs restarting.
 
 ## Settings
 
 | Setting | Options | Effect |
 | --- | --- | --- |
 | Enabled | On / Off | Draw the band and chevrons over the route. Off shows the Karoo's own line. |
-| Tuning | Sync / Independent | Take Emphasis and Simplification from the elevation profile, or set them here. |
-| Emphasis | Handles on the palette bar | Color starts at each handle's grade; gentler road draws in the neutral. Climb and descent handles are separate when the palette colors descents. |
+| Tuning | Sync / Independent | Take Emphasis and Simplification from the Profile field, or set them here. |
+| Emphasis | Handles on the palette bar | Color starts at each handle's grade; gentler road draws in the neutral. Works as it does [on the profile](elevation-profile.md#shaping-the-profile). |
 | Simplification | Off / Mild / Medium / Max | Merges small elevation wiggles into longer same-color stretches. |
-| Chevron spacing | Gradient / Balanced / Changes | Bunch chevrons on the steepest ramps, where the gradient shifts, or in between. |
+| Chevron spacing | Gradient / Balanced / Changes | Bunch chevrons on the steepest road, where the gradient shifts, or in between. |
