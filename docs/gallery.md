@@ -12,7 +12,7 @@ Slots, columns, and the profile modes are set per field in the Barberfish app ([
     <td align="center">HUD config with the Power column tapped to set its smoothing and zone color</td>
   </tr>
   <tr>
-    <td align="center" valign="top"><img src="screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
+    <td align="center" valign="top"><img src="screenshots/hud_sparkline.jpg" alt="Map page with a 3-column HUD, the elevation profile, and the route drawn as a grade-colored band with chevrons up the Molenberg"></td>
     <td align="center" valign="top"><img src="screenshots/hud_config.jpg" alt="HUD config screen with a 4-column preview, the Power column selected, and its data field, smoothing, and zone color options below"></td>
   </tr>
 </table>

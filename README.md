@@ -13,11 +13,11 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 
 <table>
   <tr>
-    <td align="center">Elevation profile below a 3-column HUD on the map view</td>
+    <td align="center">Grade map and elevation profile below a 3-column HUD, on the Molenberg</td>
     <td align="center">A full page of Barberfish fields, from the HUD to the route overview</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
+    <td align="center"><img src="docs/screenshots/hud_sparkline.jpg" alt="Map page with a 3-column HUD, the elevation profile, and the route drawn as a grade-colored band with chevrons up the Molenberg"></td>
     <td align="center"><img src="docs/screenshots/barberfish_fields.jpg" alt="Data page with 3-column HUD, elevation profile, zone-colored grade, elapsed time, both average speeds, route overview, and ride remaining"></td>
   </tr>
 </table>
