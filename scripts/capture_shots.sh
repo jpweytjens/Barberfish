@@ -143,10 +143,10 @@ get_hud() { config_get hud "$1"; }
 # Written twice: the first pin after a live reading was seen not to reach a running Grade view,
 # while a pin replacing another pin did, every time (K3, 2026-09-21). The first write is a
 # throwaway value, which has to differ or the second write changes nothing.
-pin_grade() {
-    echo '{"percent": -4.1}' > "$STAGE/grade_pin_first.json"
+pin_grade() { # pin_grade <fixture json> — the first write is a throwaway (see above)
+    echo '{"percent": 0.3}' > "$STAGE/grade_pin_first.json"
     config_set grade_pin "$STAGE/grade_pin_first.json"
-    config_set grade_pin scripts/fixtures/grade_pin_descent.json
+    config_set grade_pin "$1"
 }
 unpin_grade() { config_set grade_pin scripts/fixtures/grade_pin_off.json; }
 
@@ -189,8 +189,24 @@ ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
     tap_xy 429 732; settle 6   # green play FAB on the profile carousel
 }
+cc_ride_panel() { # open the control center on its Ride panel
+    # It opens on whichever panel was last shown and auto-closes after ~10 s. In-ride the
+    # panels run System, Display, Ride, Devices; only Ride carries a yellow tab icon at
+    # (403,53), so go to the left end and step right until that pixel is yellow.
+    local i px
+    press_button control_center; settle 1.2
+    for i in 1 2 3; do A shell input swipe 80 300 400 300 200; settle 0.7; done
+    for i in 1 2 3 4; do
+        A exec-out screencap -p > "$STAGE/cc.png"
+        px=$(magick "$STAGE/cc.png" -format '%[fx:int(255*p{403,53}.r)] %[fx:int(255*p{403,53}.g)] %[fx:int(255*p{403,53}.b)]' info:)
+        read -r r g b <<< "$px"
+        if (( r > 180 && g > 160 && b < 120 )); then return 0; fi
+        A shell input swipe 400 300 80 300 300; settle 1.2
+    done
+    echo "  ! control center Ride panel not found" >&2; return 1
+}
 ride_load_route() { # ride_load_route <route name> — control center -> ADD Route -> search -> Follow
-    press_button control_center; settle 1
+    cc_ride_panel || return 1
     tap_xy 239 184; settle 3            # ADD Route tile
     tap_xy 37 89; settle 2              # search (the full list is too long to scroll through)
     A shell input text "$1"; settle 2
@@ -387,7 +403,7 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     set_hud scripts/fixtures/hud/barberfish_fields.json
     config_get time "$STAGE/time_saved.json"
     config_set time scripts/fixtures/time_racing.json
-    pin_grade
+    pin_grade scripts/fixtures/grade_pin_descent.json
     # Scrub to the long descent after minute 45 so the profile ahead matches the pinned
     # grade, and ride it for a few minutes so the elapsed time is not seconds.
     replay_seek 0.30; settle 240
