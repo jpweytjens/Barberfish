@@ -66,21 +66,18 @@ Surgeonfish takes the same reading with more freedom: the hazard scale still run
 
 ## Text mode: auto contrast-tuning
 
-Some brand colors were never meant to be read as text. Wahoo's navy Z2 is
-nearly invisible against the dark ride screen, and colors designed for dark
+Some brand colors were never meant to be read as text: Wahoo's navy Z2 is
+nearly invisible on the dark ride screen, and colors made for dark
 backgrounds (yellows, light greens, pale grays) wash out in light mode.
-Barberfish brightens or darkens each affected color just enough to read on
-the current theme and keeps the hue, so the palette still looks like the
-brand it came from. Colors that already read fine are left alone.
+Barberfish shifts each affected color's lightness just far enough to pass as
+large bold text on the current theme and keeps the hue, so the palette still
+looks like the brand it came from. This contrast tuning is done per theme,
+with contrast measured by [APCA](https://apcacontrast.com/) and lightness
+shifted in [HSLuv](https://www.hsluv.org/).
 
-One limitation: two shades that differ only in darkness can end up on the
+One limitation: two shades that differ only in darkness can land on the
 same adjusted color. The steepest two bands of the Wahoo and Garmin grade
-palettes read as one color in Text mode; Fill mode keeps them apart.
-
-For the mechanism: contrast is measured with [APCA](https://apcacontrast.com/)
-and [HSLuv](https://www.hsluv.org/) lightness is shifted until the color
-passes as large bold text, precomputed per theme by
-[`apca_hsluv.py`](../scripts/apca_hsluv.py).
+palettes read as one in Text mode; Fill mode keeps them apart.
 
 ## Fill mode: auto-picked text color
 
@@ -92,19 +89,14 @@ Turbo's deep crimson, black on its lime.
 ## Threshold colors
 
 Threshold coloring ([Speed, average speed, and cadence](data-fields.md#thresholds))
-uses a fixed scale rather than the palettes above, and it is continuous where
-zones are stepped. Target mode fades from red below the target through neutral
-to green above it; the neutral matches the cell background (black in dark mode,
-white in light mode), so an at-target field blends into its neighbors. Range
-mode is green inside the range and red outside, with orange warning bands on
-both sides of min and max.
+uses a fixed scale rather than the palettes above, continuous where zones are
+stepped. Target mode fades from red below the target through neutral to green
+above it, and the neutral matches the cell background, so an at-target field
+blends into its neighbors. Range mode is green inside the range and red
+outside, with orange warning bands at both ends. In Text mode the scale colors
+the value instead, contrast-tuned per theme like the palettes above.
 
 | Mode                  | Scale                                        |
 | --------------------- | -------------------------------------------- |
 | Target (25 km/h)      | ![](palettes/threshold-legend-target.svg)    |
 | Range (20 to 30 km/h) | ![](palettes/threshold-legend-range.svg)     |
-
-The strips show fill mode against the dark theme, with the value text
-picked per position as in the palette previews. Text mode draws the scale
-as the value color instead, contrast-tuned per theme like the zone palettes
-above.
