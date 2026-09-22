@@ -1,12 +1,17 @@
 package com.jpweytjens.barberfish
 
+import androidx.compose.ui.graphics.Color
 import com.jpweytjens.barberfish.datatype.shared.GRADE_EDGE_OFF
 import com.jpweytjens.barberfish.datatype.shared.climbEdgeStops
 import com.jpweytjens.barberfish.datatype.shared.descentEdgeStops
+import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
 import com.jpweytjens.barberfish.datatype.shared.selectGradeEdges
 import com.jpweytjens.barberfish.datatype.shared.snapGradeEdges
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
+import com.jpweytjens.barberfish.extension.SparklineConfig
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -93,5 +98,46 @@ class GradeEdgeSnapTest {
     fun a_tie_resolves_toward_off_on_both_sides() {
         // 0.0 sits exactly between Barberfish's crossover stops (-2 and 2).
         assertEquals(2.0 to -2.0, snapGradeEdges(GradePalette.BARBERFISH, 0.0, 0.0))
+    }
+
+    @Test
+    fun sparkline_edges_read_through_the_palette_stops_and_storage_stays_raw() {
+        val config = SparklineConfig(climbEdge = 3.0, descentEdge = -3.0)
+        assertEquals(3.0 to -3.0, config.gradeEdges(GradePalette.TURBO))
+        assertEquals(2.0 to -2.0, config.gradeEdges(GradePalette.SURGEONFISH))
+        // Switching back restores the Turbo reading: nothing rewrote the stored value.
+        assertEquals(3.0 to -3.0, config.gradeEdges(GradePalette.TURBO))
+    }
+
+    @Test
+    fun the_reported_stale_descent_edge_no_longer_leaves_a_gap() {
+        // Turbo descent -3 stored, palette switched to Surgeonfish, climb handle moved to -2.
+        val config = SparklineConfig(climbEdge = -2.0, descentEdge = -3.0)
+        val (climb, descent) = config.gradeEdges(GradePalette.SURGEONFISH)
+        val color =
+            gradeBandColor(
+                grade = -2.5,
+                palette = GradePalette.SURGEONFISH,
+                climbEdge = climb,
+                descentEdge = descent,
+                neutral = Color.Unspecified,
+                readable = false,
+            )
+        assertNotEquals(Color.Unspecified, color)
+    }
+
+    @Test
+    fun map_edges_read_through_the_palette_stops() {
+        val config = GradeMapConfig(climbEdge = 3.0, descentEdge = -3.0)
+        assertEquals(2.0 to -2.0, config.gradeEdges(GradePalette.SURGEONFISH))
+    }
+
+    @Test
+    fun migrated_counts_snap_like_stored_edges() {
+        // Default skip counts (1, 0) migrate to (2.0, 0.0) on Barberfish; the descent 0.0 is a
+        // tie between the crossover stops and resolves toward Off, as the slider always showed.
+        assertEquals(2.0 to -2.0, SparklineConfig().gradeEdges(GradePalette.BARBERFISH))
+        // One-sided palettes: the descent side has no stops and stays null.
+        assertEquals(2.0 to null, SparklineConfig().gradeEdges(GradePalette.KAROO))
     }
 }

@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
+import com.jpweytjens.barberfish.datatype.shared.snapGradeEdges
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -231,11 +232,14 @@ data class SparklineConfig(
 
     /**
      * The resolved (climb, descent) edges: the stored thresholds when set, otherwise the legacy
-     * counts migrated through [palette]. A null in the result means that side stays uncoloured.
+     * counts migrated through [palette], both snapped to [palette]'s stops. This is the one
+     * authority for the effective edge: a stored value is palette independent and goes stale on a
+     * palette switch, so every renderer and the slider read through here and see the same snapped
+     * pair. A null in the result means that side stays uncoloured.
      */
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) = edgesFromSkipBands(skipBands, skipBandsDescent, palette)
-        return (climbEdge ?: climb) to (descentEdge ?: descent)
+        return snapGradeEdges(palette, climbEdge ?: climb, descentEdge ?: descent)
     }
 }
 
@@ -529,7 +533,7 @@ data class GradeMapConfig(
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) =
             edgesFromSkipBands(skipBands, skipBandsDescent = 0, palette = palette)
-        return (climbEdge ?: climb) to (descentEdge ?: descent)
+        return snapGradeEdges(palette, climbEdge ?: climb, descentEdge ?: descent)
     }
 }
 
