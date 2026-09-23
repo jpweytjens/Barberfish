@@ -40,6 +40,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
@@ -326,13 +327,16 @@ class ConfigShotsRenderTest {
         captureTall("grade_map_config", scrollState)
     }
 
-    // The Emphasis bar on its own, one shot per setting the algorithms page contrasts. One test
-    // each: the compose rule takes a single setContent per test.
+    // The Emphasis bar on its own, one shot per setting the algorithms page contrasts, in two
+    // rows: the Profile's bar (no neutral, an outlined groove between the handles) and the Grade
+    // Map card's (the map neutral painted there). One test each: the compose rule takes a single
+    // setContent per test.
     private fun emphasisShot(
         name: String,
         palette: GradePalette,
         climbEdge: Double,
         descentEdge: Double?,
+        neutral: Color? = null,
     ) {
         setShotContent {
             GradeBandSlider(
@@ -341,7 +345,7 @@ class ConfigShotsRenderTest {
                 descentEdge = descentEdge,
                 onClimbEdgeChange = {},
                 onDescentEdgeChange = {},
-                neutral = null,
+                neutral = neutral,
             )
         }
         capture(name)
@@ -362,10 +366,43 @@ class ConfigShotsRenderTest {
             descentEdge = -2.0,
         )
 
-    // A one-sided palette: no descent takes a colour, so the bar has a climb handle only.
+    // A one-sided palette: no descent takes a colour, so the bar has a climb handle only. The
+    // handle sits at 5 so the quiet stretch below it is wide enough to read.
     @Test
     fun emphasisClimbs() =
-        emphasisShot("emphasis_climbs", GradePalette.KAROO, climbEdge = 2.0, descentEdge = null)
+        emphasisShot("emphasis_climbs", GradePalette.KAROO, climbEdge = 5.0, descentEdge = null)
+
+    // The same three settings as the Grade Map card shows them: the map neutral between the
+    // handles instead of the Profile's groove.
+    @Test
+    fun emphasisMapAll() =
+        emphasisShot(
+            "emphasis_map_all",
+            GradePalette.BARBERFISH,
+            climbEdge = -2.0,
+            descentEdge = -2.0,
+            neutral = mapNeutral(GradePalette.BARBERFISH, readable = false),
+        )
+
+    @Test
+    fun emphasisMapDefault() =
+        emphasisShot(
+            "emphasis_map_default",
+            GradePalette.BARBERFISH,
+            climbEdge = 2.0,
+            descentEdge = -2.0,
+            neutral = mapNeutral(GradePalette.BARBERFISH, readable = false),
+        )
+
+    @Test
+    fun emphasisMapClimbs() =
+        emphasisShot(
+            "emphasis_map_climbs",
+            GradePalette.KAROO,
+            climbEdge = 5.0,
+            descentEdge = null,
+            neutral = mapNeutral(GradePalette.KAROO, readable = false),
+        )
 
     @Test
     fun paletteConfig() {
