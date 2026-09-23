@@ -129,6 +129,7 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -1285,7 +1286,7 @@ internal fun GradeMapCard(
                     descentEdge = effTuning.descentEdge,
                     onClimbEdgeChange = {},
                     onDescentEdgeChange = {},
-                    neutral = null,
+                    neutral = mapNeutral(gradePalette, readable = false),
                     enabled = false,
                 )
             } else {
@@ -1298,7 +1299,8 @@ internal fun GradeMapCard(
                 val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
                 LabeledHelper("EMPHASIS") {
                     HelperText(
-                        "Filter out gentle grades so meaningful climbs and descents stand out."
+                        "Filter out gentle grades so meaningful climbs and descents stand out. " +
+                            "Grades between the handles keep the map's neutral colour."
                     )
                 }
                 GradeBandSlider(
@@ -1307,7 +1309,7 @@ internal fun GradeMapCard(
                     descentEdge = effTuning.descentEdge,
                     onClimbEdgeChange = { onUpdate(config.copy(climbEdge = it)) },
                     onDescentEdgeChange = { onUpdate(config.copy(descentEdge = it)) },
-                    neutral = null,
+                    neutral = mapNeutral(gradePalette, readable = false),
                 )
 
                 LabeledHelper("SIMPLIFICATION") {
