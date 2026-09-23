@@ -95,9 +95,26 @@ class GradeEdgeSnapTest {
     }
 
     @Test
-    fun a_tie_resolves_toward_off_on_both_sides() {
-        // 0.0 sits exactly between Barberfish's crossover stops (-2 and 2).
-        assertEquals(2.0 to -2.0, snapGradeEdges(GradePalette.BARBERFISH, 0.0, 0.0))
+    fun an_edge_at_or_across_zero_is_fully_on_on_every_palette() {
+        for (palette in GradePalette.entries) {
+            val innermostClimb = climbEdgeStops(palette).first().edge
+            val (climb, _) = snapGradeEdges(palette, 0.0, null)
+            assertEquals("$palette", innermostClimb, climb)
+            val descentStops = descentEdgeStops(palette)
+            if (descentStops.size > 1) {
+                val (_, descent) = snapGradeEdges(palette, 5.0, 0.0)
+                assertEquals("$palette", descentStops.last().edge, descent)
+            }
+        }
+        // Turbo's fully-on pair reads as a Barberfish meet at the crossover, and back.
+        assertEquals(-2.0 to -2.0, snapGradeEdges(GradePalette.BARBERFISH, 0.0, 0.0))
+        assertEquals(0.0 to 0.0, snapGradeEdges(GradePalette.TURBO, -2.0, 2.0))
+    }
+
+    @Test
+    fun a_real_tie_resolves_toward_off() {
+        // 3.5 sits exactly between Barberfish's 2 and 5; -8 between its -6 and -10.
+        assertEquals(5.0 to -10.0, snapGradeEdges(GradePalette.BARBERFISH, 3.5, -8.0))
     }
 
     @Test

@@ -94,7 +94,8 @@ class GradeCellGeometryTest {
     @Test
     fun stored_zero_lands_on_the_zero_stop_where_one_exists() {
         assertEquals(0.0, nearestEdgeStop(climbEdgeStops(GradePalette.KAROO), 0.0).edge, 0.0)
-        // Barberfish has no zero stop: a stored 0.0 still snaps to the innermost stop.
+        // Barberfish has no zero stop: nearestEdgeStop alone breaks the tie toward Off.
+        // selectGradeEdges resolves a stored 0.0 as fully on before it gets here.
         assertEquals(2.0, nearestEdgeStop(climbEdgeStops(GradePalette.BARBERFISH), 0.0).edge, 0.0)
     }
 

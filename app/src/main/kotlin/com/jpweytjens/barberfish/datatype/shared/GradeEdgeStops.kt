@@ -55,10 +55,10 @@ internal fun descentEdgeStops(palette: GradePalette): List<EdgeStop> =
 
 // The position a stored edge lands on: nearest stop by axis distance, so a stale edge (a
 // retired stop, a parked sentinel) snaps rather than strands the thumb. On a distance tie (a
-// stored 0.0 on a crossover palette sits exactly between the innermost stop and the
-// crossover) the stop nearer Off wins: the conservative reading colours less, and keeps
-// legacy skip-zero migrations painting exactly the bands they always painted. A null edge
-// means that side colours nothing, which is the Off position.
+// stored 3.5 on Barberfish sits exactly between 2 and 5) the stop nearer Off wins: the
+// conservative reading colours less. An edge at or across zero never reaches here;
+// selectGradeEdges resolves it as fully on by sign first. A null edge means that side
+// colours nothing, which is the Off position.
 internal fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
     val off = stops.first { abs(it.edge) == GRADE_EDGE_OFF }
     if (edge == null) return off
@@ -99,10 +99,18 @@ internal fun selectGradeEdges(
     climbEdge: Double?,
     descentEdge: Double?,
 ): GradeEdgeSelection {
-    val climb = nearestEdgeStop(climbEdgeStops(palette), climbEdge)
+    val climbStops = climbEdgeStops(palette)
+    // An edge at or across zero asks for everything on its side: fully on, at whatever this
+    // palette's innermost stop is (a real zero edge, or a flat band's crossover). Only a
+    // threshold strictly inside the climb or descent range needs the nearest-stop guess.
+    val climb =
+        if (climbEdge != null && climbEdge <= 0.0) climbStops.first()
+        else nearestEdgeStop(climbStops, climbEdge)
     val descentStops = descentEdgeStops(palette).takeIf { it.size > 1 }
-    val descent = descentStops?.let {
-        nearestEdgeStop(reachableDescentStops(it, climb), descentEdge)
+    val descent = descentStops?.let { stops ->
+        val reachable = reachableDescentStops(stops, climb)
+        if (descentEdge != null && descentEdge >= 0.0) reachable.last()
+        else nearestEdgeStop(reachable, descentEdge)
     }
     return GradeEdgeSelection(climb, descent)
 }
