@@ -121,6 +121,33 @@ Not allowed (even though they compile):
 
 ---
 
+## RemoteViews methods that crash on Karoo 2
+
+Karoo 2 runs Android 8 and Karoo 3 runs Android 12 (API 32). The APK installs on
+both (minSdk 23), but three setter calls that apply cleanly on Karoo 3 throw at
+`RemoteViews.apply` on Karoo 2, where the method is not `@RemotableViewMethod`:
+
+- `rv.setInt(id, "setGravity", ...)`
+- `rv.setInt(id, "setTextAlignment", ...)`
+- `rv.setFloat(id, "setTranslationY", ...)`
+
+The rideapp catches the exception and the cell renders blank. Logcat shows:
+
+```
+android.widget.RemoteViews$ActionException:
+  view: android.widget.TextView can't use method with RemoteViews: setGravity(int)
+  at android.widget.RemoteViews.getMethod(RemoteViews.java:974)
+  at android.widget.RemoteViews$ReflectionAction.apply(RemoteViews.java:1521)
+```
+
+The workaround is to bake the attribute into the layout XML (`android:gravity`,
+`android:textAlignment`, `android:translationY`), one layout variant per value, and
+pick the variant at render time. `removeAllViews` and `addView` work on both devices,
+and an attribute set in XML is applied by the inflater, never through the remotable
+method check.
+
+---
+
 ## SDK container geometry
 
 When `emitter.updateView(rv)` is called with `showHeader = false`, the ride app
@@ -274,17 +301,6 @@ shrink.
 
 The SDK exposes no callback for container resize after `startView` and no event
 for the nav-toast show/hide that triggers it.
-
-### RemoteViews constraints on K2 (API 26)
-
-Hammerhead's K2 ROM blocks several `@RemotableViewMethod` calls that work on stock AOSP:
-
-- `setGravity(int)`: CRASH
-- `setTextAlignment(int)`: CRASH
-- `setTranslationY(float)`: CRASH
-
-Workaround: bake gravity, alignment, and translationY into XML layout files and select
-the appropriate variant at render time via `removeAllViews` / `addView` (both work on K2).
 
 ### Barberfish layout approach
 

@@ -13,5 +13,4 @@
 ## For developers
 
 - [Architecture](architecture.md): component hierarchy, rendering design, and conventions
-- [SDK findings](sdk-findings.md): empirically discovered Karoo SDK behavior
-- [Karoo 2 compatibility](karoo2-compatibility.md): platform differences that shape the rendering code
+- [SDK findings](sdk-findings.md): empirically discovered Karoo SDK behavior, including what differs on Karoo 2

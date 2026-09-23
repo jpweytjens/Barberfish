@@ -41,7 +41,7 @@ barberfishFieldRemoteViews(field, alignment, colorMode, sizeConfig, preview, con
           └── TextView (weight=1)         (bottom spacer)
 ```
 
-Alignment determines the layout file: `barberfish_field.xml` (right), `barberfish_field_left.xml` (left), `barberfish_field_center.xml` (center). Per-layout vertical translation is baked into `*_neg3.xml` variants via `android:translationY` on `field_value` (selected when `valueTranslationDp == -3`). No programmatic `setGravity()` or `setTranslationY()` calls are made; both are blacklisted on K2 (see `docs/karoo2-compatibility.md`).
+Alignment determines the layout file: `barberfish_field.xml` (right), `barberfish_field_left.xml` (left), `barberfish_field_center.xml` (center). Per-layout vertical translation is baked into `*_neg3.xml` variants via `android:translationY` on `field_value` (selected when `valueTranslationDp == -3`). No programmatic `setGravity()` or `setTranslationY()` calls are made; both crash on Karoo 2 (see `docs/sdk-findings.md` § "RemoteViews methods that crash on Karoo 2").
 
 `barberfishFieldRemoteViews()` receives a `FieldState` and a `ViewSizeConfig`; it has no access to streams, DataStore, or configuration. All sizing decisions are made by the caller before this function is invoked.
 
@@ -218,7 +218,7 @@ Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value`
 
 Mirrors the small upward translation observed in native narrow-cell layouts (see `docs/sdk-findings.md` § "Native header and value sizing"). Baked into per-variant XML (`barberfish_field_neg3.xml`, `barberfish_field_left_neg3.xml`, `barberfish_field_center_neg3.xml`) via `android:translationY="-3dp"` on the `field_value` `ImageView`. `BarberfishView.layoutRes(alignment, translationDp)` selects the `*_neg3` variant when `valueTranslationDp == -3`, the base XML otherwise. Only two distinct values are in use today (`0 dp` and `-3 dp`), so only one extra XML variant per alignment is needed.
 
-The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is not used. `setTranslationY` is not `@RemotableViewMethod` on K2 (API 27) and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/karoo2-compatibility.md`.
+The runtime `rv.setFloat(R.id.field_value, "setTranslationY", ...)` path is not used. `setTranslationY` is not `@RemotableViewMethod` on Karoo 2 and throws `ActionException` over RemoteViews IPC. XML attributes are processed at inflation by `LayoutInflater` via direct method dispatch, bypassing the allowlist. See `docs/sdk-findings.md` § "RemoteViews methods that crash on Karoo 2".
 
 ### Verification
 
