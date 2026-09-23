@@ -339,7 +339,8 @@ class ConfigShotsRenderTest {
                 palette = palette,
                 climbEdge = climbEdge,
                 descentEdge = descentEdge,
-                onEdgesChange = { _, _ -> },
+                onClimbEdgeChange = {},
+                onDescentEdgeChange = {},
                 neutral = null,
             )
         }

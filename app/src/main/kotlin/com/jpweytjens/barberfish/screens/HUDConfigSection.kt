@@ -860,9 +860,8 @@ internal fun SparklineOptionsControls(
         palette = zoneConfig.gradePalette,
         climbEdge = climbEdge,
         descentEdge = descentEdge,
-        onEdgesChange = { climb, descent ->
-            onUpdate(config.copy(climbEdge = climb, descentEdge = descent))
-        },
+        onClimbEdgeChange = { onUpdate(config.copy(climbEdge = it)) },
+        onDescentEdgeChange = { onUpdate(config.copy(descentEdge = it)) },
         neutral = null,
     )
     ChoiceRow(

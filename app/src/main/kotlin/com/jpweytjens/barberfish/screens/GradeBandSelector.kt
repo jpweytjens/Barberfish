@@ -188,16 +188,17 @@ internal fun pressSide(
  * palette's stops, and park at the end caps for Off. [neutral] is what the surface being configured
  * paints inside the edges; null means it paints nothing (the Profile), rendered as an outlined
  * groove. [enabled] false draws no handles and attaches no gesture: pure display for the map card's
- * Sync branch. One-sided palettes have no descent handle and pass [descentEdge] through
- * [onEdgesChange] unchanged. [ground] is the card body behind the bar; the handle halo reads from
- * it.
+ * Sync branch. Each side reports through its own callback, only when its own handle moves, so the
+ * untouched side is never written back: a one-sided palette has no descent handle and never calls
+ * [onDescentEdgeChange]. [ground] is the card body behind the bar; the handle halo reads from it.
  */
 @Composable
 internal fun GradeBandSlider(
     palette: GradePalette,
     climbEdge: Double?,
     descentEdge: Double?,
-    onEdgesChange: (climbEdge: Double, descentEdge: Double?) -> Unit,
+    onClimbEdgeChange: (Double) -> Unit,
+    onDescentEdgeChange: (Double) -> Unit,
     neutral: Color?,
     enabled: Boolean = true,
     ground: Color = Grey200,
@@ -232,9 +233,8 @@ internal fun GradeBandSlider(
     // its own updates cause; these keep its captures current.
     val currentClimbSel by rememberUpdatedState(climbSel)
     val currentDescentSel by rememberUpdatedState(descentSel)
-    val currentClimbEdge by rememberUpdatedState(climbEdge)
-    val currentDescentEdge by rememberUpdatedState(descentEdge)
-    val currentOnEdgesChange by rememberUpdatedState(onEdgesChange)
+    val currentOnClimbEdgeChange by rememberUpdatedState(onClimbEdgeChange)
+    val currentOnDescentEdgeChange by rememberUpdatedState(onDescentEdgeChange)
     val currentClimbStops by rememberUpdatedState(climbStops)
     val currentDescentStops by rememberUpdatedState(descentStops)
 
@@ -250,18 +250,11 @@ internal fun GradeBandSlider(
                     if (onDescentSide) {
                         val stops = currentDescentStops ?: return
                         val hit = stops.minBy { abs(it.axisGrade - grade) }
-                        if (hit.edge != currentDescentSel?.edge) {
-                            // The climb side didn't move: report its raw incoming edge
-                            // unchanged, not the snapped display value, so a caller can tell
-                            // "unmoved" from "moved to a value that happens to match a stop".
-                            currentOnEdgesChange(currentClimbEdge ?: currentClimbSel.edge, hit.edge)
-                        }
+                        if (hit.edge != currentDescentSel?.edge)
+                            currentOnDescentEdgeChange(hit.edge)
                     } else {
                         val hit = currentClimbStops.minBy { abs(it.axisGrade - grade) }
-                        if (hit.edge != currentClimbSel.edge) {
-                            // Same for the descent side here: pass its raw edge through.
-                            currentOnEdgesChange(hit.edge, currentDescentEdge)
-                        }
+                        if (hit.edge != currentClimbSel.edge) currentOnClimbEdgeChange(hit.edge)
                     }
                 }
                 awaitEachGesture {

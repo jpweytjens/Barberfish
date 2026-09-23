@@ -1283,7 +1283,8 @@ internal fun GradeMapCard(
                     palette = gradePalette,
                     climbEdge = effTuning.climbEdge,
                     descentEdge = effTuning.descentEdge,
-                    onEdgesChange = { _, _ -> },
+                    onClimbEdgeChange = {},
+                    onDescentEdgeChange = {},
                     neutral = null,
                     enabled = false,
                 )
@@ -1291,9 +1292,9 @@ internal fun GradeMapCard(
                 // Effective edges, not the map's own resolution: per resolveGradeMapTuning's
                 // contract the unsynced overlay keeps following the sparkline's descent edge
                 // until something deliberately writes GradeMapConfig.descentEdge. The handles
-                // sit at the grades the fill actually starts at, and dragging the climb handle
-                // must NOT pin the descent side: descent is written back only when the descent
-                // handle itself moved.
+                // sit at the grades the fill actually starts at, and each side is written only
+                // when its own handle moves, so dragging the climb handle never pins the
+                // descent side.
                 val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
                 LabeledHelper("EMPHASIS") {
                     HelperText(
@@ -1304,16 +1305,8 @@ internal fun GradeMapCard(
                     palette = gradePalette,
                     climbEdge = effTuning.climbEdge,
                     descentEdge = effTuning.descentEdge,
-                    onEdgesChange = { climb, descent ->
-                        onUpdate(
-                            config.copy(
-                                climbEdge = climb,
-                                descentEdge =
-                                    if (descent != effTuning.descentEdge) descent
-                                    else config.descentEdge,
-                            )
-                        )
-                    },
+                    onClimbEdgeChange = { onUpdate(config.copy(climbEdge = it)) },
+                    onDescentEdgeChange = { onUpdate(config.copy(descentEdge = it)) },
                     neutral = null,
                 )
 
