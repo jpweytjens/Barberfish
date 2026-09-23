@@ -3,9 +3,13 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.datatype.shared.MARKER_PAD_PX
 import com.jpweytjens.barberfish.datatype.shared.buildWarpedXMapper
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
+import com.jpweytjens.barberfish.datatype.shared.gradeFillRuns
+import com.jpweytjens.barberfish.datatype.shared.rvvElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.sparklineWindow
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
+import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.SparklineWarp
+import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -93,6 +97,51 @@ class ElevationStripTest {
         assertEquals(2, simplified.size)
         assertEquals(0f to 0f, simplified.first())
         assertEquals(200f to 20f, simplified.last())
+    }
+
+    // --- gradeFillRuns ---
+
+    private fun steepOnly(grade: Double): Int? =
+        if (abs(grade) < 2.0) null else if (grade > 0) 1 else 2
+
+    @Test
+    fun same_colour_neighbours_merge_and_a_quiet_segment_splits() {
+        // Grades 5, 5, 0, 5: the first two merge, the flat one splits, the last stands alone.
+        val points = listOf(0f to 0f, 100f to 5f, 200f to 10f, 300f to 10f, 400f to 15f)
+        val runs = gradeFillRuns(points, ::steepOnly)
+        assertEquals(
+            listOf(listOf(0f to 0f, 100f to 5f, 200f to 10f), listOf(300f to 10f, 400f to 15f)),
+            runs.map { it.points },
+        )
+        assertTrue(runs.all { it.color == 1 })
+    }
+
+    @Test
+    fun a_colour_change_splits_a_run() {
+        // Grades 5, -5: a climb run, then a descent run, sharing the corner point.
+        val points = listOf(0f to 0f, 100f to 5f, 200f to 0f)
+        val runs = gradeFillRuns(points, ::steepOnly)
+        assertEquals(listOf(1, 2), runs.map { it.color })
+        assertEquals(listOf(100f to 5f, 200f to 0f), runs[1].points)
+    }
+
+    // Every coloured segment is drawn, however narrow the warp makes it on screen. The renderer
+    // used to drop runs under one pixel, which at Mild simplification on a half-width cell at
+    // Max warp left up to six consecutive runs (300 m of road) unpainted at the far end; the
+    // canvas's anti-aliasing blends sub-pixel runs instead, and they resolve as the road nears.
+    @Test
+    fun every_coloured_segment_lands_in_a_fill_run() {
+        val points =
+            visvalingamWhyatt(rvvElevationFixture(), ElevationSimplification.MILD.minAreaM2)
+        val colouredSegments =
+            (0 until points.lastIndex).count { i ->
+                val (d1, e1) = points[i]
+                val (d2, e2) = points[i + 1]
+                steepOnly((e2 - e1) / (d2 - d1) * 100.0) != null
+            }
+        val runs = gradeFillRuns(points, ::steepOnly)
+        assertTrue(colouredSegments > 50)
+        assertEquals(colouredSegments, runs.sumOf { it.points.size - 1 })
     }
 
     // --- sparklineWindow ---

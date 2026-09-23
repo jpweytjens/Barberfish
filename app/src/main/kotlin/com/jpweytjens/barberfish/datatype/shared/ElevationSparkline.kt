@@ -172,10 +172,6 @@ private fun vwSimplify(
  * 4. Ahead outline (right of dot): opaque white on night / black on day, strokeWidth 3px
  * 5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default teal)
  */
-// A rendering guard: below a pixel a fill draws as nothing, so it is dropped rather than
-// left to round to an arbitrary column. Not the map overlay's minRunLengthM, which is a
-// legibility guard sized to the stroke width and decides where a colour may change at all.
-private const val MIN_FILL_PX = 1f // skip colour fills narrower than this many pixels
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f // 40 m scale decay per 1000 m ridden
 private const val WARP_STEP_TARGET_M =
     25f // finer than typical elevation polyline spacing (~80-100m), GPS movement per render
@@ -193,13 +189,14 @@ internal data class FillRun(val points: List<Pair<Float, Float>>, val color: Int
  * Groups the segments of [points] into same-colour runs, one polygon each, so segments of one
  * colour share no vertical seam. [colorOf] maps a segment's grade in percent to its fill colour, or
  * null for a segment that draws no fill; a null segment ends the run before it, and so does a
- * change of colour or a segment that does not advance along the road. A run narrower than
- * [minFillPx] by [runWidthPx] is dropped.
+ * change of colour or a segment that does not advance along the road. Every run is kept, however
+ * narrow the x mapping makes it: a sub-pixel polygon blends into its column through anti-aliasing,
+ * so a far-end stretch too compressed to resolve shows the mix of its bands rather than a gap. Not
+ * the map overlay's minRunLengthM, which is a legibility guard sized to the stroke width and
+ * decides where a colour may change at all.
  */
 internal fun gradeFillRuns(
     points: List<Pair<Float, Float>>,
-    runWidthPx: (startM: Float, endM: Float) -> Float,
-    minFillPx: Float,
     colorOf: (grade: Double) -> Int?,
 ): List<FillRun> {
     val runs = mutableListOf<FillRun>()
@@ -207,10 +204,7 @@ internal fun gradeFillRuns(
     val runPts = mutableListOf<Pair<Float, Float>>()
 
     fun flushRun() {
-        val color = runColor
-        if (color != null && runWidthPx(runPts.first().first, runPts.last().first) >= minFillPx) {
-            runs.add(FillRun(runPts.toList(), color))
-        }
+        runColor?.let { runs.add(FillRun(runPts.toList(), it)) }
         runPts.clear()
         runColor = null
     }
@@ -372,11 +366,7 @@ internal fun renderElevationSparkline(
     paint.style = Paint.Style.FILL
     val neutral = if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY
     val fillRuns =
-        gradeFillRuns(
-            visible,
-            runWidthPx = { startM, endM -> toX(endM) - toX(startM) },
-            minFillPx = MIN_FILL_PX,
-        ) { grade ->
+        gradeFillRuns(visible) { grade ->
             val resolved =
                 gradeBandColor(
                     grade = grade,
