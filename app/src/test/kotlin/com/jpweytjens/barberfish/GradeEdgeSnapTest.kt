@@ -134,8 +134,8 @@ class GradeEdgeSnapTest {
 
     @Test
     fun migrated_counts_snap_like_stored_edges() {
-        // Default skip counts (1, 0) migrate to (2.0, 0.0) on Barberfish; the descent 0.0 is a
-        // tie between the crossover stops and resolves toward Off, as the slider always showed.
+        // Default skip counts (1, 0) migrate to (2.0, -2.0) on Barberfish: count zero starts past
+        // the flat band, so the default is everything but the rest state.
         assertEquals(2.0 to -2.0, SparklineConfig().gradeEdges(GradePalette.BARBERFISH))
         // One-sided palettes: the descent side has no stops and stays null.
         assertEquals(2.0 to null, SparklineConfig().gradeEdges(GradePalette.KAROO))

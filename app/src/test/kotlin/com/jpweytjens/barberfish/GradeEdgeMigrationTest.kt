@@ -61,4 +61,14 @@ class GradeEdgeMigrationTest {
         assertEquals(8.0, climb)
         assertEquals(-6.0, descent)
     }
+
+    @Test
+    fun skip_zero_starts_past_a_zero_straddling_flat_band() {
+        for (palette in listOf(GradePalette.BARBERFISH, GradePalette.SURGEONFISH)) {
+            val (climb, descent) =
+                edgesFromSkipBands(skipBands = 0, skipBandsDescent = 0, palette = palette)
+            assertEquals("$palette", 2.0, climb)
+            assertEquals("$palette", -2.0, descent)
+        }
+    }
 }

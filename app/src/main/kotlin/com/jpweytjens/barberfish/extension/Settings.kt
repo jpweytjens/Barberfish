@@ -11,6 +11,7 @@ import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.snapGradeEdges
+import com.jpweytjens.barberfish.datatype.shared.zeroStraddlingBand
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -181,10 +182,13 @@ enum class SparklineMode {
  * on Barberfish than on the other six palettes, which all open a band at 0.0. Persisting the
  * threshold instead of the count keeps a stored config meaning what it meant when it was written.
  *
- * A count of 0 ("Off") maps to an edge of 0.0 on both sides, keeping exactly what the count meant:
- * colour every climb from grade 0 up, colour every descent. Counts of 1 and up step outward through
- * the stops and clamp to the last one. A side with no bands at all (every palette but Barberfish
- * and Turbo, on the descent side) has no edge and stays uncoloured.
+ * A count of 0 ("Off") means colour everything on that side. On a palette with a real zero edge
+ * that is an edge of 0.0. On a palette whose flat band straddles zero (Barberfish, Surgeonfish) the
+ * count starts at the first band past the flat band instead, so the migrated default leaves the
+ * palette's rest state uncoloured, as it always did, and never produces a bare 0.0 that
+ * `snapGradeEdges` would read as fully on. Counts of 1 and up step outward through the stops and
+ * clamp to the last one. A side with no bands at all (every palette but Barberfish, Surgeonfish and
+ * Turbo, on the descent side) has no edge and stays uncoloured.
  */
 internal fun edgesFromSkipBands(
     skipBands: Int,
@@ -192,7 +196,9 @@ internal fun edgesFromSkipBands(
     palette: GradePalette,
 ): Pair<Double?, Double?> {
     val stops = gradeBandStops(palette)
-    return stops.climb.stopAt(skipBands) to stops.descent.stopAt(skipBandsDescent)
+    val floor = if (zeroStraddlingBand(palette, readable = false) != null) 1 else 0
+    return stops.climb.stopAt(maxOf(skipBands, floor)) to
+        stops.descent.stopAt(maxOf(skipBandsDescent, floor))
 }
 
 private fun List<Double>.stopAt(skipCount: Int): Double? =
