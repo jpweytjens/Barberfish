@@ -49,9 +49,9 @@ import com.jpweytjens.barberfish.datatype.shared.climbEdgeStops
 import com.jpweytjens.barberfish.datatype.shared.descentEdgeStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
-import com.jpweytjens.barberfish.datatype.shared.nearestEdgeStop
 import com.jpweytjens.barberfish.datatype.shared.reachableClimbStops
 import com.jpweytjens.barberfish.datatype.shared.reachableDescentStops
+import com.jpweytjens.barberfish.datatype.shared.selectGradeEdges
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -217,14 +217,15 @@ internal fun GradeBandSlider(
 
     val bands = gradeBands(palette, readable = false)
     val cells = gradeCells(bands)
-    // Climb resolves first, from the full stop list, then bounds the descent side: a crossed
-    // stored pair (hand-edited DataStore, version skew) normalizes into a legal meet instead
-    // of crossed handles. Climb-first is arbitrary but deterministic.
+    // The handles sit where selectGradeEdges puts them: the same resolution gradeEdges feeds
+    // the renderers, so the bar and the profile cannot disagree. The callers already pass
+    // snapped edges, and resolving again is the identity on them.
     val climbStopsAll = climbEdgeStops(palette)
     val descentStopsAll = descentEdgeStops(palette).takeIf { it.size > 1 }
-    val climbSel = nearestEdgeStop(climbStopsAll, climbEdge)
+    val selection = selectGradeEdges(palette, climbEdge, descentEdge)
+    val climbSel = selection.climb
+    val descentSel = selection.descent
     val descentStops = descentStopsAll?.let { reachableDescentStops(it, climbSel) }
-    val descentSel = descentStops?.let { nearestEdgeStop(it, descentEdge) }
     val climbStops = reachableClimbStops(climbStopsAll, descentSel)
     val coincident = descentSel != null && descentSel.axisGrade == climbSel.axisGrade
     val runs = barRuns(palette, climbSel.edge, descentSel?.edge, neutral)
