@@ -41,8 +41,6 @@ import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
-import com.jpweytjens.barberfish.extension.AvgSpeedConfig
-import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
@@ -52,12 +50,9 @@ import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
-import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
-import com.jpweytjens.barberfish.screens.AvgSpeedThresholdControls
-import com.jpweytjens.barberfish.screens.CadenceThresholdControls
 import com.jpweytjens.barberfish.screens.CollapsibleSection
 import com.jpweytjens.barberfish.screens.ConfigSection
 import com.jpweytjens.barberfish.screens.DataFieldDesignSectionContent
@@ -442,26 +437,17 @@ class ConfigShotsRenderTest {
         capture("design_barberfish")
     }
 
+    // The Speed field's threshold controls: the one block with the source picker.
     @Test
     fun thresholdControls() {
-        val scrollState = ScrollState(0)
-        setShotContent(scrollable = true, scrollState = scrollState) {
+        setShotContent {
             SpeedThresholdControls(
                 config = SpeedFieldConfig(thresholdKph = 30.0),
                 profile = shotProfile,
                 onConfigChange = {},
             )
-            AvgSpeedThresholdControls(
-                config = AvgSpeedConfig(mode = ThresholdMode.MIN_MAX, minKph = 20.0, maxKph = 35.0),
-                profile = shotProfile,
-                onConfigChange = {},
-            )
-            CadenceThresholdControls(
-                config = CadenceThresholdConfig(thresholdRpm = 90.0),
-                onConfigChange = {},
-            )
         }
-        captureTall("threshold_controls", scrollState)
+        capture("threshold_controls")
     }
 
     private companion object {
