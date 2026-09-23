@@ -2,7 +2,7 @@
 
 Empirically discovered behavior of the Karoo SDK and ride app, observed through
 on-device testing with `karoo-ext`, ADB instrumentation, and screencap analysis.
-These are not documented in the official SDK AFAIK.
+None of it is in the SDK documentation.
 
 ---
 
@@ -283,13 +283,9 @@ shrink.
 The SDK exposes no callback for container resize after `startView` and no event
 for the nav-toast show/hide that triggers it.
 
-### Barberfish layout approach
-
-Value centering uses `baseline_box` (LinearLayout with `weight=1` `TextView` spacers
-around `field_value`), which adapts automatically when the cell shrinks.
-`layout_below=header_ref` + `alignParentBottom` re-sizes the box, and the spacer
-weights re-center the bitmap within the new bounds. No `viewSize` or `cellH` dependency.
-See `docs/architecture.md` § "Value baseline alignment".
+Barberfish centres the value with weighted spacers that re-centre as the cell
+shrinks, with no dependency on the delivered size; see `docs/architecture.md`
+§ "Value baseline alignment".
 
 ---
 
@@ -303,34 +299,12 @@ verbatim will cut chords across hairpins where the native route line hugs the ro
 
 Confirmed empirically: a diagnostic `ShowPolyline(encodedPolyline = route.routePolyline)`
 drawn in a contrasting colour under the native route shows exactly the same
-chord-cutting as a re-encoded subset built by our own extraction pipeline. The
+chord-cutting as a re-encoded subset of the same points. The
 divergence is visible on tight switchbacks; over straight roads the two lines
 coincide.
 
-### Implications for extensions that draw map overlays
-
-Any extension that needs to trace the *actual road geometry* (not just the distance
-axis along the route) currently cannot do so. The workaround is to accept the
-chord-cutting, which is visually acceptable on most routes but noticeable on
-switchbacks.
-
-### Feature request
-
-The ideal SDK fix is one of:
-
-1. Guarantee `NavigatingRoute.routePolyline` is the road-snapped, detailed polyline
-   the rideapp draws as `ROUTE_LINE`, and document the precision.
-2. If the existing field is intentionally the saved geometry, add a separate
-   `snappedRoutePolyline: String?` field on `NavigatingRoute` populated from the same
-   source the rideapp uses for its `ROUTE_LINE` draw call.
-3. Alternatively, accept `MapEffect` extensions that reference a built-in layer id
-   (e.g. "colour the segments of `ROUTE_LINE` between distances `[d0, d1]` with
-   colour X") so extensions never handle geometry at all and the rideapp always
-   owns the polyline.
-
-This was investigated during the climb overlay work. See
-`app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/GradeMapPolylines.kt`
-for the extraction pipeline that hits this limitation.
+No SDK field carries the road-snapped line, so an overlay drawn along the route
+has to accept the chords.
 
 ---
 
@@ -374,10 +348,9 @@ the extension mid-ride and comparing painted symbols against emissions:
   Never hide an id in the same emission that shows it; only hide ids nothing
   is about to show.
 
-`GradeMapChevronController.assumeStale` and the persisted
-`GradeMapDrawnIdSpans` exist because of the first and last points: a fresh
-`startMap` folds the previous generation's id range into its first diff
-instead of emitting an up-front hide.
+An extension that mints ids per generation therefore has to hide the previous
+generation's range itself on a fresh `startMap`, from a record it kept; nothing
+tells it what is still painted.
 
 ## Map layer order: extension drawings cover the native chevrons
 
@@ -405,8 +378,7 @@ narrower than the line, sparse along it, or offset beside it.
 Measured on a Karoo 3 (2026-09-17) by requesting widths of 30 and 36 and reading
 the drawn band off a screencap: about 55 px and 67 px, which is the request times
 the 1.875 screen density. `ShowPolyline.width` is therefore a dp value, not
-pixels. The grade overlay's fill of 8 has always been a 15 px band, a little
-wider than the 13 px route line, and the native direction chevrons span about
+pixels. A width of 8 draws a 15 px band, a little wider than the 13 px route line, and the native direction chevrons span about
 27 px (31 px with their outline), so hiding them takes 17 dp or more.
 
 Extension polylines have no outline of their own. A casing is a second, wider
@@ -425,17 +397,16 @@ imported from a Strava export and comparing it with the export's track points ro
 decimals: 748 points against the export's 746, the two extra being exact duplicates of their
 predecessor, and the same length to the metre. The rideapp does not re-route or resample an
 imported route; the vertices are the export's, quantised by the polyline encoding. Two passes
-over the same road in a planned route therefore share their vertices, which is what makes
-matching repeated edges by endpoint distance workable.
+over the same road in a planned route therefore share their vertices.
 
 ## `routeDistance` runs longer than the polyline
 
 On the same route `NavigatingRoute.routeDistance` reported 34,151 m while the polyline's
 cumulative equirectangular length is 34,113.5 m, a ratio of 1.0011. The distance field and
 `DISTANCE_TO_DESTINATION` are on the rideapp's axis; anything measured on the polyline is on
-the other. Thirty-eight metres at the far end of a 34 km route is inside one progress bucket
-but not inside the tolerance of a turnaround handoff, so progress is rescaled by the ratio of
-the two lengths before being compared with polyline distances.
+the other. Rescale by the ratio of the two lengths before comparing a distance from one axis
+with a position on the other; thirty-eight metres is more than the tolerance of anything
+matching a point near the end of the route.
 
 ## One map effect is one Binder transaction, capped near 1 MB
 
@@ -445,17 +416,12 @@ them, and the extension process died with `TransactionTooLargeException: data
 parcel size 1053588 bytes`. It restarted, redrew the same effect and died again.
 Each `Emitter.onNext` is a synchronous Binder call, and Android caps one
 transaction near 1 MB, so an effect that grows with route length has to be
-split. Symbols now go out in messages of at most 500. Polylines are never at
-risk: each piece is its own effect, and even the whole 295 km route encodes to
-about 40 KB.
+split. Barberfish sends symbols in messages of at most 500. Polylines are never
+at risk: each piece is its own effect, and even the whole 295 km route encodes
+to about 40 KB.
 
-## Sending an effect costs about a millisecond and a half
-
-On the same route the band's first draw sent 3,939 effects (1,779 pieces, each a
-casing and a fill, plus the stale hides) in 8.35 s, and a restart that first hid
-the previous generation's 3,559 polylines sent 7,117 in 10.2 s. Net of the three
-half-second settle waits that is 1.2 to 1.7 ms per effect, all of it in the
-Binder call. Cutting the pieces and planning the batches took 340 ms and the
-route index 2.0 s, so on a long route the wait before the band is complete is
-the send. The rideapp writes nothing to the log while it draws, so the time it
-takes to place the layers after they arrive can only be read off the screen.
+Each effect also costs 1.2 to 1.7 ms in the Binder call itself, measured over
+several thousand effects on the same route, so a band of a few thousand pieces
+takes about ten seconds to send. The rideapp writes nothing to the log while it
+draws, so the time it takes to place the layers after they arrive can only be
+read off the screen.
