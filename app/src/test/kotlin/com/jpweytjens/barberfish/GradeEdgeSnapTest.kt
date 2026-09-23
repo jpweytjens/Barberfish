@@ -140,4 +140,20 @@ class GradeEdgeSnapTest {
         // One-sided palettes: the descent side has no stops and stays null.
         assertEquals(2.0 to null, SparklineConfig().gradeEdges(GradePalette.KAROO))
     }
+
+    @Test
+    fun sparkline_edges_are_stops_of_the_palette() {
+        // Through the config, not the resolver: this is the pair every renderer reads.
+        val pairs = sweep.flatMap { climb -> sweep.map { descent -> climb to descent } }
+        for (palette in GradePalette.entries) {
+            val climbStops = climbEdgeStops(palette).map { it.edge }
+            val descentStops = descentEdgeStops(palette).map { it.edge } + null
+            for ((climb, descent) in pairs) {
+                val (c, d) =
+                    SparklineConfig(climbEdge = climb, descentEdge = descent).gradeEdges(palette)
+                assertTrue("$palette climb $climb -> $c", c in climbStops)
+                assertTrue("$palette descent $descent -> $d", d in descentStops)
+            }
+        }
+    }
 }
