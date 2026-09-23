@@ -97,6 +97,10 @@ Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`
 
 Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands. The scale itself is documented in [Threshold colors](color-palettes.md#threshold-colors).
 
+<img src="screenshots/threshold_controls.jpg" width="360" alt="The Speed field's threshold controls: a source picker offering Fixed, Avg total and Avg moving, a target of 30 km/h, and under and over margins of 10 percent">
+
+The source picker is what sets Speed apart: Fixed compares against the target you type, Avg total and Avg moving against your own average so far. Under and Over set how far below and above the target, as a percentage of it, the color reaches full red or full green.
+
 <table>
   <tr>
     <td align="center">Target mode around a 25 km/h target</td>
