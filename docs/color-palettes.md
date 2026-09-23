@@ -98,5 +98,5 @@ the value instead, contrast-tuned per theme like the palettes above.
 
 | Mode                  | Scale                                        |
 | --------------------- | -------------------------------------------- |
-| Target (25 km/h)      | ![](palettes/threshold-legend-target.svg)    |
+| Target (30 km/h)      | ![](palettes/threshold-legend-target.svg)    |
 | Range (20 to 30 km/h) | ![](palettes/threshold-legend-range.svg)     |

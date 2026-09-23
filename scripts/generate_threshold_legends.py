@@ -36,7 +36,7 @@ HEIGHT = 44
 GRAD_STOPS = 96
 FONT = "-apple-system, system-ui, sans-serif"
 
-TARGET_KPH = 25.0
+TARGET_KPH = 30.0
 RANGE_MIN_KPH, RANGE_MAX_KPH = 20.0, 30.0
 RANGE_PERCENT = 10.0
 
@@ -120,7 +120,7 @@ def main() -> None:
     out.mkdir(exist_ok=True)
     (out / "threshold-legend-target.svg").write_text(
         strip_svg(
-            [22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0],
+            [27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0],
             target_color,
             markers={3: "target"},
             grad_id="target",

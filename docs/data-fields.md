@@ -103,11 +103,11 @@ The source picker is what sets Speed apart: Fixed compares against the target yo
 
 <table>
   <tr>
-    <td align="center">Target mode around a 25 km/h target</td>
+    <td align="center">Target mode around a 30 km/h target</td>
     <td align="center">Range mode across a 20 to 30 km/h range</td>
   </tr>
   <tr>
-    <td align="center"><img src="palettes/threshold-legend-target.svg" alt="Speeds around a 25 km/h target: red below, fading through neutral at the target, green above"></td>
+    <td align="center"><img src="palettes/threshold-legend-target.svg" alt="Speeds around a 30 km/h target: red below, fading through neutral at the target, green above"></td>
     <td align="center"><img src="palettes/threshold-legend-range.svg" alt="Speeds across a 20 to 30 km/h range: red then orange below min, green within, orange then red above max"></td>
   </tr>
 </table>
