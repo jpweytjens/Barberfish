@@ -210,9 +210,9 @@ Native renders inside a `ConstraintLayout`, which lets a `wrap_content` value vi
 
 ### `header_ref` + `baseline_box` centering
 
-The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. To keep the centering region top stable regardless, an invisible `header_ref` `TextView` (`lines=1`, mirrors `dataHeaderTextStyle`, `minHeight` set programmatically to match the visible header) anchors `baseline_box`'s top via `layout_below="@id/header_ref"`.
+The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. To keep the centering region top stable regardless, an invisible `header_ref` `TextView` (`lines=1`, styled like the visible label, `minHeight` set programmatically to match the visible header) anchors `baseline_box`'s top via `layout_below="@id/header_ref"`.
 
-Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value` `ImageView` (`Space` would have been the natural choice but is blocked by the allowlist). The 1:1 weights geometrically reproduce native's `bias=0.5` centering between header bottom and cell bottom, and adapt automatically when the rideapp shrinks the cell (no `cellHeightPx` plumbing).
+Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value` `ImageView` (`Space` would have been the natural choice but is blocked by the allowlist). The 1:1 weights centre the value between header bottom and cell bottom, as native does,, and adapt automatically when the rideapp shrinks the cell (no `cellHeightPx` plumbing).
 
 ### Per-layout vertical translation
 

@@ -186,75 +186,56 @@ algorithm at precision = 1 (verified by decoding and overlaying onto the map).
 
 Device: Karoo 3, density = 1.875 (300 dpi / 160). Established by on-device
 screencap sweeps (`scripts/walk_layouts.sh` + `scripts/measure_alignment.py`)
-across both Label Size settings, plus behavioral analysis of the rideapp.
+across both Label Size settings. All sizes are raw px on the 1.875-density
+screen.
 
-The rideapp sizes each data cell per `(colSpan, rowSpan)` in the 60-unit grid
-and per the rider's Label Size setting (Small or Large). All sizes below are
-raw px on the 1.875-density screen; translations are raw px too.
+The rideapp sizes each data cell by its column and row span in the 60-unit grid
+and by the rider's Label Size setting (Small or Large). Measured per layout:
 
-Karoo 3, first matching row wins:
+| layout (cols×rows) | value px | label px |
+| ------------------ | -------- | -------- |
+| 1×1, 2×1           | 180      | 36       |
+| 3×1                | 170      | 36       |
+| 4×1                | 130      | 36       |
+| 2×2, 3×2, 4×2      | 94       | 33       |
+| 5×1                | 104      | 33       |
+| 5×2, Large         | 78       | 33       |
+| 5×2, Small         | 88       | 29       |
 
-| condition                       | example     | value px | valueTransY | label px | line spacing | labelTransY |
-| ------------------------------- | ----------- | -------- | ----------- | -------- | ------------ | ----------- |
-| rowSpan > 20, colSpan 60        | 1×1, 2×1    | 180      | −14         | 36       | 0.7          | 0           |
-| rowSpan = 20, colSpan 60        | 3×1         | 170      | −14         | 36       | 0.7          | 0           |
-| rowSpan ≥ 18, colSpan 60        |             | 145      | −12         | 36       | 0.7          | 0           |
-| rowSpan ≥ 15, colSpan 60        | 4×1         | 130      | −12         | 36       | 0.7          | 0           |
-| rowSpan ≥ 15, colSpan 30        | 2×2,3×2,4×2 | 94       | −10         | 33       | 0.7          | 0           |
-| rowSpan ≥ 12, colSpan 60        | 5×1         | 104      | −10         | 33       | 0.7          | 0           |
-| rowSpan ≥ 12, colSpan 30, Large | 5×2 Large   | 78       | −9          | 33       | 0.6          | −3          |
-| else (5×2 Small)                | 5×2 Small   | 88       | −9          | 29       | 0.6          | 0           |
-
-The Label Size setting affects ONLY 2-col 5-row cells (rowSpan 12–14,
-colSpan 30). Every other layout, including all 1-col layouts and 2-col
-2/3/4-row, renders the same label size at both settings. This resolves a
-long-standing ambiguity in this file (rowSpan-driven vs setting-driven
-29/33 px): the old table here was measured at Small; a later sweep at Large
-saw 33 px in 5-row cells and mistook it for a global setting effect.
+The Label Size setting affects only 5×2 cells. Every other layout, including
+all 1-col layouts and 2-col 2/3/4-row, renders the same label size at both
+settings. This resolves a long-standing ambiguity in this file: the old table
+was measured at Small; a later sweep at Large saw 33 px in 5-row cells and
+mistook it for a global setting effect.
 
 `ViewConfig.textSize` for extension cells is `(int)(value px / density)`, so
 it tracks the Label Size setting: 5×2 delivers 46–47 sp at Small and 41 sp at
 Large; all other layouts are setting-independent.
 
+The value sits slightly above the centre of the band between the header and
+the cell bottom. Barberfish reproduces that with a small upward translation per
+layout (see `docs/architecture.md` § "Per-layout vertical translation").
+
 ### Header band geometry
 
-- The header container sits at the cell top with no inset; min height 22 dp,
-  otherwise wrap_content, horizontal padding 1 dp.
-- The label renders in `ibm-plex-sans-condensed`, allCaps, font padding off,
-  ellipsize end, simple line-break strategy, gravity END|CENTER_VERTICAL,
-  3 dp start/end margins.
-- The label TextView reserves 2 lines in 2-col cells and 1 line in 1-col
-  cells. The line-spacing multiplier is 0.6 only in 5-row 2-col cells and 0.7
-  everywhere else (see table).
-- The vertical position of a 1-line label emerges from TextView centering
-  inside the 2-line reservation: reservation height
-  `H = lineH + round(lineH × mult)` (`lineH` = `Paint.getFontMetricsInt`
-  descent − ascent), 1-line text centered in `H`, then shifted by labelTransY
-  (−3 px at 5×2 Large). This reproduces the observed header tops (~22 px below
-  cell top at 5×2 Large, ~30 px in 2/3/4-row 2-col cells) without a separate
-  per-layout inset constant.
+- The header sits at the cell top with no inset and is about 22 dp tall for a
+  one-line label, with the label right-aligned in a condensed all-caps font and
+  about 3 dp of side margin.
+- A one-line label sits lower than the cell top (about 30 px in 2/3/4-row
+  two-column cells, about 22 px at 5×2 Large), consistent with the label being
+  centred in a two-line reservation. Two-column cells reserve two lines,
+  one-column cells one. Barberfish reproduces the observed tops by reserving
+  the lines and centring, not with a per-layout inset.
+- Two-line labels are set tight: at 5×2 the line pitch measured 0.6 of the
+  line height. Other two-column layouts look the same but were not
+  re-measured.
 
 ### Icon geometry
 
-- Icon size equals the label size: `width = height = label px`.
-- Icons have 3 dp top/bottom margins and are centered in the header band; the
-  icon-to-label gap is 3 dp.
-- The key-icon toggle removes the icon views entirely (GONE), so the label
-  regains the full width when icons are off.
-
-### Verification status
-
-Measured on-device:
-
-- Label px at Small for the four 2-col/1-col rows of the original table.
-- Label px at Large: 33 px bands in 2-col cells of every rowSpan, including
-  5×2; native 5×2 value font ≈ 42 sp (= 78 px) and 2/3/4-row ≈ 50 sp (= 94 px)
-  in the same sweep, independently confirming the Large column.
-- 2-line pitch 0.6 at 5×2; `ViewConfig.textSize` per layout at one setting.
-
-Inferred, not yet re-measured: the 0.7 multiplier actually rendering in 2-col
-2/3/4-row 2-line headers, the −3 px label translation at 5×2 Large in
-isolation, and icon px and gap with icons enabled.
+- Icons appear the same height as the label text, centred in the header band,
+  with about a 3 dp gap to the label. Not re-measured with icons on.
+- The key-icon toggle removes the icon entirely, so the label regains the full
+  width when icons are off.
 
 ---
 
@@ -278,12 +259,12 @@ Verified on-device 2026-07-04. Implemented in Barberfish in fa91ca7..6ab5f69.
   Sensor, No Route, Off Route, No GPS Signal, Needs 30s Power Data, Press Lap,
   No Laps Yet, No Data, Searching… (single ellipsis glyph), Loading…. Each
   message carries its own text and icon color.
-- The strings are localized on the device (132 locales).
+- The strings are localized on the device.
 
 ### Placeholder geometry
 
-- The placeholder text anchors below the reserved max-lines label band, 19 sp,
-  maxLines 2, line-spacing multiplier 0.6, 6 dp bottom margin.
+- The placeholder text sits below the reserved label band, smaller than a
+  value and at most two lines.
 - Barberfish's flat 1.7 `headerHeightPx` factor matches native everywhere
   except 5x2, where native uses the 0.6 spacing; there the 1.7 empirically
   cancels other unmodeled height, measured delta 0 px. Do not "fix" it to 1.6.
