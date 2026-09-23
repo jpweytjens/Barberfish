@@ -75,11 +75,6 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 
 New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta channel, before they ship here. Betas are less tested, so expect rough edges. A beta replaces your stable install and carries your settings over, and later betas arrive as regular updates in the Karoo's extension manager.
 
-## Roadmap
-
-- Gradient-aware forward-looking ETA: see [Godot](https://github.com/jpweytjens/godot)
-- Workout target field: continuous deviation from the target (power, HR, pace) with zone coloring reflecting how far off target you are
-
 ## Credits
 
 - [karoo-ext](https://github.com/hammerheadnav/karoo-ext): the official Hammerhead SDK for building Karoo extensions
