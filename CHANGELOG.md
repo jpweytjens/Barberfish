@@ -19,6 +19,7 @@ Palettes and colors:
 - New Surgeonfish palette for grade and for power and HR zones: Karoo's climb colors respaced in even steps, with blue descents
 - The Barberfish grade palette now colors descents, in three teal-to-slate bands mirroring the climbs, and its flat band is a green-grey
 - Emphasis is set by dragging handles on the palette bar, separately for climbs and descents, and can now include the flat band
+- Emphasis thresholds follow the palette: after a palette switch each handle lands on the nearest band edge, and the profile and map fill exactly the bands the bar shows
 - Threshold text colors adjust per theme like the zone palettes
 
 Fields:
