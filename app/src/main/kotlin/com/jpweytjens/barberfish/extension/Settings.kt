@@ -517,8 +517,8 @@ data class GradeMapConfig(
 ) {
     /**
      * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,
-     * otherwise the legacy count migrated through [palette]. A null in the result means that side
-     * stays uncoloured.
+     * otherwise the legacy count migrated through [palette], both snapped to [palette]'s stops. A
+     * null in the result means that side stays uncoloured.
      *
      * WARNING: this is the overlay's own answer, not the effective one. It ignores
      * [syncWithSparkline], which defaults to true, so a synced overlay follows the field
@@ -526,9 +526,11 @@ data class GradeMapConfig(
      * sparkline, palette)`, which applies the sync the same way it already does for the other
      * shared settings.
      *
-     * The descent edge here is the migrated count only, and the map has no descent count, so it
-     * always resolves as 0. An unsynced overlay takes its descent edge from the field sparkline
-     * instead; only the climb side of this pair is the overlay's own.
+     * The descent side is the stored edge once the map card's descent handle has written one,
+     * otherwise the count-zero migration. Both snap like the climb side, so the migrated value
+     * reads as the palette's fully-on descent stop: 0 on Turbo, -2 on Barberfish and Surgeonfish,
+     * null on a one-sided palette. An unsynced overlay with no stored descent edge takes it from
+     * the field sparkline instead; see `resolveGradeMapTuning`.
      */
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) =
