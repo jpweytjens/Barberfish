@@ -13,7 +13,7 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 
 <table>
   <tr>
-    <td align="center">Grade map and elevation profile below a 3-column HUD, on the <a href="https://nl.wikipedia.org/wiki/Molenberg_(Zwalm)">Molenberg</a></td>
+    <td align="center">Grade map and elevation profile below a 3-column HUD, on the <a href="https://en.wikipedia.org/wiki/Molenberg_(Zwalm)">Molenberg</a></td>
     <td align="center">A full page of Barberfish fields, from the HUD to the route overview</td>
   </tr>
   <tr>
