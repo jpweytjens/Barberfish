@@ -1,7 +1,5 @@
 # Gallery
 
-Barberfish on the Karoo, including the states a short ride might not show. Where a screenshot has a deeper story, the line above it links there.
-
 ## HUD and elevation profile
 
 Slots, columns, and the profile modes are set per field in the Barberfish app ([every field and its options](data-fields.md)). Tap the profile to cycle 5, 10, or 20 km of lookahead. The profile has [a page of its own](elevation-profile.md).
