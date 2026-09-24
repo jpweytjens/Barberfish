@@ -1,6 +1,6 @@
 # Elevation profile
 
-A route on the map tells you where to turn, not when to save your legs. The elevation profile answers that second question: a strip of the terrain ahead, colored by grade, with a dot marking where you are. One glance tells you whether the road tips up, how steep, and for how long, early enough to shift, eat, or ease off before the climb instead of on it.
+The elevation profile shows the next 5 to 20 km of your route side on: a strip of terrain colored by grade, with a dot where you are. Where the [grade map](grade-map.md) shows which bend a climb starts at, the profile shows how long it lasts and how high it goes, early enough to shift or eat before its foot.
 
 <img src="screenshots/hud_sparkline.jpg" alt="3-column HUD with the elevation profile strip over the map view">
 
