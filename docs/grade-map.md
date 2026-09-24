@@ -1,6 +1,6 @@
 # Grade map
 
-The Karoo's map shows where the route goes. With the grade map on, it also shows how steep: the route is drawn as a band colored by grade, with chevrons on top for direction. A glance at the map tells you whether the next bend hides a climb and how hard it bites, without swiping to the profile page.
+The grade map colors your route on the Karoo's map by grade, as a wide band with chevrons on top for direction. The map page then shows how steep the road is as well as where it goes, so the climb behind the next bend is visible on the page you are already riding, down to the switchback where it bites.
 
 <table>
   <tr>
