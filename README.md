@@ -24,7 +24,7 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 
 ## Highlights
 
-- A 3- or 4-column HUD [groups any fields side by side](docs/gallery.md#hud-and-elevation-profile), with zone coloring, smoothing, and formatting set per slot.
+- A 3- or 4-column HUD [groups any fields side by side](docs/hud.md), with zone coloring, smoothing, and formatting set per slot.
 - With a route loaded, the [elevation profile](docs/elevation-profile.md) shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
 - [Overview](docs/elevation-profile.md#the-overview-field) draws the whole route with a dot for where you are, and Ride Remaining stacks the distance and climbing left.
 - The grade map [colors the route on the map page by grade](docs/grade-map.md), with direction chevrons on top.

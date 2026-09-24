@@ -2,7 +2,7 @@
 
 ## HUD and elevation profile
 
-Slots, columns, and the profile modes are set per field in the Barberfish app ([every field and its options](data-fields.md)). Tap the profile to cycle 5, 10, or 20 km of lookahead. The profile has [a page of its own](elevation-profile.md).
+The [HUD](hud.md) and the [elevation profile](elevation-profile.md) each have a page of their own.
 
 <table>
   <tr>

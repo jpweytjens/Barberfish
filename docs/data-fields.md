@@ -7,13 +7,8 @@ the single-cell fields first, then the 3- and 4-column HUD strips.
 
 Below, the same fields by category, with the palette, threshold, format and
 smoothing options each one supports; all are set per field in the Barberfish
-app, with live previews, and apply mid-ride. Profile and Overview have
-[a page of their own](elevation-profile.md).
-
-The HUD hides a slot whose sensor is not paired and widens the remaining
-columns to fill the strip, so a ride without the power meter shows a
-two-column HUD rather than a blank cell. When no slot has a sensor, every
-slot stays so the strip never goes empty.
+app, with live previews, and apply mid-ride. The [HUD](hud.md) has a page
+of its own, as do [Profile and Overview](elevation-profile.md).
 
 <table>
   <thead>

@@ -6,7 +6,7 @@ The elevation profile shows the next 5 to 20 km of your route side on: a strip o
 
 The profile renders in three places, each with its own settings in the Barberfish app:
 
-- The HUD strip, drawn below the 3- or 4-column HUD. Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded or you are riding to a destination, and Climbs keeps it hidden until a climb nears, then [frames that climb foot to summit](gallery.md#climbs-mode).
+- The HUD strip, drawn below the 3- or 4-column [HUD](hud.md). Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded or you are riding to a destination, and Climbs keeps it hidden until a climb nears, then [frames that climb foot to summit](gallery.md#climbs-mode).
 - The Profile field, the same lookahead profile as a standalone data field on any page layout.
 - The [Overview field](#the-overview-field), the whole route at once.
 
