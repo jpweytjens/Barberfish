@@ -64,15 +64,23 @@ Light and dark mode are both supported, with [each palette tuned per theme](colo
 
 ## Config screens
 
-[Every option](data-fields.md) lives in the Barberfish app with live previews; threshold coloring compares against [a target or range](data-fields.md#thresholds).
+Every option lives in the Barberfish app with live previews, and changes apply mid-ride.
 
 <table>
   <tr>
-    <td align="center">Data field configuration grouped by category</td>
-    <td align="center">Palette pickers with live previews</td>
+    <td align="center"><a href="data-fields.md">Data fields</a>, grouped by category</td>
+    <td align="center"><a href="color-palettes.md">Palette</a> pickers with live previews</td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/config.jpg" alt="Main Barberfish config screen with its seven collapsed sections"></td>
-    <td align="center"><img src="screenshots/palette_config.jpg" alt="Palettes section with power, HR, and grade palette pickers and their previews"></td>
+    <td align="center" valign="top"><img src="screenshots/config.jpg" alt="Main Barberfish config screen with its seven collapsed sections"></td>
+    <td align="center" valign="top"><img src="screenshots/palette_config.jpg" alt="Palettes section with power, HR, and grade palette pickers and their previews"></td>
+  </tr>
+  <tr>
+    <td align="center"><a href="matching-karoo.md">Data field design</a>, set to match the Karoo's own</td>
+    <td align="center"><a href="data-fields.md#thresholds">Threshold</a> controls on the Speed field</td>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><img src="screenshots/design_barberfish.jpg" alt="Barberfish Data Field Design section with icons on and label size small"></td>
+    <td align="center" valign="top"><img src="screenshots/threshold_controls.jpg" alt="The Speed field's threshold controls: a source picker offering Fixed, Avg total and Avg moving, a target of 30 km/h, and under and over margins of 10 percent"></td>
   </tr>
 </table>
