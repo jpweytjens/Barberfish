@@ -23,7 +23,18 @@ A slot holds power, heart rate, speed, cadence, grade, distance, time, or ETA, i
 
 ## Missing sensors
 
-A slot whose sensor is not paired drops out, and the remaining columns widen to fill the cell, so a ride without the power meter shows a two-column HUD rather than a blank slot. The values resize to the wider columns. If every slot is missing its sensor, all of them stay, so the HUD never goes empty.
+A slot whose sensor goes missing, a heart rate strap left at home or a power meter with a flat battery, keeps its column while the Karoo searches for it. Once the Karoo gives up, after about a minute, the column drops and the others widen to fill the cell, their values drawn larger. The Karoo looks for the sensor again from time to time, after a stop for instance, and the column returns while it searches. If every slot is missing its sensor, all of them stay, so the HUD never goes empty.
+
+<table>
+  <tr>
+    <td align="center">The Karoo searching for the heart rate strap</td>
+    <td align="center">A minute later, the HUD without it</td>
+  </tr>
+  <tr>
+    <td align="center" valign="top"><img src="screenshots/hud_hr_searching.jpg" alt="Map page with a 3-column HUD reading 19.7 speed, Searching under HR, and 113 power, the elevation profile strip below"></td>
+    <td align="center" valign="top"><img src="screenshots/hud_hr_hidden.jpg" alt="The same climb with a 2-column HUD of speed and 3s power, the heart rate column gone and the values drawn larger"></td>
+  </tr>
+</table>
 
 ## The profile strip
 
