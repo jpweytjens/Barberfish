@@ -175,6 +175,7 @@ replay_resume() { # resume playback and go back to the ride; otherwise the next 
     dump; ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 1; }
     dump
     if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi
+    ride_front
 }
 replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that fraction
     replay_open
@@ -189,7 +190,34 @@ replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that
 ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     dump
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
-    tap_xy 429 732; settle 6   # green play FAB on the profile carousel
+    tap_xy 429 732             # green play FAB on the profile carousel
+    # The ride screen can take well over the old fixed 6 s to come up (K3, 2026-09-25); a page
+    # swipe before it does moves the profile carousel instead. Wait for it to be in front.
+    local i
+    for i in $(seq 1 45); do
+        settle 1
+        if ride_in_front; then settle 3; return 0; fi
+    done
+    echo "  ! ride screen never came up" >&2; return 1
+}
+ride_in_front() {
+    A shell dumpsys activity activities 2>/dev/null \
+        | grep -m1 -F "ResumedActivity=" | grep -q -F "rideapp/.views.ride.RideActivity"
+}
+ride_front() { # "To ride" only sends the replay to the back, so the screen beneath it comes up:
+    # the home screen, or the route list the route was loaded from. Starting the ride screen's
+    # component brings the running ride's task forward from any of them.
+    (( SESSION_UP )) || return 0
+    local i
+    for i in $(seq 1 10); do
+        if ride_in_front; then return 0; fi
+        if (( i == 2 )); then
+            A shell am start -n io.hammerhead.rideapp/.views.ride.RideActivity \
+                -a android.intent.action.MAIN -c android.intent.category.LAUNCHER >/dev/null 2>&1
+        fi
+        settle 1
+    done
+    echo "  ! ride screen not in front" >&2; return 1
 }
 cc_ride_panel() { # open the control center on its Ride panel
     # It opens on whichever panel was last shown and auto-closes after ~10 s. In-ride the
@@ -478,7 +506,7 @@ replay_hr() { # replay_hr streaming|searching|missing
     done
     echo "  ! replay HR never reached $1 (Separate sensors off?)" >&2; return 1
 }
-to_ride() { dump; if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi; }
+to_ride() { dump; if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi; ride_front; }
 
 shot_hud_hr_missing() { # page 1: the hero's HUD while the Karoo searches for HR, then without it
     echo "hud_hr_missing: map page, HR searching in its own column, then the 2-column HUD"
