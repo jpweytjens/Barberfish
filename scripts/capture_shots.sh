@@ -34,7 +34,7 @@
 # Shots (increment 1, no ride needed):
 #   design_karoo
 # Shots (increment 2, share one discardable ride session):
-#   hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode
+#   hud_sparkline palettes climbs_counter climbs_profile barberfish_fields light_mode
 #   karoo_vs_barberfish grade_map hud_hr_missing
 set -Eeuo pipefail
 # Most helpers discard adb's output, so an unhandled failure would end the run without a word.
@@ -139,6 +139,8 @@ config_get() { # config_get <name> <local out file> — dump live config and pul
 }
 set_hud() { config_set hud "$1"; }
 get_hud() { config_get hud "$1"; }
+set_zone() { config_set zone "$1"; }   # power, HR and grade palettes
+get_zone() { config_get zone "$1"; }
 # The replay drives GPS, not the barometer, so a live Grade reads 0.0% all ride; pin it for
 # shots that show the field, and clear it again (session_end clears it too).
 # Written twice: the first pin after a live reading was seen not to reach a running Grade view,
@@ -345,11 +347,12 @@ restore_theme() {
 # The ride shots share one discardable ride: snapshot the user's HUD, start the
 # replay + ride, load the route once (RIDE REMAINING / OVERVIEW / PROFILE / climbs
 # all need it), capture, then end+discard and restore the HUD.
-RIDE_SHOTS=(hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
+RIDE_SHOTS=(hud_sparkline palettes climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
 SESSION_UP=0
 session_start() {
     (( SESSION_UP )) && return 0
     get_hud "$STAGE/hud_saved.json"
+    get_zone "$STAGE/zone_saved.json"
     replay_load
     ride_start
     ride_load_route Tranquilo
@@ -360,6 +363,7 @@ session_end() {
     unpin_grade
     ride_end
     [[ -f "$STAGE/hud_saved.json" ]] && set_hud "$STAGE/hud_saved.json"
+    [[ -f "$STAGE/zone_saved.json" ]] && set_zone "$STAGE/zone_saved.json"
     SESSION_UP=0
 }
 needs_session() { # true if any requested target is a ride shot
@@ -409,6 +413,24 @@ shot_hud_sparkline() { # page 1: map + 3-col HUD + elevation profile strip (READ
     cap hud_sparkline
     magick "$STAGE/hud_sparkline.png" -quality 92 "$OUTDIR/hud_sparkline.jpg"
     echo "  -> $OUTDIR/hud_sparkline.jpg"
+}
+
+shot_palettes() { # page 1: the hud_sparkline frame under two non-house palette pairs
+    echo "palettes: hud_sparkline frame, Turbo + Wahoo (Text), Garmin + Intervals.icu (Fill)"
+    session_start
+    local pair hud zone name
+    for pair in "hud_sparkline turbo_wahoo" "hud_sparkline_fill garmin_intervals"; do
+        read -r hud zone <<<"$pair"
+        name="palette_$zone"
+        set_hud "scripts/fixtures/hud/$hud.json"
+        set_zone "scripts/fixtures/zone/$zone.json"
+        # Same seek as shot_hud_sparkline, repeated per capture so both land on the hairpin.
+        replay_seek 0.236; settle 20
+        goto_map_page; settle_drawer
+        cap "$name"
+        magick "$STAGE/$name.png" -quality 92 "$OUTDIR/$name.jpg"
+        echo "  -> $OUTDIR/$name.jpg"
+    done
 }
 
 shot_climbs_counter() { # page 1: HUD in CLIMBS mode showing the climb counter, on a climb
@@ -557,7 +579,7 @@ shot_hud_hr_missing() { # page 1: the hero's HUD while the Karoo searches for HR
 }
 
 # ============================= main ==========================================
-ALL=(design_karoo hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
+ALL=(design_karoo hud_sparkline palettes climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
 targets=("$@"); [[ ${#targets[@]} -eq 0 ]] && targets=("${ALL[@]}")
 
 require_device || { echo "no device" >&2; exit 1; }
