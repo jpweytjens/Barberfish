@@ -18,7 +18,8 @@
 # profile; the Tranquilo ride is starred in ride-replay and its recording is
 # at /sdcard/FitFiles/tranquilo.fit; pages 3-4 field colorMode is pre-staged
 # per shot; the debug APK (with HardwareActionReceiver / ConfigReceiver) is
-# installed. K3 only (single device).
+# installed. K3 only (single device). hud_hr_missing also needs a ride-replay build with
+# per-sensor states ("Separate sensors" on, its four devices paired to the profile).
 #
 # Taps and crops are anchored on element *text* via _shot_ui.py + uiautomator,
 # not fixed coordinates, so a reordered or restructured settings screen still
@@ -34,7 +35,7 @@
 #   design_karoo
 # Shots (increment 2, share one discardable ride session):
 #   hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode
-#   karoo_vs_barberfish grade_map
+#   karoo_vs_barberfish grade_map hud_hr_missing
 set -Eeuo pipefail
 # Most helpers discard adb's output, so an unhandled failure would end the run without a word.
 # Name the line and command instead. Quiet inside $(...), where the caller handles the failure.
@@ -301,7 +302,7 @@ restore_theme() {
 # The ride shots share one discardable ride: snapshot the user's HUD, start the
 # replay + ride, load the route once (RIDE REMAINING / OVERVIEW / PROFILE / climbs
 # all need it), capture, then end+discard and restore the HUD.
-RIDE_SHOTS=(hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map)
+RIDE_SHOTS=(hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
 SESSION_UP=0
 session_start() {
     (( SESSION_UP )) && return 0
@@ -459,8 +460,61 @@ shot_grade_map() { # page 1: the same map view with the grade map on, then off (
     map_extensions_toggle; settle 3    # leave the map as found
 }
 
+# The replay's HR sensor, stepped through its tap cycle (streaming, searching, missing) on the
+# replay screen until its readout shows <state>: "···" searching, "--" missing, a number streaming.
+# Needs the forked replay with "Separate sensors" on and its four devices paired to the profile;
+# with one combined device the readouts do not respond to taps.
+replay_hr() { # replay_hr streaming|searching|missing
+    local i now
+    replay_open
+    for i in 1 2 3; do
+        dump
+        if ui has text "--" >/dev/null 2>&1; then now=missing
+        elif ui has text "···" >/dev/null 2>&1; then now=searching
+        else now=streaming; fi
+        [[ "$now" == "$1" ]] && return 0
+        tap text "HR"; settle 1
+    done
+    echo "  ! replay HR never reached $1 (Separate sensors off?)" >&2; return 1
+}
+to_ride() { dump; if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi; }
+
+shot_hud_hr_missing() { # page 1: the hero's HUD while the Karoo searches for HR, then without it
+    echo "hud_hr_missing: map page, HR searching in its own column, then the 2-column HUD"
+    session_start
+    set_hud scripts/fixtures/hud/hud_sparkline.json
+    replay_seek 0.19; settle 20
+    # A sensor that goes missing is searched for first, keeping its column; the Karoo gives up
+    # after a while, reports it not available, and the column drops. It retries a few minutes
+    # later and the column returns as searching (K3, 2026-09-25).
+    replay_hr missing; to_ride
+    goto_map_page; settle_drawer
+    cap hud_hr_searching
+    magick "$STAGE/hud_hr_searching.png" -quality 92 "$OUTDIR/hud_hr_searching.jpg"
+    echo "  -> $OUTDIR/hud_hr_searching.jpg"
+    # Watch the HUD label row, which holds still while values tick and moves only with the
+    # columns. No seek back to the hero's spot: seeking pauses the replay, and the live fields
+    # read No data for a while after.
+    local band="480x32+0+72" t d
+    magick "$STAGE/hud_hr_searching.png" -crop "$band" +repage "$STAGE/labels_ref.png"
+    for (( t=0; t<600; t+=5 )); do
+        settle 5
+        A exec-out screencap -p > "$STAGE/labels_probe.png"
+        magick "$STAGE/labels_probe.png" -crop "$band" +repage "$STAGE/labels_now.png"
+        d=$(magick compare -metric RMSE "$STAGE/labels_now.png" "$STAGE/labels_ref.png" null: 2>&1 \
+            | sed 's/.*(\(.*\))/\1/' || true)
+        if awk -v d="$d" 'BEGIN{exit !(d > 0.05)}'; then break; fi
+    done
+    echo "  ... label row moved after about ${t}s of searching"
+    settle_drawer
+    cap hud_hr_hidden
+    magick "$STAGE/hud_hr_hidden.png" -quality 92 "$OUTDIR/hud_hr_hidden.jpg"
+    echo "  -> $OUTDIR/hud_hr_hidden.jpg"
+    replay_hr streaming; to_ride
+}
+
 # ============================= main ==========================================
-ALL=(design_karoo hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map)
+ALL=(design_karoo hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
 targets=("$@"); [[ ${#targets[@]} -eq 0 ]] && targets=("${ALL[@]}")
 
 require_device || { echo "no device" >&2; exit 1; }
