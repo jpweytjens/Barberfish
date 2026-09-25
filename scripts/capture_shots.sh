@@ -158,6 +158,10 @@ replay_load() { # open replay, pick tranquilo, start playback
     replay_open
     dump
     if ui has text "SELECT RIDE" >/dev/null 2>&1; then
+        # Tranquilo is starred, so it sits at the top, but scroll_to only goes down and the
+        # list keeps its last scroll position. Fling back to the top first.
+        local i; for i in $(seq 1 15); do A shell input swipe $((W/2)) 200 $((W/2)) 780 150; done
+        settle 1; dump
         scroll_to text* "tranquilo" || { echo "  ! tranquilo not in replay list" >&2; return 1; }
         tap text* "tranquilo"; settle 2
     fi
@@ -190,6 +194,16 @@ replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that
 ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     dump
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
+    # "To ride" uncovers whatever the launcher was left on (menu grid, app info, ...). Back out
+    # to the profile carousel; back on the carousel itself flips to the grid, so check each step.
+    local j
+    for j in $(seq 1 6); do
+        dump
+        if ! ui has text "Rides" >/dev/null 2>&1 && ui has text* "Barberfish" >/dev/null 2>&1; then
+            break
+        fi
+        A shell input keyevent KEYCODE_BACK; settle 1
+    done
     tap_xy 429 732             # green play FAB on the profile carousel
     # The ride screen can take well over the old fixed 6 s to come up (K3, 2026-09-25); a page
     # swipe before it does moves the profile carousel instead. Wait for it to be in front.
