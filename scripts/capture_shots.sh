@@ -178,7 +178,8 @@ replay_resume() { # resume playback and go back to the ride; otherwise the next 
 }
 replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that fraction
     replay_open
-    local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 55 + f*(455-55)}')
+    # The track spans x 34 to 445 (thumb centre at 0 and at the ride's end; K3, 2026-09-25).
+    local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 34 + f*(445-34) + 0.5}')
     tap_xy "$x" 312; settle 1   # track y verified on-device; adjust if the thumb does not move
     # Scrubbing pauses playback and leaves the replay app in front.
     replay_resume
@@ -361,7 +362,7 @@ shot_hud_sparkline() { # page 1: map + 3-col HUD + elevation profile strip (READ
     session_start
     set_hud scripts/fixtures/hud/hud_sparkline.json
     # Minute 31 of the replay: a hairpin on the climb, so the band and the profile both show it.
-    replay_seek 0.19; settle 20
+    replay_seek 0.236; settle 20
     goto_map_page; settle_drawer
     cap hud_sparkline
     magick "$STAGE/hud_sparkline.png" -quality 92 "$OUTDIR/hud_sparkline.jpg"
@@ -375,7 +376,7 @@ shot_climbs_counter() { # page 1: HUD in CLIMBS mode showing the climb counter, 
     # Must park on one of Tranquilo's categorized climbs so the native climber engages and the
     # HUD counter reads "Climb N/M"; tune this fraction against the reference. On an uncategorized
     # pitch the counter does not show.
-    replay_seek 0.28
+    replay_seek 0.324
     press_button drawer_action  # collapse the native climber panel to its closed (down-chevron)
                                 # state; drawer_action cycles closed/half/full, so may need tuning
     goto_page 1; settle_drawer
@@ -390,7 +391,7 @@ shot_climbs_profile() { # page 1: HUD 3-col Speed/HR/Grade + profile strip, on a
     set_hud scripts/fixtures/hud/climbs_profile.json
     # Park on a categorized climb so GRADE reads a settled positive value (it shows "Searching…"
     # on flats/descents); tune against the reference.
-    replay_seek 0.28
+    replay_seek 0.324
     press_button drawer_action  # collapse the native climber panel (see shot_climbs_counter)
     goto_page 1; settle_drawer
     cap climbs_profile
@@ -407,7 +408,7 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     pin_grade scripts/fixtures/grade_pin_descent.json
     # Scrub to the long descent after minute 45 so the profile ahead matches the pinned
     # grade, and ride it for a few minutes so the elapsed time is not seconds.
-    replay_seek 0.30; settle 240
+    replay_seek 0.343; settle 240
     # Pause the ride for a minute so ride time falls behind elapsed time and the two
     # average speeds separate; with no stop they read the same to one decimal. Pausing
     # the replay app instead does not pause the ride (paused time stayed at 6 s, K3
@@ -448,7 +449,7 @@ shot_grade_map() { # page 1: the same map view with the grade map on, then off (
     set_hud scripts/fixtures/hud/hud_sparkline.json
     # Park around the 10 km mark, where the route climbs; tune against the reference. Assumes the
     # map's extension effects are on at entry (the puzzle toggle is a flip, its state cannot be read).
-    replay_seek 0.2
+    replay_seek 0.246
     goto_page 1; settle_drawer
     cap grade_map_on
     magick "$STAGE/grade_map_on.png" -quality 92 "$OUTDIR/grade_map_on.jpg"
@@ -483,7 +484,7 @@ shot_hud_hr_missing() { # page 1: the hero's HUD while the Karoo searches for HR
     echo "hud_hr_missing: map page, HR searching in its own column, then the 2-column HUD"
     session_start
     set_hud scripts/fixtures/hud/hud_sparkline.json
-    replay_seek 0.19; settle 20
+    replay_seek 0.236; settle 20
     # A sensor that goes missing is searched for first, keeping its column; the Karoo gives up
     # after a while, reports it not available, and the column drops. It retries a few minutes
     # later and the column returns as searching (K3, 2026-09-25).
