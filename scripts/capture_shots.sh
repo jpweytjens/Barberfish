@@ -415,8 +415,8 @@ shot_hud_sparkline() { # page 1: map + 3-col HUD + elevation profile strip (READ
     echo "  -> $OUTDIR/hud_sparkline.jpg"
 }
 
-shot_palettes() { # page 1: the hud_sparkline frame under two non-house palette pairs
-    echo "palettes: hud_sparkline frame, Turbo + Wahoo (Text), Garmin + Intervals.icu (Fill)"
+shot_palettes() { # page 1: the hud_sparkline layout under two non-house palette pairs
+    echo "palettes: hud_sparkline layout on the switchbacks, Turbo + Wahoo (Text), Garmin + Intervals.icu (Fill)"
     session_start
     local pair hud zone name
     for pair in "hud_sparkline turbo_wahoo" "hud_sparkline_fill garmin_intervals"; do
@@ -424,8 +424,9 @@ shot_palettes() { # page 1: the hud_sparkline frame under two non-house palette 
         name="palette_$zone"
         set_hud "scripts/fixtures/hud/$hud.json"
         set_zone "scripts/fixtures/zone/$zone.json"
-        # Same seek as shot_hud_sparkline, repeated per capture so both land on the hairpin.
-        replay_seek 0.236; settle 20
+        # Switchbacks on the climb, so the band fills the map ahead. Repeated per capture so
+        # both land on the same spot.
+        replay_seek 0.20; settle 20
         goto_map_page; settle_drawer
         cap "$name"
         magick "$STAGE/$name.png" -quality 92 "$OUTDIR/$name.jpg"
