@@ -60,22 +60,29 @@ internal class RideVisibility(private val index: RouteIndex) {
 }
 
 /**
- * The chevrons to draw now: every drawable candidate within [viewRadiusM] of [rider], in ride
- * order, skipping one within [collisionRadiusM] of a mark already kept. Collision is decided here,
- * at draw time, so a candidate suppressed by a mark that later hides is reconsidered on the next
- * update. The window keeps the symbol count near what fits on screen whatever the route length; the
- * band itself is drawn whole.
+ * The chevrons to draw now: every drawable candidate within [viewRadiusM] of [rider] and at most
+ * [lookaheadM] of route distance past progress, in ride order, skipping one within
+ * [collisionRadiusM] of a mark already kept. The lookahead keeps a later leg that passes close by
+ * on the ground, such as the return side of a loop, from showing its marks early. Collision is
+ * decided here, at draw time, so a candidate suppressed by a mark that later hides is reconsidered
+ * on the next update. The window keeps the symbol count near what fits on screen whatever the route
+ * length; the band itself is drawn whole.
  */
+// Suppressed: each window bound is an independent input, and bundling them would invent a type
+// that means nothing outside this call.
+@Suppress("LongParameterList")
 internal fun selectChevrons(
     candidates: List<ClimbChevronSpec>,
     visibility: RideVisibility,
     collisionRadiusM: Double,
     rider: LatLng,
     viewRadiusM: Double,
+    lookaheadM: Double,
 ): List<ClimbChevronSpec> {
     val kept = mutableListOf<ClimbChevronSpec>()
     val inWindow = candidates.filter { candidate ->
         visibility.chevronDrawable(candidate.distanceM) &&
+            candidate.distanceM <= visibility.progressM + lookaheadM &&
             latLngDistanceM(rider, LatLng(candidate.lat, candidate.lng)) <= viewRadiusM
     }
     for (candidate in inWindow) {

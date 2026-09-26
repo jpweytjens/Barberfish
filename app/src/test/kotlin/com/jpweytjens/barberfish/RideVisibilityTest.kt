@@ -125,12 +125,26 @@ class RideVisibilityTest {
         val returning = chevron(short, 550.0)
         assertEquals(
             listOf(outbound),
-            selectChevrons(listOf(outbound, returning), visibility, 20.0, short.gps.first(), 1e6),
+            selectChevrons(
+                listOf(outbound, returning),
+                visibility,
+                20.0,
+                short.gps.first(),
+                1e6,
+                1e6,
+            ),
         )
         visibility.update(500.0, null, viewRadiusM = 100.0)
         assertEquals(
             listOf(returning),
-            selectChevrons(listOf(outbound, returning), visibility, 20.0, short.gps.first(), 1e6),
+            selectChevrons(
+                listOf(outbound, returning),
+                visibility,
+                20.0,
+                short.gps.first(),
+                1e6,
+                1e6,
+            ),
         )
     }
 
@@ -159,10 +173,10 @@ class RideVisibilityTest {
         }
         assertEquals(10, candidates.size)
         val visibility = RideVisibility(index)
-        val atStart = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6)
+        val atStart = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6, 1e6)
         assertEquals(listOf(50.0, 150.0, 250.0, 350.0, 450.0), atStart.map { it.distanceM })
         visibility.update(500.0, null, viewRadiusM = 1000.0)
-        val afterApex = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6)
+        val afterApex = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6, 1e6)
         assertEquals(listOf(550.0, 650.0, 750.0, 850.0, 950.0), afterApex.map { it.distanceM })
     }
 
@@ -181,12 +195,32 @@ class RideVisibilityTest {
         val start = index.gps.first()
         assertEquals(
             listOf(50.0, 150.0),
-            selectChevrons(candidates, visibility, 20.0, start, 200.0).map { it.distanceM },
+            selectChevrons(candidates, visibility, 20.0, start, 200.0, 1e6).map { it.distanceM },
         )
         visibility.update(500.0, null, viewRadiusM = 1000.0)
         assertEquals(
             listOf(850.0, 950.0),
-            selectChevrons(candidates, visibility, 20.0, start, 200.0).map { it.distanceM },
+            selectChevrons(candidates, visibility, 20.0, start, 200.0, 1e6).map { it.distanceM },
+        )
+    }
+
+    @Test
+    fun selection_drops_marks_beyond_the_route_lookahead_even_when_close_by() {
+        // A 2 km square lap that ends where it starts: the last side comes back to the rider
+        // on the ground, but is 2 km ahead along the route.
+        val index = index(RouteFixtures.laps(2000.0, 1, 100.0))
+        val first = chevron(index, 50.0)
+        val last = chevron(index, 1950.0)
+        val visibility = RideVisibility(index)
+        val start = index.gps.first()
+        assertEquals(
+            listOf(first),
+            selectChevrons(listOf(first, last), visibility, 20.0, start, 1e6, 1000.0),
+        )
+        visibility.update(1000.0, null, viewRadiusM = 100.0)
+        assertEquals(
+            listOf(last),
+            selectChevrons(listOf(first, last), visibility, 20.0, start, 1e6, 1000.0),
         )
     }
 }

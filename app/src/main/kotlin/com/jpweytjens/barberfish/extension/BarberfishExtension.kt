@@ -105,6 +105,10 @@ private const val SEED_ZOOM = 15.0
 // Karoo 3 screen is 480 by 800 px, so this exceeds every visible distance from the rider.
 private const val VIEW_RADIUS_PX = 800.0
 
+// Route distance in pixels past the rider's progress within which chevrons draw, so a later leg
+// that passes close by on the ground shows no marks until it is nearly next.
+private const val CHEVRON_LOOKAHEAD_PX = 800.0
+
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
 fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>> =
@@ -298,6 +302,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         // Before the first fix, the window sits on the route start.
                         riderFix ?: d.index.gps.first(),
                         d.viewRadiusM,
+                        d.chevronLookaheadM,
                     ),
                     d.iconRes,
                 )
@@ -549,6 +554,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 specs = specs,
                                 collisionRadiusM = chevronCollision,
                                 viewRadiusM = VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
+                                chevronLookaheadM =
+                                    CHEVRON_LOOKAHEAD_PX * metresPerPixel(viewport.zoomLevel),
                                 sdkRouteDistanceM = route.routeDistance,
                                 iconRes = gradeChevronDrawable(inputs.palette),
                             )
@@ -615,6 +622,7 @@ private class RouteDrawing(
     val specs: GradeMapSpecs,
     val collisionRadiusM: Double,
     val viewRadiusM: Double,
+    val chevronLookaheadM: Double,
     // The rideapp's route length, for rescaling latch progress onto the polyline axis.
     val sdkRouteDistanceM: Double,
     @DrawableRes val iconRes: Int,
