@@ -45,6 +45,10 @@ Fixes:
 - A min or max range with only one end set is no longer invisible in Text mode on light theme
 - Smaller touch-ups: time field icons turn green when the ride starts, threshold text colors adjust to the theme, the position dot stays inside the field at the route ends, POI dots are solid, placeholder text sits at the native height, green icons use Karoo's darker shade in light mode
 
+Beta testers:
+- Thanks to Theolean for testing the 4.0 betas.
+- Want to try new features before they ship? Betafish, the beta channel, gets them first: github.com/jpweytjens/Betafish
+
 ## 3.3.1
 
 Fixes:
