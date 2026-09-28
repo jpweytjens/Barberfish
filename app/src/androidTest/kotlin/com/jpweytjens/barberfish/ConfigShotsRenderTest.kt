@@ -40,6 +40,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfig
@@ -111,6 +112,14 @@ class ConfigShotsRenderTest {
         )
 
     private fun zones(vararg maxes: Int) = maxes.map { UserProfile.Zone(min = 0, max = it) }
+
+    // The house palettes, for every shot that doesn't set out to show another one.
+    private val houseZones =
+        ZoneConfig(
+            hrPalette = ZonePalette.BARBERFISH,
+            powerPalette = ZonePalette.BARBERFISH,
+            gradePalette = GradePalette.BARBERFISH,
+        )
 
     private fun setShotContent(
         fixedHeight: Boolean = false,
@@ -289,7 +298,7 @@ class ConfigShotsRenderTest {
                 HUDConfigSection(
                     hudConfig = hudConfig,
                     sparklineConfig = sparklineConfig,
-                    zoneConfig = ZoneConfig(),
+                    zoneConfig = houseZones,
                     timeCfg = TimeConfig(),
                     profile = shotProfile,
                     onUpdate = { hudConfig = it },
@@ -417,7 +426,7 @@ class ConfigShotsRenderTest {
                         .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                PalettesSectionContent(zoneConfig = ZoneConfig(), onUpdate = {})
+                PalettesSectionContent(zoneConfig = houseZones, onUpdate = {})
             }
         }
         captureTall("palette_config", scrollState)

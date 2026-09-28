@@ -10,8 +10,9 @@
 # Pre-staged device assumption: the Barberfish profile, data pages, and per-field
 # config are already set up as you want them shown. This script navigates and
 # captures; it does not mutate your config, with one exception: the ride shots
-# briefly set the HUD config to drive the on-device HUD, then restore the
-# snapshot taken at session start.
+# briefly set the HUD and palette config to drive the on-device fields (the
+# Barberfish palettes unless a shot shows others), then restore the snapshot
+# taken at session start.
 #
 # Ride shots additionally assume: the Barberfish profile is selected in
 # ride-replay with its four data pages; replay sensors are paired to that
@@ -353,6 +354,7 @@ session_start() {
     (( SESSION_UP )) && return 0
     get_hud "$STAGE/hud_saved.json"
     get_zone "$STAGE/zone_saved.json"
+    set_zone scripts/fixtures/zone/barberfish.json   # house palettes unless a shot sets others
     replay_load
     ride_start
     ride_load_route Tranquilo
@@ -432,6 +434,7 @@ shot_palettes() { # page 1: the hud_sparkline layout under two non-house palette
         magick "$STAGE/$name.png" -quality 92 "$OUTDIR/$name.jpg"
         echo "  -> $OUTDIR/$name.jpg"
     done
+    set_zone scripts/fixtures/zone/barberfish.json
 }
 
 shot_climbs_counter() { # page 1: HUD in CLIMBS mode showing the climb counter, on a climb
