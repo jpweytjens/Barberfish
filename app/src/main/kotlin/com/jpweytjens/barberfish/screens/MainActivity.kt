@@ -2000,7 +2000,7 @@ private fun <T> EnumDropdown(
 private fun zonePaletteLabel(palette: ZonePalette) =
     when (palette) {
         ZonePalette.KAROO -> "Karoo"
-        ZonePalette.SURGEONFISH -> "Surgeonfish"
+        ZonePalette.BARBERFISH -> "Barberfish"
         ZonePalette.WAHOO -> "Wahoo"
         ZonePalette.INTERVALS -> "Intervals.icu"
         ZonePalette.ZWIFT -> "Zwift"

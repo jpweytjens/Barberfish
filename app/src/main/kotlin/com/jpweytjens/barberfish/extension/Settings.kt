@@ -16,10 +16,12 @@ import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNames
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "barberfish")
 
@@ -183,12 +185,12 @@ enum class SparklineMode {
  * threshold instead of the count keeps a stored config meaning what it meant when it was written.
  *
  * A count of 0 ("Off") means colour everything on that side. On a palette with a real zero edge
- * that is an edge of 0.0. On a palette whose flat band straddles zero (Barberfish, Surgeonfish) the
- * count starts at the first band past the flat band instead, so the migrated default leaves the
- * palette's rest state uncoloured, as it always did, and never produces a bare 0.0 that
- * `snapGradeEdges` would read as fully on. Counts of 1 and up step outward through the stops and
- * clamp to the last one. A side with no bands at all (every palette but Barberfish, Surgeonfish and
- * Turbo, on the descent side) has no edge and stays uncoloured.
+ * that is an edge of 0.0. On a palette whose flat band straddles zero (Barberfish) the count starts
+ * at the first band past the flat band instead, so the migrated default leaves the palette's rest
+ * state uncoloured, as it always did, and never produces a bare 0.0 that `snapGradeEdges` would
+ * read as fully on. Counts of 1 and up step outward through the stops and clamp to the last one. A
+ * side with no bands at all (every palette but Barberfish and Turbo, on the descent side) has no
+ * edge and stays uncoloured.
  */
 internal fun edgesFromSkipBands(
     skipBands: Int,
@@ -534,9 +536,9 @@ data class GradeMapConfig(
      *
      * The descent side is the stored edge once the map card's descent handle has written one,
      * otherwise the count-zero migration. Both snap like the climb side, so the migrated value
-     * reads as the palette's fully-on descent stop: 0 on Turbo, -2 on Barberfish and Surgeonfish,
-     * null on a one-sided palette. An unsynced overlay with no stored descent edge takes it from
-     * the field sparkline instead; see `resolveGradeMapTuning`.
+     * reads as the palette's fully-on descent stop: 0 on Turbo, -2 on Barberfish, null on a
+     * one-sided palette. An unsynced overlay with no stored descent edge takes it from the field
+     * sparkline instead; see `resolveGradeMapTuning`.
      */
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) =
@@ -711,10 +713,11 @@ suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
 
 // --- GradeFieldConfig ---
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 enum class GradePalette(val label: String) {
-    BARBERFISH("Barberfish"),
-    SURGEONFISH("Surgeonfish"),
+    // Betas stored this palette as SURGEONFISH before it took the house name.
+    @JsonNames("SURGEONFISH") BARBERFISH("Barberfish"),
     KAROO("Karoo"),
     WAHOO("Wahoo"),
     GARMIN("Garmin"),

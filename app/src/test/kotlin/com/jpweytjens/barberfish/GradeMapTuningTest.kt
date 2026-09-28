@@ -128,7 +128,7 @@ class GradeMapTuningTest {
     @Test
     fun `unsynced overlay snaps its own stored descent edge`() {
         val map = GradeMapConfig(syncWithSparkline = false, climbEdge = 3.0, descentEdge = -3.0)
-        val tuning = resolveGradeMapTuning(map, SparklineConfig(), GradePalette.SURGEONFISH)
+        val tuning = resolveGradeMapTuning(map, SparklineConfig(), GradePalette.BARBERFISH)
         assertEquals(2.0, tuning.climbEdge)
         assertEquals(-2.0, tuning.descentEdge)
     }

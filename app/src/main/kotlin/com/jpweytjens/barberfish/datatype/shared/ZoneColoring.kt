@@ -69,10 +69,10 @@ internal val karooPowerColors =
 // Karoo HR zones (5 zones) — the [0,1,2,3,5] subset of power the readable variants also use
 internal val karooHrColors = listOf(0, 1, 2, 3, 5).map { karooPowerColors[it] }
 
-// Surgeonfish power zones (7 zones) — the Surgeonfish grade gradient sliced into zones: its flat
+// Barberfish power zones (7 zones) — the Barberfish grade gradient sliced into zones: its flat
 // band is Zone 1, its six climb bands are Zones 2–7. An even-progression sibling of the Karoo
-// palette. Source of truth for the Surgeonfish grade climb bands (see GradeBands.kt).
-internal val surgeonfishPowerColors =
+// palette. Source of truth for the Barberfish grade climb bands (see GradeBands.kt).
+internal val barberfishPowerColors =
     listOf(
         Color(0xFF5CC066), // Zone 1 – Active Recovery   (flat green)
         Color(0xFFB2D40F), // Zone 2 – Endurance         (yellow-green)
@@ -83,8 +83,8 @@ internal val surgeonfishPowerColors =
         Color(0xFF7404A8), // Zone 7 – Neuromuscular     (purple)
     )
 
-// Surgeonfish HR zones (5 zones) — same subset as Karoo (drops Zone 5 and Zone 7)
-internal val surgeonfishHrColors = listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColors[it] }
+// Barberfish HR zones (5 zones) — same subset as Karoo (drops Zone 5 and Zone 7)
+internal val barberfishHrColors = listOf(0, 1, 2, 3, 5).map { barberfishPowerColors[it] }
 
 // Wahoo power zones (7 zones, low to high)
 internal val wahooPowerColors =
@@ -163,7 +163,7 @@ internal val karooPowerColorsReadableDark =
 internal val karooHrColorsReadableDark =
     listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadableDark[it] }
 
-internal val surgeonfishPowerColorsReadableDark =
+internal val barberfishPowerColorsReadableDark =
     listOf(
         Color(0xFF5CC066), // Zone 1 – Active Recovery   (flat green)
         Color(0xFFB2D40F), // Zone 2 – Endurance         (yellow-green)
@@ -173,8 +173,8 @@ internal val surgeonfishPowerColorsReadableDark =
         Color(0xFFFE5A5B), // Zone 6 – Anaerobic         (red), was #D7040A
         Color(0xFFC06FFE), // Zone 7 – Neuromuscular     (purple), was #7404A8
     )
-internal val surgeonfishHrColorsReadableDark =
-    listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColorsReadableDark[it] }
+internal val barberfishHrColorsReadableDark =
+    listOf(0, 1, 2, 3, 5).map { barberfishPowerColorsReadableDark[it] }
 
 internal val wahooPowerColorsReadableDark =
     listOf(
@@ -226,7 +226,7 @@ internal val karooPowerColorsReadableLight =
 internal val karooHrColorsReadableLight =
     listOf(0, 1, 2, 3, 5).map { karooPowerColorsReadableLight[it] }
 
-internal val surgeonfishPowerColorsReadableLight =
+internal val barberfishPowerColorsReadableLight =
     listOf(
         Color(0xFF5CBF66), // Zone 1 – Active Recovery   (flat green), was #5CC066
         Color(0xFF9AB70B), // Zone 2 – Endurance         (yellow-green), was #B2D40F
@@ -236,8 +236,8 @@ internal val surgeonfishPowerColorsReadableLight =
         Color(0xFFD7040A), // Zone 6 – Anaerobic         (red)
         Color(0xFF7404A8), // Zone 7 – Neuromuscular     (purple)
     )
-internal val surgeonfishHrColorsReadableLight =
-    listOf(0, 1, 2, 3, 5).map { surgeonfishPowerColorsReadableLight[it] }
+internal val barberfishHrColorsReadableLight =
+    listOf(0, 1, 2, 3, 5).map { barberfishPowerColorsReadableLight[it] }
 
 internal val wahooPowerColorsReadableLight =
     listOf(
@@ -295,11 +295,11 @@ fun powerZoneColor(
                     isNightMode -> karooPowerColorsReadableDark
                     else -> karooPowerColorsReadableLight
                 }
-            ZonePalette.SURGEONFISH ->
+            ZonePalette.BARBERFISH ->
                 when {
-                    !readable -> surgeonfishPowerColors
-                    isNightMode -> surgeonfishPowerColorsReadableDark
-                    else -> surgeonfishPowerColorsReadableLight
+                    !readable -> barberfishPowerColors
+                    isNightMode -> barberfishPowerColorsReadableDark
+                    else -> barberfishPowerColorsReadableLight
                 }
             ZonePalette.WAHOO ->
                 when {
@@ -338,11 +338,11 @@ fun hrZoneColor(
                     isNightMode -> karooHrColorsReadableDark
                     else -> karooHrColorsReadableLight
                 }
-            ZonePalette.SURGEONFISH ->
+            ZonePalette.BARBERFISH ->
                 when {
-                    !readable -> surgeonfishHrColors
-                    isNightMode -> surgeonfishHrColorsReadableDark
-                    else -> surgeonfishHrColorsReadableLight
+                    !readable -> barberfishHrColors
+                    isNightMode -> barberfishHrColorsReadableDark
+                    else -> barberfishHrColorsReadableLight
                 }
             ZonePalette.WAHOO ->
                 when {

@@ -101,12 +101,12 @@ class GradeCellGeometryTest {
 
     @Test
     fun bar_runs_merge_the_filtered_middle_into_one_neutral_run() {
-        val sage = mapNeutral(GradePalette.BARBERFISH, readable = false)
+        val flat = mapNeutral(GradePalette.BARBERFISH, readable = false)
         val runs =
-            barRuns(GradePalette.BARBERFISH, climbEdge = 14.0, descentEdge = -6.0, neutral = sage)
-        // slate, deep teal, one merged neutral run (-6..14), red, purple
+            barRuns(GradePalette.BARBERFISH, climbEdge = 14.0, descentEdge = -6.0, neutral = flat)
+        // navy, blue, one merged neutral run (-6..14), red, purple
         assertEquals(listOf(5.0f, 4.0f, 20.0f, 6.0f, 5.0f), runs.map { it.weight })
-        assertEquals(sage, runs[2].color)
+        assertEquals(flat, runs[2].color)
     }
 
     @Test

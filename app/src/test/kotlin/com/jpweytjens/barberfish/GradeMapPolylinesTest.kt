@@ -907,7 +907,7 @@ class GradeMapPolylinesTest {
             buildGradeMapSpecs(
                 routePolyline = straightRoute2kmPolyline(),
                 routeElevationPolyline = linearElevationPolyline(gradePct = 3.0, lengthM = 2000.0),
-                palette = GradePalette.SURGEONFISH,
+                palette = GradePalette.BARBERFISH,
                 readable = false,
                 tuning = fullyOnTuning(),
                 chevronBlend = 0.0,
@@ -920,7 +920,7 @@ class GradeMapPolylinesTest {
             buildGradeMapSpecs(
                 routePolyline = straightRoute2kmPolyline(),
                 routeElevationPolyline = linearElevationPolyline(gradePct = 12.0, lengthM = 2000.0),
-                palette = GradePalette.SURGEONFISH,
+                palette = GradePalette.BARBERFISH,
                 readable = false,
                 tuning = fullyOnTuning(),
                 chevronBlend = 0.0,

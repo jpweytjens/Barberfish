@@ -84,14 +84,14 @@ class GradeEdgeSnapTest {
     }
 
     @Test
-    fun turbo_edges_read_as_the_flat_band_edges_on_surgeonfish() {
-        assertEquals(2.0 to -2.0, snapGradeEdges(GradePalette.SURGEONFISH, 3.0, -3.0))
+    fun turbo_edges_read_as_the_flat_band_edges_on_barberfish() {
+        assertEquals(2.0 to -2.0, snapGradeEdges(GradePalette.BARBERFISH, 3.0, -3.0))
     }
 
     @Test
     fun a_crossed_stored_pair_normalizes_into_a_meet() {
         // Climb parked at the crossover stop (-2); a stored descent of +2 cannot pass it.
-        assertEquals(-2.0 to -2.0, snapGradeEdges(GradePalette.SURGEONFISH, -2.0, 2.0))
+        assertEquals(-2.0 to -2.0, snapGradeEdges(GradePalette.BARBERFISH, -2.0, 2.0))
     }
 
     @Test
@@ -121,20 +121,20 @@ class GradeEdgeSnapTest {
     fun sparkline_edges_read_through_the_palette_stops_and_storage_stays_raw() {
         val config = SparklineConfig(climbEdge = 3.0, descentEdge = -3.0)
         assertEquals(3.0 to -3.0, config.gradeEdges(GradePalette.TURBO))
-        assertEquals(2.0 to -2.0, config.gradeEdges(GradePalette.SURGEONFISH))
+        assertEquals(2.0 to -2.0, config.gradeEdges(GradePalette.BARBERFISH))
         // Switching back restores the Turbo reading: nothing rewrote the stored value.
         assertEquals(3.0 to -3.0, config.gradeEdges(GradePalette.TURBO))
     }
 
     @Test
     fun the_reported_stale_descent_edge_no_longer_leaves_a_gap() {
-        // Turbo descent -3 stored, palette switched to Surgeonfish, climb handle moved to -2.
+        // Turbo descent -3 stored, palette switched to Barberfish, climb handle moved to -2.
         val config = SparklineConfig(climbEdge = -2.0, descentEdge = -3.0)
-        val (climb, descent) = config.gradeEdges(GradePalette.SURGEONFISH)
+        val (climb, descent) = config.gradeEdges(GradePalette.BARBERFISH)
         val color =
             gradeBandColor(
                 grade = -2.5,
-                palette = GradePalette.SURGEONFISH,
+                palette = GradePalette.BARBERFISH,
                 climbEdge = climb,
                 descentEdge = descent,
                 neutral = Color.Unspecified,
@@ -146,7 +146,7 @@ class GradeEdgeSnapTest {
     @Test
     fun map_edges_read_through_the_palette_stops() {
         val config = GradeMapConfig(climbEdge = 3.0, descentEdge = -3.0)
-        assertEquals(2.0 to -2.0, config.gradeEdges(GradePalette.SURGEONFISH))
+        assertEquals(2.0 to -2.0, config.gradeEdges(GradePalette.BARBERFISH))
     }
 
     @Test
