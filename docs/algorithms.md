@@ -50,7 +50,7 @@ Every segment now has a grade, and Emphasis sets the grade at which color starts
   <tr>
     <td>Grade map</td>
     <td align="center"><img src="screenshots/emphasis_map_all.jpg" alt="The same Barberfish bar as the Grade Map card shows it: every band colored, so no neutral appears"></td>
-    <td align="center"><img src="screenshots/emphasis_map_default.jpg" alt="Barberfish bar as the Grade Map card shows it: the flat band between the handles painted in the map's green-grey neutral"></td>
+    <td align="center"><img src="screenshots/emphasis_map_default.jpg" alt="Barberfish bar as the Grade Map card shows it: the flat band between the handles painted in the map's muted green neutral"></td>
     <td align="center"><img src="screenshots/emphasis_map_climbs.jpg" alt="Karoo bar as the Grade Map card shows it: the stretch from 0 to 5 percent painted in the map's plain grey neutral"></td>
   </tr>
 </table>
