@@ -42,15 +42,9 @@ The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mod
 
 ## Color palettes
 
-Two grade palettes designed for Barberfish, shown in Text mode on light and dark, then Fill. Both color descents as well as climbs, where most palettes stop at flat. The [palettes page](docs/color-palettes.md) has the full set, including palettes matching other bike computers and training apps, each kept legible in both themes.
-
-Barberfish
+The Barberfish grade palette, shown in Text mode on light and dark, then Fill. It colors descents as well as climbs, where most palettes stop at flat, in [even perceptual steps](docs/color-palettes.md#perceptually-uniform-palettes). The [palettes page](docs/color-palettes.md) has the full set, including palettes matching other bike computers and training apps, each kept legible in both themes.
 
 ![Barberfish grade palette in both themes and fill mode](docs/palettes/palette-grade-barberfish.svg)
-
-Surgeonfish, the same reading in [even perceptual steps](docs/color-palettes.md#perceptually-uniform-palettes)
-
-![Surgeonfish grade palette in both themes and fill mode](docs/palettes/palette-grade-surgeonfish.svg)
 
 ## Configuration
 

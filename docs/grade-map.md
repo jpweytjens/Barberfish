@@ -23,7 +23,7 @@ The band uses the same [gradient palette](color-palettes.md) as the Grade field 
 
 The band covers the whole route, with any road that takes no color drawn in a neutral rather than left bare, so that any yellow on the map is a grade. The Karoo's own line is yellow, blue only on the climbs it detects (as in the shot above), and nearly every palette has a yellow for a moderate climb; a band that left uncolored road to the Karoo's line would make every yellow stretch ambiguous.
 
-On Barberfish and Surgeonfish the neutral is the palette's own flat color, a sage and a muted green, so quiet road still looks like part of the palette; the other palettes have no flat band to borrow and take a light grey. On a palette that [does not color descents](color-palettes.md#grade-palettes), every descent draws in the neutral as well.
+On Barberfish the neutral is the palette's own flat color, a muted green, so quiet road still looks like part of the palette; the other palettes have no flat band to borrow and take a light grey. On a palette that [does not color descents](color-palettes.md#grade-palettes), every descent draws in the neutral as well.
 
 Chevrons show direction, and their spacing points at the road worth noticing. Under Gradient they sit closer together the steeper the road gets, up or down. The band's color already says that, so Changes spends them differently: they bunch where the gradient shifts, at the foot of a climb, a ramp, or a crest, and thin out where it holds steady. Balanced weighs the two equally.
 

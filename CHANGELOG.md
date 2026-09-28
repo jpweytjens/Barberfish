@@ -15,8 +15,7 @@ New data fields:
 - Overview: the whole route's elevation profile, with a dot for where you are
 
 Palettes and colors:
-- New Surgeonfish palette for grade, power and HR zones: Karoo's climb colors in even steps, with blue descents
-- The Barberfish grade palette now colors descents too, in teal-to-slate bands, and flat road in green-grey
+- New Barberfish palette for grade, power and HR zones: Karoo's climb colors in even steps, a muted flat band, and blue descents
 - Emphasis, which picks the grades that get color, is set by dragging handles on the palette bar, separately for climbs and descents. The handles snap to the palette's bands, and the profile and map color exactly what the bar shows
 
 Fields:
