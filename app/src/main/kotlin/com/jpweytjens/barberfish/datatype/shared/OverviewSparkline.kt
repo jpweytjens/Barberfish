@@ -83,7 +83,7 @@ fun renderOverviewSparkline(
 
     paint.style = Paint.Style.STROKE
     paint.strokeWidth = OVERVIEW_STROKE_PX
-    paint.color = if (isNightMode) Color.WHITE else Color.rgb(0x5b, 0x61, 0x66)
+    paint.color = if (isNightMode) Color.WHITE else Color.BLACK
     val path = Path()
     points.forEachIndexed { i, (d, e) ->
         val x = toX(d)
