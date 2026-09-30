@@ -315,8 +315,9 @@ ride_end() { # pause -> finish flag -> confirm -> Delete -> confirm (discard the
 }
 
 # ---- data-page navigation ----------------------------------------------------
-goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), from page 1
-    tap_xy 240 400; settle 1            # tap map to make sure the ride view has focus
+goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), counted from the map
+    # page, which goto_map_page recognizes; the ride can be on any page when this is called
+    goto_map_page
     local i
     for (( i=1; i<$1; i++ )); do A shell input swipe 400 400 80 400 250; settle 1; done
 }
