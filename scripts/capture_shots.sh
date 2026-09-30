@@ -15,7 +15,8 @@
 # taken at session start.
 #
 # Ride shots additionally assume: the Barberfish profile is selected in
-# ride-replay with its four data pages; replay sensors are paired to that
+# ride-replay with its four data pages, and Climber off on it (its panel would
+# cover the map on a climb); replay sensors are paired to that
 # profile; the Tranquilo ride is starred in ride-replay and its recording is
 # at /sdcard/FitFiles/tranquilo.fit; pages 3-4 field colorMode is pre-staged
 # per shot; the debug APK (with HardwareActionReceiver / ConfigReceiver) is
@@ -523,8 +524,6 @@ shot_climbs_counter() { # page 1: HUD in CLIMBS mode showing the climb counter, 
     # HUD counter reads "Climb N/M"; tune this fraction against the reference. On an uncategorized
     # pitch the counter does not show.
     replay_seek 0.324
-    press_button drawer_action  # collapse the native climber panel to its closed (down-chevron)
-                                # state; drawer_action cycles closed/half/full, so may need tuning
     goto_page 1; settle_drawer
     cap climbs_counter
     magick "$STAGE/climbs_counter.png" -quality 92 "$OUTDIR/climbs_counter.jpg"
@@ -538,7 +537,6 @@ shot_climbs_profile() { # page 1: HUD 3-col Speed/HR/Grade + profile strip, on a
     # Park on a categorized climb so GRADE reads a settled positive value (it shows "Searching…"
     # on flats/descents); tune against the reference.
     replay_seek 0.324
-    press_button drawer_action  # collapse the native climber panel (see shot_climbs_counter)
     goto_page 1; settle_drawer
     cap climbs_profile
     magick "$STAGE/climbs_profile.png" -quality 92 "$OUTDIR/climbs_profile.jpg"
