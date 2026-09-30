@@ -402,6 +402,7 @@ session_start() {
     ride_start
     RIDE_UP=1
     ride_load_route Tranquilo
+    check_sensors
 }
 session_end() { # restore the config first: it is the part a half-finished run must not lose
     (( SESSION_UP )) || return 0
@@ -414,6 +415,35 @@ session_end() { # restore the config first: it is the part a half-finished run m
     RIDE_UP=0
     ride_front
     ride_end
+}
+check_sensors() { # stop before shooting if the replay sensors are not reaching the ride
+    # Shown on the hero's HUD (Speed, HR, 3s Power), as the ride screen does not dump: the label
+    # row must match the hero's, which it does not when a column is dropped (RMSE 0.035 or less
+    # on a match, 0.40 or more with HR dropped), and each value must be digit-tall, not a
+    # "Searching…" line (57 px against 25 px; K3, 2026-09-30).
+    local i c h d ok
+    set_hud scripts/fixtures/hud/hud_sparkline.json
+    goto_map_page
+    magick docs/screenshots/hud_sparkline.jpg -crop 480x32+0+72 +repage "$STAGE/labels_hero.png"
+    for i in $(seq 1 12); do
+        cap sensors
+        magick "$STAGE/sensors.png" -crop 480x32+0+72 +repage "$STAGE/labels_live.png"
+        d=$(magick compare -metric RMSE "$STAGE/labels_live.png" "$STAGE/labels_hero.png" null: 2>&1 \
+            | sed 's/.*(\(.*\))/\1/' || true)
+        ok=0
+        if awk -v d="$d" 'BEGIN{exit !(d < 0.15)}'; then
+            ok=1
+            for c in 0 1 2; do
+                h=$(magick "$STAGE/sensors.png" -crop 160x100+$((c*160))+105 +repage \
+                    -colorspace gray -threshold 40% -trim -format "%h" info: 2>/dev/null || echo 0)
+                (( h >= 45 )) || ok=0
+            done
+        fi
+        (( ok )) && return 0
+        settle 5
+    done
+    echo "  ! HUD shows no live HR or Power: are the replay sensors paired to the profile?" >&2
+    return 1
 }
 needs_session() { # true if any requested target is a ride shot
     local t s
