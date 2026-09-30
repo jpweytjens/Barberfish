@@ -46,7 +46,17 @@ cd "$(dirname "$0")/.."
 OUTDIR="${OUTDIR:-screencaps/shots}"
 STAGE="$(mktemp -d)"
 UI="$STAGE/ui.xml"
-trap 'rm -rf "$STAGE"' EXIT
+on_exit() { # a failed shot still ends the ride and restores the config, then drops the snapshot
+    local rc=$?
+    set +e
+    if (( SESSION_UP )); then
+        (( rc )) && echo "  ! run failed; ending the ride and restoring the config" >&2
+        session_end || echo "  ! cleanup incomplete: check the ride and config on the device" >&2
+    fi
+    A shell dumpsys deviceidle enable >/dev/null 2>&1
+    rm -rf "$STAGE"
+}
+trap on_exit EXIT
 mkdir -p "$OUTDIR"
 
 KAROO_DFD=io.hammerhead.settingsapp/.dataFieldSettings.DataFieldSettingsActivity
@@ -217,6 +227,9 @@ ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     done
     echo "  ! ride screen never came up" >&2; return 1
 }
+ride_running() { # a ride screen exists in any task, in front or not
+    A shell dumpsys activity activities 2>/dev/null | grep -q -F "rideapp/.views.ride.RideActivity"
+}
 ride_in_front() {
     A shell dumpsys activity activities 2>/dev/null \
         | grep -m1 -F "ResumedActivity=" | grep -q -F "rideapp/.views.ride.RideActivity"
@@ -224,7 +237,7 @@ ride_in_front() {
 ride_front() { # "To ride" only sends the replay to the back, so the screen beneath it comes up:
     # the home screen, or the route list the route was loaded from. Starting the ride screen's
     # component brings the running ride's task forward from any of them.
-    (( SESSION_UP )) || return 0
+    (( RIDE_UP )) || return 0
     local i
     for i in $(seq 1 10); do
         if ride_in_front; then return 0; fi
@@ -268,7 +281,19 @@ ride_load_route() { # ride_load_route <route name> — control center -> ADD Rou
     tap text "Follow route"; settle 5
 }
 ride_end() { # pause -> finish flag -> confirm -> Delete -> confirm (discard the recording)
-    press_button bottom_right; settle 2 # pause: shows the finish flag on any data page
+    # Pause, which shows the finish flag on any data page. A press sent while the ride screen
+    # rebuilds (after a theme flip) is lost, and the taps below then land on the map; so check
+    # that the top bar turned yellow, as it does paused (#FFE714; black or white riding).
+    local i px r g b
+    for i in 1 2 3; do
+        press_button bottom_right; settle 2
+        A exec-out screencap -p > "$STAGE/pause.png"
+        px=$(magick "$STAGE/pause.png" -format '%[fx:int(255*p{20,85}.r)] %[fx:int(255*p{20,85}.g)] %[fx:int(255*p{20,85}.b)]' info:)
+        read -r r g b <<< "$px"
+        if (( r > 180 && g > 160 && b < 120 )); then break; fi
+        (( i == 3 )) && { echo "  ! ride did not pause" >&2; return 1; }
+        settle 2
+    done
     tap_xy 40 732; settle 2             # finish flag (bottom-left of the pause overlay)
     tap_xy 429 732; settle 4            # confirm end
     scroll_to text "Delete" || { echo "  ! Delete not found on summary" >&2; return 1; }
@@ -349,24 +374,33 @@ restore_theme() {
 # replay + ride, load the route once (RIDE REMAINING / OVERVIEW / PROFILE / climbs
 # all need it), capture, then end+discard and restore the HUD.
 RIDE_SHOTS=(hud_sparkline palettes climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
-SESSION_UP=0
+SESSION_UP=0   # the config snapshot is taken, so session_end has something to restore
+RIDE_UP=0      # our ride is running, so session_end has a ride to end
 session_start() {
     (( SESSION_UP )) && return 0
+    if ride_running; then
+        echo "  ! a ride is already running; end it on the device first" >&2; return 1
+    fi
     get_hud "$STAGE/hud_saved.json"
     get_zone "$STAGE/zone_saved.json"
+    SESSION_UP=1
     set_zone scripts/fixtures/zone/barberfish.json   # house palettes unless a shot sets others
     replay_load
     ride_start
+    RIDE_UP=1
     ride_load_route Tranquilo
-    SESSION_UP=1
 }
-session_end() {
+session_end() { # restore the config first: it is the part a half-finished run must not lose
     (( SESSION_UP )) || return 0
+    SESSION_UP=0
     unpin_grade
-    ride_end
     [[ -f "$STAGE/hud_saved.json" ]] && set_hud "$STAGE/hud_saved.json"
     [[ -f "$STAGE/zone_saved.json" ]] && set_zone "$STAGE/zone_saved.json"
-    SESSION_UP=0
+    [[ -f "$STAGE/time_saved.json" ]] && config_set time "$STAGE/time_saved.json"
+    (( RIDE_UP )) || return 0
+    RIDE_UP=0
+    ride_front
+    ride_end
 }
 needs_session() { # true if any requested target is a ride shot
     local t s
@@ -599,6 +633,4 @@ for s in "${targets[@]}"; do
     fi
 done
 session_end
-
-A shell dumpsys deviceidle enable >/dev/null 2>&1 || true
 echo "done."
