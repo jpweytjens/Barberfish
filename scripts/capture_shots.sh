@@ -151,6 +151,8 @@ config_get() { # config_get <name> <local out file> — dump live config and pul
 }
 set_hud() { config_set hud "$1"; }
 get_hud() { config_get hud "$1"; }
+own_hud() { set_hud "$STAGE/hud_saved.json"; }   # the user's HUD, snapshotted at session start
+set_profile() { config_set field_sparkline "$1"; }   # the Profile field (the HUD strip rides with hud)
 set_zone() { config_set zone "$1"; }   # power, HR and grade palettes
 get_zone() { config_get zone "$1"; }
 # The replay drives GPS, not the barometer, so a live Grade reads 0.0% all ride; pin it for
@@ -398,6 +400,7 @@ session_start() {
     fi
     get_hud "$STAGE/hud_saved.json"
     get_zone "$STAGE/zone_saved.json"
+    config_get field_sparkline "$STAGE/profile_saved.json"
     SESSION_UP=1
     set_zone scripts/fixtures/zone/barberfish.json   # house palettes unless a shot sets others
     replay_load
@@ -413,6 +416,7 @@ session_end() { # restore the config first: it is the part a half-finished run m
     [[ -f "$STAGE/hud_saved.json" ]] && set_hud "$STAGE/hud_saved.json"
     [[ -f "$STAGE/zone_saved.json" ]] && set_zone "$STAGE/zone_saved.json"
     [[ -f "$STAGE/time_saved.json" ]] && config_set time "$STAGE/time_saved.json"
+    [[ -f "$STAGE/profile_saved.json" ]] && set_profile "$STAGE/profile_saved.json"
     (( RIDE_UP )) || return 0
     RIDE_UP=0
     ride_front
@@ -566,22 +570,26 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     echo "  -> $OUTDIR/barberfish_fields.jpg"
 }
 
-shot_light_mode() { # page 3 in day mode: 4-col zone HUD + fill-mode field pairs
-    echo "light_mode: data page 3, day mode"
+shot_light_mode() { # page 4 in day mode: the HUD, Profile and route fields
+    echo "light_mode: data page 4, day mode"
     session_start
-    set_hud scripts/fixtures/hud/light_mode.json
+    own_hud   # the HUD is one config for every page; show the one set up for this page
+    set_profile scripts/fixtures/profile/blocks.json   # Max simplification, flat band uncoloured
+    replay_seek 0.236; settle 20   # on the big climb, where power and HR have values (the hero's spot)
     save_theme; set_day
-    goto_page 3; settle_drawer
+    goto_page 4; settle_drawer
     cap light_mode
     magick "$STAGE/light_mode.png" -quality 92 "$OUTDIR/light_mode.jpg"
     echo "  -> $OUTDIR/light_mode.jpg"
     restore_theme
 }
 
-shot_karoo_vs_barberfish() { # page 4: native vs Barberfish paired single fields (no HUD row)
-    echo "karoo_vs_barberfish: data page 4"
+shot_karoo_vs_barberfish() { # page 3: native vs Barberfish paired single fields (no HUD row)
+    echo "karoo_vs_barberfish: data page 3"
     session_start
-    goto_page 4; settle_drawer
+    own_hud   # see shot_light_mode
+    replay_seek 0.236; settle 20   # see shot_light_mode
+    goto_page 3; settle_drawer
     cap karoo_vs_barberfish
     magick "$STAGE/karoo_vs_barberfish.png" -quality 92 "$OUTDIR/karoo_vs_barberfish.jpg"
     echo "  -> $OUTDIR/karoo_vs_barberfish.jpg"
