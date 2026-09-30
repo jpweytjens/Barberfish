@@ -207,16 +207,7 @@ replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that
 ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     dump
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
-    # "To ride" uncovers whatever the launcher was left on (menu grid, app info, ...). Back out
-    # to the profile carousel; back on the carousel itself flips to the grid, so check each step.
-    local j
-    for j in $(seq 1 6); do
-        dump
-        if ! ui has text "Rides" >/dev/null 2>&1 && ui has text* "Barberfish" >/dev/null 2>&1; then
-            break
-        fi
-        A shell input keyevent KEYCODE_BACK; settle 1
-    done
+    profile_front Barberfish
     tap_xy 429 732             # green play FAB on the profile carousel
     # The ride screen can take well over the old fixed 6 s to come up (K3, 2026-09-25); a page
     # swipe before it does moves the profile carousel instead. Wait for it to be in front.
@@ -226,6 +217,28 @@ ride_start() { # from ride-replay's replay screen: To ride -> start the ride
         if ride_in_front; then settle 3; return 0; fi
     done
     echo "  ! ride screen never came up" >&2; return 1
+}
+profile_front() { # profile_front <name> — home screen, with that profile's card in the middle
+    # "To ride" uncovers whatever the launcher was left on (menu grid, app info, ...). Home lands on
+    # the launcher's carousel or its menu grid, whichever it last showed, and Back on the grid flips
+    # to the carousel (K3, 2026-09-30). Card titles end in a no-break space, and matching the whole
+    # title keeps "Barberfish" from also taking "Barberfish sweep". Fling to the first card, then
+    # step right until the named card spans the middle of the screen.
+    local title="$1"$'\xc2\xa0' i box x1 x2
+    A shell input keyevent KEYCODE_HOME; settle 2
+    dump
+    if ui has text "Rides" >/dev/null 2>&1; then A shell input keyevent KEYCODE_BACK; settle 1.5; fi
+    for i in $(seq 1 8); do A shell input swipe 120 480 400 480 150; done
+    settle 1
+    for i in $(seq 1 12); do
+        dump
+        if box=$(ui box text "$title" 2>/dev/null); then
+            read -r x1 _ x2 _ <<<"$box"
+            if (( x1 < W/2 && x2 > W/2 )); then return 0; fi
+        fi
+        A shell input swipe 400 480 120 480 300; settle 1.2
+    done
+    echo "  ! profile $1 not on the home screen" >&2; return 1
 }
 ride_running() { # a ride screen exists in any task, in front or not
     A shell dumpsys activity activities 2>/dev/null | grep -q -F "rideapp/.views.ride.RideActivity"
