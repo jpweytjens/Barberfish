@@ -53,11 +53,11 @@ Light and dark mode are both supported, with [each palette tuned per theme](colo
 
 <table>
   <tr>
-    <td align="center">Light mode with zone-colored HUD and field comparison</td>
+    <td align="center">Light mode with the HUD and route fields</td>
     <td align="center">Karoo native fields beside their Barberfish counterparts</td>
   </tr>
   <tr>
-    <td align="center"><img src="screenshots/light_mode.jpg" alt="Light mode data page with zone-colored HUD and Karoo vs Barberfish comparison"></td>
+    <td align="center"><img src="screenshots/light_mode.jpg" alt="Light mode data page with the HUD, Overview, Ride Remaining, HR Zone and Grade"></td>
     <td align="center"><img src="screenshots/karoo_vs_barberfish.jpg" alt="Karoo native fields next to Barberfish equivalents on a 5-row data page"></td>
   </tr>
 </table>
