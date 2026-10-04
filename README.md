@@ -80,7 +80,7 @@ New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish), especially suggestions for new HUD data fields.
+Bug reports, feature requests and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish), especially on the grade map while it is in beta.
 
 ### For extension developers
 
