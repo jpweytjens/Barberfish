@@ -19,6 +19,8 @@ On the Molenberg below, the band is orange under the rider, yellow just past the
 
 Turn it on in the Grade Map card under Climbing in the Barberfish app; it draws whenever you follow a route.
 
+The grade map is in beta. Reports of how it draws on your routes are welcome in [GitHub issues](https://github.com/jpweytjens/barberfish/issues).
+
 ## Shared climbing settings
 
 The grade map, the Grade field and the elevation profile all draw from one [grade palette](color-palettes.md#grade-palettes), so a color means the same grade on all three. The map also takes its [Emphasis and Simplification](algorithms.md#grade-coloring) from the Profile field, and keeps them in step as you change them there. To tune the map on its own, set its Tuning to Independent.
