@@ -51,11 +51,11 @@ Every segment now has a grade, and Emphasis sets the grade at which color starts
     <td>Grade map</td>
     <td align="center"><img src="screenshots/emphasis_map_all.jpg" alt="The same Barberfish bar as the Grade Map card shows it: every band colored, so no neutral appears"></td>
     <td align="center"><img src="screenshots/emphasis_map_default.jpg" alt="Barberfish bar as the Grade Map card shows it: the flat band between the handles painted in the map's muted green neutral"></td>
-    <td align="center"><img src="screenshots/emphasis_map_climbs.jpg" alt="Karoo bar as the Grade Map card shows it: the stretch from 0 to 5 percent painted in the map's plain grey neutral"></td>
+    <td align="center"><img src="screenshots/emphasis_map_climbs.jpg" alt="Karoo bar as the Grade Map card shows it: the stretch from 0 to 5 percent painted grey"></td>
   </tr>
 </table>
 
-The two rows are the same handles on the two surfaces, and they differ only where a stretch of road stays quiet: with the handles met nothing does, so the first column is the same picture twice. The Profile leaves the quiet stretch as an outline, because it paints nothing there and its silhouette shows through; the grade map paints it in the neutral it uses on the road, the flat band's muted green on Barberfish and a plain grey on every other palette.
+The two rows are the same handles on the two surfaces, and they differ only where a stretch of road stays quiet: with the handles met nothing does, so the first column is the same picture twice. The Profile leaves the quiet stretch as an outline, because it paints nothing there and its silhouette shows through; the grade map paints it in the neutral it uses on the road, the flat band's muted green on Barberfish and grey on every other palette.
 
 What a handle can reach depends on the palette, which is why the [palettes page](color-palettes.md#grade-palettes) lists two properties per palette. A descent handle exists only on a palette that colors descents (Barberfish and Turbo); on the others no descent takes a color anywhere, and the bar has a climb handle only. And on a palette whose flat band spans zero (Barberfish), the climb handle has one more stop, at the lower edge of that band, which colors the flat band too and puts every color in the palette on the road. A palette whose bands start at zero has no such stop, because its flat band is already the first climb band.
 
