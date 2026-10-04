@@ -357,6 +357,59 @@ map_extensions_toggle() { # flip the puzzle toggle (extension map effects) in th
     tap_xy 63 452; settle 1             # close the menu
 }
 
+# ---- profile editor (Karoo's data page layout screen) ------------------------
+# In a ride, a seek puts the Karoo off route for good, so route-driven HUD states (the climb counter
+# and profile) cannot be reached by seeking. The editor's HUD preview plays a synthetic climb
+# instead, cycling hidden, counter, profile; the climb shots are taken there. The editor stops
+# redrawing the preview after a while, and a config change starts it again (K3, 2026-10-02).
+editor_page() { # editor_page <page name> — open that data page of the Barberfish profile's layout
+    # Taps only: the profile and page lists delete an entry on a swipe. The configurator reopens
+    # where it was left, so stop it first to start at the profile list (unsaved edits are dropped;
+    # the shots make none).
+    A shell am force-stop io.hammerhead.profileconfiguratorapp >/dev/null 2>&1
+    A shell input keyevent KEYCODE_HOME; settle 2
+    dump
+    if ! ui has text "Profiles" >/dev/null 2>&1; then A shell input keyevent KEYCODE_BACK; settle 1.5; fi
+    tap text "Profiles"; settle 2
+    tap text "Barberfish"; settle 2     # exact match, so not "Barberfish sweep"
+    tap text "DATA PAGES"; settle 2
+    tap text "$1"; settle 3
+}
+climb_phase() { # climb_phase counter|profile — wait for the HUD preview's climb cycle to reach it
+    # Read the strip under the HUD values (K3, 2026-10-02): the counter is white text in the
+    # middle (0.07 of the band) with nothing on the left, the profile fills it with colour (0.33 or
+    # more saturated); hidden, the values sit low and their digits reach into the band's left.
+    local i c w l
+    for i in $(seq 1 60); do
+        A exec-out screencap -p > "$STAGE/phase.png"
+        c=$(magick "$STAGE/phase.png" -crop 460x40+10+205 +repage -colorspace HSL -channel G \
+            -separate -threshold 40% -format "%[fx:mean]" info:)
+        w=$(magick "$STAGE/phase.png" -crop 140x30+170+205 +repage -colorspace gray -threshold 80% \
+            -format "%[fx:mean]" info:)
+        l=$(magick "$STAGE/phase.png" -crop 140x30+10+205 +repage -colorspace gray -threshold 80% \
+            -format "%[fx:mean]" info:)
+        case "$1" in
+            counter) LC_ALL=C awk -v c="$c" -v w="$w" -v l="$l" 'BEGIN{exit !(c < 0.02 && w > 0.04 && l < 0.02)}' && return 0 ;;
+            profile) LC_ALL=C awk -v c="$c" 'BEGIN{exit !(c > 0.25)}' && return 0 ;;
+        esac
+        settle 2
+    done
+    echo "  ! HUD preview never showed the climb $1" >&2; return 1
+}
+climb_dot_past() { # climb_dot_past <x> — wait for the profile's position dot to pass x in the strip
+    # The dot holds at the foot for ~25 s while the window tracks the approach, then climbs at
+    # ~4 px/s (K3, 2026-10-04). It is the only yellow in the strip; its box gives its x.
+    local i x
+    for i in $(seq 1 60); do
+        A exec-out screencap -p > "$STAGE/dot.png"
+        x=$(magick "$STAGE/dot.png" -crop 470x50+5+195 +repage \
+            -fx '(r>0.85&&g>0.75&&b<0.35)?1:0' -format "%@" info: | sed 's/.*+\([0-9]*\)+[0-9]*$/\1/')
+        (( x >= $1 && x < 470 )) && return 0
+        settle 2
+    done
+    echo "  ! profile dot never passed x=$1" >&2; return 1
+}
+
 # ---- capture / crop ----------------------------------------------------------
 cap() { wake; A exec-out screencap -p > "$STAGE/$1.png"; }
 
@@ -393,19 +446,23 @@ restore_theme() {
 # The ride shots share one discardable ride: snapshot the user's HUD, start the
 # replay + ride, load the route once (RIDE REMAINING / OVERVIEW / PROFILE / climbs
 # all need it), capture, then end+discard and restore the HUD.
-RIDE_SHOTS=(hud_sparkline palettes climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
+RIDE_SHOTS=(hud_sparkline palettes barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
 SESSION_UP=0   # the config snapshot is taken, so session_end has something to restore
 RIDE_UP=0      # our ride is running, so session_end has a ride to end
-session_start() {
+config_snapshot() { # snapshot the config the shots change, so session_end can restore it
     (( SESSION_UP )) && return 0
-    if ride_running; then
-        echo "  ! a ride is already running; end it on the device first" >&2; return 1
-    fi
     get_hud "$STAGE/hud_saved.json"
     get_zone "$STAGE/zone_saved.json"
     config_get field_sparkline "$STAGE/profile_saved.json"
     SESSION_UP=1
     set_zone scripts/fixtures/zone/barberfish.json   # house palettes unless a shot sets others
+}
+session_start() {
+    (( RIDE_UP )) && return 0
+    if ride_running; then
+        echo "  ! a ride is already running; end it on the device first" >&2; return 1
+    fi
+    config_snapshot
     replay_load
     ride_start
     RIDE_UP=1
@@ -523,28 +580,25 @@ shot_palettes() { # page 1: the hud_sparkline layout under two non-house palette
     set_zone scripts/fixtures/zone/barberfish.json
 }
 
-shot_climbs_counter() { # page 1: HUD in CLIMBS mode showing the climb counter, on a climb
-    echo "climbs_counter: map page, HUD climb counter"
-    session_start
-    set_hud scripts/fixtures/hud/climbs_counter.json
-    # Must park on one of Tranquilo's categorized climbs so the native climber engages and the
-    # HUD counter reads "Climb N/M"; tune this fraction against the reference. On an uncategorized
-    # pitch the counter does not show.
-    replay_seek 0.324
-    goto_page 1; settle_drawer
+shot_climbs_counter() { # editor: the HUD preview in CLIMBS mode, showing the climb counter
+    echo "climbs_counter: Map Page in the profile editor, HUD climb counter"
+    config_snapshot
+    editor_page "Map Page"
+    set_hud scripts/fixtures/hud/climbs_counter.json   # after opening: a config change restarts the preview
+    climb_phase counter
     cap climbs_counter
     magick "$STAGE/climbs_counter.png" -quality 92 "$OUTDIR/climbs_counter.jpg"
     echo "  -> $OUTDIR/climbs_counter.jpg"
 }
 
-shot_climbs_profile() { # page 1: HUD 3-col Speed/HR/Grade + profile strip, on a climb
-    echo "climbs_profile: map page, HUD grade + profile"
-    session_start
-    set_hud scripts/fixtures/hud/climbs_profile.json
-    # Park on a categorized climb so GRADE reads a settled positive value (it shows "Searching…"
-    # on flats/descents); tune against the reference.
-    replay_seek 0.324
-    goto_page 1; settle_drawer
+shot_climbs_profile() { # editor: HUD 3-col Speed/HR/Grade + the climb profile, a little way up
+    echo "climbs_profile: Map Page in the profile editor, HUD grade + profile"
+    config_snapshot
+    editor_page "Map Page"
+    set_hud scripts/fixtures/hud/climbs_profile.json   # after opening: a config change restarts the preview
+    # The strip is coloured past the summit too, so take the first profile after the counter: the
+    # climb from its foot. Then wait for the dot to get partway up.
+    climb_phase counter; climb_phase profile; climb_dot_past 200
     cap climbs_profile
     magick "$STAGE/climbs_profile.png" -quality 92 "$OUTDIR/climbs_profile.jpg"
     echo "  -> $OUTDIR/climbs_profile.jpg"
