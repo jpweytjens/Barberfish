@@ -47,6 +47,21 @@ Grade colors its cell by the gradient palette, searches until it has 30 m of roa
   </tr>
 </table>
 
+## Other palettes
+
+The grade palette and the power and HR palettes are picked separately, and each field and HUD slot chooses Text or Fill on its own, so any pairing works ([all palettes](color-palettes.md)). Two pairings on the switchbacks of one climb:
+
+<table>
+  <tr>
+    <td align="center">Turbo grade, Wahoo zones in Text mode</td>
+    <td align="center">Garmin grade, Intervals.icu zones in Fill mode</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/palette_turbo_wahoo.jpg" alt="Map page on a switchback climb, grade map and profile in the Turbo palette, HR and power values colored by the Wahoo zones"></td>
+    <td align="center"><img src="screenshots/palette_garmin_intervals.jpg" alt="Map page on a switchback climb, grade map and profile in the Garmin palette, HR and power cells filled by the Intervals.icu zones"></td>
+  </tr>
+</table>
+
 ## Themes and the native comparison
 
 Light and dark mode are both supported, with [each palette tuned per theme](color-palettes.md).
