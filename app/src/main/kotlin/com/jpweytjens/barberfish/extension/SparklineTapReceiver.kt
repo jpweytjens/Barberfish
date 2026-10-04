@@ -31,7 +31,9 @@ class SparklineTapReceiver : BroadcastReceiver() {
                 withTimeout(5_000L) {
                     if (isField) {
                         val cfg = context.streamFieldSparklineConfig().first()
-                        context.saveFieldSparklineConfig(cfg.copy(lookaheadKm = nextLookahead(cfg.lookaheadKm)))
+                        context.saveFieldSparklineConfig(
+                            cfg.copy(lookaheadKm = nextLookahead(cfg.lookaheadKm))
+                        )
                     } else {
                         val cfg = context.streamHudSparklineConfig().first()
                         val next = nextLookahead(cfg.lookaheadKm)
@@ -47,4 +49,9 @@ class SparklineTapReceiver : BroadcastReceiver() {
     }
 }
 
-private fun nextLookahead(current: Int): Int = when (current) { 5 -> 10; 10 -> 20; else -> 5 }
+private fun nextLookahead(current: Int): Int =
+    when (current) {
+        5 -> 10
+        10 -> 20
+        else -> 5
+    }

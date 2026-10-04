@@ -1,7 +1,8 @@
 """
 Shared palette data + APCA/HSLuv helpers.
 
-Parses palette literals out of ``ZoneColoring.kt`` and ``FieldColors.kt`` so
+Parses palette literals out of ``ZoneColoring.kt``, grade band tables out of
+``GradeBands.kt``, and named color constants out of ``FieldColors.kt`` so
 the Kotlin sources stay the single source of truth. Other scripts (palette
 APCA correction, README SVG generator, diagnostic visualizer) import from
 this module rather than duplicating palette data.
@@ -37,6 +38,7 @@ _SHARED = (
 
 ZONE_COLORING_KT = _SHARED / "ZoneColoring.kt"
 FIELD_COLORS_KT = _SHARED / "FieldColors.kt"
+GRADE_BANDS_KT = _SHARED / "GradeBands.kt"
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -104,7 +106,11 @@ def is_readable(
 
 def best_text_on_background(bg_hex: str) -> str:
     """Return whichever of WHITE / BLACK has the higher APCA |Lc| against ``bg_hex``."""
-    return WHITE if abs(apca_contrast(WHITE, bg_hex)) >= abs(apca_contrast(BLACK, bg_hex)) else BLACK
+    return (
+        WHITE
+        if abs(apca_contrast(WHITE, bg_hex)) >= abs(apca_contrast(BLACK, bg_hex))
+        else BLACK
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +124,7 @@ def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
 
 
 def _rgb_to_hex(r: float, g: float, b: float) -> str:
-    return "#{:02X}{:02X}{:02X}".format(int(r * 255), int(g * 255), int(b * 255))
+    return f"#{int(r * 255):02X}{int(g * 255):02X}{int(b * 255):02X}"
 
 
 def _rgb_to_hsl(r: float, g: float, b: float) -> tuple[float, float, float]:
@@ -318,6 +324,30 @@ def parse_palettes(path: Path = ZONE_COLORING_KT) -> dict[str, list[str]]:
             continue
 
         # current_name is set — we are inside a literal block body.
+        if not palettes[current_name]:
+            # Derived body on its own line: ``PARENT.take(N)`` or
+            # ``listOf(i, j, ...).map { PARENT[it] }``.
+            take_match = _TAKE_RE.match(line.strip())
+            if take_match:
+                parent, n = take_match.group(1), int(take_match.group(2))
+                if parent in palettes:
+                    palettes[current_name] = palettes[parent][:n]
+                else:
+                    del palettes[current_name]
+                current_name = None
+                continue
+
+            idx_match = _INDEX_MAP_RE.match(line.strip())
+            if idx_match:
+                indices = [int(x) for x in idx_match.group(1).split(",") if x.strip()]
+                parent = idx_match.group(2)
+                if parent in palettes:
+                    palettes[current_name] = [palettes[parent][i] for i in indices]
+                else:
+                    del palettes[current_name]
+                current_name = None
+                continue
+
         if "listOf(" in line and not palettes[current_name]:
             continue
 
@@ -341,11 +371,19 @@ def parse_palettes(path: Path = ZONE_COLORING_KT) -> dict[str, list[str]]:
 _GRADE_OPEN_RE = re.compile(
     r"^\s*(?:private\s+)?val\s+(\w+_GRADE_BANDS\w*)\s*=\s*listOf\("
 )
+# Declaration with the ``listOf(`` opener wrapped onto the next line.
+_GRADE_DECL_RE = re.compile(r"^\s*(?:private\s+)?val\s+(\w+_GRADE_BANDS\w*)\s*=\s*$")
 # Threshold can be a signed float (e.g. ``-9.0``) or the literal
 # ``Double.NEGATIVE_INFINITY`` sentinel used by the Turbo palette.
 _THRESHOLD = r"(-?\d+(?:\.\d+)?|Double\.NEGATIVE_INFINITY)"
 _GRADE_BAND_RE = re.compile(rf"{_THRESHOLD}\s+to\s+Color\(0xFF([0-9A-Fa-f]{{6}})\)")
 _GRADE_BAND_REF_RE = re.compile(rf"{_THRESHOLD}\s+to\s+(\w+)\[(\d+)\]")
+# A band pointing at a named color constant, e.g. ``-2.0 to FlatGrey,``. The
+# trailing ``,``/``//``/end-of-line requirement is what keeps ``to Color(0x...)``
+# and ``to karooPowerColors[6]`` out.
+_GRADE_BAND_NAMED_RE = re.compile(rf"{_THRESHOLD}\s+to\s+([A-Za-z_]\w*)\s*(?:,|//|$)")
+# A named color constant's definition, e.g. ``internal val FlatGrey = Color(0xFFC4C4C4)``.
+_NAMED_COLOR_RE = re.compile(r"val\s+(\w+)\s*=\s*Color\(0xFF([0-9A-Fa-f]{6})\)")
 
 
 def _parse_threshold(raw: str) -> float:
@@ -362,14 +400,34 @@ def format_threshold(value: float) -> str:
     return repr(value)
 
 
+def parse_named_colors(path: Path = FIELD_COLORS_KT) -> dict[str, str]:
+    """Parse every ``val NAME = Color(0xFF...)`` constant out of ``FieldColors.kt``.
+
+    Grade bands may point at a shared named color (``-2.0 to FlatGrey``) instead
+    of spelling the literal out.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping ``kotlin_var_name -> "#RRGGBB"``.
+    """
+    return {
+        name: f"#{rgb.upper()}"
+        for name, rgb in _NAMED_COLOR_RE.findall(path.read_text(encoding="utf-8"))
+    }
+
+
 def parse_grade_bands(
-    path: Path = FIELD_COLORS_KT,
+    path: Path = GRADE_BANDS_KT,
     palettes: dict[str, list[str]] | None = None,
+    named: dict[str, str] | None = None,
 ) -> dict[str, list[tuple[float, str]]]:
-    """Parse grade band lists out of ``FieldColors.kt``.
+    """Parse grade band lists out of ``GradeBands.kt``.
 
     Resolves references to power palettes (e.g. ``karooPowerColorsReadableDark[3]``)
-    using ``palettes`` (typically the result of :func:`parse_palettes`).
+    using ``palettes`` (typically the result of :func:`parse_palettes`), and
+    named color constants (e.g. ``FlatGrey``) using ``named`` (typically the
+    result of :func:`parse_named_colors`).
 
     Returns
     -------
@@ -378,14 +436,29 @@ def parse_grade_bands(
         order.
     """
     palettes = palettes or parse_palettes()
+    named = named or parse_named_colors()
     bands: dict[str, list[tuple[float, str]]] = {}
     current_name: str | None = None
+    pending_name: str | None = None
 
     for line in path.read_text(encoding="utf-8").splitlines():
         open_match = _GRADE_OPEN_RE.match(line)
         if open_match:
             current_name = open_match.group(1)
             bands[current_name] = []
+            pending_name = None
+            continue
+
+        if pending_name is not None:
+            if line.strip().startswith("listOf("):
+                current_name = pending_name
+                bands[current_name] = []
+            pending_name = None
+            continue
+
+        decl_match = _GRADE_DECL_RE.match(line)
+        if decl_match:
+            pending_name = decl_match.group(1)
             continue
 
         if current_name is None:
@@ -408,6 +481,15 @@ def parse_grade_bands(
             parent, idx = ref.group(2), int(ref.group(3))
             if parent in palettes:
                 bands[current_name].append((threshold, palettes[parent][idx]))
+            continue
+
+        named_ref = _GRADE_BAND_NAMED_RE.search(line)
+        if named_ref:
+            constant = named.get(named_ref.group(2))
+            if constant:
+                bands[current_name].append(
+                    (_parse_threshold(named_ref.group(1)), constant)
+                )
 
     return {name: entries for name, entries in bands.items() if entries}
 
@@ -471,9 +553,7 @@ def base_palette_names(kind: Literal["Power", "Hr"]) -> list[str]:
     return [
         n
         for n in _ALL_PALETTES
-        if kind in n
-        and "Readable" not in n
-        and "hsluv" not in n.lower()
+        if kind in n and "Readable" not in n and "hsluv" not in n.lower()
     ]
 
 

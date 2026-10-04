@@ -1,21 +1,27 @@
 package com.jpweytjens.barberfish.screens
 
 import android.os.Bundle
+import android.widget.RemoteViews
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,31 +46,40 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -72,7 +87,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +96,7 @@ import com.jpweytjens.barberfish.datatype.AvgHRField
 import com.jpweytjens.barberfish.datatype.AvgPowerField
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
 import com.jpweytjens.barberfish.datatype.CadenceField
+import com.jpweytjens.barberfish.datatype.EffortField
 import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HRField
 import com.jpweytjens.barberfish.datatype.HRMaxPercentField
@@ -95,55 +110,62 @@ import com.jpweytjens.barberfish.datatype.NPField
 import com.jpweytjens.barberfish.datatype.PowerField
 import com.jpweytjens.barberfish.datatype.PowerZoneField
 import com.jpweytjens.barberfish.datatype.SpeedField
+import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
 import com.jpweytjens.barberfish.datatype.formatTime
+import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.DANGER_ORANGE
-import com.jpweytjens.barberfish.datatype.shared.OceanBlue
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import com.jpweytjens.barberfish.datatype.barberfishFieldRemoteViews
-import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
-import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
-import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
-import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
-import com.jpweytjens.barberfish.datatype.shared.RDYLGN_RED
-import com.jpweytjens.barberfish.datatype.shared.ZonePalette
-import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
-import com.jpweytjens.barberfish.datatype.shared.gradeColor
-import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
-import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
-import com.jpweytjens.barberfish.datatype.shared.BackButtonTint
-import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.Grey500
-import com.jpweytjens.barberfish.datatype.shared.ICON_TINT_TEAL
+import com.jpweytjens.barberfish.datatype.shared.OceanBlue
+import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
+import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
+import com.jpweytjens.barberfish.datatype.shared.RDYLGN_RED
 import com.jpweytjens.barberfish.datatype.shared.TextDark
+import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
+import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
+import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
+import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
+import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
+import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
+import com.jpweytjens.barberfish.datatype.shared.withDesign
+import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
-import com.jpweytjens.barberfish.extension.ETAConfig
-import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
+import com.jpweytjens.barberfish.extension.ChevronEmphasis
+import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.ETAConfig
+import com.jpweytjens.barberfish.extension.EffortFieldConfig
+import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
+import com.jpweytjens.barberfish.extension.HUDConfig
+import com.jpweytjens.barberfish.extension.LabelSize
+import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
-import com.jpweytjens.barberfish.extension.ZoneDisplayMode
-import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
+import com.jpweytjens.barberfish.extension.RouteRemainingConfig
+import com.jpweytjens.barberfish.extension.RouteSimplification
+import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
@@ -152,54 +174,40 @@ import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
-import com.jpweytjens.barberfish.extension.saveETAConfig
+import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.saveAvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.saveCadenceFieldConfig
+import com.jpweytjens.barberfish.extension.saveDataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.saveETAConfig
+import com.jpweytjens.barberfish.extension.saveEffortFieldConfig
+import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.saveGradeFieldConfig
+import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRZoneFieldConfig
+import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.saveHudSparklineConfig
+import com.jpweytjens.barberfish.extension.saveLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveMaxPowerFieldConfig
-import com.jpweytjens.barberfish.extension.saveHUDConfig
-import com.jpweytjens.barberfish.extension.saveLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveNPFieldConfig
 import com.jpweytjens.barberfish.extension.savePowerFieldConfig
 import com.jpweytjens.barberfish.extension.savePowerZoneFieldConfig
+import com.jpweytjens.barberfish.extension.saveRouteRemainingConfig
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.saveTimeConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
-import com.jpweytjens.barberfish.extension.streamETAConfig
-import com.jpweytjens.barberfish.extension.streamAvgPowerFieldConfig
-import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
-import com.jpweytjens.barberfish.extension.streamCadenceFieldConfig
-import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
-import com.jpweytjens.barberfish.extension.streamHRFieldConfig
-import com.jpweytjens.barberfish.extension.streamHRMaxPercentFieldConfig
-import com.jpweytjens.barberfish.extension.streamHRZoneFieldConfig
-import com.jpweytjens.barberfish.extension.streamMaxHRFieldConfig
-import com.jpweytjens.barberfish.extension.streamMaxPowerFieldConfig
-import com.jpweytjens.barberfish.extension.SparklineConfig
-import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
-import com.jpweytjens.barberfish.extension.saveHudSparklineConfig
-import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
-import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
-import com.jpweytjens.barberfish.extension.streamHUDConfig
-import com.jpweytjens.barberfish.extension.streamNavigationState
-import com.jpweytjens.barberfish.extension.streamLapPowerFieldConfig
-import com.jpweytjens.barberfish.extension.streamNPFieldConfig
-import com.jpweytjens.barberfish.extension.streamPowerFieldConfig
-import com.jpweytjens.barberfish.extension.streamPowerZoneFieldConfig
-import com.jpweytjens.barberfish.extension.streamSpeedFieldConfig
-import com.jpweytjens.barberfish.extension.streamTimeConfig
+import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamUserProfile
-import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private val STACK_ORDER_OPTIONS = listOf(false to "Distance", true to "Climb")
 
 class MainActivity : ComponentActivity() {
 
@@ -220,8 +228,10 @@ class MainActivity : ComponentActivity() {
             }
         setContent {
             MaterialTheme(
-                colorScheme = lightColorScheme(primary = OceanBlue, onPrimary = Color.White),
-            ) { ConfigScreen() }
+                colorScheme = lightColorScheme(primary = OceanBlue, onPrimary = Color.White)
+            ) {
+                ConfigScreen()
+            }
         }
     }
 
@@ -230,11 +240,13 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    @OptIn(ExperimentalComposeUiApi::class)
     @Composable
     private fun ConfigScreen() {
         var hudConfig by remember { mutableStateOf(HUDConfig()) }
         var hudSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
+        var gradeMapConfig by remember { mutableStateOf(GradeMapConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -256,7 +268,10 @@ class MainActivity : ComponentActivity() {
         var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
+        var effortFieldConfig by remember { mutableStateOf(EffortFieldConfig()) }
+        var routeRemainingConfig by remember { mutableStateOf(RouteRemainingConfig()) }
         var zoneConfig by remember { mutableStateOf(ZoneConfig()) }
+        var dataFieldDesignConfig by remember { mutableStateOf(DataFieldDesignConfig()) }
         var userProfile by remember {
             mutableStateOf(
                 UserProfile(
@@ -279,687 +294,1054 @@ class MainActivity : ComponentActivity() {
 
         var fieldsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
-        var climberExpanded by remember { mutableStateOf(false) }
+        var climbingExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
-        var globalExpanded by remember { mutableStateOf(false) }
+        var palettesExpanded by remember { mutableStateOf(false) }
+        var timeExpanded by remember { mutableStateOf(false) }
+        var designExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
-            launch { streamHUDConfig().collect { hudConfig = it } }
-            launch { streamHudSparklineConfig().collect { hudSparklineConfig = it } }
-            launch { streamFieldSparklineConfig().collect { fieldSparklineConfig = it } }
-            launch { streamPowerFieldConfig().collect { powerFieldConfig = it } }
-            launch { streamHRFieldConfig().collect { hrFieldConfig = it } }
-            launch { streamHRFieldConfig(HRFieldKind.AVG).collect { avgHrFieldConfig = it } }
-            launch { streamHRFieldConfig(HRFieldKind.LAP_AVG).collect { lapAvgHrFieldConfig = it } }
-            launch { streamHRFieldConfig(HRFieldKind.LAST_LAP_AVG).collect { lastLapAvgHrFieldConfig = it } }
-            launch { streamHRMaxPercentFieldConfig().collect { hrMaxPercentFieldConfig = it } }
-            launch { streamMaxHRFieldConfig().collect { maxHrFieldConfig = it } }
-            launch { streamHRZoneFieldConfig().collect { hrZoneFieldConfig = it } }
-            launch { streamSpeedFieldConfig().collect { speedFieldConfig = it } }
-            launch { streamCadenceFieldConfig().collect { cadenceFieldConfig = it } }
-            launch { streamAvgPowerFieldConfig().collect { avgPowerFieldConfig = it } }
-            launch { streamNPFieldConfig().collect { npFieldConfig = it } }
-            launch { streamLapPowerFieldConfig(isLastLap = false).collect { lapPowerFieldConfig = it } }
-            launch { streamLapPowerFieldConfig(isLastLap = true).collect { lastLapPowerFieldConfig = it } }
-            launch { streamPowerZoneFieldConfig().collect { powerZoneFieldConfig = it } }
-            launch { streamMaxPowerFieldConfig().collect { maxPowerFieldConfig = it } }
-            launch { streamGradeFieldConfig().collect { gradeFieldConfig = it } }
-            launch { streamAvgSpeedConfig(includePaused = true).collect { avgTotalConfig = it } }
-            launch { streamAvgSpeedConfig(includePaused = false).collect { avgMovingConfig = it } }
-            launch { streamTimeConfig().collect { timeConfig = it } }
-            launch { streamETAConfig().collect { etaConfig = it } }
-            launch { streamZoneConfig().collect { zoneConfig = it } }
+            launch {
+                streamConfigSnapshot().collect { snapshot ->
+                    hudConfig = snapshot.hud
+                    hudSparklineConfig = snapshot.hudSparkline
+                    fieldSparklineConfig = snapshot.fieldSparkline
+                    gradeMapConfig = snapshot.gradeMap
+                    powerFieldConfig = snapshot.powerField
+                    hrFieldConfig = snapshot.hrField
+                    avgHrFieldConfig = snapshot.avgHrField
+                    lapAvgHrFieldConfig = snapshot.lapAvgHrField
+                    lastLapAvgHrFieldConfig = snapshot.lastLapAvgHrField
+                    hrMaxPercentFieldConfig = snapshot.hrMaxPercentField
+                    maxHrFieldConfig = snapshot.maxHrField
+                    hrZoneFieldConfig = snapshot.hrZoneField
+                    speedFieldConfig = snapshot.speedField
+                    cadenceFieldConfig = snapshot.cadenceField
+                    avgPowerFieldConfig = snapshot.avgPowerField
+                    npFieldConfig = snapshot.npField
+                    lapPowerFieldConfig = snapshot.lapPowerField
+                    lastLapPowerFieldConfig = snapshot.lastLapPowerField
+                    powerZoneFieldConfig = snapshot.powerZoneField
+                    maxPowerFieldConfig = snapshot.maxPowerField
+                    gradeFieldConfig = snapshot.gradeField
+                    avgTotalConfig = snapshot.avgSpeedTotal
+                    avgMovingConfig = snapshot.avgSpeedMoving
+                    timeConfig = snapshot.time
+                    etaConfig = snapshot.eta
+                    effortFieldConfig = snapshot.effortField
+                    routeRemainingConfig = snapshot.routeRemaining
+                    zoneConfig = snapshot.zone
+                    dataFieldDesignConfig = snapshot.dataFieldDesign
+                }
+            }
             launch { karooSystem.streamUserProfile().collect { userProfile = it } }
         }
 
-        Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
-            Column(
-                modifier =
-                    Modifier.fillMaxSize().padding(6.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                CollapsibleSection(
-                    title = "HUD",
-                    description = "Configure the heads-up display",
-                    icon = R.drawable.ic_section_hud,
-                    expanded = hudExpanded,
-                    onToggle = { hudExpanded = !hudExpanded },
+        val screenshotMode = remember { intent?.getBooleanExtra("screenshot", false) == true }
+        CompositionLocalProvider(
+            LocalDataFieldDesign provides dataFieldDesignConfig,
+            LocalScreenshotMode provides screenshotMode,
+        ) {
+            Box(modifier = Modifier.fillMaxSize().background(Grey100)) {
+                Column(
+                    modifier =
+                        Modifier.semantics { testTagsAsResourceId = true }
+                            .fillMaxSize()
+                            .padding(6.dp)
+                            .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    HUDConfigSection(
-                        hudConfig = hudConfig,
-                        sparklineConfig = hudSparklineConfig,
-                        zoneConfig = zoneConfig,
-                        timeCfg = timeConfig,
-                        profile = userProfile,
-                        onUpdate = { updated ->
-                            hudConfig = updated
-                            lifecycleScope.launch { saveHUDConfig(updated) }
-                        },
-                        onSparklineUpdate = { updated ->
-                            hudSparklineConfig = updated
-                            lifecycleScope.launch { saveHudSparklineConfig(updated) }
-                        },
-                    )
-                } // end HUD
-
-                val powerPreviewStates = remember(powerFieldConfig, userProfile, zoneConfig) {
-                    PowerField.previewStates(powerFieldConfig, userProfile, zoneConfig)
-                }
-                val hrPreviewStates = remember(hrFieldConfig, userProfile, zoneConfig) {
-                    HRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
-                }
-                val avgHrPreviewStates = remember(avgHrFieldConfig, userProfile, zoneConfig) {
-                    AvgHRField.previewStates(avgHrFieldConfig, userProfile, zoneConfig)
-                }
-                val lapAvgHrPreviewStates = remember(lapAvgHrFieldConfig, userProfile, zoneConfig) {
-                    LapAvgHRField.previewStates(lapAvgHrFieldConfig, userProfile, zoneConfig)
-                }
-                val lastLapAvgHrPreviewStates = remember(lastLapAvgHrFieldConfig, userProfile, zoneConfig) {
-                    LastLapAvgHRField.previewStates(lastLapAvgHrFieldConfig, userProfile, zoneConfig)
-                }
-                val hrMaxPercentPreviewStates = remember(hrMaxPercentFieldConfig, userProfile, zoneConfig) {
-                    HRMaxPercentField.previewStates(hrMaxPercentFieldConfig, userProfile, zoneConfig)
-                }
-                val maxHrPreviewStates = remember(maxHrFieldConfig, userProfile, zoneConfig) {
-                    MaxHRField.previewStates(maxHrFieldConfig, userProfile, zoneConfig)
-                }
-                val hrZonePreviewStates = remember(hrZoneFieldConfig, userProfile, zoneConfig) {
-                    HRZoneField.previewStates(hrZoneFieldConfig, userProfile, zoneConfig)
-                }
-                val speedPreviewStates = remember(speedFieldConfig, userProfile) {
-                    SpeedField.previewStates(speedFieldConfig, userProfile)
-                }
-                val cadencePreviewStates = remember(cadenceFieldConfig) {
-                    CadenceField.previewStates(cadenceFieldConfig)
-                }
-                val avgPowerPreviewStates = remember(avgPowerFieldConfig, userProfile, zoneConfig) {
-                    AvgPowerField.previewStates(avgPowerFieldConfig, userProfile, zoneConfig)
-                }
-                val npPreviewStates = remember(npFieldConfig, userProfile, zoneConfig) {
-                    NPField.previewStates(npFieldConfig, userProfile, zoneConfig)
-                }
-                val lapPowerPreviewStates = remember(lapPowerFieldConfig, userProfile, zoneConfig) {
-                    LapPowerField.previewStates(lapPowerFieldConfig, userProfile, zoneConfig, isLastLap = false)
-                }
-                val lastLapPowerPreviewStates = remember(lastLapPowerFieldConfig, userProfile, zoneConfig) {
-                    LapPowerField.previewStates(lastLapPowerFieldConfig, userProfile, zoneConfig, isLastLap = true)
-                }
-                val powerZonePreviewStates = remember(powerZoneFieldConfig, userProfile, zoneConfig) {
-                    PowerZoneField.previewStates(powerZoneFieldConfig, userProfile, zoneConfig)
-                }
-                val maxPowerPreviewStates = remember(maxPowerFieldConfig, userProfile, zoneConfig) {
-                    MaxPowerField.previewStates(maxPowerFieldConfig, userProfile, zoneConfig)
-                }
-                val gradePreviewStates = remember(gradeFieldConfig, zoneConfig) {
-                    GradeField.previewStates(gradeFieldConfig, zoneConfig)
-                }
-
-                CollapsibleSection(
-                    title = "Data fields",
-                    description = "Configure standalone data fields",
-                    icon = R.drawable.ic_section_fields,
-                    expanded = fieldsExpanded,
-                    onToggle = { fieldsExpanded = !fieldsExpanded },
-                ) {
-                    var selectedDataField by remember { mutableStateOf<String?>(null) }
-
-                    ControlLabel("POWER")
-                    FieldCard(
-                        title = "POWER",
-                        description = "Current power output",
-                        previewFields = powerPreviewStates,
-                        colorMode = powerFieldConfig.colorMode,
-                        selected = selectedDataField == "POWER",
-                        onSelect = { selectedDataField = if (selectedDataField == "POWER") null else "POWER" },
+                    CollapsibleSection(
+                        section = ConfigSection.PALETTES,
+                        expanded = palettesExpanded,
+                        onToggle = { palettesExpanded = !palettesExpanded },
                     ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = PowerSmoothingStream.entries,
-                            selected = powerFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_col_power,
-                            onSelected = { stream ->
-                                powerFieldConfig = powerFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
-                            },
-                        )
-                        ZoneColorSlider(
-                            selected = powerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                powerFieldConfig = powerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
-                            },
-                        )
-                    }
+                        PalettesSectionContent(zoneConfig) { updated ->
+                            zoneConfig = updated
+                            lifecycleScope.launch { saveZoneConfig(updated) }
+                        }
+                    } // end Palettes
 
-                    FieldCard(
-                        title = "AVG POWER",
-                        description = "Average power with zone coloring.",
-                        previewFields = avgPowerPreviewStates,
-                        colorMode = avgPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "AVG POWER",
-                        onSelect = { selectedDataField = if (selectedDataField == "AVG POWER") null else "AVG POWER" },
+                    CollapsibleSection(
+                        section = ConfigSection.HUD,
+                        expanded = hudExpanded,
+                        onToggle = { hudExpanded = !hudExpanded },
                     ) {
-                        ZoneColorSlider(
-                            selected = avgPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                avgPowerFieldConfig = avgPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveAvgPowerFieldConfig(avgPowerFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAP AVG POWER",
-                        description = "Average power this lap with zone coloring.",
-                        previewFields = lapPowerPreviewStates,
-                        colorMode = lapPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "LAP AVG POWER",
-                        onSelect = { selectedDataField = if (selectedDataField == "LAP AVG POWER") null else "LAP AVG POWER" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lapPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lapPowerFieldConfig = lapPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveLapPowerFieldConfig(isLastLap = false, lapPowerFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAST LAP AVG POWER",
-                        description = "Average power from the previous lap with zone coloring.",
-                        previewFields = lastLapPowerPreviewStates,
-                        colorMode = lastLapPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "LAST LAP AVG POWER",
-                        onSelect = { selectedDataField = if (selectedDataField == "LAST LAP AVG POWER") null else "LAST LAP AVG POWER" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lastLapPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lastLapPowerFieldConfig = lastLapPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveLapPowerFieldConfig(isLastLap = true, lastLapPowerFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "NP",
-                        description = "Normalized power with zone coloring.",
-                        previewFields = npPreviewStates,
-                        colorMode = npFieldConfig.colorMode,
-                        selected = selectedDataField == "NP",
-                        onSelect = { selectedDataField = if (selectedDataField == "NP") null else "NP" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = npFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                npFieldConfig = npFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "POWER ZONE",
-                        description = "Current power zone, with zone coloring.",
-                        previewFields = powerZonePreviewStates,
-                        colorMode = powerZoneFieldConfig.colorMode,
-                        selected = selectedDataField == "POWER ZONE",
-                        onSelect = { selectedDataField = if (selectedDataField == "POWER ZONE") null else "POWER ZONE" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = powerZoneFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                powerZoneFieldConfig = powerZoneFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { savePowerZoneFieldConfig(powerZoneFieldConfig) }
-                            },
-                        )
-                        ZoneDisplaySlider(
-                            selected = powerZoneFieldConfig.zoneDisplayMode,
-                            onSelected = { mode ->
-                                powerZoneFieldConfig = powerZoneFieldConfig.copy(zoneDisplayMode = mode)
-                                lifecycleScope.launch { savePowerZoneFieldConfig(powerZoneFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "MAX POWER",
-                        description = "Maximum power reached this ride, with zone coloring.",
-                        previewFields = maxPowerPreviewStates,
-                        colorMode = maxPowerFieldConfig.colorMode,
-                        selected = selectedDataField == "MAX POWER",
-                        onSelect = { selectedDataField = if (selectedDataField == "MAX POWER") null else "MAX POWER" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = maxPowerFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                maxPowerFieldConfig = maxPowerFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveMaxPowerFieldConfig(maxPowerFieldConfig) }
-                            },
-                        )
-                    }
-
-                    ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "SPEED",
-                        description = "Current speed",
-                        previewFields = speedPreviewStates,
-                        colorMode = speedFieldConfig.colorMode,
-                        selected = selectedDataField == "SPEED",
-                        onSelect = { selectedDataField = if (selectedDataField == "SPEED") null else "SPEED" },
-                    ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = SpeedSmoothingStream.entries,
-                            selected = speedFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_col_speed,
-                            onSelected = { stream ->
-                                speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
-                            },
-                        )
-                        ZoneColorSlider(
-                            selected = speedFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                speedFieldConfig = speedFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
-                            },
-                        )
-                        SpeedThresholdControls(
-                            config = speedFieldConfig,
+                        HUDConfigSection(
+                            hudConfig = hudConfig,
+                            // Screenshot mode forces the elevation profile On so the HUD shot
+                            // always shows it, regardless of the device's stored setting.
+                            sparklineConfig =
+                                if (screenshotMode) hudSparklineConfig.copy(mode = SparklineMode.ON)
+                                else hudSparklineConfig,
+                            zoneConfig = zoneConfig,
+                            timeCfg = timeConfig,
                             profile = userProfile,
-                            onConfigChange = { cfg ->
-                                speedFieldConfig = cfg
-                                lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
+                            onUpdate = { updated ->
+                                hudConfig = updated
+                                lifecycleScope.launch { saveHUDConfig(updated) }
+                            },
+                            onSparklineUpdate = { updated ->
+                                hudSparklineConfig = updated
+                                lifecycleScope.launch { saveHudSparklineConfig(updated) }
                             },
                         )
-                    }
+                    } // end HUD
 
-                    val avgTotalPreviewStates = remember(avgTotalConfig, userProfile) {
-                        AvgSpeedField.previewStates(avgTotalConfig, userProfile, includePaused = true)
-                    }
+                    val powerPreviewStates =
+                        remember(powerFieldConfig, userProfile, zoneConfig) {
+                            PowerField.previewStates(powerFieldConfig, userProfile, zoneConfig)
+                        }
+                    val hrPreviewStates =
+                        remember(hrFieldConfig, userProfile, zoneConfig) {
+                            HRField.previewStates(hrFieldConfig, userProfile, zoneConfig)
+                        }
+                    val avgHrPreviewStates =
+                        remember(avgHrFieldConfig, userProfile, zoneConfig) {
+                            AvgHRField.previewStates(avgHrFieldConfig, userProfile, zoneConfig)
+                        }
+                    val lapAvgHrPreviewStates =
+                        remember(lapAvgHrFieldConfig, userProfile, zoneConfig) {
+                            LapAvgHRField.previewStates(
+                                lapAvgHrFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val lastLapAvgHrPreviewStates =
+                        remember(lastLapAvgHrFieldConfig, userProfile, zoneConfig) {
+                            LastLapAvgHRField.previewStates(
+                                lastLapAvgHrFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val hrMaxPercentPreviewStates =
+                        remember(hrMaxPercentFieldConfig, userProfile, zoneConfig) {
+                            HRMaxPercentField.previewStates(
+                                hrMaxPercentFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val maxHrPreviewStates =
+                        remember(maxHrFieldConfig, userProfile, zoneConfig) {
+                            MaxHRField.previewStates(maxHrFieldConfig, userProfile, zoneConfig)
+                        }
+                    val hrZonePreviewStates =
+                        remember(hrZoneFieldConfig, userProfile, zoneConfig) {
+                            HRZoneField.previewStates(hrZoneFieldConfig, userProfile, zoneConfig)
+                        }
+                    val speedPreviewStates =
+                        remember(speedFieldConfig, userProfile) {
+                            SpeedField.previewStates(speedFieldConfig, userProfile)
+                        }
+                    val cadencePreviewStates =
+                        remember(cadenceFieldConfig) {
+                            CadenceField.previewStates(cadenceFieldConfig)
+                        }
+                    val avgPowerPreviewStates =
+                        remember(avgPowerFieldConfig, userProfile, zoneConfig) {
+                            AvgPowerField.previewStates(
+                                avgPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val npPreviewStates =
+                        remember(npFieldConfig, userProfile, zoneConfig) {
+                            NPField.previewStates(npFieldConfig, userProfile, zoneConfig)
+                        }
+                    val lapPowerPreviewStates =
+                        remember(lapPowerFieldConfig, userProfile, zoneConfig) {
+                            LapPowerField.previewStates(
+                                lapPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                                isLastLap = false,
+                            )
+                        }
+                    val lastLapPowerPreviewStates =
+                        remember(lastLapPowerFieldConfig, userProfile, zoneConfig) {
+                            LapPowerField.previewStates(
+                                lastLapPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                                isLastLap = true,
+                            )
+                        }
+                    val powerZonePreviewStates =
+                        remember(powerZoneFieldConfig, userProfile, zoneConfig) {
+                            PowerZoneField.previewStates(
+                                powerZoneFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val maxPowerPreviewStates =
+                        remember(maxPowerFieldConfig, userProfile, zoneConfig) {
+                            MaxPowerField.previewStates(
+                                maxPowerFieldConfig,
+                                userProfile,
+                                zoneConfig,
+                            )
+                        }
+                    val gradePreviewStates =
+                        remember(gradeFieldConfig, zoneConfig) {
+                            GradeField.previewStates(gradeFieldConfig, zoneConfig)
+                        }
+                    val effortPreviewStates =
+                        remember(effortFieldConfig, userProfile) {
+                            EffortField.previewStates(userProfile, effortFieldConfig.climbFirst)
+                        }
 
-                    FieldCard(
-                        title = "AVG SPEED (TOTAL)",
-                        description = "Average speed including paused time.",
-                        previewFields = avgTotalPreviewStates,
-                        colorMode = avgTotalConfig.colorMode,
-                        selected = selectedDataField == "AVG SPEED (TOTAL)",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG SPEED (TOTAL)") null else "AVG SPEED (TOTAL)"
-                        },
+                    CollapsibleSection(
+                        section = ConfigSection.DATA_FIELDS,
+                        expanded = fieldsExpanded,
+                        onToggle = { fieldsExpanded = !fieldsExpanded },
                     ) {
-                        ZoneColorSlider(
-                            selected = avgTotalConfig.colorMode,
-                            onSelected = { mode ->
-                                avgTotalConfig = avgTotalConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveAvgSpeedConfig(includePaused = true, avgTotalConfig) }
+                        var selectedDataField by remember { mutableStateOf<String?>(null) }
+
+                        ControlLabel("POWER")
+                        FieldCard(
+                            title = "POWER",
+                            typeId = "power",
+                            description = "Current power output",
+                            previewFields = powerPreviewStates,
+                            colorMode = powerFieldConfig.colorMode,
+                            selected = selectedDataField == "POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "POWER") null else "POWER"
+                            },
+                        ) {
+                            ControlLabel("SMOOTHING")
+                            SmoothingSlider(
+                                options = PowerSmoothingStream.entries,
+                                selected = powerFieldConfig.smoothing,
+                                label = { it.label },
+                                thumbIcon = R.drawable.ic_col_power,
+                                onSelected = { stream ->
+                                    powerFieldConfig = powerFieldConfig.copy(smoothing = stream)
+                                    lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = powerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    powerFieldConfig = powerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { savePowerFieldConfig(powerFieldConfig) }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "AVG POWER",
+                            typeId = "avg-power",
+                            description = "Average power with zone coloring.",
+                            previewFields = avgPowerPreviewStates,
+                            colorMode = avgPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "AVG POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG POWER") null else "AVG POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgPowerFieldConfig = avgPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveAvgPowerFieldConfig(avgPowerFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "NORMALIZED POWER",
+                            typeId = "np",
+                            description = "Normalized power with zone coloring.",
+                            previewFields = npPreviewStates,
+                            colorMode = npFieldConfig.colorMode,
+                            selected = selectedDataField == "NP",
+                            onSelect = {
+                                selectedDataField = if (selectedDataField == "NP") null else "NP"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = npFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    npFieldConfig = npFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveNPFieldConfig(npFieldConfig) }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAP AVG POWER",
+                            typeId = "lap-power",
+                            description = "Average power this lap with zone coloring.",
+                            previewFields = lapPowerPreviewStates,
+                            colorMode = lapPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "LAP AVG POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAP AVG POWER") null
+                                    else "LAP AVG POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lapPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lapPowerFieldConfig = lapPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveLapPowerFieldConfig(
+                                            isLastLap = false,
+                                            lapPowerFieldConfig,
+                                        )
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAST LAP AVG POWER",
+                            typeId = "last-lap-power",
+                            description = "Average power from the previous lap with zone coloring.",
+                            previewFields = lastLapPowerPreviewStates,
+                            colorMode = lastLapPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "LAST LAP AVG POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAST LAP AVG POWER") null
+                                    else "LAST LAP AVG POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lastLapPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lastLapPowerFieldConfig =
+                                        lastLapPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveLapPowerFieldConfig(
+                                            isLastLap = true,
+                                            lastLapPowerFieldConfig,
+                                        )
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "POWER ZONE",
+                            typeId = "power-zone",
+                            description = "Current power zone, with zone coloring.",
+                            previewFields = powerZonePreviewStates,
+                            colorMode = powerZoneFieldConfig.colorMode,
+                            selected = selectedDataField == "POWER ZONE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "POWER ZONE") null else "POWER ZONE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = powerZoneFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    powerZoneFieldConfig =
+                                        powerZoneFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        savePowerZoneFieldConfig(powerZoneFieldConfig)
+                                    }
+                                },
+                            )
+                            ZoneDisplaySlider(
+                                selected = powerZoneFieldConfig.zoneDisplayMode,
+                                onSelected = { mode ->
+                                    powerZoneFieldConfig =
+                                        powerZoneFieldConfig.copy(zoneDisplayMode = mode)
+                                    lifecycleScope.launch {
+                                        savePowerZoneFieldConfig(powerZoneFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "MAX POWER",
+                            typeId = "max-power",
+                            description = "Maximum power reached this ride, with zone coloring.",
+                            previewFields = maxPowerPreviewStates,
+                            colorMode = maxPowerFieldConfig.colorMode,
+                            selected = selectedDataField == "MAX POWER",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "MAX POWER") null else "MAX POWER"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = maxPowerFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    maxPowerFieldConfig = maxPowerFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveMaxPowerFieldConfig(maxPowerFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("HEART RATE", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "HEART RATE",
+                            typeId = "hr",
+                            description = "Current heart rate",
+                            previewFields = hrPreviewStates,
+                            colorMode = hrFieldConfig.colorMode,
+                            selected = selectedDataField == "HEART RATE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "HEART RATE") null else "HEART RATE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = hrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(config = hrFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "AVG HR",
+                            typeId = "avg-hr",
+                            description = "Average heart rate with zone coloring.",
+                            previewFields = avgHrPreviewStates,
+                            colorMode = avgHrFieldConfig.colorMode,
+                            selected = selectedDataField == "AVG HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG HR") null else "AVG HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgHrFieldConfig = avgHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(HRFieldKind.AVG, avgHrFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAP AVG HR",
+                            typeId = "lap-avg-hr",
+                            description = "Average heart rate this lap with zone coloring.",
+                            previewFields = lapAvgHrPreviewStates,
+                            colorMode = lapAvgHrFieldConfig.colorMode,
+                            selected = selectedDataField == "LAP AVG HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAP AVG HR") null else "LAP AVG HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lapAvgHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lapAvgHrFieldConfig = lapAvgHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(HRFieldKind.LAP_AVG, lapAvgHrFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "LAST LAP AVG HR",
+                            typeId = "last-lap-avg-hr",
+                            description =
+                                "Average heart rate from the previous lap with zone coloring.",
+                            previewFields = lastLapAvgHrPreviewStates,
+                            colorMode = lastLapAvgHrFieldConfig.colorMode,
+                            selected = selectedDataField == "LAST LAP AVG HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "LAST LAP AVG HR") null
+                                    else "LAST LAP AVG HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = lastLapAvgHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    lastLapAvgHrFieldConfig =
+                                        lastLapAvgHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRFieldConfig(
+                                            HRFieldKind.LAST_LAP_AVG,
+                                            lastLapAvgHrFieldConfig,
+                                        )
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "%MAX HR",
+                            typeId = "hr-percent-max",
+                            description =
+                                "Current heart rate as a percentage of max HR, with zone coloring.",
+                            previewFields = hrMaxPercentPreviewStates,
+                            colorMode = hrMaxPercentFieldConfig.colorMode,
+                            selected = selectedDataField == "%MAX HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "%MAX HR") null else "%MAX HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = hrMaxPercentFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    hrMaxPercentFieldConfig =
+                                        hrMaxPercentFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRMaxPercentFieldConfig(hrMaxPercentFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "MAX HR",
+                            typeId = "max-hr",
+                            description =
+                                "Maximum heart rate reached this ride, with zone coloring.",
+                            previewFields = maxHrPreviewStates,
+                            colorMode = maxHrFieldConfig.colorMode,
+                            selected = selectedDataField == "MAX HR",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "MAX HR") null else "MAX HR"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = maxHrFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    maxHrFieldConfig = maxHrFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveMaxHRFieldConfig(maxHrFieldConfig) }
+                                },
+                            )
+                        }
+
+                        FieldCard(
+                            title = "HR ZONE",
+                            typeId = "hr-zone",
+                            description = "Current heart rate zone, with zone coloring.",
+                            previewFields = hrZonePreviewStates,
+                            colorMode = hrZoneFieldConfig.colorMode,
+                            selected = selectedDataField == "HR ZONE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "HR ZONE") null else "HR ZONE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = hrZoneFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    hrZoneFieldConfig = hrZoneFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRZoneFieldConfig(hrZoneFieldConfig)
+                                    }
+                                },
+                            )
+                            ZoneDisplaySlider(
+                                selected = hrZoneFieldConfig.zoneDisplayMode,
+                                onSelected = { mode ->
+                                    hrZoneFieldConfig =
+                                        hrZoneFieldConfig.copy(zoneDisplayMode = mode)
+                                    lifecycleScope.launch {
+                                        saveHRZoneFieldConfig(hrZoneFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("SPEED", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "SPEED",
+                            typeId = "speed",
+                            description = "Current speed",
+                            previewFields = speedPreviewStates,
+                            colorMode = speedFieldConfig.colorMode,
+                            selected = selectedDataField == "SPEED",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "SPEED") null else "SPEED"
+                            },
+                        ) {
+                            ControlLabel("SMOOTHING")
+                            SmoothingSlider(
+                                options = SpeedSmoothingStream.entries,
+                                selected = speedFieldConfig.smoothing,
+                                label = { it.label },
+                                thumbIcon = R.drawable.ic_col_speed,
+                                onSelected = { stream ->
+                                    speedFieldConfig = speedFieldConfig.copy(smoothing = stream)
+                                    lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = speedFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    speedFieldConfig = speedFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
+                                },
+                            )
+                            SpeedThresholdControls(
+                                config = speedFieldConfig,
+                                profile = userProfile,
+                                onConfigChange = { cfg ->
+                                    speedFieldConfig = cfg
+                                    lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
+                                },
+                            )
+                        }
+
+                        val avgTotalPreviewStates =
+                            remember(avgTotalConfig, userProfile) {
+                                AvgSpeedField.previewStates(
+                                    avgTotalConfig,
+                                    userProfile,
+                                    includePaused = true,
+                                )
+                            }
+
+                        FieldCard(
+                            title = "AVG SPEED (TOTAL)",
+                            typeId = "avg-speed-total",
+                            description = "Average speed including paused time.",
+                            previewFields = avgTotalPreviewStates,
+                            colorMode = avgTotalConfig.colorMode,
+                            selected = selectedDataField == "AVG SPEED (TOTAL)",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG SPEED (TOTAL)") null
+                                    else "AVG SPEED (TOTAL)"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgTotalConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgTotalConfig = avgTotalConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
+                                    }
+                                },
+                            )
+                            AvgSpeedThresholdControls(
+                                config = avgTotalConfig,
+                                profile = userProfile,
+                                onConfigChange = { cfg ->
+                                    avgTotalConfig = cfg
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = true, cfg)
+                                    }
+                                },
+                            )
+                        }
+
+                        val avgMovingPreviewStates =
+                            remember(avgMovingConfig, userProfile) {
+                                AvgSpeedField.previewStates(
+                                    avgMovingConfig,
+                                    userProfile,
+                                    includePaused = false,
+                                )
+                            }
+
+                        FieldCard(
+                            title = "AVG SPEED (MOVING)",
+                            typeId = "avg-speed-moving",
+                            description = "Average speed excluding paused time.",
+                            previewFields = avgMovingPreviewStates,
+                            colorMode = avgMovingConfig.colorMode,
+                            selected = selectedDataField == "AVG SPEED (MOVING)",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "AVG SPEED (MOVING)") null
+                                    else "AVG SPEED (MOVING)"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = avgMovingConfig.colorMode,
+                                onSelected = { mode ->
+                                    avgMovingConfig = avgMovingConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
+                                    }
+                                },
+                            )
+                            AvgSpeedThresholdControls(
+                                config = avgMovingConfig,
+                                profile = userProfile,
+                                onConfigChange = { cfg ->
+                                    avgMovingConfig = cfg
+                                    lifecycleScope.launch {
+                                        saveAvgSpeedConfig(includePaused = false, cfg)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "CADENCE",
+                            typeId = "cadence",
+                            description = "Current cadence with threshold coloring.",
+                            previewFields = cadencePreviewStates,
+                            colorMode = cadenceFieldConfig.colorMode,
+                            selected = selectedDataField == "CADENCE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "CADENCE") null else "CADENCE"
+                            },
+                        ) {
+                            ControlLabel("SMOOTHING")
+                            SmoothingSlider(
+                                options = CadenceSmoothingStream.entries,
+                                selected = cadenceFieldConfig.smoothing,
+                                label = { it.label },
+                                thumbIcon = R.drawable.ic_cadence,
+                                onSelected = { stream ->
+                                    cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
+                                    lifecycleScope.launch {
+                                        saveCadenceFieldConfig(cadenceFieldConfig)
+                                    }
+                                },
+                            )
+                            ZoneColorSlider(
+                                selected = cadenceFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    cadenceFieldConfig = cadenceFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch {
+                                        saveCadenceFieldConfig(cadenceFieldConfig)
+                                    }
+                                },
+                            )
+                            CadenceThresholdControls(
+                                config = cadenceFieldConfig.threshold,
+                                onConfigChange = { cfg ->
+                                    cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
+                                    lifecycleScope.launch {
+                                        saveCadenceFieldConfig(cadenceFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "GRADE",
+                            typeId = "grade",
+                            description = "Road gradient with color coding.",
+                            previewFields = gradePreviewStates,
+                            colorMode = gradeFieldConfig.colorMode,
+                            selected = selectedDataField == "GRADE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "GRADE") null else "GRADE"
+                            },
+                        ) {
+                            ZoneColorSlider(
+                                selected = gradeFieldConfig.colorMode,
+                                onSelected = { mode ->
+                                    gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
+                                    lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                                },
+                            )
+                            ChoiceRow(
+                                label = "DECIMALS",
+                                options =
+                                    listOf(
+                                        ZoneDisplayMode.INTEGER to "Integer",
+                                        ZoneDisplayMode.FLOAT to "Decimal",
+                                    ),
+                                selected = gradeFieldConfig.precision,
+                                onSelect = { mode ->
+                                    gradeFieldConfig = gradeFieldConfig.copy(precision = mode)
+                                    lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                                },
+                            )
+                            BoolToggleRow(
+                                label = "PERCENT SIGN",
+                                value = gradeFieldConfig.showPercentSign,
+                                onChange = { on ->
+                                    gradeFieldConfig = gradeFieldConfig.copy(showPercentSign = on)
+                                    lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
+                                },
+                            )
+                        }
+
+                        ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
+                        FieldCard(
+                            title = "RIDE REMAINING",
+                            typeId = "remaining-effort",
+                            description = "Distance and ascent remaining, stacked.",
+                            previewFields = effortPreviewStates,
+                            colorMode = ZoneColorMode.NONE,
+                            selected = selectedDataField == "RIDE REMAINING",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "RIDE REMAINING") null
+                                    else "RIDE REMAINING"
+                            },
+                        ) {
+                            ChoiceRow(
+                                label = "STACK ORDER",
+                                options = STACK_ORDER_OPTIONS,
+                                selected = effortFieldConfig.climbFirst,
+                                onSelect = {
+                                    effortFieldConfig = effortFieldConfig.copy(climbFirst = it)
+                                    lifecycleScope.launch {
+                                        saveEffortFieldConfig(effortFieldConfig)
+                                    }
+                                },
+                            )
+                        }
+
+                        RouteRemainingCard(
+                            config = routeRemainingConfig,
+                            selected = selectedDataField == "OVERVIEW",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "OVERVIEW") null else "OVERVIEW"
+                            },
+                            onUpdate = { updated ->
+                                routeRemainingConfig = updated
+                                lifecycleScope.launch { saveRouteRemainingConfig(updated) }
                             },
                         )
-                        AvgSpeedThresholdControls(
-                            config = avgTotalConfig,
+                    } // end Fields
+
+                    CollapsibleSection(
+                        section = ConfigSection.CLIMBING,
+                        expanded = climbingExpanded,
+                        onToggle = { climbingExpanded = !climbingExpanded },
+                    ) {
+                        var sparklineExpanded by remember { mutableStateOf(false) }
+                        SparklineCard(
+                            config = fieldSparklineConfig,
+                            zoneConfig = zoneConfig,
                             profile = userProfile,
-                            onConfigChange = { cfg ->
-                                avgTotalConfig = cfg
-                                lifecycleScope.launch { saveAvgSpeedConfig(includePaused = true, cfg) }
+                            selected = sparklineExpanded,
+                            onSelect = { sparklineExpanded = !sparklineExpanded },
+                            onUpdate = { updated ->
+                                fieldSparklineConfig = updated
+                                lifecycleScope.launch { saveFieldSparklineConfig(updated) }
                             },
                         )
-                    }
+                        var gradeMapExpanded by remember { mutableStateOf(false) }
+                        GradeMapCard(
+                            config = gradeMapConfig,
+                            sparklineConfig = fieldSparklineConfig,
+                            gradePalette = zoneConfig.gradePalette,
+                            selected = gradeMapExpanded,
+                            onSelect = { gradeMapExpanded = !gradeMapExpanded },
+                            onUpdate = { updated ->
+                                gradeMapConfig = updated
+                                lifecycleScope.launch { saveGradeMapConfig(updated) }
+                            },
+                        )
+                    } // end Climbing
 
-                    val avgMovingPreviewStates = remember(avgMovingConfig, userProfile) {
-                        AvgSpeedField.previewStates(avgMovingConfig, userProfile, includePaused = false)
-                    }
-
-                    FieldCard(
-                        title = "AVG SPEED (MOVING)",
-                        description = "Average speed excluding paused time.",
-                        previewFields = avgMovingPreviewStates,
-                        colorMode = avgMovingConfig.colorMode,
-                        selected = selectedDataField == "AVG SPEED (MOVING)",
-                        onSelect = {
-                            selectedDataField =
-                                if (selectedDataField == "AVG SPEED (MOVING)") null else "AVG SPEED (MOVING)"
-                        },
+                    CollapsibleSection(
+                        section = ConfigSection.ETA,
+                        expanded = etaExpanded,
+                        onToggle = { etaExpanded = !etaExpanded },
                     ) {
-                        ZoneColorSlider(
-                            selected = avgMovingConfig.colorMode,
-                            onSelected = { mode ->
-                                avgMovingConfig = avgMovingConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveAvgSpeedConfig(includePaused = false, avgMovingConfig) }
-                            },
+                        ControlLabel("PRIOR SPEED")
+                        HelperText(
+                            "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
+                                "Set to 0 to disable."
                         )
-                        AvgSpeedThresholdControls(
-                            config = avgMovingConfig,
-                            profile = userProfile,
-                            onConfigChange = { cfg ->
-                                avgMovingConfig = cfg
-                                lifecycleScope.launch { saveAvgSpeedConfig(includePaused = false, cfg) }
+                        NumberInput(
+                            value = etaConfig.priorSpeedKph,
+                            unit = speedInputUnit(userProfile),
+                            placeholder = "Speed (${ConvertType.SPEED.unit(userProfile)})",
+                            onValueChange = { kph ->
+                                etaConfig = ETAConfig(priorSpeedKph = kph)
+                                lifecycleScope.launch { saveETAConfig(etaConfig) }
                             },
                         )
                     }
 
-                    ControlLabel("CADENCE", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "CADENCE",
-                        description = "Current cadence with threshold coloring.",
-                        previewFields = cadencePreviewStates,
-                        colorMode = cadenceFieldConfig.colorMode,
-                        selected = selectedDataField == "CADENCE",
-                        onSelect = {
-                            selectedDataField = if (selectedDataField == "CADENCE") null else "CADENCE"
-                        },
+                    CollapsibleSection(
+                        section = ConfigSection.TIME,
+                        expanded = timeExpanded,
+                        onToggle = { timeExpanded = !timeExpanded },
                     ) {
-                        ControlLabel("SMOOTHING")
-                        SmoothingSlider(
-                            options = CadenceSmoothingStream.entries,
-                            selected = cadenceFieldConfig.smoothing,
-                            label = { it.label },
-                            thumbIcon = R.drawable.ic_cadence,
-                            onSelected = { stream ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(smoothing = stream)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
+                        TimeFormatPills(
+                            selected = timeConfig.format,
+                            onSelected = { format ->
+                                timeConfig = TimeConfig(format)
+                                lifecycleScope.launch { saveTimeConfig(timeConfig) }
                             },
                         )
-                        ZoneColorSlider(
-                            selected = cadenceFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                        CadenceThresholdControls(
-                            config = cadenceFieldConfig.threshold,
-                            onConfigChange = { cfg ->
-                                cadenceFieldConfig = cadenceFieldConfig.copy(threshold = cfg)
-                                lifecycleScope.launch { saveCadenceFieldConfig(cadenceFieldConfig) }
-                            },
-                        )
-                    }
-
-                    ControlLabel("HEART RATE", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "HEART RATE",
-                        description = "Current heart rate",
-                        previewFields = hrPreviewStates,
-                        colorMode = hrFieldConfig.colorMode,
-                        selected = selectedDataField == "HEART RATE",
-                        onSelect = { selectedDataField = if (selectedDataField == "HEART RATE") null else "HEART RATE" },
+                        TimeFormatPreview(format = timeConfig.format)
+                    } // end Time
+                    CollapsibleSection(
+                        section = ConfigSection.DATA_FIELD_DESIGN,
+                        expanded = designExpanded,
+                        onToggle = { designExpanded = !designExpanded },
                     ) {
-                        ZoneColorSlider(
-                            selected = hrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                hrFieldConfig = hrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(config = hrFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "AVG HR",
-                        description = "Average heart rate with zone coloring.",
-                        previewFields = avgHrPreviewStates,
-                        colorMode = avgHrFieldConfig.colorMode,
-                        selected = selectedDataField == "AVG HR",
-                        onSelect = { selectedDataField = if (selectedDataField == "AVG HR") null else "AVG HR" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = avgHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                avgHrFieldConfig = avgHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.AVG, avgHrFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAP AVG HR",
-                        description = "Average heart rate this lap with zone coloring.",
-                        previewFields = lapAvgHrPreviewStates,
-                        colorMode = lapAvgHrFieldConfig.colorMode,
-                        selected = selectedDataField == "LAP AVG HR",
-                        onSelect = { selectedDataField = if (selectedDataField == "LAP AVG HR") null else "LAP AVG HR" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lapAvgHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lapAvgHrFieldConfig = lapAvgHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.LAP_AVG, lapAvgHrFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "LAST LAP AVG HR",
-                        description = "Average heart rate from the previous lap with zone coloring.",
-                        previewFields = lastLapAvgHrPreviewStates,
-                        colorMode = lastLapAvgHrFieldConfig.colorMode,
-                        selected = selectedDataField == "LAST LAP AVG HR",
-                        onSelect = { selectedDataField = if (selectedDataField == "LAST LAP AVG HR") null else "LAST LAP AVG HR" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = lastLapAvgHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                lastLapAvgHrFieldConfig = lastLapAvgHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRFieldConfig(HRFieldKind.LAST_LAP_AVG, lastLapAvgHrFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "%MAX HR",
-                        description = "Current heart rate as a percentage of max HR, with zone coloring.",
-                        previewFields = hrMaxPercentPreviewStates,
-                        colorMode = hrMaxPercentFieldConfig.colorMode,
-                        selected = selectedDataField == "%MAX HR",
-                        onSelect = { selectedDataField = if (selectedDataField == "%MAX HR") null else "%MAX HR" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = hrMaxPercentFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                hrMaxPercentFieldConfig = hrMaxPercentFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRMaxPercentFieldConfig(hrMaxPercentFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "MAX HR",
-                        description = "Maximum heart rate reached this ride, with zone coloring.",
-                        previewFields = maxHrPreviewStates,
-                        colorMode = maxHrFieldConfig.colorMode,
-                        selected = selectedDataField == "MAX HR",
-                        onSelect = { selectedDataField = if (selectedDataField == "MAX HR") null else "MAX HR" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = maxHrFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                maxHrFieldConfig = maxHrFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveMaxHRFieldConfig(maxHrFieldConfig) }
-                            },
-                        )
-                    }
-
-                    FieldCard(
-                        title = "HR ZONE",
-                        description = "Current heart rate zone, with zone coloring.",
-                        previewFields = hrZonePreviewStates,
-                        colorMode = hrZoneFieldConfig.colorMode,
-                        selected = selectedDataField == "HR ZONE",
-                        onSelect = { selectedDataField = if (selectedDataField == "HR ZONE") null else "HR ZONE" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = hrZoneFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                hrZoneFieldConfig = hrZoneFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveHRZoneFieldConfig(hrZoneFieldConfig) }
-                            },
-                        )
-                        ZoneDisplaySlider(
-                            selected = hrZoneFieldConfig.zoneDisplayMode,
-                            onSelected = { mode ->
-                                hrZoneFieldConfig = hrZoneFieldConfig.copy(zoneDisplayMode = mode)
-                                lifecycleScope.launch { saveHRZoneFieldConfig(hrZoneFieldConfig) }
-                            },
-                        )
-                    }
-
-                    ControlLabel("CLIMBING", modifier = Modifier.padding(top = 8.dp))
-                    FieldCard(
-                        title = "GRADE",
-                        description = "Road gradient with color coding.",
-                        previewFields = gradePreviewStates,
-                        colorMode = gradeFieldConfig.colorMode,
-                        selected = selectedDataField == "GRADE",
-                        onSelect = { selectedDataField = if (selectedDataField == "GRADE") null else "GRADE" },
-                    ) {
-                        ZoneColorSlider(
-                            selected = gradeFieldConfig.colorMode,
-                            onSelected = { mode ->
-                                gradeFieldConfig = gradeFieldConfig.copy(colorMode = mode)
-                                lifecycleScope.launch { saveGradeFieldConfig(gradeFieldConfig) }
-                            },
-                        )
-                    }
-
-                } // end Fields
-
-                CollapsibleSection(
-                    title = "Climbing",
-                    description = "Configure the elevation sparkline",
-                    icon = R.drawable.ic_grade,
-                    expanded = climberExpanded,
-                    onToggle = { climberExpanded = !climberExpanded },
-                ) {
-                    var sparklineExpanded by remember { mutableStateOf(false) }
-                    SparklineCard(
-                        config = fieldSparklineConfig,
-                        zoneConfig = zoneConfig,
-                        profile = userProfile,
-                        selected = sparklineExpanded,
-                        onSelect = { sparklineExpanded = !sparklineExpanded },
-                        onUpdate = { updated ->
-                            fieldSparklineConfig = updated
-                            lifecycleScope.launch { saveFieldSparklineConfig(updated) }
-                        },
-                    )
-                } // end Climbing
-
-                CollapsibleSection(
-                    title = "ETA",
-                    description = "Configure time of arrival estimation",
-                    icon = R.drawable.ic_time_to_dest,
-                    expanded = etaExpanded,
-                    onToggle = { etaExpanded = !etaExpanded },
-                ) {
-                    ControlLabel("PRIOR SPEED")
-                    HelperText(
-                        "Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. " +
-                            "Set to 0 to disable.",
-                    )
-                    ETAPriorSpeedInput(
-                        priorSpeedKph = etaConfig.priorSpeedKph,
-                        profile = userProfile,
-                        onValueChange = { kph ->
-                            etaConfig = ETAConfig(priorSpeedKph = kph)
-                            lifecycleScope.launch { saveETAConfig(etaConfig) }
-                        },
-                    )
+                        DataFieldDesignSectionContent(dataFieldDesignConfig) { updated ->
+                            dataFieldDesignConfig = updated
+                            lifecycleScope.launch { saveDataFieldDesignConfig(updated) }
+                        }
+                    } // end Data Field Design
+                    Spacer(modifier = Modifier.height(72.dp))
                 }
-
-                CollapsibleSection(
-                    title = "Global",
-                    description = "Color palettes and time format shared across all data fields",
-                    icon = R.drawable.ic_section_global,
-                    expanded = globalExpanded,
-                    onToggle = { globalExpanded = !globalExpanded },
-                ) {
-                    ControlLabel("TIME FIELDS")
-                    TimeFormatPills(
-                        selected = timeConfig.format,
-                        onSelected = { format ->
-                            timeConfig = TimeConfig(format)
-                            lifecycleScope.launch { saveTimeConfig(timeConfig) }
-                        },
-                    )
-                    TimeFormatPreview(format = timeConfig.format)
-
-                    ControlLabel("ZONE COLORS")
-                    EnumDropdown(
-                        title = "Power zones",
-                        entries = ZonePalette.entries,
-                        selected = zoneConfig.powerPalette,
-                        label = ::zonePaletteLabel,
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(powerPalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
-
-                    EnumDropdown(
-                        title = "HR zones",
-                        entries = ZonePalette.entries,
-                        selected = zoneConfig.hrPalette,
-                        label = ::zonePaletteLabel,
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(hrPalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
-
-                    EnumDropdown(
-                        title = "Grade",
-                        entries = GradePalette.entries,
-                        selected = zoneConfig.gradePalette,
-                        label = { it.label },
-                        onSelected = { palette ->
-                            zoneConfig = zoneConfig.copy(gradePalette = palette)
-                            lifecycleScope.launch { saveZoneConfig(zoneConfig) }
-                        },
-                    )
-                    GradePalettePreview(palette = zoneConfig.gradePalette)
-
-                } // end Global
-                Spacer(modifier = Modifier.height(72.dp))
-            }
-            Box(
-                modifier =
-                    Modifier.align(Alignment.BottomStart)
-                        .padding(bottom = 16.dp)
-                        .offset(x = (-8).dp)
-                        .size(width = 62.dp, height = 50.dp)
-                        .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
-                        .background(BackButtonTint)
-                        .clickable { finish() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_arrow_back),
-                    contentDescription = "Back",
-                    modifier = Modifier.size(18.dp),
-                    tint = Color.Black,
-                )
-            }
-        } // end Box
+                if (!screenshotMode) {
+                    // Hidden in screenshot mode so it never overlaps a field's config in a shot.
+                    Box(
+                        modifier =
+                            Modifier.align(Alignment.BottomStart)
+                                .padding(bottom = 16.dp)
+                                .offset(x = (-8).dp)
+                                .size(width = 62.dp, height = 50.dp)
+                                .clip(RoundedCornerShape(topEnd = 26.dp, bottomEnd = 26.dp))
+                                .background(BackButtonTint)
+                                .clickable { finish() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = "Back",
+                            modifier = Modifier.size(18.dp),
+                            tint = Color.Black,
+                        )
+                    }
+                }
+            } // end Box
+        }
     }
 }
 
 // Duration (ms) of expand/shrink/chevron animations for collapsible sections and cards.
 internal const val SECTION_ANIM_MS = 200
 
+private val GRADE_MAP_TUNING_OPTIONS = listOf(true to "Sync", false to "Independent")
+
 @Composable
-internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier = modifier, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextDark)
+internal fun GradeMapCard(
+    config: GradeMapConfig,
+    sparklineConfig: SparklineConfig,
+    gradePalette: GradePalette,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onUpdate: (GradeMapConfig) -> Unit,
+) {
+    ExpandableCard(
+        title = "GRADE MAP",
+        selected = selected,
+        onSelect = onSelect,
+        headerExtra = {
+            HelperText("Gradient-colour upcoming climbs along the route on the map.")
+        },
+    ) {
+        BoolToggleRow(
+            label = "ENABLED",
+            value = config.enabled,
+            onChange = { onUpdate(config.copy(enabled = it)) },
+        )
+
+        // Always shown: when off it draws the route the way the Karoo map does, so the toggle
+        // compares the two looks in place.
+        GradeMapPreview(
+            config = config,
+            sparklineConfig = sparklineConfig,
+            gradePalette = gradePalette,
+        )
+
+        if (config.enabled) {
+            ChoiceRow(
+                label = "TUNING",
+                options = GRADE_MAP_TUNING_OPTIONS,
+                selected = config.syncWithSparkline,
+                onSelect = { onUpdate(config.copy(syncWithSparkline = it)) },
+                help = "Tune the map with the elevation profile, or set it on its own.",
+            )
+
+            if (config.syncWithSparkline) {
+                // Display only: the edges are the sparkline's, resolved exactly as the overlay
+                // renders them, so the bar shows which bands the map paints and which fall
+                // back to the map neutral.
+                val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
+                GradeBandSlider(
+                    palette = gradePalette,
+                    climbEdge = effTuning.climbEdge,
+                    descentEdge = effTuning.descentEdge,
+                    onClimbEdgeChange = {},
+                    onDescentEdgeChange = {},
+                    neutral = mapNeutral(gradePalette, readable = false),
+                    enabled = false,
+                )
+            } else {
+                // Effective edges, not the map's own resolution: per resolveGradeMapTuning's
+                // contract the unsynced overlay keeps following the sparkline's descent edge
+                // until something deliberately writes GradeMapConfig.descentEdge. The handles
+                // sit at the grades the fill actually starts at, and each side is written only
+                // when its own handle moves, so dragging the climb handle never pins the
+                // descent side.
+                val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
+                LabeledHelper("EMPHASIS") {
+                    HelperText(
+                        "Filter out gentle grades so meaningful climbs and descents stand out. " +
+                            "Grades between the handles keep the map's neutral colour."
+                    )
+                }
+                GradeBandSlider(
+                    palette = gradePalette,
+                    climbEdge = effTuning.climbEdge,
+                    descentEdge = effTuning.descentEdge,
+                    onClimbEdgeChange = { onUpdate(config.copy(climbEdge = it)) },
+                    onDescentEdgeChange = { onUpdate(config.copy(descentEdge = it)) },
+                    neutral = mapNeutral(gradePalette, readable = false),
+                )
+
+                LabeledHelper("SIMPLIFICATION") {
+                    HelperText("Merges small elevation wiggles into larger same-colour blocks.")
+                }
+                SegmentedRow(
+                    options = ElevationSimplification.entries.map { it to it.label },
+                    selected = config.simplification,
+                    onSelect = { onUpdate(config.copy(simplification = it)) },
+                )
+            }
+
+            ChoiceRow(
+                label = "CHEVRON SPACING",
+                options = ChevronEmphasis.entries.map { it to it.label },
+                selected = ChevronEmphasis.nearest(config.chevronBlend),
+                onSelect = { onUpdate(config.copy(chevronBlend = it.alpha)) },
+                help = "Bunch chevrons on the steepest ramps, or where the gradient shifts.",
+            )
+        }
+    }
 }
 
 @Composable
-internal fun SubControlLabel(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier = modifier, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = TextDark)
+internal fun ControlLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text,
+        modifier = modifier,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        color = TextDark,
+    )
 }
 
 @Composable
@@ -983,6 +1365,45 @@ internal fun LabeledHelper(
         content()
     }
 }
+
+@Composable
+internal fun <T> ChoiceRow(
+    label: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    help: String? = null,
+    trackColor: Color = Color.White,
+    labelModifier: Modifier = Modifier,
+) {
+    if (help != null) LabeledHelper(label, labelModifier) { HelperText(help) }
+    else ControlLabel(label, labelModifier)
+    SegmentedRow(
+        options = options,
+        selected = selected,
+        onSelect = onSelect,
+        trackColor = trackColor,
+    )
+}
+
+@Composable
+internal fun BoolToggleRow(
+    label: String,
+    value: Boolean,
+    onChange: (Boolean) -> Unit,
+    help: String? = null,
+    trackColor: Color = Color.White,
+    labelModifier: Modifier = Modifier,
+) =
+    ChoiceRow(
+        label,
+        listOf(false to "Off", true to "On"),
+        value,
+        onChange,
+        help,
+        trackColor,
+        labelModifier,
+    )
 
 @Composable
 internal fun <T> SmoothingSlider(
@@ -1080,18 +1501,54 @@ internal fun <T> SmoothingSlider(
     }
 }
 
+// The config screen's seven sections, in on-screen order. Titles, tags, descriptions,
+// and icons live here once; ConfigScreen and the screenshot render test both draw from it.
+internal enum class ConfigSection(
+    val title: String,
+    val tag: String,
+    val description: String,
+    val icon: Int,
+) {
+    PALETTES(
+        "Palettes",
+        "palettes",
+        "Zone and grade color palettes",
+        R.drawable.ic_section_palette,
+    ),
+    HUD("HUD", "hud", "Slots and layout for the heads-up display", R.drawable.ic_section_hud),
+    DATA_FIELDS(
+        "Data fields",
+        "data-fields",
+        "Per-field settings for the standalone fields",
+        R.drawable.ic_section_fields,
+    ),
+    CLIMBING(
+        "Climbing",
+        "climbing",
+        "The elevation profile and the grade map overlay",
+        R.drawable.ic_grade,
+    ),
+    ETA("ETA", "eta", "Time of arrival estimation", R.drawable.ic_finish_flag),
+    TIME("Time", "time", "Format for time and duration fields", R.drawable.ic_stopwatch),
+    DATA_FIELD_DESIGN(
+        "Data Field Design",
+        "data-field-design",
+        "Match Karoo's icon and label-size settings for Barberfish fields",
+        R.drawable.ic_section_grid,
+    ),
+}
+
 @Composable
-private fun CollapsibleSection(
-    title: String,
-    description: String,
-    icon: Int,
+internal fun CollapsibleSection(
+    section: ConfigSection,
     expanded: Boolean,
     onToggle: () -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier =
-            Modifier.fillMaxWidth()
+            Modifier.testTag("bf:section:${section.tag}")
+                .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .border(1.dp, Grey200, RoundedCornerShape(6.dp))
                 .background(Color.White)
@@ -1112,19 +1569,20 @@ private fun CollapsibleSection(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(
-                        painter = painterResource(icon),
+                        painter = painterResource(section.icon),
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        title.uppercase(),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        ),
+                        section.title.uppercase(),
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            ),
                     )
                 }
-                HelperText(description)
+                HelperText(section.description)
             }
             val rotation by
                 animateFloatAsState(
@@ -1156,48 +1614,155 @@ private fun CollapsibleSection(
     }
 }
 
+internal val LocalDataFieldDesign = staticCompositionLocalOf { DataFieldDesignConfig() }
+
+// True while the config screen is driven by the screenshot capture tool (launched with the
+// `bfCapture` intent extra). Freezes the HUD preview animation so shots are reproducible; inert
+// in normal use.
+internal val LocalScreenshotMode = staticCompositionLocalOf { false }
+
 private val FIELD_PREVIEW_WIDTH = 120.dp
 private val FIELD_PREVIEW_HEIGHT = 80.dp
 
 @Composable
 private fun FieldPreviewBox(previewFields: List<FieldState>, colorMode: ZoneColorMode) {
-    val context = LocalContext.current
     val densityValue = LocalDensity.current.density
     val widthPx = (FIELD_PREVIEW_WIDTH.value * densityValue).toInt()
     val heightPx = (FIELD_PREVIEW_HEIGHT.value * densityValue).toInt()
-    val sizeConfig = remember(widthPx) {
-        ViewSizeConfig.STANDARD.copy(
-            cellWidthPxOverride = widthPx.toFloat(),
-        )
-    }
+    val design = LocalDataFieldDesign.current
+    val sizeConfig =
+        remember(widthPx, design) {
+            ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat()).withDesign(design)
+        }
     var index by remember { mutableIntStateOf(0) }
-    LaunchedEffect(previewFields) {
+    val screenshotMode = LocalScreenshotMode.current
+    LaunchedEffect(previewFields, screenshotMode) {
         index = 0
+        if (screenshotMode)
+            return@LaunchedEffect // freeze on the first state for reproducible shots
         while (true) {
             delay(PREVIEW_DELAY_MS)
             index = (index + 1) % previewFields.size
         }
     }
     val field = previewFields[index.coerceAtMost(previewFields.size - 1)]
-    val bitmap = remember(field, colorMode, widthPx, heightPx) {
-        val rv = barberfishFieldRemoteViews(
-            field = field,
-            alignment = ViewConfig.Alignment.RIGHT,
-            colorMode = colorMode,
-            sizeConfig = sizeConfig,
-            preview = true,
-            context = context,
-        )
-        remoteViewsToBitmap(rv, widthPx, heightPx, context)
-    }
+    val bitmap = rememberFieldPreviewBitmap(field, colorMode, sizeConfig, widthPx, heightPx)
     Image(
         bitmap = bitmap.asImageBitmap(),
         contentDescription = null,
-        modifier = Modifier.width(FIELD_PREVIEW_WIDTH).height(FIELD_PREVIEW_HEIGHT)
-            .clip(RoundedCornerShape(6.dp))
-            .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
+        modifier =
+            Modifier.width(FIELD_PREVIEW_WIDTH)
+                .height(FIELD_PREVIEW_HEIGHT)
+                .clip(RoundedCornerShape(6.dp))
+                .background(if (isSystemInDarkTheme()) Color.Black else Color.White),
         contentScale = ContentScale.FillBounds,
     )
+}
+
+// Position dot sweeps start→end on a loop; quantized to OVERVIEW_PREVIEW_STEPS so the field
+// bitmap re-rasterizes at ~10 fps rather than every animation frame.
+private const val OVERVIEW_PREVIEW_SWEEP_MS = 6000
+private const val OVERVIEW_PREVIEW_STEPS = 60
+
+@Composable
+private fun OverviewPreviewBox(targetCount: Int, showHeader: Boolean) {
+    val context = LocalContext.current
+    val density = LocalDensity.current.density
+    val isNight = isSystemInDarkTheme()
+    val widthPx = (FIELD_PREVIEW_WIDTH.value * density).toInt()
+    val heightPx = (FIELD_PREVIEW_HEIGHT.value * density).toInt()
+
+    val transition = rememberInfiniteTransition(label = "overviewDot")
+    val sweep by
+        transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation =
+                        tween(durationMillis = OVERVIEW_PREVIEW_SWEEP_MS, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "overviewDotFraction",
+        )
+    val step = (sweep * OVERVIEW_PREVIEW_STEPS).toInt().coerceIn(0, OVERVIEW_PREVIEW_STEPS)
+
+    // Rasterize the same field RemoteViews the live cell uses (header + full-bleed profile), at
+    // the standard preview size, so the preview matches the live field and the other previews.
+    val bitmap =
+        remember(widthPx, heightPx, isNight, targetCount, step, showHeader) {
+            val positionFraction = step / OVERVIEW_PREVIEW_STEPS.toFloat()
+            val sizeConfig = ViewSizeConfig.STANDARD.copy(cellWidthPxOverride = widthPx.toFloat())
+            val headerPx = if (showHeader) sparklineHeaderPx(sizeConfig, density) else 0
+            val imgH = (heightPx - headerPx).coerceAtLeast(1)
+            val spark = overviewPreviewBitmap(widthPx, imgH, isNight, targetCount, positionFraction)
+            val rv = RemoteViews(context.packageName, R.layout.barberfish_sparkline)
+            if (showHeader) {
+                applySparklineHeaderChrome(
+                    rv,
+                    context.getString(R.string.route_remaining_name),
+                    R.drawable.ic_landscape,
+                    sizeConfig,
+                    ViewConfig.Alignment.RIGHT,
+                    context,
+                )
+            } else {
+                rv.setViewVisibility(R.id.field_header, android.view.View.GONE)
+            }
+            if (spark != null) rv.setImageViewBitmap(R.id.sparkline_image, spark)
+            remoteViewsToBitmap(rv, widthPx, heightPx, context)
+        }
+    Image(
+        bitmap = bitmap.asImageBitmap(),
+        contentDescription = null,
+        modifier =
+            Modifier.width(FIELD_PREVIEW_WIDTH)
+                .height(FIELD_PREVIEW_HEIGHT)
+                .clip(RoundedCornerShape(6.dp))
+                .background(if (isNight) Color.Black else Color.White),
+        contentScale = ContentScale.FillBounds,
+    )
+}
+
+@Composable
+private fun RouteRemainingCard(
+    config: RouteRemainingConfig,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onUpdate: (RouteRemainingConfig) -> Unit,
+) {
+    ExpandableCard(
+        title = "OVERVIEW",
+        selected = selected,
+        onSelect = onSelect,
+        testTag = "bf:field:route-remaining",
+        headerExtra = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                HelperText(
+                    "Whole-route elevation profile with your position.",
+                    modifier = Modifier.weight(1f),
+                )
+                OverviewPreviewBox(config.simplification.targetCount, config.showHeader)
+            }
+        },
+    ) {
+        ChoiceRow(
+            label = "SIMPLIFICATION",
+            options = RouteSimplification.entries.map { it to it.label },
+            selected = config.simplification,
+            onSelect = { onUpdate(config.copy(simplification = it)) },
+            help = "Smooths the whole-route profile into broader strokes.",
+        )
+        BoolToggleRow(
+            label = "HEADER",
+            value = config.showHeader,
+            onChange = { onUpdate(config.copy(showHeader = it)) },
+            help = "Show the field name and icon above the profile.",
+        )
+    }
 }
 
 // Shared expand/collapse shell for FieldCard and SparklineCard. The header shows
@@ -1209,20 +1774,24 @@ internal fun ExpandableCard(
     title: String,
     selected: Boolean,
     onSelect: () -> Unit,
+    testTag: String? = null,
     headerExtra: (@Composable () -> Unit)? = null,
     controls: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .border(1.dp, Grey200, RoundedCornerShape(6.dp)),
+        modifier =
+            Modifier.fillMaxWidth()
+                .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
+                .clip(RoundedCornerShape(6.dp))
+                .border(1.dp, Grey200, RoundedCornerShape(6.dp))
     ) {
         var everSelected by remember { mutableStateOf(selected) }
         if (selected) everSelected = true
         Column(
-            modifier = Modifier.fillMaxWidth().background(Grey100)
-                .padding(12.dp)
-                .pointerInput(onSelect) { detectTapGestures(onTap = { onSelect() }) },
+            modifier =
+                Modifier.fillMaxWidth().background(Grey100).padding(12.dp).pointerInput(onSelect) {
+                    detectTapGestures(onTap = { onSelect() })
+                },
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             ControlLabel(title)
@@ -1255,6 +1824,7 @@ internal fun ExpandableCard(
 @Composable
 private fun FieldCard(
     title: String,
+    typeId: String,
     description: String,
     previewFields: List<FieldState>,
     colorMode: ZoneColorMode,
@@ -1266,6 +1836,7 @@ private fun FieldCard(
         title = title,
         selected = selected,
         onSelect = onSelect,
+        testTag = "bf:field:$typeId",
         headerExtra = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1313,24 +1884,18 @@ private fun ThresholdLegend() {
 }
 
 @Composable
-internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) {
-    ControlLabel("ZONE COLOR")
-    SegmentedRow(
-        options = ZoneColorMode.entries.map { it to it.label },
-        selected = selected,
-        onSelect = onSelected,
+internal fun ZoneColorSlider(selected: ZoneColorMode, onSelected: (ZoneColorMode) -> Unit) =
+    ChoiceRow(
+        "ZONE COLOR",
+        ZoneColorMode.entries.map { it to it.label },
+        selected,
+        onSelected,
+        labelModifier = Modifier.testTag("bf:field:zone-color"),
     )
-}
 
 @Composable
-internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) {
-    ControlLabel("ZONE DISPLAY")
-    SegmentedRow(
-        options = ZoneDisplayMode.entries.map { it to it.label },
-        selected = selected,
-        onSelect = onSelected,
-    )
-}
+internal fun ZoneDisplaySlider(selected: ZoneDisplayMode, onSelected: (ZoneDisplayMode) -> Unit) =
+    ChoiceRow("ZONE DISPLAY", ZoneDisplayMode.entries.map { it to it.label }, selected, onSelected)
 
 @Composable
 private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Unit) {
@@ -1338,6 +1903,61 @@ private fun TimeFormatPills(selected: TimeFormat, onSelected: (TimeFormat) -> Un
         options = TimeFormat.entries.map { it to it.label },
         selected = selected,
         onSelect = onSelected,
+        trackColor = Grey100,
+    )
+}
+
+@Composable
+internal fun PalettesSectionContent(zoneConfig: ZoneConfig, onUpdate: (ZoneConfig) -> Unit) {
+    EnumDropdown(
+        title = "Power zones",
+        entries = ZonePalette.entries,
+        selected = zoneConfig.powerPalette,
+        label = ::zonePaletteLabel,
+        onSelected = { palette -> onUpdate(zoneConfig.copy(powerPalette = palette)) },
+    )
+    ZonePalettePreview(palette = zoneConfig.powerPalette, isHr = false)
+
+    EnumDropdown(
+        title = "HR zones",
+        entries = ZonePalette.entries,
+        selected = zoneConfig.hrPalette,
+        label = ::zonePaletteLabel,
+        onSelected = { palette -> onUpdate(zoneConfig.copy(hrPalette = palette)) },
+    )
+    ZonePalettePreview(palette = zoneConfig.hrPalette, isHr = true)
+
+    EnumDropdown(
+        title = "Grade",
+        entries = GradePalette.entries,
+        selected = zoneConfig.gradePalette,
+        label = { it.label },
+        onSelected = { palette -> onUpdate(zoneConfig.copy(gradePalette = palette)) },
+    )
+    GradePalettePreview(palette = zoneConfig.gradePalette)
+}
+
+@Composable
+internal fun DataFieldDesignSectionContent(
+    config: DataFieldDesignConfig,
+    onUpdate: (DataFieldDesignConfig) -> Unit,
+) {
+    BoolToggleRow(
+        label = "DATA ICONS",
+        value = config.showIcons,
+        onChange = { on -> onUpdate(config.copy(showIcons = on)) },
+        help = "Show the icon in each field header.",
+        trackColor = Grey100,
+        labelModifier = Modifier.testTag("bf:dfd:data-icons"),
+    )
+
+    ControlLabel("LABEL SIZE")
+    HelperText("Header label size on dense (2-column) pages.")
+    SegmentedRow(
+        options = LabelSize.entries.map { it to it.label },
+        selected = config.labelSize,
+        onSelect = { size -> onUpdate(config.copy(labelSize = size)) },
+        modifier = Modifier.testTag("bf:dfd:label-size"),
         trackColor = Grey100,
     )
 }
@@ -1359,26 +1979,33 @@ private fun <T> EnumDropdown(
             readOnly = true,
             label = { Text(title) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+            modifier =
+                Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             entries.forEach { entry ->
                 DropdownMenuItem(
                     text = { Text(label(entry)) },
-                    onClick = { onSelected(entry); expanded = false },
+                    onClick = {
+                        onSelected(entry)
+                        expanded = false
+                    },
                 )
             }
         }
     }
 }
 
-private fun zonePaletteLabel(palette: ZonePalette) = when (palette) {
-    ZonePalette.KAROO -> "Karoo"
-    ZonePalette.WAHOO -> "Wahoo"
-    ZonePalette.INTERVALS -> "Intervals.icu"
-    ZonePalette.ZWIFT -> "Zwift"
-    ZonePalette.HSLUV -> "HSLuv"
-}
+private fun zonePaletteLabel(palette: ZonePalette) =
+    when (palette) {
+        ZonePalette.KAROO -> "Karoo"
+        ZonePalette.BARBERFISH -> "Barberfish"
+        ZonePalette.WAHOO -> "Wahoo"
+        ZonePalette.INTERVALS -> "Intervals.icu"
+        ZonePalette.ZWIFT -> "Zwift"
+        ZonePalette.HSLUV -> "HSLuv"
+    }
 
 // Two-row preview demonstrating how the selected palette renders in each
 // color mode. Top row (Text): palette color drawn as text on the datafield
@@ -1389,75 +2016,26 @@ private fun ZonePalettePreview(palette: ZonePalette, isHr: Boolean) {
     val zoneCount = if (isHr) 5 else 7
     val labels = (1..zoneCount).map { "Z$it" }
     val isNightMode = isSystemInDarkTheme()
-    val textColors = (1..zoneCount).map { z ->
-        if (isHr) hrZoneColor(z, palette, readable = true, isNightMode = isNightMode)
-        else powerZoneColor(z, palette, readable = true, isNightMode = isNightMode)
-    }
-    val fillColors = (1..zoneCount).map { z ->
-        if (isHr) hrZoneColor(z, palette, readable = false)
-        else powerZoneColor(z, palette, readable = false)
-    }
+    val textColors =
+        (1..zoneCount).map { z ->
+            if (isHr) hrZoneColor(z, palette, readable = true, isNightMode = isNightMode)
+            else powerZoneColor(z, palette, readable = true, isNightMode = isNightMode)
+        }
+    val fillColors =
+        (1..zoneCount).map { z ->
+            if (isHr) hrZoneColor(z, palette, readable = false)
+            else powerZoneColor(z, palette, readable = false)
+        }
     DualRowPalettePreview(labels = labels, textRowColors = textColors, fillRowColors = fillColors)
 }
 
 @Composable
 private fun GradePalettePreview(palette: GradePalette) {
-    // Lower bounds of each band. Each band runs from thresholds[i] to thresholds[i+1] (or +∞ for the last).
-    val thresholds: List<Double> = when (palette) {
-        GradePalette.WAHOO -> listOf(0.0, 4.0, 8.0, 12.0, 20.0)
-        GradePalette.GARMIN -> listOf(0.0, 3.0, 6.0, 9.0, 12.0)
-        GradePalette.KAROO -> listOf(0.0, 2.0, 5.0, 8.0, 11.0, 14.0, 20.0)
-        GradePalette.HSLUV -> listOf(0.0, 3.0, 6.0, 9.0, 12.0, 15.0, 18.0)
-        GradePalette.ZWIFT -> listOf(0.0, 3.0, 6.0, 9.0)
-        GradePalette.TURBO -> listOf(Double.NEGATIVE_INFINITY, -9.0, -6.0, -3.0, 0.0, 3.0, 6.0, 9.0, 12.0, 15.0)
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Caption("Text mode (top) · Fill mode (bottom)")
+        Spacer(modifier = Modifier.height(2.dp))
+        ProportionalGradePreview(palette)
     }
-    val labels = thresholds.map {
-        if (it == Double.NEGATIVE_INFINITY) "<-9" else formatGradePct(it)
-    }
-    val isNightMode = isSystemInDarkTheme()
-    val textColors = thresholds.map {
-        gradeColor(it, palette, readable = true, isNightMode = isNightMode) ?: Color.Transparent
-    }
-    val fillColors = thresholds.map { gradeColor(it, palette, readable = false) ?: Color.Transparent }
-    DualRowPalettePreview(labels = labels, textRowColors = textColors, fillRowColors = fillColors)
-    GradeRangeBar(thresholds = thresholds)
-    Caption(gradeBandSummary(thresholds))
-}
-
-// Thin scale under the dual preview showing min / 0 / max anchor labels.
-// Mid "0%" is only shown when the palette spans negative grades (Turbo).
-@Composable
-private fun GradeRangeBar(thresholds: List<Double>) {
-    val numericLowers = thresholds.filterNot { it == Double.NEGATIVE_INFINITY }
-    val hasNegativeInf = thresholds.first() == Double.NEGATIVE_INFINITY
-    val minVal = numericLowers.first()
-    val maxVal = numericLowers.last()
-    val minLabel = if (hasNegativeInf) "<${formatGradePct(minVal)}%" else "${formatGradePct(minVal)}%"
-    val maxLabel = "≥${formatGradePct(maxVal)}%"
-    val zeroIdx = thresholds.indexOf(0.0)
-    val showZero = hasNegativeInf && zeroIdx > 0 && zeroIdx < thresholds.size - 1
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 3.dp)) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Caption(minLabel)
-            if (showZero) {
-                Spacer(modifier = Modifier.weight(zeroIdx.toFloat()))
-                Caption("0%")
-                Spacer(modifier = Modifier.weight((thresholds.size - zeroIdx).toFloat()))
-            } else {
-                Spacer(modifier = Modifier.weight(1f))
-            }
-            Caption(maxLabel)
-        }
-    }
-}
-
-private fun gradeBandSummary(thresholds: List<Double>): String {
-    val nBands = thresholds.size
-    val numericLowers = thresholds.filterNot { it == Double.NEGATIVE_INFINITY }
-    val diffs = (1 until numericLowers.size).map { numericLowers[it] - numericLowers[it - 1] }
-    val uniformStep = diffs.firstOrNull()?.takeIf { first -> diffs.all { kotlin.math.abs(it - first) < 0.01 } }
-    val stepDesc = if (uniformStep != null) "${formatGradePct(uniformStep)}% steps" else "uneven steps"
-    return "$nBands bands · $stepDesc"
 }
 
 @Composable
@@ -1499,15 +2077,19 @@ private fun TimeFormatPreview(format: TimeFormat) {
     Box(
         modifier =
             Modifier.fillMaxWidth()
-                .background(if (isSystemInDarkTheme()) Color.Black else Color.White, RoundedCornerShape(6.dp))
+                .background(
+                    if (isSystemInDarkTheme()) Color.Black else Color.White,
+                    RoundedCornerShape(6.dp),
+                )
                 .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = formatTime(5025L, format),
-            style = MaterialTheme.typography.displaySmall.copy(
-                color = if (isSystemInDarkTheme()) Color.White else Color.Black,
-            ),
+            style =
+                MaterialTheme.typography.displaySmall.copy(
+                    color = if (isSystemInDarkTheme()) Color.White else Color.Black
+                ),
             textAlign = TextAlign.Center,
         )
     }
@@ -1530,53 +2112,75 @@ private fun CommitOnFocusLossTextField(
             Text(placeholder, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { onCommit(); focusManager.clearFocus() }),
-        modifier = Modifier.fillMaxWidth().onFocusChanged { state ->
-            if (wasFocused && !state.isFocused) onCommit()
-            wasFocused = state.isFocused
-        },
+        keyboardActions =
+            KeyboardActions(
+                onDone = {
+                    onCommit()
+                    focusManager.clearFocus()
+                }
+            ),
+        modifier =
+            Modifier.fillMaxWidth().onFocusChanged { state ->
+                if (wasFocused && !state.isFocused) onCommit()
+                wasFocused = state.isFocused
+            },
     )
 }
 
-@Composable
-private fun ETAPriorSpeedInput(
-    priorSpeedKph: Double,
-    profile: UserProfile,
-    onValueChange: (Double) -> Unit,
-) {
-    val displayValue = ConvertType.SPEED.toDisplay(priorSpeedKph, profile)
-    var text by remember(priorSpeedKph) { mutableStateOf(if (priorSpeedKph == 0.0) "" else displayValue.toString()) }
-    val speedUnit = ConvertType.SPEED.unit(profile)
-    CommitOnFocusLossTextField(
-        text = text,
-        onTextChange = { text = it },
-        onCommit = {
-            val entered = text.toDoubleOrNull() ?: 0.0
-            onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
-        },
-        placeholder = "Speed ($speedUnit)",
+/** How a number is shown to and read from the rider: display units, formatting, keyboard. */
+private class InputUnit(
+    val format: (Double) -> String,
+    val parse: (Double) -> Double,
+    val keyboardType: KeyboardType,
+)
+
+private fun speedInputUnit(profile: UserProfile) =
+    InputUnit(
+        format = { ConvertType.SPEED.toDisplay(it, profile).toString() },
+        parse = { ConvertType.SPEED.fromDisplay(it, profile) },
         keyboardType = KeyboardType.Decimal,
     )
-}
 
+private val RPM_INPUT_UNIT =
+    InputUnit(
+        format = { it.toInt().toString() },
+        parse = { it },
+        keyboardType = KeyboardType.Number,
+    )
+
+/** A value where 0 means unset and shows as an empty field. */
 @Composable
-private fun ThresholdInput(
+private fun NumberInput(
     value: Double,
-    profile: UserProfile,
+    unit: InputUnit,
+    placeholder: String,
     onValueChange: (Double) -> Unit,
 ) {
-    val displayValue = ConvertType.SPEED.toDisplay(value, profile)
-    var text by remember(value) { mutableStateOf(if (value == 0.0) "" else displayValue.toString()) }
-    val speedUnit = ConvertType.SPEED.unit(profile)
+    var text by remember(value) { mutableStateOf(if (value == 0.0) "" else unit.format(value)) }
     CommitOnFocusLossTextField(
         text = text,
         onTextChange = { text = it },
-        onCommit = {
-            val entered = text.toDoubleOrNull() ?: 0.0
-            onValueChange(ConvertType.SPEED.fromDisplay(entered, profile))
-        },
-        placeholder = "Target ($speedUnit)",
-        keyboardType = KeyboardType.Decimal,
+        onCommit = { onValueChange(unit.parse(text.toDoubleOrNull() ?: 0.0)) },
+        placeholder = placeholder,
+        keyboardType = unit.keyboardType,
+    )
+}
+
+/** A value where an empty field means disabled. */
+@Composable
+private fun NullableNumberInput(
+    value: Double?,
+    unit: InputUnit,
+    placeholder: String,
+    onValueChange: (Double?) -> Unit,
+) {
+    var text by remember(value) { mutableStateOf(value?.let(unit.format).orEmpty()) }
+    CommitOnFocusLossTextField(
+        text = text,
+        onTextChange = { text = it },
+        onCommit = { onValueChange(text.toDoubleOrNull()?.let(unit.parse)) },
+        placeholder = placeholder,
+        keyboardType = unit.keyboardType,
     )
 }
 
@@ -1592,25 +2196,42 @@ private fun RangeInput(value: Double, onValueChange: (Double) -> Unit) {
     )
 }
 
+/** The under / over percentage band around the threshold. */
 @Composable
-private fun NullableThresholdInput(
-    value: Double?,
-    placeholder: String,
-    profile: UserProfile,
-    onValueChange: (Double?) -> Unit,
+private fun RangeRow(
+    below: Double,
+    above: Double,
+    onBelowChange: (Double) -> Unit,
+    onAboveChange: (Double) -> Unit,
 ) {
-    val displayValue = value?.let { ConvertType.SPEED.toDisplay(it, profile) }
-    var text by remember(value) { mutableStateOf(displayValue?.toString() ?: "") }
-    CommitOnFocusLossTextField(
-        text = text,
-        onTextChange = { text = it },
-        onCommit = {
-            onValueChange(text.toDoubleOrNull()?.let { ConvertType.SPEED.fromDisplay(it, profile) })
-        },
-        placeholder = placeholder,
-        keyboardType = KeyboardType.Decimal,
-    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
+            ControlLabel("UNDER (%)")
+            RangeInput(value = below, onValueChange = onBelowChange)
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            ControlLabel("OVER (%)")
+            RangeInput(value = above, onValueChange = onAboveChange)
+        }
+    }
 }
+
+private val THRESHOLD_MODE_OPTIONS =
+    listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
+
+@Composable
+private fun ThresholdModeRow(mode: ThresholdMode, onSelect: (ThresholdMode) -> Unit) {
+    ControlLabel("THRESHOLD", Modifier.testTag("bf:field:threshold"))
+    ThresholdLegend()
+    SegmentedRow(options = THRESHOLD_MODE_OPTIONS, selected = mode, onSelect = onSelect)
+}
+
+private val SPEED_THRESHOLD_SOURCE_OPTIONS =
+    listOf(
+        SpeedThresholdSource.FIXED to "Fixed",
+        SpeedThresholdSource.AVG_TOTAL to "Avg total",
+        SpeedThresholdSource.AVG_MOVING to "Avg moving",
+    )
 
 @Composable
 internal fun SpeedThresholdControls(
@@ -1618,43 +2239,28 @@ internal fun SpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (SpeedFieldConfig) -> Unit,
 ) {
-    val sourceOptions =
-        listOf(
-            SpeedThresholdSource.FIXED to "Fixed",
-            SpeedThresholdSource.AVG_TOTAL to "Avg total",
-            SpeedThresholdSource.AVG_MOVING to "Avg moving",
-        )
     ControlLabel("THRESHOLD SOURCE")
     SegmentedRow(
-        options = sourceOptions,
+        options = SPEED_THRESHOLD_SOURCE_OPTIONS,
         selected = config.source,
         onSelect = { onConfigChange(config.copy(source = it)) },
     )
-    val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
+    val speedUnit = ConvertType.SPEED.unit(profile)
     if (config.source == SpeedThresholdSource.FIXED) {
-        ControlLabel("TARGET ($speedUnit)")
-        ThresholdInput(
+        ControlLabel("TARGET (${speedUnit.uppercase()})")
+        NumberInput(
             value = config.thresholdKph,
-            profile = profile,
+            unit = speedInputUnit(profile),
+            placeholder = "Target ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("UNDER (%)")
-            RangeInput(
-                value = config.rangePercentBelow,
-                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("OVER (%)")
-            RangeInput(
-                value = config.rangePercentAbove,
-                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
-            )
-        }
-    }
+    RangeRow(
+        below = config.rangePercentBelow,
+        above = config.rangePercentAbove,
+        onBelowChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+        onAboveChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+    )
 }
 
 @Composable
@@ -1663,55 +2269,39 @@ internal fun AvgSpeedThresholdControls(
     profile: UserProfile,
     onConfigChange: (AvgSpeedConfig) -> Unit,
 ) {
-    ControlLabel("THRESHOLD")
-    ThresholdLegend()
-    val modeOptions =
-        listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
-    SegmentedRow(
-        options = modeOptions,
-        selected = config.mode,
-        onSelect = { onConfigChange(config.copy(mode = it)) },
-    )
-    val speedUnit = ConvertType.SPEED.unit(profile).uppercase()
+    ThresholdModeRow(mode = config.mode, onSelect = { onConfigChange(config.copy(mode = it)) })
+    val speedUnit = ConvertType.SPEED.unit(profile)
+    val unit = speedInputUnit(profile)
     if (config.mode == ThresholdMode.TARGET) {
-        ControlLabel("TARGET ($speedUnit)")
-        ThresholdInput(
+        ControlLabel("TARGET (${speedUnit.uppercase()})")
+        NumberInput(
             value = config.thresholdKph,
-            profile = profile,
+            unit = unit,
+            placeholder = "Target ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(thresholdKph = it)) },
         )
     } else {
-        ControlLabel("MIN SPEED ($speedUnit)")
-        NullableThresholdInput(
+        ControlLabel("MIN SPEED (${speedUnit.uppercase()})")
+        NullableNumberInput(
             value = config.minKph,
-            placeholder = "Min (${ConvertType.SPEED.unit(profile)})",
-            profile = profile,
+            unit = unit,
+            placeholder = "Min ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(minKph = it)) },
         )
-        ControlLabel("MAX SPEED ($speedUnit)")
-        NullableThresholdInput(
+        ControlLabel("MAX SPEED (${speedUnit.uppercase()})")
+        NullableNumberInput(
             value = config.maxKph,
-            placeholder = "Max (${ConvertType.SPEED.unit(profile)})",
-            profile = profile,
+            unit = unit,
+            placeholder = "Max ($speedUnit)",
             onValueChange = { onConfigChange(config.copy(maxKph = it)) },
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("UNDER (%)")
-            RangeInput(
-                value = config.rangePercentBelow,
-                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("OVER (%)")
-            RangeInput(
-                value = config.rangePercentAbove,
-                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
-            )
-        }
-    }
+    RangeRow(
+        below = config.rangePercentBelow,
+        above = config.rangePercentAbove,
+        onBelowChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+        onAboveChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
+    )
 }
 
 @Composable
@@ -1719,85 +2309,37 @@ internal fun CadenceThresholdControls(
     config: CadenceThresholdConfig,
     onConfigChange: (CadenceThresholdConfig) -> Unit,
 ) {
-    ControlLabel("THRESHOLD")
-    ThresholdLegend()
-    val modeOptions =
-        listOf(ThresholdMode.TARGET to "Target", ThresholdMode.MIN_MAX to "Min / Max")
-    SegmentedRow(
-        options = modeOptions,
-        selected = config.mode,
-        onSelect = { onConfigChange(config.copy(mode = it)) },
-    )
+    ThresholdModeRow(mode = config.mode, onSelect = { onConfigChange(config.copy(mode = it)) })
     if (config.mode == ThresholdMode.TARGET) {
         ControlLabel("TARGET (RPM)")
-        CadenceThresholdInput(
+        NumberInput(
             value = config.thresholdRpm,
+            unit = RPM_INPUT_UNIT,
+            placeholder = "Target (rpm)",
             onValueChange = { onConfigChange(config.copy(thresholdRpm = it)) },
         )
     } else {
         ControlLabel("MIN CADENCE (RPM)")
-        NullableCadenceThresholdInput(
+        NullableNumberInput(
             value = config.minRpm,
+            unit = RPM_INPUT_UNIT,
             placeholder = "Min (rpm)",
             onValueChange = { onConfigChange(config.copy(minRpm = it)) },
         )
         ControlLabel("MAX CADENCE (RPM)")
-        NullableCadenceThresholdInput(
+        NullableNumberInput(
             value = config.maxRpm,
+            unit = RPM_INPUT_UNIT,
             placeholder = "Max (rpm)",
             onValueChange = { onConfigChange(config.copy(maxRpm = it)) },
         )
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("UNDER (%)")
-            RangeInput(
-                value = config.rangePercentBelow,
-                onValueChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
-            )
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            ControlLabel("OVER (%)")
-            RangeInput(
-                value = config.rangePercentAbove,
-                onValueChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun CadenceThresholdInput(
-    value: Double,
-    onValueChange: (Double) -> Unit,
-) {
-    var text by remember(value) { mutableStateOf(if (value == 0.0) "" else value.toInt().toString()) }
-    CommitOnFocusLossTextField(
-        text = text,
-        onTextChange = { text = it },
-        onCommit = {
-            val entered = text.toDoubleOrNull() ?: 0.0
-            onValueChange(entered)
-        },
-        placeholder = "Target (rpm)",
-        keyboardType = KeyboardType.Number,
+    RangeRow(
+        below = config.rangePercentBelow,
+        above = config.rangePercentAbove,
+        onBelowChange = { onConfigChange(config.copy(rangePercentBelow = it)) },
+        onAboveChange = { onConfigChange(config.copy(rangePercentAbove = it)) },
     )
 }
 
-@Composable
-private fun NullableCadenceThresholdInput(
-    value: Double?,
-    placeholder: String,
-    onValueChange: (Double?) -> Unit,
-) {
-    var text by remember(value) { mutableStateOf(value?.toInt()?.toString() ?: "") }
-    CommitOnFocusLossTextField(
-        text = text,
-        onTextChange = { text = it },
-        onCommit = { onValueChange(text.toDoubleOrNull()) },
-        placeholder = placeholder,
-        keyboardType = KeyboardType.Number,
-    )
-}
-
-private fun formatGradePct(d: Double) = "%.0f".format(d)
+internal fun formatGradePct(d: Double) = "%.0f".format(d)

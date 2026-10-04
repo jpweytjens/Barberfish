@@ -1,0 +1,329 @@
+package com.jpweytjens.barberfish
+
+import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
+import com.jpweytjens.barberfish.extension.GradeMapChevronController
+import io.hammerhead.karooext.internal.Emitter
+import io.hammerhead.karooext.models.HideSymbols
+import io.hammerhead.karooext.models.MapEffect
+import io.hammerhead.karooext.models.ShowSymbols
+import io.hammerhead.karooext.models.Symbol
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class GradeMapChevronControllerTest {
+
+    private val yellow = R.drawable.ic_climber_chevron_f0d800
+    private val wahooYellow = R.drawable.ic_climber_chevron_feff00
+
+    private class FakeEmitter : Emitter<MapEffect> {
+        val events = mutableListOf<MapEffect>()
+
+        override fun onNext(t: MapEffect) {
+            events += t
+        }
+
+        override fun onError(t: Throwable) {}
+
+        override fun onComplete() {}
+
+        override fun setCancellable(cancellable: () -> Unit) {}
+
+        override fun cancel() {}
+    }
+
+    private val red = 0xFFFF0000.toInt()
+    private val green = 0xFF00FF00.toInt()
+
+    private fun spec(id: String, bearing: Float = 0f, color: Int = red, distanceM: Double = 0.0) =
+        ClimbChevronSpec(
+            id = id,
+            lat = 50.0,
+            lng = 4.0,
+            bearingDeg = bearing,
+            colorArgb = color,
+            distanceM = distanceM,
+        )
+
+    private fun FakeEmitter.hiddenIds() =
+        events.filterIsInstance<HideSymbols>().flatMap { it.symbolIds }
+
+    private fun FakeEmitter.shownIds() =
+        events.filterIsInstance<ShowSymbols>().flatMap { s -> s.symbols.map { it.id } }
+
+    @Test
+    fun first_emit_shows_all_and_hides_nothing() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        assertTrue(fake.hiddenIds().isEmpty())
+        assertEquals(listOf("a", "b"), fake.shownIds())
+    }
+
+    @Test
+    fun unchanged_second_emit_is_noop() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun second_emit_hides_only_removed_and_shows_only_new() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("a"), spec("c")), yellow)
+        assertEquals(listOf("b"), fake.hiddenIds())
+        assertEquals(listOf("c"), fake.shownIds())
+    }
+
+    @Test
+    fun changed_spec_is_reshown_without_a_hide() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a", bearing = 10f)), yellow)
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("a", bearing = 20f)), yellow)
+        // A show replaces the id in place; a hide in the same batch races it and can
+        // blank the chevron for good (observed on-device, 2026-08-22).
+        assertTrue(fake.hiddenIds().isEmpty())
+        assertEquals(listOf("a"), fake.shownIds())
+    }
+
+    @Test
+    fun removed_ids_are_reissued_as_hides_on_following_emits() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        controller.emit(fake, listOf(spec("a")), yellow)
+        // "b" was removed last emit; the lost-hide workaround re-issues it even
+        // though this emit removes nothing new.
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("a")), yellow)
+        assertEquals(listOf("b"), fake.hiddenIds())
+        assertTrue(fake.shownIds().isEmpty())
+    }
+
+    @Test
+    fun reissued_hides_expire_after_three_emits() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        controller.emit(fake, listOf(spec("a")), yellow)
+        repeat(3) { controller.emit(fake, listOf(spec("a")), yellow) }
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("a")), yellow)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun reappearing_id_is_shown_and_not_rehidden() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        controller.emit(fake, listOf(spec("a")), yellow)
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        assertFalse(fake.hiddenIds().contains("b"))
+        assertEquals(listOf("b"), fake.shownIds())
+    }
+
+    @Test
+    fun assumeStale_first_emit_hides_unclaimed_and_reshows_redrawn_in_place() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(3)
+        controller.emit(fake, listOf(spec("barberfish-chev-1")), yellow)
+        // Unclaimed stale ids are hidden; a redrawn stale id is re-shown WITHOUT a
+        // preceding hide — a hide in the same batch races the show in the rideapp's
+        // async symbol processing and blanks the chevron (observed on-device).
+        assertEquals(
+            setOf("barberfish-chev-0", "barberfish-chev-2"),
+            fake.hiddenIds().toSet(),
+        )
+        assertEquals(listOf("barberfish-chev-1"), fake.shownIds())
+        assertTrue(fake.events[0] is HideSymbols)
+        assertTrue(fake.events[1] is ShowSymbols)
+    }
+
+    @Test
+    fun assumeStale_zero_span_changes_nothing() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(0)
+        controller.emit(fake, emptyList(), yellow)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun assumeStale_clearAll_hides_the_range() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.clearAll(fake)
+        assertEquals(setOf("barberfish-chev-0", "barberfish-chev-1"), fake.hiddenIds().toSet())
+    }
+
+    @Test
+    fun assumeStale_hides_are_reissued_like_any_removed_set() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.emit(fake, listOf(spec("barberfish-chev-0")), yellow)
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("barberfish-chev-0")), yellow)
+        // chev-1 was hidden on the first emit; the lost-hide workaround re-issues it.
+        assertEquals(listOf("barberfish-chev-1"), fake.hiddenIds())
+        assertTrue(fake.shownIds().isEmpty())
+    }
+
+    @Test
+    fun clearAll_hides_previous_and_recently_removed_then_empty_emit_is_noop() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        controller.emit(fake, listOf(spec("a")), yellow)
+        fake.events.clear()
+        controller.clearAll(fake)
+        assertEquals(setOf("a", "b"), fake.hiddenIds().toSet())
+
+        fake.events.clear()
+        controller.emit(fake, emptyList(), yellow)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun show_preserves_spec_fields() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a", bearing = 42f, color = green)), yellow)
+        val icon =
+            (fake.events.single() as ShowSymbols).symbols.single()
+                as io.hammerhead.karooext.models.Symbol.Icon
+        assertEquals("a", icon.id)
+        assertEquals(50.0, icon.lat, 0.0)
+        assertEquals(4.0, icon.lng, 0.0)
+        assertEquals(42f, icon.orientation, 0f)
+    }
+
+    @Test
+    fun hidePassed_hides_only_chevrons_behind_progress() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(
+            fake,
+            listOf(
+                spec("a", distanceM = 30.0),
+                spec("b", distanceM = 90.0),
+                spec("c", distanceM = 150.0),
+            ),
+            yellow,
+        )
+        fake.events.clear()
+        controller.hidePassed(fake, 100.0)
+        assertEquals(setOf("a", "b"), fake.hiddenIds().toSet())
+        assertTrue(fake.shownIds().isEmpty())
+    }
+
+    @Test
+    fun hidePassed_with_nothing_behind_emits_nothing() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a", distanceM = 200.0)), yellow)
+        fake.events.clear()
+        controller.hidePassed(fake, 100.0)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun hidden_passed_chevrons_are_not_reshown_by_a_filtered_emit() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(
+            fake,
+            listOf(
+                spec("a", distanceM = 30.0),
+                spec("b", distanceM = 90.0),
+                spec("c", distanceM = 150.0),
+            ),
+            yellow,
+        )
+        controller.hidePassed(fake, 100.0)
+        fake.events.clear()
+        // The rebuild path filters passed specs before emitting (Task 4); the controller
+        // must not re-show a and b, and may re-issue their hides (lost-hide robustness).
+        controller.emit(fake, listOf(spec("c", distanceM = 150.0)), yellow)
+        assertTrue(fake.shownIds().isEmpty())
+    }
+
+    @Test
+    fun hidePassed_reissues_hides_through_the_next_emit() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(
+            fake,
+            listOf(spec("a", distanceM = 30.0), spec("c", distanceM = 150.0)),
+            yellow,
+        )
+        controller.hidePassed(fake, 100.0)
+        fake.events.clear()
+        controller.emit(fake, listOf(spec("c", distanceM = 150.0)), yellow)
+        assertTrue(fake.hiddenIds().contains("a"))
+    }
+
+    @Test
+    fun hidePassed_leaves_stale_sentinels_alone() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.assumeStale(3)
+        controller.hidePassed(fake, 1_000.0)
+        assertTrue(fake.events.isEmpty())
+    }
+
+    @Test
+    fun icon_change_reshows_every_kept_chevron() {
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        controller.emit(fake, listOf(spec("a"), spec("b")), yellow)
+        fake.events.clear()
+        // Same specs, new icon: both are re-shown with the new icon, nothing is hidden.
+        controller.emit(fake, listOf(spec("a"), spec("b")), wahooYellow)
+        val shown = fake.events.filterIsInstance<ShowSymbols>().flatMap { it.symbols }
+        assertEquals(setOf("a", "b"), shown.map { it.id }.toSet())
+        assertTrue(shown.all { (it as Symbol.Icon).iconRes == wahooYellow })
+        assertTrue(fake.events.none { it is HideSymbols })
+    }
+
+    @Test
+    fun a_long_route_goes_out_in_several_messages() {
+        // One effect is one Binder transaction; thousands of symbols in one exceed its limit.
+        val controller = GradeMapChevronController()
+        val fake = FakeEmitter()
+        val specs = (0 until 1_200).map { spec("c$it") }
+        controller.emit(fake, specs, yellow)
+        val shows = fake.events.filterIsInstance<ShowSymbols>()
+        assertEquals(3, shows.size)
+        assertTrue(shows.all { it.symbols.size <= 500 })
+        assertEquals(specs.map { it.id }, fake.shownIds())
+        fake.events.clear()
+        controller.emit(fake, emptyList(), yellow)
+        val hides = fake.events.filterIsInstance<HideSymbols>()
+        assertEquals(3, hides.size)
+        assertEquals(specs.map { it.id }.toSet(), fake.hiddenIds().toSet())
+    }
+
+    @Test
+    fun id_namespace_seeds_stale_ids() {
+        val controller = GradeMapChevronController { "r-$it" }
+        val fake = FakeEmitter()
+        controller.assumeStale(2)
+        controller.emit(fake, emptyList(), yellow)
+        val hidden = fake.events.filterIsInstance<HideSymbols>().flatMap { it.symbolIds }.toSet()
+        assertEquals(setOf("r-0", "r-1"), hidden)
+    }
+}

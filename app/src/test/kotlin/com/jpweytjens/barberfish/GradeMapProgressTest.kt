@@ -1,0 +1,203 @@
+package com.jpweytjens.barberfish
+
+import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
+import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
+import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class GradeMapProgressTest {
+
+    private val key = gradeMapRouteKey("abc", reversed = false)
+
+    private fun tracked(): GradeMapProgress = GradeMapProgress().also { it.trackRoute(key) }
+
+    @Test
+    fun no_route_tracked_never_advances() {
+        val progress = GradeMapProgress()
+        assertFalse(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun advance_moves_in_buckets() {
+        val progress = tracked()
+        // 10 km route, 9875 m remaining -> 125 m ridden -> bucket 12 -> 120 m.
+        assertTrue(progress.advance(9_875.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertEquals(120.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun sub_bucket_movement_does_not_advance() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_880.0, onRoute = true, routeDistanceM = 10_000.0))
+        // 125 m ridden is still bucket 12.
+        assertFalse(progress.advance(9_875.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertEquals(120.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun backward_movement_never_lowers_progress() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertFalse(progress.advance(9_500.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertEquals(1_000.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun off_route_samples_are_ignored() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        // Off course the distance field is rejoin-relative; freeze instead of trusting it.
+        assertFalse(progress.advance(500.0, onRoute = false, routeDistanceM = 10_000.0))
+        assertEquals(1_000.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun null_distance_is_ignored() {
+        val progress = tracked()
+        assertFalse(progress.advance(null, onRoute = true, routeDistanceM = 10_000.0))
+    }
+
+    @Test
+    fun distance_beyond_route_clamps_to_route_end() {
+        val progress = tracked()
+        // Ride to 9 km first (two agreeing samples) so arrival is a plausible step, not a
+        // lone jump.
+        assertFalse(progress.advance(1_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertTrue(progress.advance(990.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertTrue(progress.advance(-50.0, onRoute = true, routeDistanceM = 10_000.0))
+        assertEquals(10_000.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_lone_jump_is_held_back() {
+        val progress = tracked()
+        // Observed on-device: removing the route delivers one last distance sample that
+        // reads as arrival, before the stream goes unavailable. A single sample must not
+        // commit a jump no rider could make between two ticks.
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_repeated_jump_is_committed() {
+        val progress = tracked()
+        // Loading a route mid-way, or a long GPS gap: the jump is real when the next
+        // sample lands close to it.
+        assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertTrue(progress.advance(19_980.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(14_170.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_repeated_jump_is_committed_at_speed() {
+        val progress = tracked()
+        // Between two one-second samples a fast descent covers several buckets; the
+        // confirming sample still counts as agreeing with the held jump.
+        assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertTrue(progress.advance(19_960.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(14_190.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_contradicted_jump_is_dropped() {
+        val progress = tracked()
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        // The next sample disagrees, so the held jump is forgotten and this one is held.
+        assertFalse(progress.advance(20_000.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(0.0, progress.progressM, 0.0)
+        assertTrue(progress.advance(19_990.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(14_160.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun a_small_step_clears_a_held_jump() {
+        val progress = tracked()
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertTrue(progress.advance(34_031.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(120.0, progress.progressM, 0.0)
+        // A later sample near the old held value is again a lone jump.
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 34_151.0))
+        assertEquals(120.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun route_change_resets_progress() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        progress.trackRoute(gradeMapRouteKey("other", reversed = false))
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun reversal_is_a_route_change() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        progress.trackRoute(gradeMapRouteKey("abc", reversed = true))
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun same_route_retrack_keeps_progress() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        progress.trackRoute(key)
+        assertEquals(1_000.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun clear_resets_progress_even_for_the_same_route() {
+        val progress = tracked()
+        assertTrue(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        progress.clear()
+        assertEquals(0.0, progress.progressM, 0.0)
+        assertFalse(progress.advance(9_000.0, onRoute = true, routeDistanceM = 10_000.0))
+        progress.trackRoute(key)
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun zero_route_distance_never_advances() {
+        val progress = tracked()
+        assertFalse(progress.advance(0.0, onRoute = true, routeDistanceM = 0.0))
+        assertEquals(0.0, progress.progressM, 0.0)
+    }
+
+    @Test
+    fun trackRoute_reports_whether_it_reset() {
+        val progress = GradeMapProgress()
+        assertTrue(progress.trackRoute(key))
+        assertFalse(progress.trackRoute(key))
+        assertTrue(progress.trackRoute(gradeMapRouteKey("other", reversed = false)))
+        progress.clear()
+        assertTrue(progress.trackRoute(key))
+    }
+
+    @Test
+    fun arrival_covers_the_final_partial_bucket() {
+        val progress = tracked()
+        // 998 m route: floor bucketing alone would cap progress at 990 m and never
+        // reach a chevron placed in the last 8 m.
+        assertTrue(progress.advance(0.0, onRoute = true, routeDistanceM = 998.0))
+        assertTrue(progress.progressM >= 998.0)
+    }
+
+    @Test
+    fun polyline_axis_progress_shrinks_sdk_progress_by_the_length_ratio() {
+        // The route measured on device: the rideapp reports 34,151 m for a polyline whose
+        // cumulative length is 34,113.5 m. Arrival on the rideapp's axis is the polyline's end,
+        // not 37 m past it.
+        assertEquals(34_113.5, polylineAxisProgressM(34_151.0, 34_151.0, 34_113.5), 1e-9)
+        assertEquals(0.0, polylineAxisProgressM(0.0, 34_151.0, 34_113.5), 0.0)
+        // Halfway on one axis is halfway on the other.
+        assertEquals(17_056.75, polylineAxisProgressM(17_075.5, 34_151.0, 34_113.5), 1e-9)
+    }
+
+    @Test
+    fun polyline_axis_progress_is_unscaled_without_a_route_distance() {
+        assertEquals(1_000.0, polylineAxisProgressM(1_000.0, 0.0, 34_113.5), 0.0)
+    }
+}

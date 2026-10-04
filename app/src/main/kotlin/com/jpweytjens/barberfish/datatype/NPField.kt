@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
@@ -30,7 +31,9 @@ class NPField(private val karooSystem: KarooSystemService) :
             zones = context.streamZoneConfig(),
             sdkType = DataType.Type.NORMALIZED_POWER,
             karooSystem = karooSystem,
-        ) { state, profile, zones, cfg -> toFieldState(state, profile, zones, cfg.colorMode) }
+        ) { state, profile, zones, cfg ->
+            toFieldState(state, profile, zones, cfg.colorMode)
+        }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         zoneFieldPreviewFlow(
@@ -47,10 +50,19 @@ class NPField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState("NP", R.drawable.ic_col_power)?.let { return it }
+            state
+                .toErrorFieldState(
+                    "NP",
+                    R.drawable.ic_col_power,
+                    FieldState.noSensor("NP", R.drawable.ic_col_power),
+                )
+                ?.let {
+                    return it
+                }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.NORMALIZED_POWER]
-                    ?: return FieldState.notAvailable("NP", R.drawable.ic_col_power)
+                    // Power is streaming but NP is undefined until its 30s window fills.
+                    ?: return FieldState.needs30sPower("NP", R.drawable.ic_col_power)
             val zone = powerZone(raw, profile.powerZones)
             val color = zoneFieldColor(zone, colorMode, profile, zones, isHr = false)
             return FieldState(
@@ -67,7 +79,7 @@ class NPField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(240, 255, 247, 262, 238).map { watts ->
+            PreviewRide.npW.map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(

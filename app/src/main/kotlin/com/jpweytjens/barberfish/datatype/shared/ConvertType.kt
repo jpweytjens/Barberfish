@@ -52,7 +52,8 @@ enum class ConvertType {
     /** Convert a stored metric display value to the user's display units (km/h → mph, km → mi). */
     fun toDisplay(metricValue: Double, profile: UserProfile): Double =
         when (this) {
-            SPEED, DISTANCE ->
+            SPEED,
+            DISTANCE ->
                 when (profile.preferredUnit.distance) {
                     UserProfile.PreferredUnit.UnitType.IMPERIAL ->
                         (metricValue * KMH_TO_MPH * 100.0).roundToLong() / 100.0
@@ -64,7 +65,8 @@ enum class ConvertType {
     /** Convert a user-entered display value back to metric (mph → km/h, mi → km). */
     fun fromDisplay(displayValue: Double, profile: UserProfile): Double =
         when (this) {
-            SPEED, DISTANCE ->
+            SPEED,
+            DISTANCE ->
                 when (profile.preferredUnit.distance) {
                     UserProfile.PreferredUnit.UnitType.IMPERIAL ->
                         (displayValue / KMH_TO_MPH * 100.0).roundToLong() / 100.0

@@ -3,13 +3,14 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
-import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.hrZone
+import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.extension.HRFieldConfig
+import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
-import com.jpweytjens.barberfish.extension.HRFieldKind
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -42,7 +43,9 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             lapNumber: Int = 0,
         ): FieldState {
             if (isLastLap && lapNumber <= 1) return FieldState.noLapsYet(label, iconRes)
-            state.toErrorFieldState(label, iconRes)?.let { return it }
+            state.toErrorFieldState(label, iconRes, FieldState.noSensor(label, iconRes))?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVG_HR]
                     ?: return FieldState.notAvailable(label, iconRes)
@@ -65,19 +68,19 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             label: String = "Avg HR",
             iconRes: Int = R.drawable.ic_avg_hr,
             secondaryIconRes: Int? = null,
-        ): List<FieldState> =
-            listOf(85, 130, 152, 165, 172, 187, 145).map { bpm ->
-                val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
-                val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
-                FieldState(
-                    bpm.toString(),
-                    label = label,
-                    color = color,
-                    iconRes = iconRes,
-                    secondaryIconRes = secondaryIconRes,
-                    colorMode = cfg.colorMode,
-                )
-            }
+            bpmValues: List<Int> = PreviewRide.avgHrBpm,
+        ): List<FieldState> = bpmValues.map { bpm ->
+            val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
+            val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
+            FieldState(
+                bpm.toString(),
+                label = label,
+                color = color,
+                iconRes = iconRes,
+                secondaryIconRes = secondaryIconRes,
+                colorMode = cfg.colorMode,
+            )
+        }
     }
 
     override fun liveFlow(context: Context): Flow<FieldState> =
@@ -90,7 +93,14 @@ class AvgHRField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.AVERAGE_HR).map { state ->
-                    toFieldState(state, profile, zones, cfg.colorMode, "Avg HR", R.drawable.ic_avg_hr)
+                    toFieldState(
+                        state,
+                        profile,
+                        zones,
+                        cfg.colorMode,
+                        "Avg HR",
+                        R.drawable.ic_avg_hr,
+                    )
                 }
             }
 

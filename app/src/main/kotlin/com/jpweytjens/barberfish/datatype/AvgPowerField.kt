@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.powerZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
@@ -30,7 +31,9 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             zones = context.streamZoneConfig(),
             sdkType = DataType.Type.AVERAGE_POWER,
             karooSystem = karooSystem,
-        ) { state, profile, zones, cfg -> toFieldState(state, profile, zones, cfg.colorMode) }
+        ) { state, profile, zones, cfg ->
+            toFieldState(state, profile, zones, cfg.colorMode)
+        }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         zoneFieldPreviewFlow(
@@ -47,7 +50,15 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
             colorMode: ZoneColorMode,
         ): FieldState {
-            state.toErrorFieldState("Avg Power", R.drawable.ic_avg_power)?.let { return it }
+            state
+                .toErrorFieldState(
+                    "Avg Power",
+                    R.drawable.ic_avg_power,
+                    FieldState.noSensor("Avg Power", R.drawable.ic_avg_power),
+                )
+                ?.let {
+                    return it
+                }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.AVERAGE_POWER]
                     ?: return FieldState.notAvailable("Avg Power", R.drawable.ic_avg_power)
@@ -67,7 +78,7 @@ class AvgPowerField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(195, 210, 220, 185, 230).map { watts ->
+            PreviewRide.avgPowerW.map { watts ->
                 val zone = powerZone(watts.toDouble(), profile.powerZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(

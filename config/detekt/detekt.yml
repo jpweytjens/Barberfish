@@ -1,0 +1,47 @@
+# Overrides on top of detekt's default rule set (buildUponDefaultConfig in
+# app/build.gradle.kts). Findings older than detekt are grandfathered in
+# baseline.xml; new code is held to the full set.
+
+complexity:
+  # Composables routinely take many parameters by design.
+  LongParameterList:
+    ignoreAnnotated: ['Composable']
+
+coroutines:
+  GlobalCoroutineUsage:
+    active: true
+  # Scopes are built on a fixed dispatcher and tied to the emitter; nothing
+  # injects dispatchers for tests.
+  InjectDispatcher:
+    active: false
+
+empty-blocks:
+  # Test fakes override emitter callbacks with empty bodies.
+  EmptyFunctionBlock:
+    ignoreOverridden: true
+
+naming:
+  # Composables are PascalCase by convention.
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+
+style:
+  # Rendering and tuning constants are the domain here; naming every one
+  # would bury the code under constants.
+  MagicNumber:
+    active: false
+  # The pure-math files in shared/ must stay free of Android. The Compose
+  # Color value type in ZoneColoring is the one allowed exception, and
+  # 'android.*' does not match 'androidx.*'.
+  ForbiddenImport:
+    active: true
+    includes:
+      - '**/datatype/shared/ZoneColoring.kt'
+      - '**/datatype/shared/ConvertType.kt'
+      - '**/datatype/shared/ThresholdColoring.kt'
+      - '**/datatype/shared/ClimbScore.kt'
+      - '**/datatype/shared/MapProjection.kt'
+      - '**/datatype/shared/GpsPolyline.kt'
+      - '**/datatype/shared/ETA.kt'
+    imports:
+      - 'android.*'

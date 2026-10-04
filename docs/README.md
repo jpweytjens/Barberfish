@@ -1,0 +1,17 @@
+# Barberfish documentation
+
+## Using Barberfish
+
+- [Data fields](data-fields.md): every field with its palette, threshold, format, and smoothing options
+- [HUD](hud.md): three or four fields side by side on the map page, and how it narrows when a sensor is missing
+- [Elevation profile](elevation-profile.md): the terrain ahead, the position dot over a ride, and rerouting
+- [Grade map](grade-map.md): the route colored by grade on the map, out-and-back routes, and what to expect on a redraw
+- [Color palettes](color-palettes.md): every palette in both modes, and the contrast tuning behind them
+- [Algorithms](algorithms.md): the grade and ETA estimators explained
+- [Gallery](gallery.md): screenshots, including the states a short ride might not show
+- [Match Barberfish to your Karoo](matching-karoo.md): mirror the settings the extension SDK cannot read
+
+## For developers
+
+- [Architecture](architecture.md): component hierarchy, rendering design, and conventions
+- [SDK findings](sdk-findings.md): empirically discovered Karoo SDK behavior, including what differs on Karoo 2

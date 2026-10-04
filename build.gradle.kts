@@ -9,9 +9,10 @@ plugins {
 spotless {
     kotlin {
         target("**/*.kt")
+        targetExclude(".claude/**")
         trimTrailingWhitespace()
         indentWithSpaces()
         endWithNewline()
-        ktfmt().kotlinlangStyle()
+        ktfmt("0.64").kotlinlangStyle()
     }
 }

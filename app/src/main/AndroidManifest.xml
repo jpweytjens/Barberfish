@@ -21,7 +21,7 @@
 
         <meta-data
             android:name="io.hammerhead.karooext.MANIFEST_URL"
-            android:value="https://github.com/jpweytjens/barberfish/releases/latest/download/manifest.json" />
+            android:value="${manifestUrl}" />
 
         <activity
             android:name=".screens.MainActivity"

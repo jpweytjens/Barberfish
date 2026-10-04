@@ -4,6 +4,7 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.MAX_POWER_ZONES
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldPreviewFlow
@@ -35,15 +36,18 @@ class PowerZoneField(private val karooSystem: KarooSystemService) :
             displayMode: ZoneDisplayMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_power
-            state.toErrorFieldState(LABEL, iconRes)?.let { return it }
+            state.toErrorFieldState(LABEL, iconRes, FieldState.noSensor(LABEL, iconRes))?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.POWER_ZONE]
                     ?: return FieldState.notAvailable(LABEL, iconRes)
             val zoneInt = raw.toInt().coerceIn(1, MAX_POWER_ZONES)
-            val value = when (displayMode) {
-                ZoneDisplayMode.INTEGER -> zoneInt.toString()
-                ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
-            }
+            val value =
+                when (displayMode) {
+                    ZoneDisplayMode.INTEGER -> zoneInt.toString()
+                    ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
+                }
             val color = zoneFieldColor(zoneInt, colorMode, profile, zones, isHr = false)
             return FieldState(
                 value,
@@ -59,12 +63,13 @@ class PowerZoneField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(1.3, 2.4, 3.1, 4.5, 5.2, 6.0, 6.8).map { raw ->
+            PreviewRide.powerZone.map { raw ->
                 val zoneInt = raw.toInt().coerceIn(1, MAX_POWER_ZONES)
-                val value = when (cfg.zoneDisplayMode) {
-                    ZoneDisplayMode.INTEGER -> zoneInt.toString()
-                    ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
-                }
+                val value =
+                    when (cfg.zoneDisplayMode) {
+                        ZoneDisplayMode.INTEGER -> zoneInt.toString()
+                        ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
+                    }
                 val color = zoneFieldColor(zoneInt, cfg.colorMode, profile, zones, isHr = false)
                 FieldState(
                     value,

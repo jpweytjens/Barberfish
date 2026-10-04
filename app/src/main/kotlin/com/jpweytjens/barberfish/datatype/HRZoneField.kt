@@ -4,6 +4,7 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.MAX_HR_ZONES
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldPreviewFlow
@@ -35,15 +36,18 @@ class HRZoneField(private val karooSystem: KarooSystemService) :
             displayMode: ZoneDisplayMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_hr
-            state.toErrorFieldState(LABEL, iconRes)?.let { return it }
+            state.toErrorFieldState(LABEL, iconRes, FieldState.noSensor(LABEL, iconRes))?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.HR_ZONE]
                     ?: return FieldState.notAvailable(LABEL, iconRes)
             val zoneInt = raw.toInt().coerceIn(1, MAX_HR_ZONES)
-            val value = when (displayMode) {
-                ZoneDisplayMode.INTEGER -> zoneInt.toString()
-                ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
-            }
+            val value =
+                when (displayMode) {
+                    ZoneDisplayMode.INTEGER -> zoneInt.toString()
+                    ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
+                }
             val color = zoneFieldColor(zoneInt, colorMode, profile, zones, isHr = true)
             return FieldState(
                 value,
@@ -59,12 +63,13 @@ class HRZoneField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(1.2, 2.5, 3.4, 3.8, 4.2, 4.7, 5.0).map { raw ->
+            PreviewRide.hrZone.map { raw ->
                 val zoneInt = raw.toInt().coerceIn(1, MAX_HR_ZONES)
-                val value = when (cfg.zoneDisplayMode) {
-                    ZoneDisplayMode.INTEGER -> zoneInt.toString()
-                    ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
-                }
+                val value =
+                    when (cfg.zoneDisplayMode) {
+                        ZoneDisplayMode.INTEGER -> zoneInt.toString()
+                        ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
+                    }
                 val color = zoneFieldColor(zoneInt, cfg.colorMode, profile, zones, isHr = true)
                 FieldState(
                     value,

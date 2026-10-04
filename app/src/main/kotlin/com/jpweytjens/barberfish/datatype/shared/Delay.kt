@@ -21,4 +21,5 @@ fun <T> cyclePreview(states: List<T>): Flow<T> = flow {
         emit(states[i++ % states.size])
         delay(PREVIEW_DELAY_MS)
     }
-}.flowOn(Dispatchers.IO)
+}
+    .flowOn(Dispatchers.IO)

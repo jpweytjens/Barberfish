@@ -2,11 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches:
-      - master
   push:
     branches:
-      - master
+      - '**'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -29,10 +27,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Run unit tests
         env:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon test
+
+      - name: Run detekt with type resolution
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --no-daemon detektDebug
+
+      - name: Run Android Lint
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --no-daemon lintDebug

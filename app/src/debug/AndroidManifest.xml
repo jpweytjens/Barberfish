@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application>
+
+        <!-- Debug-only: lets the layout sweep set the global DataFieldDesignConfig from adb.
+             Exported so `adb shell am broadcast` (shell UID) can reach it. Never in release. -->
+        <receiver
+            android:name=".extension.DataFieldDesignReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.jpweytjens.barberfish.SET_DESIGN" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Debug-only: presses a Karoo hardware button from adb so capture scripts can
+             drive the in-ride flow. Exported for the shell UID. Never in release. -->
+        <receiver
+            android:name=".extension.HardwareActionReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.jpweytjens.barberfish.PRESS_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Debug-only: reads/writes a named Barberfish config (hud/zone/time) from adb so
+             capture scripts can set each shot's config and snapshot/restore the user's own.
+             Never in release. -->
+        <receiver
+            android:name=".extension.ConfigReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.jpweytjens.barberfish.SET_CONFIG" />
+                <action android:name="com.jpweytjens.barberfish.GET_CONFIG" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>

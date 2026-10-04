@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.detekt)
     kotlin("plugin.serialization") version "2.0.20"
 }
 
@@ -17,10 +18,15 @@ android {
 
     defaultConfig {
         applicationId = "com.jpweytjens.barberfish"
-        minSdk = 23
+        minSdk = 26
         targetSdk = 34
-        versionCode = 8
-        versionName = "3.3.1"
+        versionCode = 14
+        versionName = "4.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Update channel: the Karoo polls this manifest for new versions.
+        // Beta builds override it via MANIFEST_URL to point at the betafish repo.
+        manifestPlaceholders["manifestUrl"] = System.getenv("MANIFEST_URL")
+            ?: "https://github.com/jpweytjens/barberfish/releases/latest/download/manifest.json"
     }
 
     signingConfigs {
@@ -53,6 +59,35 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    lint {
+        // Findings older than the baseline are grandfathered; new warnings fail the build.
+        baseline = file("lint-baseline.xml")
+        warningsAsErrors = true
+        // Field layouts are RemoteViews on a bike computer; there is no screen reader to serve.
+        disable += "ContentDescription"
+        // Dependency freshness is a maintenance task, not a per-commit check.
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+        // targetSdk 34 is a deliberate choice for the Karoo, not a lag to be flagged.
+        disable += "OldTargetApi"
+    }
+}
+
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+}
+
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+    baseline = rootProject.file("config/detekt/baseline.xml")
 }
 
 tasks.register("generateManifest") {
@@ -71,7 +106,8 @@ tasks.register("generateManifest") {
             "latestVersionCode" to android.defaultConfig.versionCode,
             "developer" to "github.com/jpweytjens",
             "description" to "Barberfish keeps Hammerheads sharp, on your handlebars and in the ocean. Native-feeling data field enhancements for the Hammerhead Karoo.",
-            "releaseNotes" to (System.getenv("RELEASE_NOTES") ?: "")
+            "releaseNotes" to (System.getenv("RELEASE_NOTES") ?: ""),
+            "tags" to listOf("performance")
         )
 
         val gson = groovy.json.JsonBuilder(manifest).toPrettyString()
@@ -89,4 +125,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

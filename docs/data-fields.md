@@ -1,0 +1,112 @@
+# Data fields
+
+Every data field Barberfish provides, rendered as it appears on the Karoo:
+the single-cell fields first, then the 3- and 4-column HUD strips.
+
+<img src="screenshots/all_fields.png" alt="Every Barberfish field rendered from its live preview, with the 3-column and 4-column HUD strips at the bottom">
+
+Below, the same fields by category, with the palette, threshold, format and
+smoothing options each one supports; all are set per field in the Barberfish
+app, with live previews, and apply mid-ride. The [HUD](hud.md) has a page
+of its own, as do [Profile and Overview](elevation-profile.md).
+
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2" align="left">Data field</th>
+      <th colspan="4" align="center">Enhancements</th>
+    </tr>
+    <tr>
+      <th align="left">Palette</th>
+      <th align="left">Threshold</th>
+      <th align="left">Format</th>
+      <th align="left">Smoothing</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><th colspan="5" align="center">HUD</th></tr>
+    <tr><td>HUD</td><td>per-slot</td><td>per-slot</td><td>per-slot</td><td>per-slot</td></tr>
+    <tr><th colspan="5" align="center">Power</th></tr>
+    <tr><td>Power</td><td>Zone</td><td></td><td></td><td>Instant / 3s / 5s / 10s / 30s / 20m / 1h</td></tr>
+    <tr><td>Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>NP</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Lap Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Last Lap Avg Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Power Zone</td><td>Zone</td><td></td><td>int / float</td><td></td></tr>
+    <tr><td>Max Power</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Heart Rate</th></tr>
+    <tr><td>HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Lap Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Last Lap Avg HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>%Max HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>Max HR</td><td>Zone</td><td></td><td></td><td></td></tr>
+    <tr><td>HR Zone</td><td>Zone</td><td></td><td>int / float</td><td></td></tr>
+    <tr><th colspan="5" align="center">Speed</th></tr>
+    <tr><td>Speed</td><td></td><td>Fixed / Avg total / Avg moving</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
+    <tr><td>Avg Speed (Total)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
+    <tr><td>Avg Speed (Moving)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Cadence</th></tr>
+    <tr><td>Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
+    <tr><th colspan="5" align="center">Climbing</th></tr>
+    <tr><td>Grade</td><td>Grade</td><td></td><td></td><td>OLS (30 m window)</td></tr>
+    <tr><td>Profile</td><td>Grade</td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Navigation</th></tr>
+    <tr><td>Distance</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Distance Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Ascent Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Descent Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Ride Remaining</td><td></td><td></td><td></td><td></td></tr>
+    <tr><td>Overview</td><td></td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Time</th></tr>
+    <tr><td>Elapsed</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Moving</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Paused</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Last Lap</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><th colspan="5" align="center">ETA</th></tr>
+    <tr><td>Remaining ride time</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to destination</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time of arrival</td><td></td><td></td><td></td><td></td></tr>
+    <tr><th colspan="5" align="center">Daylight</th></tr>
+    <tr><td>Time to sunrise</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to sunset</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to civil dawn</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+    <tr><td>Time to civil dusk</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
+  </tbody>
+</table>
+
+## Duration formats
+
+Duration fields (time, ETA, daylight) use one of three formats, all unambiguous at any length:
+
+| Format   | Under an hour | Over an hour |
+| -------- | ------------- | ------------ |
+| Racing   | `23'45"`      | `1h23'45"`   |
+| Clock    | `0:23:45`     | `1:23:45`    |
+| Segments | `23m45s`      | `1h23m45s`   |
+
+Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`) display per field.
+
+## Thresholds
+
+Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands. The scale itself is documented in [Threshold colors](color-palettes.md#threshold-colors).
+
+<img src="screenshots/threshold_controls.jpg" width="360" alt="The Speed field's threshold controls: a source picker offering Fixed, Avg total and Avg moving, a target of 30 km/h, and under and over margins of 10 percent">
+
+The source picker is what sets Speed apart: Fixed compares against the target you type, Avg total and Avg moving against your own average so far. Under and Over set how far below and above the target, as a percentage of it, the color reaches full red or full green.
+
+<table>
+  <tr>
+    <td align="center">Target mode around a 30 km/h target</td>
+    <td align="center">Range mode across a 20 to 30 km/h range</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="palettes/threshold-legend-target.svg" alt="Speeds around a 30 km/h target: red below, fading through neutral at the target, green above"></td>
+    <td align="center"><img src="palettes/threshold-legend-range.svg" alt="Speeds across a 20 to 30 km/h range: red then orange below min, green within, orange then red above max"></td>
+  </tr>
+</table>
+
+## Average speed variants
+
+Average speed comes in two variants: Total and Moving. Total includes paused time, useful for ultra-distance events and [ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) checkpoint speeds. Moving excludes paused time.

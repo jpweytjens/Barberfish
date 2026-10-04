@@ -3,10 +3,11 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.HRFieldConfig
-import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamHRFieldConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
@@ -29,12 +30,16 @@ class LapAvgHRField(private val karooSystem: KarooSystemService) :
             cfg: HRFieldConfig,
             profile: UserProfile,
             zones: ZoneConfig,
-        ): List<FieldState> = AvgHRField.previewStates(
-            cfg, profile, zones,
-            label = "Lap Avg HR",
-            iconRes = R.drawable.ic_lap,
-            secondaryIconRes = R.drawable.ic_avg_hr,
-        )
+        ): List<FieldState> =
+            AvgHRField.previewStates(
+                cfg,
+                profile,
+                zones,
+                label = "Lap Avg HR",
+                iconRes = R.drawable.ic_lap,
+                secondaryIconRes = R.drawable.ic_avg_hr,
+                bpmValues = PreviewRide.lapAvgHrBpm,
+            )
     }
 
     override fun liveFlow(context: Context): Flow<FieldState> =
@@ -48,8 +53,13 @@ class LapAvgHRField(private val karooSystem: KarooSystemService) :
             .flatMapLatest { (cfg, profile, zones) ->
                 karooSystem.streamDataFlow(DataType.Type.AVERAGE_LAP_HR).map { state ->
                     AvgHRField.toFieldState(
-                        state, profile, zones, cfg.colorMode,
-                        "Lap Avg HR", R.drawable.ic_lap, R.drawable.ic_avg_hr,
+                        state,
+                        profile,
+                        zones,
+                        cfg.colorMode,
+                        "Lap Avg HR",
+                        R.drawable.ic_lap,
+                        R.drawable.ic_avg_hr,
                     )
                 }
             }

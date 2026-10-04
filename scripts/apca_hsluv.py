@@ -40,7 +40,6 @@ from palettes import (
     grade_band_names,
 )
 
-
 # Grade bands handled separately — see module docstring.
 _GRADE_SKIP = {"KAROO", "HSLUV"}
 
@@ -104,7 +103,9 @@ def _emit_grade_bands(
 def main() -> None:
     """Emit Kotlin blocks for night- and day-mode readable palette variants."""
     power_names = base_palette_names("Power")
-    grade_names = [n for n in grade_band_names() if not any(s in n for s in _GRADE_SKIP)]
+    grade_names = [
+        n for n in grade_band_names() if not any(s in n for s in _GRADE_SKIP)
+    ]
 
     for label, bg, suffix in [
         ("Night-mode readable palettes (target bg #000000)", DATAFIELD_BG_DARK, "Dark"),
@@ -115,7 +116,9 @@ def main() -> None:
         for name in power_names:
             _emit_palette(name, PALETTES_BY_KOTLIN_NAME[name], bg, suffix)
         for name in grade_names:
-            _emit_grade_bands(name, GRADE_BANDS_BY_KOTLIN_NAME[name], bg, suffix.upper())
+            _emit_grade_bands(
+                name, GRADE_BANDS_BY_KOTLIN_NAME[name], bg, suffix.upper()
+            )
 
 
 if __name__ == "__main__":

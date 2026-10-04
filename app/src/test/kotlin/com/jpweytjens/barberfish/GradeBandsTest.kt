@@ -1,0 +1,481 @@
+package com.jpweytjens.barberfish
+
+import androidx.compose.ui.graphics.Color
+import com.jpweytjens.barberfish.datatype.shared.FlatGrey
+import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
+import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
+import com.jpweytjens.barberfish.datatype.shared.gradeBands
+import com.jpweytjens.barberfish.datatype.shared.gradeColor
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
+import com.jpweytjens.barberfish.datatype.shared.zeroStraddlingBand
+import com.jpweytjens.barberfish.extension.GradePalette
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Test
+
+class GradeBandsTest {
+
+    private val NEUTRAL = Color(0xFFC4C4C4)
+    private val zeroStraddling = setOf(GradePalette.BARBERFISH)
+
+    @Test
+    fun karoo_bands_are_ordered_low_to_high_with_open_ends() {
+        val bands = gradeBands(GradePalette.KAROO, readable = false)
+        assertNull("lowest band has an open low end", bands.first().lo)
+        assertNull("highest band has an open high end", bands.last().hi)
+        val los = bands.drop(1).map { it.lo }
+        assertEquals(listOf(2.0, 5.0, 8.0, 11.0, 14.0, 20.0), los)
+    }
+
+    @Test
+    fun bands_tile_the_axis_without_gaps() {
+        GradePalette.entries.forEach { palette ->
+            val bands = gradeBands(palette, readable = false)
+            bands.zipWithNext().forEach { (a, b) ->
+                assertEquals("$palette: band edges must meet", a.hi, b.lo)
+            }
+        }
+    }
+
+    // Only the colours differ between the readable variants. A threshold that drifted in one of
+    // them would move a band for the fields while leaving the selectors' stops where they are:
+    // gradeBandStops reads the base tables, gradeBandColor and gradeColor the readable ones.
+    @Test
+    fun every_readable_variant_keeps_the_base_thresholds() {
+        GradePalette.entries.forEach { palette ->
+            val base = gradeBands(palette, readable = false, isNightMode = false)
+            listOf(false to true, true to false, true to true).forEach { (readable, night) ->
+                assertEquals(
+                    "$palette readable=$readable night=$night",
+                    base.map { it.lo to it.hi },
+                    gradeBands(palette, readable, night).map { it.lo to it.hi },
+                )
+            }
+        }
+    }
+
+    @Test
+    fun gradeColor_returns_null_below_zero_for_one_sided_palettes() {
+        val oneSided = GradePalette.entries.filter { gradeBandStops(it).descent.isEmpty() }
+        oneSided.forEach { palette ->
+            assertNotNull(
+                "$palette should color a flat/climbing grade",
+                gradeColor(0.0, palette, readable = false),
+            )
+            assertNull(
+                "$palette must not color a descent",
+                gradeColor(-0.1, palette, readable = false),
+            )
+        }
+    }
+
+    @Test
+    fun gradeColor_still_colors_descents_on_turbo() {
+        assertNotNull(gradeColor(-50.0, GradePalette.TURBO, readable = false))
+    }
+
+    @Test
+    fun grades_inside_the_edges_take_the_neutral() {
+        val c =
+            gradeBandColor(
+                grade = 3.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 8.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
+        assertEquals(NEUTRAL, c)
+    }
+
+    @Test
+    fun grades_outside_the_edges_take_their_own_band_colour() {
+        val c =
+            gradeBandColor(
+                grade = 9.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 8.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
+        assertEquals(Color(0xFFF08868), c)
+    }
+
+    // The edge itself is coloured, on both sides. The map rounds a cell's mean grade to 0.01 per
+    // cent precisely so a near-edge grade lands on the edge, which decides which way it goes.
+
+    @Test
+    fun a_grade_on_the_climb_edge_takes_its_band_colour() {
+        val c =
+            gradeBandColor(
+                grade = 8.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 8.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
+        assertEquals(Color(0xFFF08868), c)
+    }
+
+    @Test
+    fun a_grade_on_the_descent_edge_takes_its_band_colour() {
+        val c =
+            gradeBandColor(
+                grade = -6.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = null,
+                descentEdge = -6.0,
+                neutral = NEUTRAL,
+                readable = false,
+            )
+        assertEquals(Color(0xFF3298C4), c)
+    }
+
+    @Test
+    fun a_null_edge_greys_that_whole_side() {
+        val c =
+            gradeBandColor(
+                grade = 25.0,
+                palette = GradePalette.KAROO,
+                climbEdge = null,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
+        assertEquals(NEUTRAL, c)
+    }
+
+    // gradeBands' KDoc makes the floor guard the caller's job: the lowest band's open low end is
+    // not a real floor on a one-sided palette. A descent edge stored against one is the case that
+    // needs it, and gradeBandColor must answer it the way gradeColor already does.
+
+    @Test
+    fun a_descent_below_a_one_sided_palette_floor_stays_neutral() {
+        val oneSided = GradePalette.entries.filter { gradeBandStops(it).descent.isEmpty() }
+        oneSided.forEach { palette ->
+            val c =
+                gradeBandColor(
+                    grade = -5.0,
+                    palette = palette,
+                    climbEdge = 2.0,
+                    descentEdge = -3.0,
+                    neutral = NEUTRAL,
+                    readable = false,
+                )
+            assertEquals("$palette must not colour a descent", NEUTRAL, c)
+            assertNull("$palette gradeColor agrees", gradeColor(-5.0, palette, readable = false))
+        }
+    }
+
+    @Test
+    fun two_sided_palettes_still_colour_their_deepest_descents() {
+        val twoSided = GradePalette.entries.filter { gradeBandStops(it).descent.isNotEmpty() }
+        twoSided.forEach { palette ->
+            val c =
+                gradeBandColor(
+                    grade = -50.0,
+                    palette = palette,
+                    climbEdge = 2.0,
+                    descentEdge = -3.0,
+                    neutral = NEUTRAL,
+                    readable = false,
+                )
+            assertNotEquals("$palette must colour a deep descent", NEUTRAL, c)
+        }
+    }
+
+    @Test
+    fun barberfish_has_a_neutral_flat_band_and_three_descent_bands() {
+        val bands = gradeBands(GradePalette.BARBERFISH, readable = false)
+        assertEquals(10, bands.size)
+        val flat = bands.single { it.lo == -2.0 }
+        assertEquals(2.0, flat.hi)
+        assertEquals(Color(0xFF5CC066), flat.color)
+        assertEquals(3, bands.count { (it.hi ?: Double.POSITIVE_INFINITY) <= 0.0 })
+    }
+
+    // Exactly 0.0 needs no special branch: it is coloured iff an edge at or across zero
+    // claims it, which reproduces the old explicit zero case.
+    // The Barberfish cases pass a sentinel neutral so the containing-band assertion cannot
+    // be satisfied by the neutral leaking through.
+
+    @Test
+    fun an_exact_zero_grade_takes_its_containing_band_when_climbs_are_off() {
+        val sentinel = Color(0xFF123456)
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = 0.0,
+                descentEdge = 0.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(Color(0xFF5CC066), c)
+    }
+
+    @Test
+    fun an_exact_zero_grade_takes_the_flattest_band_on_a_zero_opening_palette() {
+        val flattest = gradeBands(GradePalette.KAROO, readable = false).first().color
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.KAROO,
+                climbEdge = 0.0,
+                descentEdge = null,
+                neutral = NEUTRAL,
+                readable = false,
+            )
+        assertEquals(flattest, c)
+    }
+
+    @Test
+    fun an_exact_zero_grade_is_coloured_by_a_zero_descent_edge_alone() {
+        val sentinel = Color(0xFF123456)
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = 2.0,
+                descentEdge = 0.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(Color(0xFF5CC066), c)
+    }
+
+    // The map paints every cell, so what "uncoloured" looks like is itself a palette
+    // decision. Barberfish keeps its flat band and the map neutral one
+    // colour; palettes without a band strictly containing zero keep the shared grey.
+
+    @Test
+    fun map_neutral_is_the_flat_band_for_zero_straddling_palettes_and_flatgrey_elsewhere() {
+        zeroStraddling.forEach { palette ->
+            assertEquals(
+                "$palette",
+                gradeBands(palette, readable = false).single { it.lo == -2.0 }.color,
+                mapNeutral(palette, readable = false),
+            )
+        }
+        GradePalette.entries
+            .filter { it !in zeroStraddling }
+            .forEach { palette ->
+                assertEquals("$palette", FlatGrey, mapNeutral(palette, readable = false))
+            }
+    }
+
+    @Test
+    fun an_exact_zero_grade_stays_neutral_inside_nonzero_edges() {
+        val sentinel = Color(0xFF123456)
+        val c =
+            gradeBandColor(
+                grade = 0.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = 2.0,
+                descentEdge = -2.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(sentinel, c)
+    }
+
+    @Test
+    fun edge_zero_is_fully_on() {
+        val bands = gradeBands(GradePalette.TURBO, readable = false)
+        val lime = bands.first { it.lo == 0.0 }.color
+        val mint = bands.first { it.hi == 0.0 }.color
+        assertEquals(
+            lime,
+            gradeBandColor(1.5, GradePalette.TURBO, 0.0, null, NEUTRAL, readable = false),
+        )
+        assertEquals(
+            mint,
+            gradeBandColor(-1.5, GradePalette.TURBO, null, 0.0, NEUTRAL, readable = false),
+        )
+        // Exactly 0.0 belongs to the fully-on side's containing band.
+        assertEquals(
+            lime,
+            gradeBandColor(0.0, GradePalette.TURBO, 0.0, null, NEUTRAL, readable = false),
+        )
+    }
+
+    // One lookup answers "does this palette have a designed rest state": mapNeutral paints its
+    // colour, and the selector's crossover stops sit at its far edges, so they cannot disagree.
+
+    @Test
+    fun the_zero_straddling_band_is_the_flat_band_and_absent_elsewhere() {
+        zeroStraddling.forEach { palette ->
+            val flat = zeroStraddlingBand(palette, readable = false)
+            assertEquals("$palette", -2.0, flat?.lo)
+            assertEquals("$palette", 2.0, flat?.hi)
+        }
+        assertEquals(
+            Color(0xFF5CC066),
+            zeroStraddlingBand(GradePalette.BARBERFISH, readable = false)?.color,
+        )
+        GradePalette.entries
+            .filter { it !in zeroStraddling }
+            .forEach { palette ->
+                assertNull("$palette", zeroStraddlingBand(palette, readable = false))
+            }
+    }
+
+    // Crossover edges: a climb edge at the flat band's lo, or a descent edge at its hi,
+    // reaches across zero and claims the flat band for that side's emphasis. Each side is a
+    // plain half-line; the sentinel neutral proves the flat colour comes from the band table.
+
+    @Test
+    fun a_crossover_climb_edge_colours_the_flat_band() {
+        val sentinel = Color(0xFF123456)
+        listOf(-2.0, -1.0, 0.0, 1.0).forEach { grade ->
+            val c =
+                gradeBandColor(
+                    grade = grade,
+                    palette = GradePalette.BARBERFISH,
+                    climbEdge = -2.0,
+                    descentEdge = null,
+                    neutral = sentinel,
+                    readable = false,
+                )
+            assertEquals("grade $grade", Color(0xFF5CC066), c)
+        }
+    }
+
+    @Test
+    fun a_crossover_descent_edge_colours_the_flat_band() {
+        val sentinel = Color(0xFF123456)
+        listOf(-1.0, 0.0, 1.0).forEach { grade ->
+            val c =
+                gradeBandColor(
+                    grade = grade,
+                    palette = GradePalette.BARBERFISH,
+                    climbEdge = null,
+                    descentEdge = 2.0,
+                    neutral = sentinel,
+                    readable = false,
+                )
+            assertEquals("grade $grade", Color(0xFF5CC066), c)
+        }
+        // Above the descent edge and with climbs off, nothing colours.
+        val above =
+            gradeBandColor(
+                grade = 3.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = null,
+                descentEdge = 2.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(sentinel, above)
+    }
+
+    @Test
+    fun a_crossover_climb_edge_leaves_the_descent_gap_neutral() {
+        // climb at -2, descent at -6: [-6, -2) sits inside both edges and stays neutral.
+        val sentinel = Color(0xFF123456)
+        val gap =
+            gradeBandColor(
+                grade = -4.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = -2.0,
+                descentEdge = -6.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(sentinel, gap)
+        val steep =
+            gradeBandColor(
+                grade = -7.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = -2.0,
+                descentEdge = -6.0,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(Color(0xFF1A74B3), steep)
+    }
+
+    @Test
+    fun meeting_handles_colour_every_band() {
+        val sentinel = Color(0xFF123456)
+        val grades = listOf(-12.0, -4.0, -1.0, 0.0, 1.0, 3.0, 22.0)
+        // Meet at -2 and meet at +2 both mean everything; Turbo's meet at 0 already does.
+        listOf(-2.0 to -2.0, 2.0 to 2.0).forEach { (climb, descent) ->
+            grades.forEach { grade ->
+                val c =
+                    gradeBandColor(
+                        grade = grade,
+                        palette = GradePalette.BARBERFISH,
+                        climbEdge = climb,
+                        descentEdge = descent,
+                        neutral = sentinel,
+                        readable = false,
+                    )
+                assertNotEquals("meet $climb/$descent grade $grade", sentinel, c)
+            }
+        }
+    }
+
+    @Test
+    fun parked_off_edges_colour_nothing() {
+        // The stored Off sentinels must stay inert under the sign-agnostic predicate.
+        val sentinel = Color(0xFF123456)
+        val c =
+            gradeBandColor(
+                grade = 5.0,
+                palette = GradePalette.BARBERFISH,
+                climbEdge = Double.MAX_VALUE,
+                descentEdge = -Double.MAX_VALUE,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(sentinel, c)
+    }
+
+    // Stored edges survive a palette switch un-snapped, so a crossover edge from Barberfish
+    // can reach gradeBandColor under a palette with no crossover. The clamp keeps it from
+    // colouring across zero there: the old sign-split behaviour, byte for byte.
+
+    @Test
+    fun stale_crossover_edges_do_not_leak_across_zero() {
+        val sentinel = Color(0xFF123456)
+        // Descent edge +2 under Karoo: (0, 2] stays neutral.
+        listOf(0.5, 2.0).forEach { grade ->
+            val c =
+                gradeBandColor(
+                    grade = grade,
+                    palette = GradePalette.KAROO,
+                    climbEdge = null,
+                    descentEdge = 2.0,
+                    neutral = sentinel,
+                    readable = false,
+                )
+            assertEquals("grade $grade", sentinel, c)
+        }
+        // Climb edge -2 under Turbo: [-2, 0) stays neutral, the positive side still colours.
+        val negative =
+            gradeBandColor(
+                grade = -1.0,
+                palette = GradePalette.TURBO,
+                climbEdge = -2.0,
+                descentEdge = null,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertEquals(sentinel, negative)
+        val positive =
+            gradeBandColor(
+                grade = 1.0,
+                palette = GradePalette.TURBO,
+                climbEdge = -2.0,
+                descentEdge = null,
+                neutral = sentinel,
+                readable = false,
+            )
+        assertNotEquals(sentinel, positive)
+    }
+}

@@ -11,11 +11,20 @@ data class FieldState(
     val color: FieldColor,
     val iconRes: Int? = null,
     val secondaryIconRes: Int? = null,
+    // Optional second value row, rendered stacked below `primary` (Remaining effort).
+    val secondary: String? = null,
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    // false drops the icon's teal "connected" tint to the theme foreground. Native gates
+    // the ride-clock fields' icon green on the ride having started; everything else is
+    // stream-driven and stays true.
+    val liveIcon: Boolean = true,
+    // true only for the "No sensor" state: the source sensor is not paired at all. The HUD
+    // drops such a slot's column. Searching and idle states keep theirs.
+    val noSensor: Boolean = false,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =
-            FieldState("Searching...", label, FieldColor.StreamState, iconRes = iconRes)
+            FieldState("Searching…", label, FieldColor.StreamState, iconRes = iconRes)
 
         fun notAvailable(label: String = "", iconRes: Int? = null) =
             FieldState("Not available", label, FieldColor.StreamState, iconRes = iconRes)
@@ -25,6 +34,29 @@ data class FieldState(
 
         fun noLapsYet(label: String = "", iconRes: Int? = null) =
             FieldState("No laps yet", label, FieldColor.StreamState, iconRes = iconRes)
+
+        // Each replaces the generic "Not available" where the field knows why
+        // its data is absent, matching the native fields' vocabulary.
+        fun noSensor(label: String = "", iconRes: Int? = null) =
+            FieldState(
+                "No sensor",
+                label,
+                FieldColor.StreamState,
+                iconRes = iconRes,
+                noSensor = true,
+            )
+
+        fun noRoute(label: String = "", iconRes: Int? = null) =
+            FieldState("No route", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun offRoute(label: String = "", iconRes: Int? = null) =
+            FieldState("Off route", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun noGps(label: String = "", iconRes: Int? = null) =
+            FieldState("No GPS signal", label, FieldColor.StreamState, iconRes = iconRes)
+
+        fun needs30sPower(label: String = "", iconRes: Int? = null) =
+            FieldState("Needs 30s power data", label, FieldColor.StreamState, iconRes = iconRes)
     }
 }
 
@@ -60,7 +92,8 @@ sealed interface FieldColor {
 
     data object Muted : FieldColor // reserved — #7D7D7D grey
 
-    data object StreamState : FieldColor // SDK non-Streaming state — white ibm-plex-sans-condensed in stream_state_tv
+    data object StreamState :
+        FieldColor // SDK non-Streaming state — white ibm-plex-sans-condensed in stream_state_tv
 
     // percent: grade as a percentage (e.g. 5.0 = 5%). Coloring based on gradient palette.
     data class Grade(val percent: Double, val palette: GradePalette) : FieldColor
@@ -74,9 +107,10 @@ fun zoneFieldColor(
     isHr: Boolean,
 ): FieldColor =
     if (colorMode == ZoneColorMode.NONE) FieldColor.Default
-    else FieldColor.Zone(
-        zone,
-        (if (isHr) profile.heartRateZones else profile.powerZones).size.coerceAtLeast(1),
-        if (isHr) zones.hrPalette else zones.powerPalette,
-        isHr = isHr,
-    )
+    else
+        FieldColor.Zone(
+            zone,
+            (if (isHr) profile.heartRateZones else profile.powerZones).size.coerceAtLeast(1),
+            if (isHr) zones.hrPalette else zones.powerPalette,
+            isHr = isHr,
+        )

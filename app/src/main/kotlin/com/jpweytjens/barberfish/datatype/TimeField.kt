@@ -4,20 +4,24 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
-import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
+import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.TimeFormat
 import com.jpweytjens.barberfish.extension.lapNumberFrom
 import com.jpweytjens.barberfish.extension.streamDataFlow
+import com.jpweytjens.barberfish.extension.streamRideState
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
+import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 fun formatTime(seconds: Long, format: TimeFormat): String {
@@ -37,7 +41,12 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
     }
 }
 
-enum class TimeKind(val typeId: String, val label: String, val iconRes: Int, val secondaryIconRes: Int? = null) {
+enum class TimeKind(
+    val typeId: String,
+    val label: String,
+    val iconRes: Int,
+    val secondaryIconRes: Int? = null,
+) {
     TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
     RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),
     PAUSED("time-paused", "Paused\ntime", R.drawable.ic_stopwatch),
@@ -54,74 +63,120 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
     BarberfishDataType("barberfish", kind.typeId) {
 
     companion object {
-        private val previewDurationSeconds = listOf(1665L, 5025L, 37425L)
+        // Per-kind durations from the shared preview ride so the family stays
+        // coherent at each index: elapsed = moving + paused, dawn precedes
+        // sunrise, dusk follows sunset.
+        private fun previewDurationSeconds(kind: TimeKind): List<Long> =
+            when (kind) {
+                TimeKind.TOTAL -> PreviewRide.elapsedS
+                TimeKind.RIDING -> PreviewRide.ridingS
+                TimeKind.PAUSED -> PreviewRide.pausedS
+                TimeKind.LAP -> PreviewRide.lapS
+                TimeKind.LAST_LAP -> PreviewRide.lastLapS
+                TimeKind.TIME_TO_SUNRISE -> PreviewRide.toSunriseS
+                TimeKind.TIME_TO_SUNSET -> PreviewRide.toSunsetS
+                TimeKind.TIME_TO_CIVIL_DAWN -> PreviewRide.toCivilDawnS
+                TimeKind.TIME_TO_CIVIL_DUSK -> PreviewRide.toCivilDuskS
+            }
 
         fun extractSeconds(state: StreamState, fieldKey: String): Long =
-            (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)
-                ?.let { ConvertType.TIME.apply(it).toLong() } ?: 0L
+            (state as? StreamState.Streaming)?.dataPoint?.values?.get(fieldKey)?.let {
+                ConvertType.TIME.apply(it).toLong()
+            } ?: 0L
 
-        fun toFieldState(seconds: Long, kind: TimeKind, format: TimeFormat): FieldState =
+        fun toFieldState(
+            seconds: Long,
+            kind: TimeKind,
+            format: TimeFormat,
+            liveIcon: Boolean = true,
+        ): FieldState =
             FieldState(
                 formatTime(seconds, format),
                 label = kind.label,
                 color = FieldColor.Default,
                 iconRes = kind.iconRes,
                 secondaryIconRes = kind.secondaryIconRes,
+                liveIcon = liveIcon,
             )
+
+        // Ride-clock kinds: native only tints their icon green once the ride has started
+        // (verified on-device: plain pre-ride, green while recording and paused). The
+        // daylight kinds stream regardless of ride state and keep the live tint.
+        internal val RIDE_CLOCK_KINDS =
+            setOf(TimeKind.TOTAL, TimeKind.RIDING, TimeKind.PAUSED, TimeKind.LAP, TimeKind.LAST_LAP)
+
+        fun liveIconFlow(karooSystem: KarooSystemService, kind: TimeKind): Flow<Boolean> =
+            if (kind in RIDE_CLOCK_KINDS)
+                karooSystem.streamRideState().map { it !is RideState.Idle }
+            else flowOf(true)
 
         fun secondsFlow(karooSystem: KarooSystemService, kind: TimeKind): Flow<Long> =
             when (kind) {
                 TimeKind.TOTAL ->
-                    karooSystem.streamDataFlow(DataType.Type.RIDE_TIME)
-                        .map { extractSeconds(it, DataType.Field.RIDE_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.RIDE_TIME).map {
+                        extractSeconds(it, DataType.Field.RIDE_TIME)
+                    }
                 TimeKind.PAUSED ->
-                    karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME)
-                        .map { extractSeconds(it, DataType.Field.PAUSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME).map {
+                        extractSeconds(it, DataType.Field.PAUSED_TIME)
+                    }
                 TimeKind.RIDING ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME)
-                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map {
+                        extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                    }
                 TimeKind.TIME_TO_SUNRISE ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_SUNRISE) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_SUNRISE)
+                    }
                 TimeKind.TIME_TO_SUNSET ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNSET)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_SUNSET) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNSET).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_SUNSET)
+                    }
                 TimeKind.TIME_TO_CIVIL_DAWN ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DAWN)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DAWN) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DAWN).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DAWN)
+                    }
                 TimeKind.TIME_TO_CIVIL_DUSK ->
-                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DUSK)
-                        .map { extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DUSK) }
+                    karooSystem.streamDataFlow(DataType.Type.TIME_TO_CIVIL_DUSK).map {
+                        extractSeconds(it, DataType.Field.TIME_TO_CIVIL_DUSK)
+                    }
                 TimeKind.LAP ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAP)
-                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAP).map {
+                        extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                    }
                 TimeKind.LAST_LAP ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAST_LAP)
-                        .map { extractSeconds(it, DataType.Field.ELAPSED_TIME) }
+                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME_LAST_LAP).map {
+                        extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                    }
             }
 
         fun previewStates(cfg: TimeConfig, kind: TimeKind): List<FieldState> =
-            previewDurationSeconds.map { seconds -> toFieldState(seconds, kind, cfg.format) }
+            previewDurationSeconds(kind).map { seconds -> toFieldState(seconds, kind, cfg.format) }
     }
 
     override fun liveFlow(context: Context): Flow<FieldState> {
         val secondsFlow = secondsFlow(karooSystem, kind)
+        val liveIconFlow = liveIconFlow(karooSystem, kind)
         if (kind == TimeKind.LAST_LAP) {
-            val lapNumberFlow = karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER)
-                .map { lapNumberFrom(it) }
-            return combine(secondsFlow, lapNumberFlow, context.streamTimeConfig()) { seconds, lapNumber, cfg ->
+            val lapNumberFlow =
+                karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER).map { lapNumberFrom(it) }
+            return combine(secondsFlow, lapNumberFlow, context.streamTimeConfig(), liveIconFlow) {
+                seconds,
+                lapNumber,
+                cfg,
+                liveIcon ->
                 if (lapNumber <= 1) FieldState.noLapsYet(kind.label, kind.iconRes)
-                else toFieldState(seconds, kind, cfg.format)
+                else toFieldState(seconds, kind, cfg.format, liveIcon)
             }
         }
-        return combine(secondsFlow, context.streamTimeConfig()) { seconds, cfg ->
-            toFieldState(seconds, kind, cfg.format)
+        return combine(secondsFlow, context.streamTimeConfig(), liveIconFlow) {
+            seconds,
+            cfg,
+            liveIcon ->
+            toFieldState(seconds, kind, cfg.format, liveIcon)
         }
     }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
-        context.streamTimeConfig().flatMapLatest { cfg ->
-            cyclePreview(previewStates(cfg, kind))
-        }
-
+        context.streamTimeConfig().flatMapLatest { cfg -> cyclePreview(previewStates(cfg, kind)) }
 }

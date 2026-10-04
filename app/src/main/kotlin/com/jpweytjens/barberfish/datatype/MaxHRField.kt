@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldLiveFlow
@@ -33,7 +34,9 @@ class MaxHRField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_hr
-            state.toErrorFieldState(LABEL, iconRes)?.let { return it }
+            state.toErrorFieldState(LABEL, iconRes, FieldState.noSensor(LABEL, iconRes))?.let {
+                return it
+            }
             val raw =
                 (state as StreamState.Streaming).dataPoint.values[DataType.Field.MAX_HR]
                     ?: return FieldState.notAvailable(LABEL, iconRes)
@@ -54,7 +57,7 @@ class MaxHRField(private val karooSystem: KarooSystemService) :
             profile: UserProfile,
             zones: ZoneConfig,
         ): List<FieldState> =
-            listOf(165, 172, 178, 184, 187, 190, 193).map { bpm ->
+            PreviewRide.maxHrBpm.map { bpm ->
                 val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
                 FieldState(
@@ -74,7 +77,9 @@ class MaxHRField(private val karooSystem: KarooSystemService) :
             zones = context.streamZoneConfig(),
             sdkType = DataType.Type.MAX_HR,
             karooSystem = karooSystem,
-        ) { state, profile, zones, cfg -> toFieldState(state, profile, zones, cfg.colorMode) }
+        ) { state, profile, zones, cfg ->
+            toFieldState(state, profile, zones, cfg.colorMode)
+        }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         zoneFieldPreviewFlow(

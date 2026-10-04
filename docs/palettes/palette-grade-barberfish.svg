@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="96" viewBox="0 0 720 96">
+<rect x="0.0" y="0" width="90.0" height="26" fill="#FFFFFF" />
+<text x="45.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#104F89" text-anchor="middle">-13</text>
+<rect x="90.0" y="0" width="72.0" height="26" fill="#FFFFFF" />
+<text x="126.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#1A74B3" text-anchor="middle">-8</text>
+<rect x="162.0" y="0" width="72.0" height="26" fill="#FFFFFF" />
+<text x="198.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#3298C4" text-anchor="middle">-4</text>
+<rect x="234.0" y="0" width="72.0" height="26" fill="#FFFFFF" />
+<text x="270.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#5CBF66" text-anchor="middle">0</text>
+<rect x="306.0" y="0" width="54.0" height="26" fill="#FFFFFF" />
+<text x="333.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#9AB70B" text-anchor="middle">4</text>
+<rect x="360.0" y="0" width="54.0" height="26" fill="#FFFFFF" />
+<text x="387.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#BCAD0C" text-anchor="middle">7</text>
+<rect x="414.0" y="0" width="54.0" height="26" fill="#FFFFFF" />
+<text x="441.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#EB990C" text-anchor="middle">10</text>
+<rect x="468.0" y="0" width="54.0" height="26" fill="#FFFFFF" />
+<text x="495.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#EA6607" text-anchor="middle">13</text>
+<rect x="522.0" y="0" width="108.0" height="26" fill="#FFFFFF" />
+<text x="576.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#D7040A" text-anchor="middle">17</text>
+<rect x="630.0" y="0" width="90.0" height="26" fill="#FFFFFF" />
+<text x="675.0" y="17.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#7404A8" text-anchor="middle">23</text>
+<rect x="0.0" y="26" width="90.0" height="26" fill="#000000" />
+<text x="45.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#3397FA" text-anchor="middle">-13</text>
+<rect x="90.0" y="26" width="72.0" height="26" fill="#000000" />
+<text x="126.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#269AEB" text-anchor="middle">-8</text>
+<rect x="162.0" y="26" width="72.0" height="26" fill="#000000" />
+<text x="198.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#359FCC" text-anchor="middle">-4</text>
+<rect x="234.0" y="26" width="72.0" height="26" fill="#000000" />
+<text x="270.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#5CC066" text-anchor="middle">0</text>
+<rect x="306.0" y="26" width="54.0" height="26" fill="#000000" />
+<text x="333.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#B2D40F" text-anchor="middle">4</text>
+<rect x="360.0" y="26" width="54.0" height="26" fill="#000000" />
+<text x="387.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F5E313" text-anchor="middle">7</text>
+<rect x="414.0" y="26" width="54.0" height="26" fill="#000000" />
+<text x="441.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#EC990C" text-anchor="middle">10</text>
+<rect x="468.0" y="26" width="54.0" height="26" fill="#000000" />
+<text x="495.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#F26A08" text-anchor="middle">13</text>
+<rect x="522.0" y="26" width="108.0" height="26" fill="#000000" />
+<text x="576.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FE5A5B" text-anchor="middle">17</text>
+<rect x="630.0" y="26" width="90.0" height="26" fill="#000000" />
+<text x="675.0" y="43.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#C06FFE" text-anchor="middle">23</text>
+<rect x="0.0" y="52" width="90.0" height="26" fill="#104F89" />
+<text x="45.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">-13</text>
+<rect x="90.0" y="52" width="72.0" height="26" fill="#1A74B3" />
+<text x="126.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">-8</text>
+<rect x="162.0" y="52" width="72.0" height="26" fill="#3298C4" />
+<text x="198.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">-4</text>
+<rect x="234.0" y="52" width="72.0" height="26" fill="#5CC066" />
+<text x="270.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">0</text>
+<rect x="306.0" y="52" width="54.0" height="26" fill="#B2D40F" />
+<text x="333.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">4</text>
+<rect x="360.0" y="52" width="54.0" height="26" fill="#F5E313" />
+<text x="387.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">7</text>
+<rect x="414.0" y="52" width="54.0" height="26" fill="#EC990C" />
+<text x="441.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#000000" text-anchor="middle">10</text>
+<rect x="468.0" y="52" width="54.0" height="26" fill="#EA6607" />
+<text x="495.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">13</text>
+<rect x="522.0" y="52" width="108.0" height="26" fill="#D7040A" />
+<text x="576.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">17</text>
+<rect x="630.0" y="52" width="90.0" height="26" fill="#7404A8" />
+<text x="675.0" y="69.0" font-family="-apple-system, system-ui, sans-serif" font-size="13" font-weight="600" fill="#FFFFFF" text-anchor="middle">23</text>
+<line x1="90.0" y1="78" x2="90.0" y2="81" stroke="#999" />
+<text x="90.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">-10</text>
+<line x1="162.0" y1="78" x2="162.0" y2="81" stroke="#999" />
+<text x="162.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">-6</text>
+<line x1="234.0" y1="78" x2="234.0" y2="81" stroke="#999" />
+<text x="234.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">-2</text>
+<line x1="306.0" y1="78" x2="306.0" y2="81" stroke="#999" />
+<text x="306.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">2</text>
+<line x1="360.0" y1="78" x2="360.0" y2="81" stroke="#999" />
+<text x="360.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">5</text>
+<line x1="414.0" y1="78" x2="414.0" y2="81" stroke="#999" />
+<text x="414.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">8</text>
+<line x1="468.0" y1="78" x2="468.0" y2="81" stroke="#999" />
+<text x="468.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">11</text>
+<line x1="522.0" y1="78" x2="522.0" y2="81" stroke="#999" />
+<text x="522.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">14</text>
+<line x1="630.0" y1="78" x2="630.0" y2="81" stroke="#999" />
+<text x="630.0" y="92" font-family="-apple-system, system-ui, sans-serif" font-size="10" fill="#777" text-anchor="middle">20</text>
+</svg>

@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""Convert a GPX track into a committed ClimbPreviewFixture.kt.
+
+The app decodes a precision-5 route polyline (lat/lng) and a precision-1
+elevation polyline whose channels are (distance_m, elevation_m) in 0.1 m units.
+This script optionally crops the track to a route-distance window (--range-km),
+rebases distance to 0 at the crop start, and emits both encoded polylines plus
+the LatLngBounds. Climb ranges are hand-specified via --climb (repeatable),
+matching the existing sparkline fixtures, in metres relative to the crop start.
+
+Usage:
+    python scripts/gpx_to_climb_fixture.py scripts/fixtures/fixture.gpx \
+        --range-km 167.5 169.25 --square \
+        > app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ClimbPreviewFixture.kt
+"""
+
+import argparse
+import math
+import sys
+import xml.etree.ElementTree as ET
+
+
+def parse_trkpts(path):
+    # GPX namespaces vary; match any *.trkpt by local name.
+    tree = ET.parse(path)
+    pts = []
+    for el in tree.iter():
+        if el.tag.split("}")[-1] != "trkpt":
+            continue
+        lat = float(el.attrib["lat"])
+        lon = float(el.attrib["lon"])
+        ele = 0.0
+        for child in el:
+            if child.tag.split("}")[-1] == "ele":
+                ele = float(child.text)
+        pts.append((lat, lon, ele))
+    return pts
+
+
+def encode_signed(value, sb):
+    v = ~(value << 1) if value < 0 else (value << 1)
+    while v >= 0x20:
+        sb.append(chr((0x20 | (v & 0x1F)) + 63))
+        v >>= 5
+    sb.append(chr(v + 63))
+
+
+def encode_polyline(pairs, factor):
+    # pairs: list of (a, b); each encoded as scaled signed deltas.
+    sb = []
+    prev_a = prev_b = 0
+    for a, b in pairs:
+        ia = round(a * factor)
+        ib = round(b * factor)
+        encode_signed(ia - prev_a, sb)
+        encode_signed(ib - prev_b, sb)
+        prev_a, prev_b = ia, ib
+    return "".join(sb)
+
+
+def mercator_y(lat_deg):
+    return math.log(math.tan(math.pi / 4 + math.radians(lat_deg) / 2))
+
+
+def inverse_mercator_y(y):
+    return math.degrees(2 * math.atan(math.exp(y)) - math.pi / 2)
+
+
+def square_bounds(min_lat, max_lat, min_lng, max_lng, margin):
+    # Expand to a 1:1 web-mercator aspect, centered, with a fractional margin so
+    # the whole route stays visible in a square box (no scroll) with breathing room.
+    cx = (min_lng + max_lng) / 2
+    cy = (mercator_y(min_lat) + mercator_y(max_lat)) / 2
+    x_span = math.radians(max_lng - min_lng)
+    y_span = mercator_y(max_lat) - mercator_y(min_lat)
+    half = max(x_span, y_span) / 2 * (1 + 2 * margin)
+    return (
+        inverse_mercator_y(cy - half),
+        inverse_mercator_y(cy + half),
+        cx - math.degrees(half),
+        cx + math.degrees(half),
+    )
+
+
+def haversine_m(p, q):
+    r = 6371000.0
+    lat1, lon1 = math.radians(p[0]), math.radians(p[1])
+    lat2, lon2 = math.radians(q[0]), math.radians(q[1])
+    dlat, dlon = lat2 - lat1, lon2 - lon1
+    h = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    )
+    return 2 * r * math.asin(math.sqrt(h))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("gpx")
+    ap.add_argument(
+        "--range-km",
+        nargs=2,
+        type=float,
+        metavar=("START_KM", "END_KM"),
+        help="crop to this cumulative route-distance window before rebasing",
+    )
+    ap.add_argument(
+        "--climb",
+        nargs=2,
+        type=float,
+        action="append",
+        metavar=("START_M", "END_M"),
+        help="hand-specified climb range in crop-relative metres; repeatable",
+    )
+    ap.add_argument(
+        "--square",
+        action="store_true",
+        help="pad bounds to a 1:1 web-mercator aspect, centered (stops the preview scrolling)",
+    )
+    ap.add_argument(
+        "--margin",
+        type=float,
+        default=0.06,
+        help="fractional breathing-room margin applied when squaring (default 0.06)",
+    )
+    ap.add_argument(
+        "--object",
+        default="ClimbPreviewFixture",
+        help="name of the emitted Kotlin object (default ClimbPreviewFixture)",
+    )
+    ap.add_argument(
+        "--package",
+        default="com.jpweytjens.barberfish.datatype.shared",
+        help="package of the emitted Kotlin file",
+    )
+    ap.add_argument(
+        "--doc",
+        default=None,
+        help="one-line KDoc summary; defaults to the climb-preview wording",
+    )
+    ap.add_argument(
+        "--minimal",
+        action="store_true",
+        help="emit only the two polylines, route length and point count. "
+        "Skips bounds and climbRanges, which unit tests do not need "
+        "and which pull in internal types from another package.",
+    )
+    args = ap.parse_args()
+
+    pts = parse_trkpts(args.gpx)
+    if len(pts) < 2:
+        sys.exit("need at least 2 track points")
+
+    # Cumulative distance over the full track, then optional crop to --range-km.
+    cum = [0.0]
+    for i in range(1, len(pts)):
+        cum.append(cum[-1] + haversine_m(pts[i - 1], pts[i]))
+    if args.range_km:
+        a, b = args.range_km[0] * 1000.0, args.range_km[1] * 1000.0
+        sel = [i for i, d in enumerate(cum) if a <= d <= b]
+        if len(sel) < 2:
+            sys.exit("crop window selected fewer than 2 points")
+        pts = [pts[i] for i in sel]
+
+    route_pairs = [(lat, lon) for (lat, lon, _) in pts]
+    route_poly = encode_polyline(route_pairs, 1e5)
+
+    dist = 0.0
+    elev_pairs = [(0.0, pts[0][2])]
+    for i in range(1, len(pts)):
+        dist += haversine_m(pts[i - 1], pts[i])
+        elev_pairs.append((dist, pts[i][2]))
+    elev_poly = encode_polyline(elev_pairs, 10.0)  # precision-1, 0.1 m units
+
+    lats = [p[0] for p in pts]
+    lons = [p[1] for p in pts]
+    min_lat, max_lat = min(lats), max(lats)
+    min_lng, max_lng = min(lons), max(lons)
+    if args.square:
+        min_lat, max_lat, min_lng, max_lng = square_bounds(
+            min_lat, max_lat, min_lng, max_lng, args.margin
+        )
+    climbs = args.climb or [[0.0, dist]]
+    climb_kt = ", ".join(f"{s} to {e}" for s, e in climbs)
+
+    esc = lambda s: s.replace(chr(92), chr(92) + chr(92))
+    rng = (
+        f"Km {args.range_km[0]:g}-{args.range_km[1]:g}"
+        if args.range_km
+        else "Full track"
+    )
+
+    print("// Generated by scripts/gpx_to_climb_fixture.py - do not edit by hand.")
+    print(f"package {args.package}")
+    print()
+    if args.doc:
+        print(f"/** {args.doc} {rng}, {dist / 1000:.1f} km, {len(pts)} points. */")
+    else:
+        print(
+            f'/** Route fixture for the climb overlay config preview. {rng} of "Reina":'
+        )
+        print(" *  the Collao Laguar por Castells climb. */")
+    print("// An encoded polyline is one token; it cannot be wrapped.")
+    print('@Suppress("MaxLineLength")')
+    print(f"internal object {args.object} {{")
+    print(f'    const val routePolyline = "{esc(route_poly)}"')
+    print(f'    const val elevationPolyline = "{esc(elev_poly)}"')
+    if args.minimal:
+        print(f"    const val routeLengthM = {dist}")
+        print(f"    const val pointCount = {len(pts)}")
+    else:
+        print("    val bounds = LatLngBounds(")
+        print(f"        minLat = {min_lat}, maxLat = {max_lat},")
+        print(f"        minLng = {min_lng}, maxLng = {max_lng},")
+        print("    )")
+        print(f"    val climbRanges = listOf<Pair<Double, Double>>({climb_kt})")
+    print("}")
+
+
+if __name__ == "__main__":
+    main()

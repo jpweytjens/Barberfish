@@ -9,14 +9,19 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
+import com.jpweytjens.barberfish.datatype.shared.snapGradeEdges
+import com.jpweytjens.barberfish.datatype.shared.zeroStraddlingBand
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNames
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "barberfish")
 
@@ -25,15 +30,14 @@ private val json = Json {
     encodeDefaults = true
 }
 
+/** Decodes one stored config from a preferences snapshot, falling back to [default]. */
+private inline fun <reified T> Preferences.config(key: Preferences.Key<String>, default: T): T =
+    this[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() } ?: default
+
 private inline fun <reified T> Context.streamConfig(
     key: Preferences.Key<String>,
     default: T,
-): Flow<T> =
-    dataStore.data
-        .map { prefs ->
-            prefs[key]?.let { runCatching { json.decodeFromString<T>(it) }.getOrNull() } ?: default
-        }
-        .distinctUntilChanged()
+): Flow<T> = dataStore.data.map { it.config(key, default) }.distinctUntilChanged()
 
 private suspend inline fun <reified T> Context.saveConfig(
     key: Preferences.Key<String>,
@@ -100,6 +104,14 @@ sealed interface HUDSlotField {
 
     @Serializable data object Grade : HUDSlotField
 
+    @Serializable data object Distance : HUDSlotField
+
+    @Serializable data object DistanceRemaining : HUDSlotField
+
+    @Serializable data object ElevationRemaining : HUDSlotField
+
+    @Serializable data object DescentRemaining : HUDSlotField
+
     @Serializable data class AvgSpeed(val includePaused: Boolean = false) : HUDSlotField
 
     @Serializable data class Time(val kind: TimeKind = TimeKind.TOTAL) : HUDSlotField
@@ -116,15 +128,29 @@ data class HUDSlotConfig(
     val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
     val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
+    val gradePrecision: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
+    val gradeShowPercentSign: Boolean = true,
 )
 
 @Serializable
 enum class ElevationSimplification(val label: String, val minAreaM2: Float) {
     NONE("Off", 0f),
-    MILD("Mild", 25f),      // just above the 21 m² rainbow-noise floor
-    MEDIUM("Medium", 60f),  // merges most micro-wiggles
-    HEAVY("Max", 120f),     // abstract blocks; preserves sharp flat→climb corners
+    MILD("Mild", 25f), // just above the 21 m² rainbow-noise floor
+    MEDIUM("Medium", 60f), // merges most micro-wiggles
+    HEAVY("Max", 120f), // abstract blocks; preserves sharp flat→climb corners
+}
+
+// Whole-route overview simplification. Uses a vertex budget (target point count) rather
+// than an absolute m² area floor: at full-route zoom an area threshold removes only
+// sub-pixel noise, whereas a fixed vertex count visibly coarsens the profile and reads the
+// same on a 20 km route or a 200 km one. NONE keeps every point.
+@Serializable
+enum class RouteSimplification(val label: String, val targetCount: Int) {
+    NONE("Off", Int.MAX_VALUE),
+    MILD("Mild", 120),
+    MEDIUM("Medium", 50),
+    HEAVY("Max", 20),
 }
 
 @Serializable
@@ -143,7 +169,46 @@ enum class ElevationZoom(val label: String, val minRangeM: Float) {
 }
 
 @Serializable
-enum class SparklineMode { OFF, CLIMBS, ON }
+enum class SparklineMode {
+    OFF,
+    CLIMBS,
+    ON,
+}
+
+/**
+ * The (climb, descent) grade edges a stored pair of band-skip counts means, read off [palette]'s
+ * own band stops.
+ *
+ * Counts stopped being portable when 4.x added the Barberfish palette: its climb bands have no 0.0
+ * entry (they jump straight from 2.0 to -2.0), so the same count resolves to a different threshold
+ * on Barberfish than on the other six palettes, which all open a band at 0.0. Persisting the
+ * threshold instead of the count keeps a stored config meaning what it meant when it was written.
+ *
+ * A count of 0 ("Off") means colour everything on that side. On a palette with a real zero edge
+ * that is an edge of 0.0. On a palette whose flat band straddles zero (Barberfish) the count starts
+ * at the first band past the flat band instead, so the migrated default leaves the palette's rest
+ * state uncoloured, as it always did, and never produces a bare 0.0 that `snapGradeEdges` would
+ * read as fully on. Counts of 1 and up step outward through the stops and clamp to the last one. A
+ * side with no bands at all (every palette but Barberfish and Turbo, on the descent side) has no
+ * edge and stays uncoloured.
+ */
+internal fun edgesFromSkipBands(
+    skipBands: Int,
+    skipBandsDescent: Int,
+    palette: GradePalette,
+): Pair<Double?, Double?> {
+    val stops = gradeBandStops(palette)
+    val floor = if (zeroStraddlingBand(palette, readable = false) != null) 1 else 0
+    return stops.climb.stopAt(maxOf(skipBands, floor)) to
+        stops.descent.stopAt(maxOf(skipBandsDescent, floor))
+}
+
+private fun List<Double>.stopAt(skipCount: Int): Double? =
+    when {
+        isEmpty() -> null
+        skipCount <= 0 -> 0.0
+        else -> this[(skipCount - 1).coerceAtMost(lastIndex)]
+    }
 
 @Serializable
 data class SparklineConfig(
@@ -152,16 +217,38 @@ data class SparklineConfig(
     val mode: SparklineMode? = null,
     @SerialName("enabled") private val legacyEnabled: Boolean? = null,
     val lookaheadKm: Int = 5,
+    // Legacy band-skip counts, superseded by climbEdge/descentEdge. Nothing writes them since
+    // the edge sliders replaced the count selectors; they persist as migration input for stored
+    // configs. Read them through `gradeEdges` rather than directly.
     val skipBands: Int = 1,
     val skipBandsDescent: Int = 0,
+    // Grade thresholds at and beyond which a side takes its band colour, written by the profile
+    // card's GradeBandSlider. Null means unset, so an absent key falls through to the migrated
+    // legacy counts instead of masking them; a side is turned off by parking its edge past the
+    // palette's last stop (the sliders store GRADE_EDGE_OFF), not by storing null.
+    val climbEdge: Double? = null,
+    val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
     val warp: SparklineWarp = SparklineWarp.MILD,
     val yZoom: ElevationZoom = ElevationZoom.NORMAL,
     val showClimbs: Boolean = true,
     val showPois: Boolean = true,
+    val showHeader: Boolean = true,
 ) {
     val hudMode: SparklineMode
         get() = mode ?: if (legacyEnabled == false) SparklineMode.OFF else SparklineMode.ON
+
+    /**
+     * The resolved (climb, descent) edges: the stored thresholds when set, otherwise the legacy
+     * counts migrated through [palette], both snapped to [palette]'s stops. This is the one
+     * authority for the effective edge: a stored value is palette independent and goes stale on a
+     * palette switch, so every renderer and the slider read through here and see the same snapped
+     * pair. A null in the result means that side stays uncoloured.
+     */
+    fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
+        val (climb, descent) = edgesFromSkipBands(skipBands, skipBandsDescent, palette)
+        return snapGradeEdges(palette, climbEdge ?: climb, descentEdge ?: descent)
+    }
 }
 
 @Serializable
@@ -174,17 +261,16 @@ data class HUDConfig(
     val sparkline: SparklineConfig = SparklineConfig(),
 )
 
-fun Context.streamHUDConfig(): Flow<HUDConfig> =
-    streamConfig(hudConfigKey, HUDConfig())
+fun Context.streamHUDConfig(): Flow<HUDConfig> = streamConfig(hudConfigKey, HUDConfig())
 
-suspend fun Context.saveHUDConfig(config: HUDConfig) =
-    saveConfig(hudConfigKey, config)
+suspend fun Context.saveHUDConfig(config: HUDConfig) = saveConfig(hudConfigKey, config)
 
 // --- SparklineConfig ---
 // Two independent instances: the HUD strip and the standalone elevation-sparkline field.
 // The HUD instance keeps the original "sparkline_config" key; the field instance has its
-// own key and, when unset, seeds its options from the HUD value at read time so a user's
-// tuned options carry over after upgrade instead of resetting to defaults.
+// own key and, when unset, falls back to plain defaults. The two are not linked: the field
+// never reads the HUD value, and its mode is always ON (see toFieldConfig) so a placed field
+// always renders, never inheriting the HUD's OFF/CLIMBS strip behaviour.
 
 // Resolves the HUD sparkline config: own key first, then the legacy embedded HUDConfig
 // blob (pre-split installs), then defaults.
@@ -192,28 +278,30 @@ private fun Preferences.hudSparklineConfig(): SparklineConfig =
     this[sparklineConfigKey]?.let {
         runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
     }
-        ?: this[hudConfigKey]?.let {
-            runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull()
-        }?.sparkline
+        ?: this[hudConfigKey]
+            ?.let { runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull() }
+            ?.sparkline
         ?: SparklineConfig()
 
 fun Context.streamHudSparklineConfig(): Flow<SparklineConfig> =
-    dataStore.data
-        .map { it.hudSparklineConfig() }
-        .distinctUntilChanged()
+    dataStore.data.map { it.hudSparklineConfig() }.distinctUntilChanged()
 
 suspend fun Context.saveHudSparklineConfig(config: SparklineConfig) =
     saveConfig(sparklineConfigKey, config)
 
+// Coerces a stored field config (or none) into the effective field config: plain defaults
+// when unset, and mode forced to ON so the standalone field always renders regardless of
+// any OFF/CLIMBS value baked in by a past tap or inherited before the surfaces were split.
+fun SparklineConfig?.toFieldConfig(): SparklineConfig =
+    (this ?: SparklineConfig()).copy(mode = SparklineMode.ON)
+
+private fun Preferences.fieldSparklineConfig(): SparklineConfig =
+    this[fieldSparklineConfigKey]
+        ?.let { runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull() }
+        .toFieldConfig()
+
 fun Context.streamFieldSparklineConfig(): Flow<SparklineConfig> =
-    dataStore.data
-        .map { prefs ->
-            prefs[fieldSparklineConfigKey]?.let {
-                runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
-            }
-                ?: prefs.hudSparklineConfig() // seed options from the HUD value until first saved
-        }
-        .distinctUntilChanged()
+    dataStore.data.map { it.fieldSparklineConfig() }.distinctUntilChanged()
 
 suspend fun Context.saveFieldSparklineConfig(config: SparklineConfig) =
     saveConfig(fieldSparklineConfigKey, config)
@@ -269,8 +357,7 @@ suspend fun Context.saveHRFieldConfig(kind: HRFieldKind = HRFieldKind.HR, config
 
 // --- HRMaxPercentFieldConfig ---
 
-@Serializable
-data class HRMaxPercentFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+@Serializable data class HRMaxPercentFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 private val hrMaxPercentFieldConfigKey = stringPreferencesKey("hr_max_percent_field_config")
 
@@ -282,8 +369,7 @@ suspend fun Context.saveHRMaxPercentFieldConfig(config: HRMaxPercentFieldConfig)
 
 // --- MaxHRFieldConfig ---
 
-@Serializable
-data class MaxHRFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+@Serializable data class MaxHRFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 private val maxHrFieldConfigKey = stringPreferencesKey("max_hr_field_config")
 
@@ -304,7 +390,7 @@ enum class ZoneDisplayMode(val label: String) {
 @Serializable
 data class HRZoneFieldConfig(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
 )
 
 private val hrZoneFieldConfigKey = stringPreferencesKey("hr_zone_field_config")
@@ -330,11 +416,15 @@ enum class SpeedSmoothingStream(val label: String, val typeId: String, val field
 // AVG_TOTAL / AVG_MOVING — the ride's running average (including / excluding paused time).
 // AVG sources are gated by ELAPSED_TIME >= 30 s so a near-zero startup avg doesn't flash colors.
 @Serializable
-enum class SpeedThresholdSource { FIXED, AVG_TOTAL, AVG_MOVING }
+enum class SpeedThresholdSource {
+    FIXED,
+    AVG_TOTAL,
+    AVG_MOVING,
+}
 
 @Serializable
 data class SpeedFieldConfig(
-    val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S3,
+    val smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0,
     val source: SpeedThresholdSource = SpeedThresholdSource.FIXED,
     val thresholdKph: Double = 0.0,
     val rangePercentBelow: Double = 10.0,
@@ -394,32 +484,97 @@ data class ZoneConfig(
     val gradePalette: GradePalette = GradePalette.KAROO,
 )
 
-fun Context.streamZoneConfig(): Flow<ZoneConfig> =
-    streamConfig(zoneConfigKey, ZoneConfig())
+fun Context.streamZoneConfig(): Flow<ZoneConfig> = streamConfig(zoneConfigKey, ZoneConfig())
 
-suspend fun Context.saveZoneConfig(config: ZoneConfig) =
-    saveConfig(zoneConfigKey, config)
+suspend fun Context.saveZoneConfig(config: ZoneConfig) = saveConfig(zoneConfigKey, config)
 
-// --- ClimberMapConfig ---
+/** Five stops for the grade-map chevron cadence blend (grade magnitude ↔ grade change). */
+enum class ChevronEmphasis(val alpha: Double, val label: String) {
+    GRADIENT(0.0, "Gradient"),
+    BALANCED(0.5, "Balanced"),
+    CHANGES(1.0, "Changes");
+
+    companion object {
+        /**
+         * The stop whose alpha is nearest [alpha]; [GradeMapConfig.chevronBlend] is the authority.
+         */
+        fun nearest(alpha: Double): ChevronEmphasis = entries.minBy {
+            kotlin.math.abs(it.alpha - alpha)
+        }
+    }
+}
+
+// --- GradeMapConfig ---
 
 @Serializable
-data class ClimberMapConfig(
+data class GradeMapConfig(
     val enabled: Boolean = true,
-    val showChevrons: Boolean = true,
     // When true, skipBands/simplification are taken from the field sparkline config
-    // at the consumer via resolveClimbTuning(); the two fields below are ignored.
+    // at the consumer via resolveGradeMapTuning(); the two fields below are ignored.
     val syncWithSparkline: Boolean = true,
+    // Legacy band-skip count, superseded by climbEdge/descentEdge. Read through `gradeEdges`.
+    // The map never had a descent count, so its descent edge migrates as if the count were 0.
     val skipBands: Int = 1,
+    // Written by the GRADE MAP card's GradeBandSlider when tuning is independent; a parked
+    // side stores GRADE_EDGE_OFF. Null means unset and falls through to the migrated legacy
+    // count above.
+    val climbEdge: Double? = null,
+    val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
+    val chevronBlend: Double = 0.5, // grade↔change cadence blend; ChevronEmphasis.nearest maps it
+) {
+    /**
+     * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,
+     * otherwise the legacy count migrated through [palette], both snapped to [palette]'s stops. A
+     * null in the result means that side stays uncoloured.
+     *
+     * WARNING: this is the overlay's own answer, not the effective one. It ignores
+     * [syncWithSparkline], which defaults to true, so a synced overlay follows the field
+     * sparkline's edges instead. Render paths must take theirs from `resolveGradeMapTuning(map,
+     * sparkline, palette)`, which applies the sync the same way it already does for the other
+     * shared settings.
+     *
+     * The descent side is the stored edge once the map card's descent handle has written one,
+     * otherwise the count-zero migration. Both snap like the climb side, so the migrated value
+     * reads as the palette's fully-on descent stop: 0 on Turbo, -2 on Barberfish, null on a
+     * one-sided palette. An unsynced overlay with no stored descent edge takes it from the field
+     * sparkline instead; see `resolveGradeMapTuning`.
+     */
+    fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
+        val (climb, descent) =
+            edgesFromSkipBands(skipBands, skipBandsDescent = 0, palette = palette)
+        return snapGradeEdges(palette, climbEdge ?: climb, descentEdge ?: descent)
+    }
+}
+
+private val gradeMapConfigKey = stringPreferencesKey("grade_map_config")
+
+fun Context.streamGradeMapConfig(): Flow<GradeMapConfig> =
+    streamConfig(gradeMapConfigKey, GradeMapConfig())
+
+suspend fun Context.saveGradeMapConfig(config: GradeMapConfig) =
+    saveConfig(gradeMapConfigKey, config)
+
+/**
+ * Id spans the last grade map emission minted, per symbol kind. The rideapp keeps drawn map symbols
+ * across extension process death and startMap restarts, so a fresh startMap hides `0 until span` of
+ * each kind before drawing — clearing whatever a dead predecessor left. Written before each
+ * emission so a death between write and draw errs towards over-hiding, which is a no-op.
+ */
+@Serializable
+data class GradeMapDrawnIdSpans(
+    val segments: Int = 0,
+    val chevrons: Int = 0,
+    val rejoinChevrons: Int = 0,
 )
 
-private val climberMapConfigKey = stringPreferencesKey("climber_map_config")
+private val gradeMapDrawnIdSpansKey = stringPreferencesKey("grade_map_drawn_id_spans")
 
-fun Context.streamClimberMapConfig(): Flow<ClimberMapConfig> =
-    streamConfig(climberMapConfigKey, ClimberMapConfig())
+fun Context.streamGradeMapDrawnIdSpans(): Flow<GradeMapDrawnIdSpans> =
+    streamConfig(gradeMapDrawnIdSpansKey, GradeMapDrawnIdSpans())
 
-suspend fun Context.saveClimberMapConfig(config: ClimberMapConfig) =
-    saveConfig(climberMapConfigKey, config)
+suspend fun Context.saveGradeMapDrawnIdSpans(spans: GradeMapDrawnIdSpans) =
+    saveConfig(gradeMapDrawnIdSpansKey, spans)
 
 // --- CadenceFieldConfig ---
 
@@ -475,8 +630,39 @@ suspend fun Context.saveAvgPowerFieldConfig(config: AvgPowerFieldConfig) =
 fun Context.streamNPFieldConfig(): Flow<NPFieldConfig> =
     streamConfig(npFieldConfigKey, NPFieldConfig())
 
-suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) =
-    saveConfig(npFieldConfigKey, config)
+suspend fun Context.saveNPFieldConfig(config: NPFieldConfig) = saveConfig(npFieldConfigKey, config)
+
+// --- EffortFieldConfig ---
+
+@Serializable data class EffortFieldConfig(val climbFirst: Boolean = false)
+
+private val effortFieldConfigKey = stringPreferencesKey("remaining_effort_field_config")
+
+fun Context.streamEffortFieldConfig(): Flow<EffortFieldConfig> =
+    streamConfig(effortFieldConfigKey, EffortFieldConfig())
+
+suspend fun Context.saveEffortFieldConfig(config: EffortFieldConfig) =
+    saveConfig(effortFieldConfigKey, config)
+
+// --- RouteRemainingConfig ---
+// Uses RouteSimplification (a vertex-budget enum) rather than the sparkline's m² floor: an
+// absolute area threshold is invisible at full-route zoom. Only simplification is exposed —
+// the field shows the whole route, so a Y-zoom floor would be meaningless. Default MEDIUM
+// gives a readable profile without erasing the route's shape.
+
+@Serializable
+data class RouteRemainingConfig(
+    val simplification: RouteSimplification = RouteSimplification.MEDIUM,
+    val showHeader: Boolean = true,
+)
+
+private val routeRemainingConfigKey = stringPreferencesKey("route_remaining_field_config")
+
+fun Context.streamRouteRemainingConfig(): Flow<RouteRemainingConfig> =
+    streamConfig(routeRemainingConfigKey, RouteRemainingConfig())
+
+suspend fun Context.saveRouteRemainingConfig(config: RouteRemainingConfig) =
+    saveConfig(routeRemainingConfigKey, config)
 
 // --- LapPowerFieldConfig ---
 
@@ -502,7 +688,7 @@ suspend fun Context.saveLapPowerFieldConfig(isLastLap: Boolean, config: LapPower
 @Serializable
 data class PowerZoneFieldConfig(
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
-    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.INTEGER,
+    val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
 )
 
 private val powerZoneFieldConfigKey = stringPreferencesKey("power_zone_field_config")
@@ -515,8 +701,7 @@ suspend fun Context.savePowerZoneFieldConfig(config: PowerZoneFieldConfig) =
 
 // --- MaxPowerFieldConfig ---
 
-@Serializable
-data class MaxPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+@Serializable data class MaxPowerFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
 
 private val maxPowerFieldConfigKey = stringPreferencesKey("max_power_field_config")
 
@@ -528,8 +713,11 @@ suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
 
 // --- GradeFieldConfig ---
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 enum class GradePalette(val label: String) {
+    // Betas stored this palette as SURGEONFISH before it took the house name.
+    @JsonNames("SURGEONFISH") BARBERFISH("Barberfish"),
     KAROO("Karoo"),
     WAHOO("Wahoo"),
     GARMIN("Garmin"),
@@ -538,7 +726,12 @@ enum class GradePalette(val label: String) {
     TURBO("Turbo"),
 }
 
-@Serializable data class GradeFieldConfig(val colorMode: ZoneColorMode = ZoneColorMode.TEXT)
+@Serializable
+data class GradeFieldConfig(
+    val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    val precision: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
+    val showPercentSign: Boolean = true,
+)
 
 fun Context.streamGradeFieldConfig(): Flow<GradeFieldConfig> =
     streamConfig(gradeFieldConfigKey, GradeFieldConfig())
@@ -548,18 +741,13 @@ suspend fun Context.saveGradeFieldConfig(config: GradeFieldConfig) =
 
 // --- ETAConfig ---
 
-@Serializable
-data class ETAConfig(
-    val priorSpeedKph: Double = 25.0,
-)
+@Serializable data class ETAConfig(val priorSpeedKph: Double = 25.0)
 
 private val etaConfigKey = stringPreferencesKey("eta_config")
 
-fun Context.streamETAConfig(): Flow<ETAConfig> =
-    streamConfig(etaConfigKey, ETAConfig())
+fun Context.streamETAConfig(): Flow<ETAConfig> = streamConfig(etaConfigKey, ETAConfig())
 
-suspend fun Context.saveETAConfig(config: ETAConfig) =
-    saveConfig(etaConfigKey, config)
+suspend fun Context.saveETAConfig(config: ETAConfig) = saveConfig(etaConfigKey, config)
 
 // --- TimeConfig ---
 
@@ -574,8 +762,120 @@ enum class TimeFormat(val label: String) {
 
 private val timeConfigKey = stringPreferencesKey("time_config")
 
-fun Context.streamTimeConfig(): Flow<TimeConfig> =
-    streamConfig(timeConfigKey, TimeConfig())
+fun Context.streamTimeConfig(): Flow<TimeConfig> = streamConfig(timeConfigKey, TimeConfig())
 
-suspend fun Context.saveTimeConfig(config: TimeConfig) =
-    saveConfig(timeConfigKey, config)
+suspend fun Context.saveTimeConfig(config: TimeConfig) = saveConfig(timeConfigKey, config)
+
+// --- GradePin ---
+// A pinned grade reading for screenshot captures. The ride-replay app drives GPS but not the
+// barometer the Grade field fits, so a replayed ride reads 0.0% throughout. Set through the
+// debug ConfigReceiver and honoured by debug builds only; a null percent means live.
+
+@Serializable data class GradePin(val percent: Float? = null)
+
+private val gradePinKey = stringPreferencesKey("grade_pin")
+
+fun Context.streamGradePin(): Flow<GradePin> = streamConfig(gradePinKey, GradePin())
+
+suspend fun Context.saveGradePin(pin: GradePin) = saveConfig(gradePinKey, pin)
+
+// --- DataFieldDesignConfig ---
+// Mirrors Karoo OS "Data Field Design" options the SDK does not expose to extensions
+// (Show Icons, Label Size). See docs/superpowers/specs/2026-06-07-data-field-design-design.md.
+
+@Serializable
+enum class LabelSize(val label: String) {
+    SMALL("Small"),
+    LARGE("Large"),
+}
+
+@Serializable
+data class DataFieldDesignConfig(
+    val showIcons: Boolean = true,
+    val labelSize: LabelSize = LabelSize.SMALL,
+)
+
+private val dataFieldDesignConfigKey = stringPreferencesKey("data_field_design_config")
+
+fun Context.streamDataFieldDesignConfig(): Flow<DataFieldDesignConfig> =
+    streamConfig(dataFieldDesignConfigKey, DataFieldDesignConfig())
+
+suspend fun Context.saveDataFieldDesignConfig(config: DataFieldDesignConfig) =
+    saveConfig(dataFieldDesignConfigKey, config)
+
+// --- ConfigSnapshot ---
+
+/**
+ * Every stored config decoded from one DataStore snapshot. A screen that shows all of them collects
+ * this once and gets one consistent reading per write, instead of one emission per key. Decoding
+ * goes through the same helpers as the per-key streams, so the two cannot drift.
+ */
+data class ConfigSnapshot(
+    val hud: HUDConfig,
+    val hudSparkline: SparklineConfig,
+    val fieldSparkline: SparklineConfig,
+    val gradeMap: GradeMapConfig,
+    val powerField: PowerFieldConfig,
+    val hrField: HRFieldConfig,
+    val avgHrField: HRFieldConfig,
+    val lapAvgHrField: HRFieldConfig,
+    val lastLapAvgHrField: HRFieldConfig,
+    val hrMaxPercentField: HRMaxPercentFieldConfig,
+    val maxHrField: MaxHRFieldConfig,
+    val hrZoneField: HRZoneFieldConfig,
+    val speedField: SpeedFieldConfig,
+    val cadenceField: CadenceFieldConfig,
+    val avgPowerField: AvgPowerFieldConfig,
+    val npField: NPFieldConfig,
+    val lapPowerField: LapPowerFieldConfig,
+    val lastLapPowerField: LapPowerFieldConfig,
+    val powerZoneField: PowerZoneFieldConfig,
+    val maxPowerField: MaxPowerFieldConfig,
+    val gradeField: GradeFieldConfig,
+    val avgSpeedTotal: AvgSpeedConfig,
+    val avgSpeedMoving: AvgSpeedConfig,
+    val time: TimeConfig,
+    val eta: ETAConfig,
+    val effortField: EffortFieldConfig,
+    val routeRemaining: RouteRemainingConfig,
+    val zone: ZoneConfig,
+    val dataFieldDesign: DataFieldDesignConfig,
+)
+
+fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
+    dataStore.data
+        .map { prefs ->
+            ConfigSnapshot(
+                hud = prefs.config(hudConfigKey, HUDConfig()),
+                hudSparkline = prefs.hudSparklineConfig(),
+                fieldSparkline = prefs.fieldSparklineConfig(),
+                gradeMap = prefs.config(gradeMapConfigKey, GradeMapConfig()),
+                powerField = prefs.config(powerFieldConfigKey, PowerFieldConfig()),
+                hrField = prefs.config(HRFieldKind.HR.key, HRFieldConfig()),
+                avgHrField = prefs.config(HRFieldKind.AVG.key, HRFieldConfig()),
+                lapAvgHrField = prefs.config(HRFieldKind.LAP_AVG.key, HRFieldConfig()),
+                lastLapAvgHrField = prefs.config(HRFieldKind.LAST_LAP_AVG.key, HRFieldConfig()),
+                hrMaxPercentField =
+                    prefs.config(hrMaxPercentFieldConfigKey, HRMaxPercentFieldConfig()),
+                maxHrField = prefs.config(maxHrFieldConfigKey, MaxHRFieldConfig()),
+                hrZoneField = prefs.config(hrZoneFieldConfigKey, HRZoneFieldConfig()),
+                speedField = prefs.config(speedFieldConfigKey, SpeedFieldConfig()),
+                cadenceField = prefs.config(cadenceFieldConfigKey, CadenceFieldConfig()),
+                avgPowerField = prefs.config(avgPowerFieldConfigKey, AvgPowerFieldConfig()),
+                npField = prefs.config(npFieldConfigKey, NPFieldConfig()),
+                lapPowerField = prefs.config(lapPowerFieldConfigKey, LapPowerFieldConfig()),
+                lastLapPowerField = prefs.config(lastLapPowerFieldConfigKey, LapPowerFieldConfig()),
+                powerZoneField = prefs.config(powerZoneFieldConfigKey, PowerZoneFieldConfig()),
+                maxPowerField = prefs.config(maxPowerFieldConfigKey, MaxPowerFieldConfig()),
+                gradeField = prefs.config(gradeFieldConfigKey, GradeFieldConfig()),
+                avgSpeedTotal = prefs.config(avgSpeedTotalConfigKey, AvgSpeedConfig()),
+                avgSpeedMoving = prefs.config(avgSpeedMovingConfigKey, AvgSpeedConfig()),
+                time = prefs.config(timeConfigKey, TimeConfig()),
+                eta = prefs.config(etaConfigKey, ETAConfig()),
+                effortField = prefs.config(effortFieldConfigKey, EffortFieldConfig()),
+                routeRemaining = prefs.config(routeRemainingConfigKey, RouteRemainingConfig()),
+                zone = prefs.config(zoneConfigKey, ZoneConfig()),
+                dataFieldDesign = prefs.config(dataFieldDesignConfigKey, DataFieldDesignConfig()),
+            )
+        }
+        .distinctUntilChanged()

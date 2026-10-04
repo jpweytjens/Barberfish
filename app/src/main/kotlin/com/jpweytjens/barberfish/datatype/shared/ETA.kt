@@ -6,9 +6,7 @@ const val EWMA_TAU_FAST_S = 300.0
 const val EWMA_TAU_SLOW_S = 3600.0
 const val EWMA_BLEND_W = 0.3
 
-data class AvgSpeedPrior(
-    val speedKph: Double = 25.0,
-)
+data class AvgSpeedPrior(val speedKph: Double = 25.0)
 
 data class ETAInput(
     val distanceRiddenM: Double,

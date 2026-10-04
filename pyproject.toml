@@ -1,7 +1,7 @@
 [project]
 name = "barberfish"
 version = "0.1.0"
-description = "Add your description here"
+description = "Tooling for the Barberfish Karoo extension: palette generation and APCA contrast tuning, README and docs SVG previews, GPX test fixtures, and on-device layout measurement. The extension itself is the Kotlin app under app/; this package only covers scripts/."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -9,3 +9,19 @@ dependencies = [
     "numpy>=2.4.4",
     "pillow>=12.2.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff==0.16.0",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+# Pyflakes, pycodestyle errors, import sorting, pyupgrade. The set the scripts
+# are clean under; widen only together with a cleanup commit.
+select = ["E4", "E7", "E9", "F", "I", "UP"]
+# E741: `l` is the conventional lightness name in the HSL/HSLuv code.
+# E731: a named lambda is fine at this script scale.
+ignore = ["E731", "E741"]

@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.hrZone
 import com.jpweytjens.barberfish.datatype.shared.zoneFieldColor
@@ -39,11 +40,23 @@ class HRMaxPercentField(private val karooSystem: KarooSystemService) :
             colorMode: ZoneColorMode,
         ): FieldState {
             val iconRes = R.drawable.ic_col_hr
-            percentState.toErrorFieldState(LABEL, iconRes)?.let { return it }
+            percentState
+                .toErrorFieldState(
+                    LABEL,
+                    iconRes,
+                    FieldState.noSensor(LABEL, iconRes),
+                )
+                ?.let {
+                    return it
+                }
             val percent =
-                (percentState as StreamState.Streaming).dataPoint.values[DataType.Field.PERCENT_MAX_HR]
+                (percentState as StreamState.Streaming)
+                    .dataPoint
+                    .values[DataType.Field.PERCENT_MAX_HR]
                     ?: return FieldState.notAvailable(LABEL, iconRes)
-            hrState.toErrorFieldState(LABEL, iconRes)?.let { return it }
+            hrState.toErrorFieldState(LABEL, iconRes, FieldState.noSensor(LABEL, iconRes))?.let {
+                return it
+            }
             val bpm =
                 (hrState as StreamState.Streaming).dataPoint.values[DataType.Field.HEART_RATE]
                     ?: return FieldState.notAvailable(LABEL, iconRes)
@@ -64,7 +77,7 @@ class HRMaxPercentField(private val karooSystem: KarooSystemService) :
             zones: ZoneConfig,
         ): List<FieldState> {
             val maxHr = profile.maxHr.takeIf { it > 0 } ?: 190
-            return listOf(85, 130, 152, 165, 172, 187, 145).map { bpm ->
+            return PreviewRide.hrBpm.map { bpm ->
                 val zone = hrZone(bpm.toDouble(), profile.heartRateZones)
                 val color = zoneFieldColor(zone, cfg.colorMode, profile, zones, isHr = true)
                 val percent = (bpm * 100.0 / maxHr).toInt()
