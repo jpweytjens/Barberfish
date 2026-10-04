@@ -91,6 +91,9 @@ wake()  { A shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true; }
 settle(){ sleep "${1:-1}"; }
 
 dump() { # refresh $UI with the current view hierarchy
+    # Clear the last dump first: on a screen that never idles (an animated preview) the dump fails,
+    # and the stale file would answer for a screen no longer shown.
+    rm -f "$UI"; A shell rm -f /sdcard/ui.xml >/dev/null 2>&1
     A shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
     A pull /sdcard/ui.xml "$UI" >/dev/null 2>&1
 }
