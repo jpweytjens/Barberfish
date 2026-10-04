@@ -32,7 +32,7 @@ Barberfish fields sit alongside the native ones, match their look, and quietly a
 - Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md).
 - [Threshold coloring](docs/data-fields.md#thresholds) for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
 
-The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mode, light mode, the native comparison, and the config screens. The [documentation index](docs/README.md) lists every guide.
+The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo. The [documentation index](docs/README.md) lists every guide.
 
 ## Data fields
 
