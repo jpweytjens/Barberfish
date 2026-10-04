@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.extension
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -51,6 +52,12 @@ private val fieldSparklineConfigKey = stringPreferencesKey("field_sparkline_conf
 // Persisted as "three_column_config" for backwards compatibility with installs from the
 // pre-4-column era; the HUDConfig blob covers both layouts now.
 private val hudConfigKey = stringPreferencesKey("three_column_config")
+// Map<profileId, HUDOverride>. Absent id: the profile has never been customized.
+private val hudOverridesKey = stringPreferencesKey("hud_profile_overrides")
+// Map<profileId, name>, accumulated by discovery, in discovery order.
+private val discoveredProfilesKey = stringPreferencesKey("discovered_profiles")
+// Id of the profile last reported active. Null until the first emission.
+private val activeProfileIdKey = stringPreferencesKey("active_profile_id")
 private val avgSpeedTotalConfigKey = stringPreferencesKey("avg_speed_total_config")
 private val avgSpeedMovingConfigKey = stringPreferencesKey("avg_speed_moving_config")
 private val zoneConfigKey = stringPreferencesKey("zone_config")
@@ -358,6 +365,70 @@ fun profileMenuIds(
     discovered: Map<String, String>,
     overrides: Map<String, HUDOverride>,
 ): List<String> = discovered.keys.toList() + overrides.keys.filterNot { it in discovered }
+
+private fun Preferences.hudOverrides(): Map<String, HUDOverride> =
+    config(hudOverridesKey, emptyMap())
+
+private fun Preferences.discoveredProfiles(): Map<String, String> =
+    config(discoveredProfilesKey, emptyMap())
+
+private fun Preferences.sharedHUDSettings(): HUDSettings =
+    HUDSettings(config(hudConfigKey, HUDConfig()), hudSparklineConfig())
+
+private fun Preferences.profileHUDs(): ProfileHUDs =
+    ProfileHUDs(sharedHUDSettings(), hudOverrides())
+
+private fun MutablePreferences.writeProfileHUDs(huds: ProfileHUDs) {
+    this[hudConfigKey] = json.encodeToString(huds.shared.hud)
+    this[sparklineConfigKey] = json.encodeToString(huds.shared.sparkline)
+    this[hudOverridesKey] = json.encodeToString(huds.overrides)
+}
+
+/** The HUD settings for the profile active on the Karoo, re-resolved on every change. */
+fun Context.streamActiveHUDSettings(): Flow<HUDSettings> =
+    dataStore.data
+        .map {
+            resolveHUDSettings(it[activeProfileIdKey], it.hudOverrides(), it.sharedHUDSettings())
+        }
+        .distinctUntilChanged()
+
+/** Records the active profile and its name. Skips the write when neither changed. */
+suspend fun Context.recordActiveProfile(id: String, name: String) {
+    dataStore.edit { prefs ->
+        mergeDiscovered(prefs.discoveredProfiles(), id, name)?.let {
+            prefs[discoveredProfilesKey] = json.encodeToString(it)
+        }
+        if (prefs[activeProfileIdKey] != id) prefs[activeProfileIdKey] = id
+    }
+}
+
+/** Applies [transform] to the HUD in [scope], on fresh preferences so no neighbour is reverted. */
+suspend fun Context.updateHUDSettings(scope: HUDScope, transform: (HUDSettings) -> HUDSettings) {
+    dataStore.edit { prefs ->
+        prefs.writeProfileHUDs(applyHUDEdit(prefs.profileHUDs(), scope, transform))
+    }
+}
+
+suspend fun Context.setHUDCustom(id: String, custom: Boolean) {
+    dataStore.edit { prefs ->
+        prefs[hudOverridesKey] =
+            json.encodeToString(
+                setCustom(prefs.hudOverrides(), id, custom, prefs.sharedHUDSettings())
+            )
+    }
+}
+
+/** Changes the strip of the HUD the active profile shows: its own while Custom, else Shared. */
+suspend fun Context.updateActiveHUDSparkline(transform: (SparklineConfig) -> SparklineConfig) {
+    dataStore.edit { prefs ->
+        val scope = hudScopeFor(prefs[activeProfileIdKey], prefs.hudOverrides())
+        prefs.writeProfileHUDs(
+            applyHUDEdit(prefs.profileHUDs(), scope) {
+                it.copy(sparkline = transform(it.sparkline))
+            }
+        )
+    }
+}
 
 // --- SparklineConfig ---
 // Two independent instances: the HUD strip and the standalone elevation-sparkline field.
@@ -934,6 +1005,9 @@ data class ConfigSnapshot(
     val routeRemaining: RouteRemainingConfig,
     val zone: ZoneConfig,
     val dataFieldDesign: DataFieldDesignConfig,
+    val hudOverrides: Map<String, HUDOverride>,
+    val discoveredProfiles: Map<String, String>,
+    val activeProfileId: String?,
 )
 
 fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
@@ -970,6 +1044,9 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 routeRemaining = prefs.config(routeRemainingConfigKey, RouteRemainingConfig()),
                 zone = prefs.config(zoneConfigKey, ZoneConfig()),
                 dataFieldDesign = prefs.config(dataFieldDesignConfigKey, DataFieldDesignConfig()),
+                hudOverrides = prefs.hudOverrides(),
+                discoveredProfiles = prefs.discoveredProfiles(),
+                activeProfileId = prefs[activeProfileIdKey],
             )
         }
         .distinctUntilChanged()
