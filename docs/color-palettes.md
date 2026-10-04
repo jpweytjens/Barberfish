@@ -46,7 +46,7 @@ built.
 Barberfish and Turbo color descents; the other palettes stop
 at flat. On those a descent takes no color anywhere: the Grade field shows
 its value plain, the elevation profile leaves the stretch unfilled, and the
-[grade map](grade-map.md#reading-it) draws it in its neutral, the same as
+[grade map](grade-map.md#shared-climbing-settings) draws it in its neutral, the same as
 flat road. The two columns also set what [Emphasis](algorithms.md#emphasis)
 can reach: a descent handle only where descents are colored, and a stop that
 colors the flat band only where it spans zero.

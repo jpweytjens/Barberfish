@@ -1,6 +1,6 @@
 # Grade map
 
-The grade map colors your route on the Karoo's map by grade, as a wide band with chevrons on top for direction. The map page then shows how steep the road is as well as where it goes, so the climb behind the next bend is visible on the page you are already riding, down to the switchback where it bites.
+The grade map colors your route on the Karoo's map by grade, as a wide band with chevrons on top for direction. The elevation profile tells you how long a climb lasts; the map tells you where it starts. At a glance you see whether the road kicks up behind the next corner, and whether the hairpin ahead is steep or just a bend.
 
 <table>
   <tr>
@@ -13,33 +13,25 @@ The grade map colors your route on the Karoo's map by grade, as a wide band with
   </tr>
 </table>
 
-The grade map is a single switch under Climbing in the Barberfish app, and it draws whenever you follow a route. The preview on its card shows the band on a sample route.
+On the Molenberg below, the band is orange under the rider, yellow just past the crossing and green 200 m on: the steep part is the one under the wheels, and it eases soon.
 
-<img src="screenshots/grade_map_config.jpg" alt="Grade map config card with the enabled toggle, the band preview, tuning, emphasis handles, simplification, and chevron spacing" width="480">
+<img src="screenshots/hud_sparkline.jpg" alt="Map page on the Molenberg, the band orange under the rider, yellow past the next crossing and green beyond" width="320">
 
-## Reading it
+Turn it on in the Grade Map card under Climbing in the Barberfish app; it draws whenever you follow a route.
 
-The band uses the same [gradient palette](color-palettes.md) as the Grade field and the elevation profile, and the same Emphasis and Simplification decide how much of the route takes a color ([how the coloring works](algorithms.md#grade-coloring)), so a color means the same grade on all three. The map follows the Profile field's values so the two agree; set Tuning to Independent to give the map its own.
+## Shared climbing settings
 
-The band covers the whole route, with any road that takes no color drawn in a neutral rather than left bare, so that any yellow on the map is a grade. The Karoo's own line is yellow, blue only on the climbs it detects (as in the shot above), and nearly every palette has a yellow for a moderate climb; a band that left uncolored road to the Karoo's line would make every yellow stretch ambiguous.
+The grade map, the Grade field and the elevation profile all draw from one [grade palette](color-palettes.md#grade-palettes), so a color means the same grade on all three. The map also takes its [Emphasis and Simplification](algorithms.md#grade-coloring) from the Profile field, and keeps them in step as you change them there. To tune the map on its own, set its Tuning to Independent.
 
-On Barberfish the neutral is the palette's own flat color, a muted green, so quiet road still looks like part of the palette; the other palettes have no flat band to borrow and take a light grey. On a palette that [does not color descents](color-palettes.md#grade-palettes), every descent draws in the neutral as well.
+Road gentler than the Emphasis handles still gets a band, in a neutral: the flat band's muted green on Barberfish, grey on the other palettes. Left to the Karoo's own line it would be ambiguous, since that line is yellow and so is a moderate climb in nearly every palette. On a palette that [does not color descents](color-palettes.md#grade-palettes), descents draw in the neutral too. The [Emphasis examples](algorithms.md#emphasis) show both neutrals on the palette bar.
 
-Chevrons show direction, and their spacing points at the road worth noticing. Under Gradient they sit closer together the steeper the road gets, up or down. The band's color already says that, so Changes spends them differently: they bunch where the gradient shifts, at the foot of a climb, a ramp, or a crest, and thin out where it holds steady. Balanced weighs the two equally.
+## The direction you ride
 
-## Behind you, and out and back
-
-Behind you the band stays drawn and only its chevrons clear, so the road already ridden is the stretch without them. On a route that covers the same road twice, an out-and-back or a lap course, the first pass draws on top. Its colors stay while that road is still on screen, then give way to the next pass's before you reach it again. The road ahead is always the one colored: the hill you climbed on the way out shows its descent colors on the way back. Laps in the same direction look identical on every pass.
-
-## Off route
-
-Leave the route and the Karoo plots a path back. The grade map draws that path as a second band in the map's rerouting red, with red chevrons at a steady spacing since there is no grade to vary them with, and clears it once you rejoin.
+Karoo's Climber marks a detected climb in blue whichever way you ride it. The grade map colors the road for the direction you are about to ride it, and road already ridden keeps its colors but loses its chevrons. On an out-and-back, a climb you descend on the way out shows descent colors; once it drops out of view, it switches to climb colors before you come back to it.
 
 ## How it is drawn
 
-The band is wider than the Karoo's route line because it has to hide it: an extension can only draw on top of the line and its chevrons, never beneath them or in their place.
-
-It is also many pieces rather than one line, each stretch of color its own segment with a black casing that keeps its edge crisp against the map, and the map adds them in its own time. On the first draw, and after a zoom on a long route or one that repeats ground, that takes a second or two, and the Karoo's line may show through until the band settles. Nothing needs restarting.
+An extension can only draw on top of the Karoo's route line, never in its place, so the band is wider than the line to cover it. When you leave the route, the Karoo's path back gets a band too, in the map's rerouting red, and it clears once you rejoin. The map adds the band piece by piece, so when a route starts, and after a zoom on a long one, the Karoo's line can show through for a second or two.
 
 ## Settings
 
