@@ -51,6 +51,17 @@ flat road. The two columns also set what [Emphasis](algorithms.md#emphasis)
 can reach: a descent handle only where descents are colored, and a stop that
 colors the flat band only where it spans zero.
 
+<table>
+  <tr>
+    <td align="center">Turbo colors the descent past the summit</td>
+    <td align="center">Garmin leaves it unfilled</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/palette_turbo_wahoo_profile.jpg" alt="HUD with an elevation profile over a summit, the climb in Turbo's yellows and reds and the descent beyond in blues and purple"></td>
+    <td align="center"><img src="screenshots/palette_garmin_intervals_profile.jpg" alt="The same HUD layout in the Garmin palette, the climb colored and the descent beyond the summit left black"></td>
+  </tr>
+</table>
+
 ## Perceptually uniform palettes
 
 A grade palette is read at a glance, at speed, and what matters is that neighbouring bands look different: 8 and 11 per cent told apart by color before the number is read. Palettes made for a phone or a website often stack their steepest bands as ever darker reds, and two darks side by side read as one. Perceptual color spaces measure color by how it looks rather than how a screen mixes it, so equal steps in grade can get equally visible steps in color. Three of the palettes above use that idea.
