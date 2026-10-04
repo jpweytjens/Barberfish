@@ -265,6 +265,100 @@ fun Context.streamHUDConfig(): Flow<HUDConfig> = streamConfig(hudConfigKey, HUDC
 
 suspend fun Context.saveHUDConfig(config: HUDConfig) = saveConfig(hudConfigKey, config)
 
+// --- Per-profile HUD ---
+// Every profile uses the Shared HUD (the two keys above) unless switched to Custom, in which case
+// it uses its own HUDSettings from the overrides map. Profiles are keyed by their Karoo id.
+
+/** Everything the HUD config section edits, as one unit. */
+@Serializable
+data class HUDSettings(
+    val hud: HUDConfig = HUDConfig(),
+    val sparkline: SparklineConfig = SparklineConfig(),
+)
+
+/** A profile's own HUD. `custom = false` keeps [settings] so switching back restores them. */
+@Serializable data class HUDOverride(val custom: Boolean, val settings: HUDSettings)
+
+sealed interface HUDScope {
+    data object Shared : HUDScope
+
+    data class Profile(val id: String) : HUDScope
+}
+
+/** The Shared HUD and every profile's override, as one value. */
+data class ProfileHUDs(val shared: HUDSettings, val overrides: Map<String, HUDOverride>)
+
+/** Which HUD applies to a profile: its own only while it is switched to Custom. */
+fun hudScopeFor(id: String?, overrides: Map<String, HUDOverride>): HUDScope =
+    if (id != null && overrides[id]?.custom == true) HUDScope.Profile(id) else HUDScope.Shared
+
+/**
+ * The settings a profile's HUD shows. Takes the id, not a scope, so a caller cannot read a
+ * profile's kept settings while it is on Shared.
+ */
+fun resolveHUDSettings(
+    id: String?,
+    overrides: Map<String, HUDOverride>,
+    shared: HUDSettings,
+): HUDSettings =
+    when (val scope = hudScopeFor(id, overrides)) {
+        HUDScope.Shared -> shared
+        is HUDScope.Profile -> overrides.getValue(scope.id).settings
+    }
+
+/**
+ * Switches a profile between Shared and Custom. A first switch to Custom starts from a copy of
+ * [shared]; every other switch only flips the flag, keeping the profile's settings.
+ */
+fun setCustom(
+    overrides: Map<String, HUDOverride>,
+    id: String,
+    custom: Boolean,
+    shared: HUDSettings,
+): Map<String, HUDOverride> =
+    overrides + (id to (overrides[id]?.copy(custom = custom) ?: HUDOverride(custom, shared)))
+
+/**
+ * The one definition of a HUD edit, applied both to the config screen's state and inside the
+ * DataStore write. A profile edit keeps its custom flag, and creates the entry if it is missing so
+ * an edit is never dropped.
+ */
+fun applyHUDEdit(
+    huds: ProfileHUDs,
+    scope: HUDScope,
+    transform: (HUDSettings) -> HUDSettings,
+): ProfileHUDs =
+    when (scope) {
+        HUDScope.Shared -> huds.copy(shared = transform(huds.shared))
+        is HUDScope.Profile -> {
+            val current = huds.overrides[scope.id] ?: HUDOverride(true, huds.shared)
+            val edited = current.copy(settings = transform(current.settings))
+            huds.copy(overrides = huds.overrides + (scope.id to edited))
+        }
+    }
+
+/** The profile the HUD card opens on: the current one if it is Custom, else null for Shared. */
+fun initialHUDSelection(activeId: String?, overrides: Map<String, HUDOverride>): String? =
+    (hudScopeFor(activeId, overrides) as? HUDScope.Profile)?.id
+
+/** Records a sighting of a profile, keeping discovery order. Null when nothing changed. */
+fun mergeDiscovered(
+    discovered: Map<String, String>,
+    id: String,
+    name: String,
+): Map<String, String>? =
+    if (discovered[id] == name) null else LinkedHashMap(discovered).apply { put(id, name) }
+
+/** How many discovered profiles use the Shared HUD. */
+fun sharedProfileCount(discovered: Map<String, String>, overrides: Map<String, HUDOverride>): Int =
+    discovered.keys.count { hudScopeFor(it, overrides) == HUDScope.Shared }
+
+/** Profile ids for the config dropdown: discovered ones in order, then overrides never seen. */
+fun profileMenuIds(
+    discovered: Map<String, String>,
+    overrides: Map<String, HUDOverride>,
+): List<String> = discovered.keys.toList() + overrides.keys.filterNot { it in discovered }
+
 // --- SparklineConfig ---
 // Two independent instances: the HUD strip and the standalone elevation-sparkline field.
 // The HUD instance keeps the original "sparkline_config" key; the field instance has its
