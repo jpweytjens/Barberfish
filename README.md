@@ -64,6 +64,7 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 2. Sideload it:
    * Karoo 3: share the downloaded APK to the Hammerhead companion app, following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
    * Karoo 2: install from a computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html).
+3. Add Barberfish fields to a data page like any native field, [from your profile](https://support.hammerhead.io/hc/en-us/articles/25601814671259-Karoo-OS-Customising-Profiles): they are listed under Extensions.
 
 ### Beta builds
 
