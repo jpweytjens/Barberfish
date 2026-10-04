@@ -575,7 +575,9 @@ shot_palettes() { # page 1: the hud_sparkline layout under two non-house palette
         goto_map_page; settle_drawer
         cap "$name"
         magick "$STAGE/$name.png" -quality 92 "$OUTDIR/$name.jpg"
-        echo "  -> $OUTDIR/$name.jpg"
+        # The HUD and its profile strip alone, for the palette page's descent comparison
+        magick "$STAGE/$name.png" -crop 480x218+0+60 +repage -quality 92 "$OUTDIR/${name}_profile.jpg"
+        echo "  -> $OUTDIR/$name.jpg, ${name}_profile.jpg"
     done
     set_zone scripts/fixtures/zone/barberfish.json
 }
