@@ -66,6 +66,7 @@ import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
+import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -180,7 +181,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             if (discoveryJob?.isActive != true) {
                 discoveryJob = discoveryScope.launch {
                     karooSystem.streamActiveRideProfile().collect {
-                        applicationContext.recordActiveProfile(it.profile.id, it.profile.name)
+                        // A failed write must not crash the extension, which hosts every field,
+                        // nor stop discovery: log it and wait for the next sighting.
+                        try {
+                            applicationContext.recordActiveProfile(it.profile.id, it.profile.name)
+                        } catch (e: IOException) {
+                            Timber.w(e, "Could not record the active profile")
+                        }
                     }
                 }
             }
