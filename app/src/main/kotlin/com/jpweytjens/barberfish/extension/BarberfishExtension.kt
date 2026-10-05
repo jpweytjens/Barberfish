@@ -69,6 +69,7 @@ import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -166,13 +167,28 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
     override val types by lazy { barberfishDataTypes(karooSystem) }
 
+    // Records every profile the Karoo reports as active, for the per-profile HUD. Lives as long
+    // as the service, so swiping through the home-screen carousel discovers every profile.
+    private val discoveryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var discoveryJob: Job? = null
+
     override fun onCreate() {
         super.onCreate()
         karooSystem = KarooSystemService(applicationContext)
-        karooSystem.connect { Timber.d("Karoo system connected") }
+        karooSystem.connect {
+            Timber.d("Karoo system connected")
+            if (discoveryJob?.isActive != true) {
+                discoveryJob = discoveryScope.launch {
+                    karooSystem.streamActiveRideProfile().collect {
+                        applicationContext.recordActiveProfile(it.profile.id, it.profile.name)
+                    }
+                }
+            }
+        }
     }
 
     override fun onDestroy() {
+        discoveryScope.cancel()
         karooSystem.disconnect()
         super.onDestroy()
     }
