@@ -45,9 +45,9 @@ import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradePalette
-import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
+import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
@@ -266,9 +266,9 @@ class ConfigShotsRenderTest {
         // open the section is taller than the K3 screen, so paged and stitched like the palettes.
         val scrollState = ScrollState(0)
         setShotContent(scrollable = true, scrollState = scrollState) {
-            var hudConfig by remember {
+            var slots by remember {
                 mutableStateOf(
-                    HUDConfig(
+                    HUDSlots(
                         columns = 4,
                         // One slot per colour mode, so the shot shows all three at once.
                         leftSlot =
@@ -296,12 +296,12 @@ class ConfigShotsRenderTest {
             }
             CollapsibleSection(section = ConfigSection.HUD, expanded = true, onToggle = {}) {
                 HUDConfigSection(
-                    hudConfig = hudConfig,
+                    slots = slots,
                     sparklineConfig = sparklineConfig,
                     zoneConfig = houseZones,
                     timeCfg = TimeConfig(),
                     profile = shotProfile,
-                    onUpdate = { hudConfig = it },
+                    onUpdate = { slots = it },
                     onSparklineUpdate = { sparklineConfig = it },
                     initialSelectedSlot = 2,
                 )

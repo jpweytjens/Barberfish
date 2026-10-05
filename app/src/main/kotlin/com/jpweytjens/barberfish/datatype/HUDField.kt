@@ -20,9 +20,9 @@ import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.HRZoneFieldConfig
-import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
+import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
@@ -34,7 +34,7 @@ import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.lapNumberFrom
-import com.jpweytjens.barberfish.extension.streamActiveHUDSettings
+import com.jpweytjens.barberfish.extension.streamActiveHUDConfig
 import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamETAConfig
@@ -95,10 +95,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     karooSystem,
                     context,
                     configFlow =
-                        context
-                            .streamActiveHUDSettings()
-                            .map { it.sparkline }
-                            .distinctUntilChanged(),
+                        context.streamActiveHUDConfig().map { it.strip }.distinctUntilChanged(),
                     widthPx = dm.widthPixels,
                     heightPx = sparklineHeightPx,
                     isPreview = config.preview,
@@ -210,7 +207,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     override fun liveFlow(context: Context): Flow<HUDState> =
         combine(
-                context.streamActiveHUDSettings().map { it.hud }.distinctUntilChanged(),
+                context.streamActiveHUDConfig().map { it.slots }.distinctUntilChanged(),
                 context.streamZoneConfig(),
                 karooSystem.streamUserProfile(),
             ) { cfg, zones, profile ->
@@ -236,7 +233,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     override fun previewFlow(context: Context): Flow<HUDState> =
         combine(
-                context.streamActiveHUDSettings().map { it.hud }.distinctUntilChanged(),
+                context.streamActiveHUDConfig().map { it.slots }.distinctUntilChanged(),
                 context.streamZoneConfig(),
                 karooSystem.streamUserProfile(),
             ) { cfg, zones, profile ->
@@ -460,7 +457,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     companion object {
         fun previewStates(
-            hudConfig: HUDConfig,
+            slots: HUDSlots,
             timeCfg: TimeConfig,
             profile: UserProfile,
             zones: ZoneConfig,
@@ -572,20 +569,20 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     is HUDSlotField.Time -> TimeField.previewStates(timeCfg, field.kind)
                     is HUDSlotField.ETA -> ETAField.previewStates(field.kind, timeCfg.format)
                 }
-            val l = slot(hudConfig.leftSlot)
-            val m = slot(hudConfig.middleSlot)
-            val r = slot(hudConfig.rightSlot)
-            val f = slot(hudConfig.fourthSlot)
+            val l = slot(slots.leftSlot)
+            val m = slot(slots.middleSlot)
+            val r = slot(slots.rightSlot)
+            val f = slot(slots.fourthSlot)
             val n =
-                if (hudConfig.columns == 4) minOf(l.size, m.size, r.size, f.size)
+                if (slots.columns == 4) minOf(l.size, m.size, r.size, f.size)
                 else minOf(l.size, m.size, r.size)
             return (0 until n).map { i ->
                 HUDState(
-                    columns = hudConfig.columns,
-                    left = SlotState(l[i], hudConfig.leftSlot.colorMode),
-                    middle = SlotState(m[i], hudConfig.middleSlot.colorMode),
-                    right = SlotState(r[i], hudConfig.rightSlot.colorMode),
-                    fourth = SlotState(f[i], hudConfig.fourthSlot.colorMode),
+                    columns = slots.columns,
+                    left = SlotState(l[i], slots.leftSlot.colorMode),
+                    middle = SlotState(m[i], slots.middleSlot.colorMode),
+                    right = SlotState(r[i], slots.rightSlot.colorMode),
+                    fourth = SlotState(f[i], slots.fourthSlot.colorMode),
                     profile = profile,
                 )
             }

@@ -79,10 +79,10 @@ import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.ElevationZoom
-import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDOverride
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
+import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
@@ -129,12 +129,12 @@ private const val SCREENSHOT_MOMENT_INDEX = 4
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun HUDConfigSection(
-    hudConfig: HUDConfig,
+    slots: HUDSlots,
     sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
     profile: UserProfile,
-    onUpdate: (HUDConfig) -> Unit,
+    onUpdate: (HUDSlots) -> Unit,
     onSparklineUpdate: (SparklineConfig) -> Unit,
     initialSelectedSlot: Int? = null,
     // False while a profile uses the Shared HUD: the controls show Shared's values, greyed and
@@ -156,11 +156,11 @@ internal fun HUDConfigSection(
     ) {
         ControlLabel("NUMBER OF COLUMNS")
         ColumnCountToggle(
-            columns = hudConfig.columns,
+            columns = slots.columns,
             onSelect = { cols ->
-                if (enabled && cols != hudConfig.columns) {
+                if (enabled && cols != slots.columns) {
                     selection = null
-                    onUpdate(hudConfig.copy(columns = cols))
+                    onUpdate(slots.copy(columns = cols))
                 }
             },
         )
@@ -175,7 +175,7 @@ internal fun HUDConfigSection(
         )
         HelperText(hudHelperText(enabled, sparklineConfig.hudMode))
         HUDPreview(
-            hudConfig = hudConfig,
+            slots = slots,
             sparklineConfig = sparklineConfig,
             zoneConfig = zoneConfig,
             timeCfg = timeCfg,
@@ -191,7 +191,7 @@ internal fun HUDConfigSection(
             modifier = Modifier.testTag("bf:hud:preview"),
         )
 
-        HUDSlotEditor(hudConfig, selectedSlot, profile, onUpdate)
+        HUDSlotEditor(slots, selectedSlot, profile, onUpdate)
         if (stripSelected && sparklineConfig.hudMode != SparklineMode.OFF) {
             HUDStripEditor(sparklineConfig, zoneConfig, profile, onSparklineUpdate)
         }
@@ -234,17 +234,17 @@ private fun HUDStripEditor(
 /** The card for the selected column, if one is selected and visible. */
 @Composable
 private fun HUDSlotEditor(
-    hudConfig: HUDConfig,
+    slots: HUDSlots,
     selectedSlot: Int?,
     profile: UserProfile,
-    onUpdate: (HUDConfig) -> Unit,
+    onUpdate: (HUDSlots) -> Unit,
 ) {
     val slot =
         when (selectedSlot) {
-            0 -> hudConfig.leftSlot
-            1 -> hudConfig.middleSlot
-            2 -> hudConfig.rightSlot
-            3 -> if (hudConfig.columns == 4) hudConfig.fourthSlot else null
+            0 -> slots.leftSlot
+            1 -> slots.middleSlot
+            2 -> slots.rightSlot
+            3 -> if (slots.columns == 4) slots.fourthSlot else null
             else -> null
         } ?: return
     HUDSlotFieldCard(
@@ -253,10 +253,10 @@ private fun HUDSlotEditor(
         onUpdate = { updated ->
             onUpdate(
                 when (selectedSlot) {
-                    0 -> hudConfig.copy(leftSlot = updated)
-                    1 -> hudConfig.copy(middleSlot = updated)
-                    2 -> hudConfig.copy(rightSlot = updated)
-                    else -> hudConfig.copy(fourthSlot = updated)
+                    0 -> slots.copy(leftSlot = updated)
+                    1 -> slots.copy(middleSlot = updated)
+                    2 -> slots.copy(rightSlot = updated)
+                    else -> slots.copy(fourthSlot = updated)
                 }
             )
         },
@@ -535,7 +535,7 @@ internal fun SparklinePreview(
 
 @Composable
 private fun HUDPreview(
-    hudConfig: HUDConfig,
+    slots: HUDSlots,
     sparklineConfig: SparklineConfig,
     zoneConfig: ZoneConfig,
     timeCfg: TimeConfig,
@@ -548,8 +548,8 @@ private fun HUDPreview(
     previewSweepSeconds: Int = 10,
 ) {
     val states =
-        remember(hudConfig, zoneConfig, timeCfg, profile) {
-            HUDField.previewStates(hudConfig, timeCfg, profile, zoneConfig)
+        remember(slots, zoneConfig, timeCfg, profile) {
+            HUDField.previewStates(slots, timeCfg, profile, zoneConfig)
         }
     val screenshotMode = LocalScreenshotMode.current
     var index by remember { mutableIntStateOf(0) }
@@ -584,7 +584,7 @@ private fun HUDPreview(
                 add(Triple(0, current.left.field, current.left.colorMode))
                 add(Triple(1, current.middle.field, current.middle.colorMode))
                 add(Triple(2, current.right.field, current.right.colorMode))
-                if (hudConfig.columns == 4)
+                if (slots.columns == 4)
                     add(Triple(3, current.fourth.field, current.fourth.colorMode))
             }
                 .forEach { (idx, field, colorMode) ->
@@ -594,7 +594,7 @@ private fun HUDPreview(
                         selected = selectedSlot == idx,
                         onClick = { onSlotSelected(idx) },
                         modifier = Modifier.weight(1f),
-                        columns = hudConfig.columns,
+                        columns = slots.columns,
                         reserveSparklineSpace = showSparkline,
                     )
                 }

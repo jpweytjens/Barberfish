@@ -26,10 +26,10 @@ import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
-import com.jpweytjens.barberfish.extension.streamActiveHUDSettings
+import com.jpweytjens.barberfish.extension.streamActiveHUDConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
-import com.jpweytjens.barberfish.extension.updateActiveHUDSettings
+import com.jpweytjens.barberfish.extension.updateActiveHUDConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
 import java.io.File
@@ -111,17 +111,17 @@ class AllFieldPreviewsRenderTest {
             // land in the contact sheet, then restore the rider's config. The preview shows
             // the active profile's HUD, so edit that one, not necessarily the Shared HUD.
             val hud = types.filterIsInstance<HUDDataType>().single()
-            val originalHud = runBlocking { context.streamActiveHUDSettings().first() }
+            val originalHud = runBlocking { context.streamActiveHUDConfig().first() }
             try {
                 runBlocking {
-                    context.updateActiveHUDSettings { it.copy(hud = it.hud.copy(columns = 4)) }
+                    context.updateActiveHUDConfig { it.copy(slots = it.slots.copy(columns = 4)) }
                 }
                 // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
                 // two HUD renders show different values.
                 val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
                 writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
             } finally {
-                runBlocking { context.updateActiveHUDSettings { originalHud } }
+                runBlocking { context.updateActiveHUDConfig { originalHud } }
             }
 
             // Doc renders: the three Grade statuses as single-cell crops for

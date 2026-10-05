@@ -3,7 +3,7 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDOverride
 import com.jpweytjens.barberfish.extension.HUDScope
-import com.jpweytjens.barberfish.extension.HUDSettings
+import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.ProfileHUDs
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.applyHUDEdit
@@ -11,7 +11,7 @@ import com.jpweytjens.barberfish.extension.hudScopeFor
 import com.jpweytjens.barberfish.extension.initialHUDSelection
 import com.jpweytjens.barberfish.extension.mergeDiscovered
 import com.jpweytjens.barberfish.extension.profileMenuIds
-import com.jpweytjens.barberfish.extension.resolveHUDSettings
+import com.jpweytjens.barberfish.extension.resolveHUDConfig
 import com.jpweytjens.barberfish.extension.setCustom
 import com.jpweytjens.barberfish.extension.sharedProfileCount
 import kotlinx.serialization.encodeToString
@@ -22,12 +22,12 @@ import org.junit.Test
 
 class HUDProfileTest {
 
-    private val shared = HUDSettings()
-    private val mine = HUDSettings(hud = HUDConfig(columns = 4))
+    private val shared = HUDConfig()
+    private val mine = HUDConfig(slots = HUDSlots(columns = 4))
 
-    // HUDConfig defaults to 3 columns, so edits set 4 to be distinguishable from a lost edit.
-    private val fourColumns: (HUDSettings) -> HUDSettings = {
-        it.copy(hud = it.hud.copy(columns = 4))
+    // HUDSlots defaults to 3 columns, so edits set 4 to be distinguishable from a lost edit.
+    private val fourColumns: (HUDConfig) -> HUDConfig = {
+        it.copy(slots = it.slots.copy(columns = 4))
     }
 
     @Test
@@ -48,18 +48,18 @@ class HUDProfileTest {
 
     @Test
     fun `resolve gives custom settings`() =
-        assertEquals(mine, resolveHUDSettings("a", mapOf("a" to HUDOverride(true, mine)), shared))
+        assertEquals(mine, resolveHUDConfig("a", mapOf("a" to HUDOverride(true, mine)), shared))
 
     @Test
     fun `resolve ignores kept settings while on Shared`() =
         assertEquals(
             shared,
-            resolveHUDSettings("a", mapOf("a" to HUDOverride(false, mine)), shared),
+            resolveHUDConfig("a", mapOf("a" to HUDOverride(false, mine)), shared),
         )
 
     @Test
     fun `resolve with null id gives Shared`() =
-        assertEquals(shared, resolveHUDSettings(null, emptyMap(), shared))
+        assertEquals(shared, resolveHUDConfig(null, emptyMap(), shared))
 
     @Test
     fun `switching to Custom copies Shared when new`() =
@@ -128,10 +128,10 @@ class HUDProfileTest {
         val once = applyHUDEdit(ProfileHUDs(shared, emptyMap()), HUDScope.Shared, fourColumns)
         val twice =
             applyHUDEdit(once, HUDScope.Shared) {
-                it.copy(sparkline = it.sparkline.copy(mode = SparklineMode.CLIMBS))
+                it.copy(strip = it.strip.copy(mode = SparklineMode.CLIMBS))
             }
-        assertEquals(4, twice.shared.hud.columns)
-        assertEquals(SparklineMode.CLIMBS, twice.shared.sparkline.mode)
+        assertEquals(4, twice.shared.slots.columns)
+        assertEquals(SparklineMode.CLIMBS, twice.shared.strip.mode)
     }
 
     @Test

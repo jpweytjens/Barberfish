@@ -50,8 +50,8 @@ private suspend inline fun <reified T> Context.saveConfig(
 private val sparklineConfigKey = stringPreferencesKey("sparkline_config")
 private val fieldSparklineConfigKey = stringPreferencesKey("field_sparkline_config")
 // Persisted as "three_column_config" for backwards compatibility with installs from the
-// pre-4-column era; the HUDConfig blob covers both layouts now.
-private val hudConfigKey = stringPreferencesKey("three_column_config")
+// pre-4-column era; the HUDSlots blob covers both layouts now.
+private val hudSlotsKey = stringPreferencesKey("three_column_config")
 // Map<profileId, HUDOverride>. Absent id: the profile has never been customized.
 private val hudOverridesKey = stringPreferencesKey("hud_profile_overrides")
 // Map<profileId, name>, accumulated by discovery, in discovery order.
@@ -66,7 +66,7 @@ private val avgPowerFieldConfigKey = stringPreferencesKey("avg_power_field_confi
 private val npFieldConfigKey = stringPreferencesKey("np_field_config")
 private val cadenceFieldConfigKey = stringPreferencesKey("cadence_field_config")
 
-// --- HUDConfig ---
+// --- HUDSlots ---
 
 @Serializable
 enum class ZoneColorMode(val label: String) {
@@ -259,7 +259,7 @@ data class SparklineConfig(
 }
 
 @Serializable
-data class HUDConfig(
+data class HUDSlots(
     val columns: Int = 3,
     val leftSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Speed),
     val middleSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
@@ -268,23 +268,23 @@ data class HUDConfig(
     val sparkline: SparklineConfig = SparklineConfig(),
 )
 
-fun Context.streamHUDConfig(): Flow<HUDConfig> = streamConfig(hudConfigKey, HUDConfig())
+fun Context.streamHUDSlots(): Flow<HUDSlots> = streamConfig(hudSlotsKey, HUDSlots())
 
-suspend fun Context.saveHUDConfig(config: HUDConfig) = saveConfig(hudConfigKey, config)
+suspend fun Context.saveHUDSlots(config: HUDSlots) = saveConfig(hudSlotsKey, config)
 
 // --- Per-profile HUD ---
 // Every profile uses the Shared HUD (the two keys above) unless switched to Custom, in which case
-// it uses its own HUDSettings from the overrides map. Profiles are keyed by their Karoo id.
+// it uses its own HUDConfig from the overrides map. Profiles are keyed by their Karoo id.
 
 /** Everything the HUD config section edits, as one unit. */
 @Serializable
-data class HUDSettings(
-    val hud: HUDConfig = HUDConfig(),
-    val sparkline: SparklineConfig = SparklineConfig(),
+data class HUDConfig(
+    val slots: HUDSlots = HUDSlots(),
+    val strip: SparklineConfig = SparklineConfig(),
 )
 
 /** A profile's own HUD. `custom = false` keeps [settings] so switching back restores them. */
-@Serializable data class HUDOverride(val custom: Boolean, val settings: HUDSettings)
+@Serializable data class HUDOverride(val custom: Boolean, val config: HUDConfig)
 
 sealed interface HUDScope {
     data object Shared : HUDScope
@@ -293,7 +293,7 @@ sealed interface HUDScope {
 }
 
 /** The Shared HUD and every profile's override, as one value. */
-data class ProfileHUDs(val shared: HUDSettings, val overrides: Map<String, HUDOverride>)
+data class ProfileHUDs(val shared: HUDConfig, val overrides: Map<String, HUDOverride>)
 
 /** Which HUD applies to a profile: its own only while it is switched to Custom. */
 fun hudScopeFor(id: String?, overrides: Map<String, HUDOverride>): HUDScope =
@@ -303,14 +303,14 @@ fun hudScopeFor(id: String?, overrides: Map<String, HUDOverride>): HUDScope =
  * The settings a profile's HUD shows. Takes the id, not a scope, so a caller cannot read a
  * profile's kept settings while it is on Shared.
  */
-fun resolveHUDSettings(
+fun resolveHUDConfig(
     id: String?,
     overrides: Map<String, HUDOverride>,
-    shared: HUDSettings,
-): HUDSettings =
+    shared: HUDConfig,
+): HUDConfig =
     when (val scope = hudScopeFor(id, overrides)) {
         HUDScope.Shared -> shared
-        is HUDScope.Profile -> overrides.getValue(scope.id).settings
+        is HUDScope.Profile -> overrides.getValue(scope.id).config
     }
 
 /**
@@ -321,7 +321,7 @@ fun setCustom(
     overrides: Map<String, HUDOverride>,
     id: String,
     custom: Boolean,
-    shared: HUDSettings,
+    shared: HUDConfig,
 ): Map<String, HUDOverride> =
     overrides + (id to (overrides[id]?.copy(custom = custom) ?: HUDOverride(custom, shared)))
 
@@ -333,13 +333,13 @@ fun setCustom(
 fun applyHUDEdit(
     huds: ProfileHUDs,
     scope: HUDScope,
-    transform: (HUDSettings) -> HUDSettings,
+    transform: (HUDConfig) -> HUDConfig,
 ): ProfileHUDs =
     when (scope) {
         HUDScope.Shared -> huds.copy(shared = transform(huds.shared))
         is HUDScope.Profile -> {
             val current = huds.overrides[scope.id] ?: HUDOverride(true, huds.shared)
-            val edited = current.copy(settings = transform(current.settings))
+            val edited = current.copy(config = transform(current.config))
             huds.copy(overrides = huds.overrides + (scope.id to edited))
         }
     }
@@ -372,23 +372,22 @@ private fun Preferences.hudOverrides(): Map<String, HUDOverride> =
 private fun Preferences.discoveredProfiles(): Map<String, String> =
     config(discoveredProfilesKey, emptyMap())
 
-private fun Preferences.sharedHUDSettings(): HUDSettings =
-    HUDSettings(config(hudConfigKey, HUDConfig()), hudSparklineConfig())
+private fun Preferences.sharedHUDConfig(): HUDConfig =
+    HUDConfig(config(hudSlotsKey, HUDSlots()), hudSparklineConfig())
 
-private fun Preferences.profileHUDs(): ProfileHUDs =
-    ProfileHUDs(sharedHUDSettings(), hudOverrides())
+private fun Preferences.profileHUDs(): ProfileHUDs = ProfileHUDs(sharedHUDConfig(), hudOverrides())
 
 private fun MutablePreferences.writeProfileHUDs(huds: ProfileHUDs) {
-    this[hudConfigKey] = json.encodeToString(huds.shared.hud)
-    this[sparklineConfigKey] = json.encodeToString(huds.shared.sparkline)
+    this[hudSlotsKey] = json.encodeToString(huds.shared.slots)
+    this[sparklineConfigKey] = json.encodeToString(huds.shared.strip)
     this[hudOverridesKey] = json.encodeToString(huds.overrides)
 }
 
 /** The HUD settings for the profile active on the Karoo, re-resolved on every change. */
-fun Context.streamActiveHUDSettings(): Flow<HUDSettings> =
+fun Context.streamActiveHUDConfig(): Flow<HUDConfig> =
     dataStore.data
         .map {
-            resolveHUDSettings(it[activeProfileIdKey], it.hudOverrides(), it.sharedHUDSettings())
+            resolveHUDConfig(it[activeProfileIdKey], it.hudOverrides(), it.sharedHUDConfig())
         }
         .distinctUntilChanged()
 
@@ -403,7 +402,7 @@ suspend fun Context.recordActiveProfile(id: String, name: String) {
 }
 
 /** Applies [transform] to the HUD in [scope], on fresh preferences so no neighbour is reverted. */
-suspend fun Context.updateHUDSettings(scope: HUDScope, transform: (HUDSettings) -> HUDSettings) {
+suspend fun Context.updateHUDConfig(scope: HUDScope, transform: (HUDConfig) -> HUDConfig) {
     dataStore.edit { prefs ->
         prefs.writeProfileHUDs(applyHUDEdit(prefs.profileHUDs(), scope, transform))
     }
@@ -413,13 +412,13 @@ suspend fun Context.setHUDCustom(id: String, custom: Boolean) {
     dataStore.edit { prefs ->
         prefs[hudOverridesKey] =
             json.encodeToString(
-                setCustom(prefs.hudOverrides(), id, custom, prefs.sharedHUDSettings())
+                setCustom(prefs.hudOverrides(), id, custom, prefs.sharedHUDConfig())
             )
     }
 }
 
 /** Changes the HUD the active profile shows: its own while Custom, else Shared. */
-suspend fun Context.updateActiveHUDSettings(transform: (HUDSettings) -> HUDSettings) {
+suspend fun Context.updateActiveHUDConfig(transform: (HUDConfig) -> HUDConfig) {
     dataStore.edit { prefs ->
         val scope = hudScopeFor(prefs[activeProfileIdKey], prefs.hudOverrides())
         prefs.writeProfileHUDs(applyHUDEdit(prefs.profileHUDs(), scope, transform))
@@ -433,14 +432,14 @@ suspend fun Context.updateActiveHUDSettings(transform: (HUDSettings) -> HUDSetti
 // never reads the HUD value, and its mode is always ON (see toFieldConfig) so a placed field
 // always renders, never inheriting the HUD's OFF/CLIMBS strip behaviour.
 
-// Resolves the HUD sparkline config: own key first, then the legacy embedded HUDConfig
+// Resolves the HUD sparkline config: own key first, then the legacy embedded HUDSlots
 // blob (pre-split installs), then defaults.
 private fun Preferences.hudSparklineConfig(): SparklineConfig =
     this[sparklineConfigKey]?.let {
         runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
     }
-        ?: this[hudConfigKey]
-            ?.let { runCatching { json.decodeFromString<HUDConfig>(it) }.getOrNull() }
+        ?: this[hudSlotsKey]
+            ?.let { runCatching { json.decodeFromString<HUDSlots>(it) }.getOrNull() }
             ?.sparkline
         ?: SparklineConfig()
 
@@ -972,7 +971,7 @@ suspend fun Context.saveDataFieldDesignConfig(config: DataFieldDesignConfig) =
  * goes through the same helpers as the per-key streams, so the two cannot drift.
  */
 data class ConfigSnapshot(
-    val hud: HUDConfig,
+    val hud: HUDSlots,
     val hudSparkline: SparklineConfig,
     val fieldSparkline: SparklineConfig,
     val gradeMap: GradeMapConfig,
@@ -1010,7 +1009,7 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
     dataStore.data
         .map { prefs ->
             ConfigSnapshot(
-                hud = prefs.config(hudConfigKey, HUDConfig()),
+                hud = prefs.config(hudSlotsKey, HUDSlots()),
                 hudSparkline = prefs.hudSparklineConfig(),
                 fieldSparkline = prefs.fieldSparklineConfig(),
                 gradeMap = prefs.config(gradeMapConfigKey, GradeMapConfig()),

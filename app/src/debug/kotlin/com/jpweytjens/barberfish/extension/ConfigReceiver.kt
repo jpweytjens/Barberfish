@@ -69,8 +69,8 @@ class ConfigReceiver : BroadcastReceiver() {
     private suspend fun applyConfig(app: Context, name: String, text: String) {
         when (name) {
             "hud" -> {
-                val cfg = json.decodeFromString<HUDConfig>(text)
-                app.saveHUDConfig(cfg)
+                val cfg = json.decodeFromString<HUDSlots>(text)
+                app.saveHUDSlots(cfg)
                 app.saveHudSparklineConfig(cfg.sparkline)
             }
             "zone" -> app.saveZoneConfig(json.decodeFromString<ZoneConfig>(text))
@@ -85,7 +85,7 @@ class ConfigReceiver : BroadcastReceiver() {
         when (name) {
             "hud" ->
                 json.encodeToString(
-                    app.streamHUDConfig()
+                    app.streamHUDSlots()
                         .first()
                         .copy(sparkline = app.streamHudSparklineConfig().first())
                 )
