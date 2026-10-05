@@ -323,13 +323,12 @@ internal fun HUDProfilePicker(
             onValueChange = {},
             readOnly = true,
             label = { Text("Profile") },
-            suffix = {
-                Text(
-                    selectedId?.let { profileTag(it, overrides, activeId) } ?: sharedLabel,
-                    fontSize = 12.sp,
-                    color = Grey500,
-                )
-            },
+            singleLine = true,
+            // The tag sits under the field, not beside the name, so a long name keeps its width.
+            supportingText =
+                (selectedId?.let { profileTag(it, overrides, activeId) } ?: sharedLabel)
+                    .takeIf { it.isNotEmpty() }
+                    ?.let { tag -> { Text(tag, fontSize = 12.sp, color = Grey500) } },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier =
                 Modifier.testTag("bf:hud:profile-picker")
