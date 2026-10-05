@@ -75,6 +75,12 @@ barberfish_hud.xml (LinearLayout horizontal)
 
 The 4-col variant `barberfish_hud_four.xml` has the same shape plus a fourth `hud_slot_fourth` `FrameLayout`.
 
+### Per-profile settings
+
+HUD settings resolve per Karoo profile. The shared HUD keeps its keys, `three_column_config` and `sparkline_config`, and three more sit beside them: `hud_profile_overrides` (profile id to `HUDOverride(custom, settings)`), `discovered_profiles` (id to name, in the order first seen) and `active_profile_id`. `BarberfishExtension` subscribes to `ActiveRideProfile` for the life of the service and records every emission. The event fires on connect and on every swipe of the home-screen profile carousel, which is how the config screen learns the profiles.
+
+One rule decides which settings apply. `hudScopeFor(id, overrides)` gives a profile its own settings only while `custom` is true, and `resolveHUDSettings` reads through it, so a profile switched back to Shared never shows its kept settings. The HUD's live and preview flows and its strip read `streamActiveHUDSettings()`. The strip tap writes through `updateActiveHUDSparkline`, which targets the same scope, so a tap changes the HUD on screen. Config edits go through `applyHUDEdit`, applied to the screen state at once and again inside the DataStore edit on fresh preferences, so two quick edits cannot revert each other.
+
 ---
 
 ## Data flow
