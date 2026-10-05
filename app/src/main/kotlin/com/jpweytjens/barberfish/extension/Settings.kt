@@ -265,12 +265,7 @@ data class HUDSlots(
     val middleSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.HR),
     val rightSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Power),
     val fourthSlot: HUDSlotConfig = HUDSlotConfig(field = HUDSlotField.Grade),
-    val sparkline: SparklineConfig = SparklineConfig(),
 )
-
-fun Context.streamHUDSlots(): Flow<HUDSlots> = streamConfig(hudSlotsKey, HUDSlots())
-
-suspend fun Context.saveHUDSlots(config: HUDSlots) = saveConfig(hudSlotsKey, config)
 
 // --- Per-profile HUD ---
 // Every profile uses the Shared HUD (the two keys above) unless switched to Custom, in which case
@@ -432,22 +427,8 @@ suspend fun Context.updateActiveHUDConfig(transform: (HUDConfig) -> HUDConfig) {
 // never reads the HUD value, and its mode is always ON (see toFieldConfig) so a placed field
 // always renders, never inheriting the HUD's OFF/CLIMBS strip behaviour.
 
-// Resolves the HUD sparkline config: own key first, then the legacy embedded HUDSlots
-// blob (pre-split installs), then defaults.
 private fun Preferences.hudSparklineConfig(): SparklineConfig =
-    this[sparklineConfigKey]?.let {
-        runCatching { json.decodeFromString<SparklineConfig>(it) }.getOrNull()
-    }
-        ?: this[hudSlotsKey]
-            ?.let { runCatching { json.decodeFromString<HUDSlots>(it) }.getOrNull() }
-            ?.sparkline
-        ?: SparklineConfig()
-
-fun Context.streamHudSparklineConfig(): Flow<SparklineConfig> =
-    dataStore.data.map { it.hudSparklineConfig() }.distinctUntilChanged()
-
-suspend fun Context.saveHudSparklineConfig(config: SparklineConfig) =
-    saveConfig(sparklineConfigKey, config)
+    config(sparklineConfigKey, SparklineConfig())
 
 // Coerces a stored field config (or none) into the effective field config: plain defaults
 // when unset, and mode forced to ON so the standalone field always renders regardless of

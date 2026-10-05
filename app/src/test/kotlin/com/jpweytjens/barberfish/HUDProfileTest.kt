@@ -169,6 +169,13 @@ class HUDProfileTest {
     }
 
     @Test
+    fun `a stored HUD with the old embedded strip still decodes`() {
+        val json = Json { ignoreUnknownKeys = true }
+        val stored = """{"columns":4,"sparkline":{"mode":"CLIMBS","lookaheadKm":10}}"""
+        assertEquals(4, json.decodeFromString<HUDSlots>(stored).columns)
+    }
+
+    @Test
     fun `override map round-trips through json`() {
         val json = Json {
             ignoreUnknownKeys = true
