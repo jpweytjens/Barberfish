@@ -262,6 +262,7 @@ class MainActivity : ComponentActivity() {
         // The profile whose HUD the card edits; null is Shared. Set once from the first snapshot.
         var hudProfileId by remember { mutableStateOf<String?>(null) }
         var hudProfileChosen by remember { mutableStateOf(false) }
+        val pendingHUDWrites = remember { PendingHUDWrites() }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var gradeMapConfig by remember { mutableStateOf(GradeMapConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
@@ -320,8 +321,11 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(Unit) {
             launch {
                 streamConfigSnapshot().collect { snapshot ->
-                    hudConfig = snapshot.hud
-                    hudSparklineConfig = snapshot.hudSparkline
+                    if (pendingHUDWrites.idle) {
+                        hudConfig = snapshot.hud
+                        hudSparklineConfig = snapshot.hudSparkline
+                        hudOverrides = snapshot.hudOverrides
+                    }
                     fieldSparklineConfig = snapshot.fieldSparkline
                     gradeMapConfig = snapshot.gradeMap
                     powerFieldConfig = snapshot.powerField
@@ -349,7 +353,6 @@ class MainActivity : ComponentActivity() {
                     routeRemainingConfig = snapshot.routeRemaining
                     zoneConfig = snapshot.zone
                     dataFieldDesignConfig = snapshot.dataFieldDesign
-                    hudOverrides = snapshot.hudOverrides
                     discoveredProfiles = snapshot.discoveredProfiles
                     activeProfileId = snapshot.activeProfileId
                     if (!hudProfileChosen) {
@@ -403,7 +406,14 @@ class MainActivity : ComponentActivity() {
                             hudConfig = edited.shared.hud
                             hudSparklineConfig = edited.shared.sparkline
                             hudOverrides = edited.overrides
-                            lifecycleScope.launch { updateHUDSettings(scope, transform) }
+                            pendingHUDWrites.begin()
+                            lifecycleScope.launch {
+                                try {
+                                    updateHUDSettings(scope, transform)
+                                } finally {
+                                    pendingHUDWrites.end()
+                                }
+                            }
                         }
                         HUDProfilePicker(
                             selectedId = hudProfileId,
@@ -414,7 +424,14 @@ class MainActivity : ComponentActivity() {
                             onCustomChange = { custom ->
                                 hudProfileId?.let { id ->
                                     hudOverrides = setCustom(hudOverrides, id, custom, sharedHud)
-                                    lifecycleScope.launch { setHUDCustom(id, custom) }
+                                    pendingHUDWrites.begin()
+                                    lifecycleScope.launch {
+                                        try {
+                                            setHUDCustom(id, custom)
+                                        } finally {
+                                            pendingHUDWrites.end()
+                                        }
+                                    }
                                 }
                             },
                         )

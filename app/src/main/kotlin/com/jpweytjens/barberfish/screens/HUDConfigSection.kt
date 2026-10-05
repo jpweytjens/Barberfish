@@ -264,6 +264,25 @@ private fun HUDSlotEditor(
 }
 
 /**
+ * Counts the config screen's HUD writes still in flight. While any is pending, DataStore snapshots
+ * are held back: a snapshot from an earlier write lacks the later edits, and showing it would let
+ * the next edit build on stale values and write them back.
+ */
+internal class PendingHUDWrites {
+    private var count = 0
+    val idle: Boolean
+        get() = count == 0
+
+    fun begin() {
+        count++
+    }
+
+    fun end() {
+        count--
+    }
+}
+
+/**
  * Right-aligned dropdown tag for a profile: marks the exceptions, so a profile on Shared is bare.
  */
 internal fun profileTag(
