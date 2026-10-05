@@ -34,11 +34,10 @@ import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.lapNumberFrom
+import com.jpweytjens.barberfish.extension.streamActiveHUDSettings
 import com.jpweytjens.barberfish.extension.streamDataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamETAConfig
-import com.jpweytjens.barberfish.extension.streamHUDConfig
-import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamTimeConfig
 import com.jpweytjens.barberfish.extension.streamUserProfile
 import com.jpweytjens.barberfish.extension.streamZoneConfig
@@ -58,6 +57,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -94,7 +94,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 sparklineBitmapFlow(
                     karooSystem,
                     context,
-                    configFlow = context.streamHudSparklineConfig(),
+                    configFlow =
+                        context
+                            .streamActiveHUDSettings()
+                            .map { it.sparkline }
+                            .distinctUntilChanged(),
                     widthPx = dm.widthPixels,
                     heightPx = sparklineHeightPx,
                     isPreview = config.preview,
@@ -206,7 +210,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     override fun liveFlow(context: Context): Flow<HUDState> =
         combine(
-                context.streamHUDConfig(),
+                context.streamActiveHUDSettings().map { it.hud }.distinctUntilChanged(),
                 context.streamZoneConfig(),
                 karooSystem.streamUserProfile(),
             ) { cfg, zones, profile ->
@@ -232,7 +236,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
 
     override fun previewFlow(context: Context): Flow<HUDState> =
         combine(
-                context.streamHUDConfig(),
+                context.streamActiveHUDSettings().map { it.hud }.distinctUntilChanged(),
                 context.streamZoneConfig(),
                 karooSystem.streamUserProfile(),
             ) { cfg, zones, profile ->
