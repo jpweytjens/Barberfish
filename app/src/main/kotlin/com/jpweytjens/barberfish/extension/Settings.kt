@@ -418,15 +418,11 @@ suspend fun Context.setHUDCustom(id: String, custom: Boolean) {
     }
 }
 
-/** Changes the strip of the HUD the active profile shows: its own while Custom, else Shared. */
-suspend fun Context.updateActiveHUDSparkline(transform: (SparklineConfig) -> SparklineConfig) {
+/** Changes the HUD the active profile shows: its own while Custom, else Shared. */
+suspend fun Context.updateActiveHUDSettings(transform: (HUDSettings) -> HUDSettings) {
     dataStore.edit { prefs ->
         val scope = hudScopeFor(prefs[activeProfileIdKey], prefs.hudOverrides())
-        prefs.writeProfileHUDs(
-            applyHUDEdit(prefs.profileHUDs(), scope) {
-                it.copy(sparkline = transform(it.sparkline))
-            }
-        )
+        prefs.writeProfileHUDs(applyHUDEdit(prefs.profileHUDs(), scope, transform))
     }
 }
 

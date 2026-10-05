@@ -36,10 +36,10 @@ class SparklineTapReceiver : BroadcastReceiver() {
                         )
                     } else {
                         // Writes to the HUD the active profile shows: its own while Custom.
-                        context.updateActiveHUDSparkline { cfg ->
-                            val next = nextLookahead(cfg.lookaheadKm)
+                        context.updateActiveHUDSettings { settings ->
+                            val next = nextLookahead(settings.sparkline.lookaheadKm)
                             tapSignal.value = System.currentTimeMillis() to next
-                            cfg.copy(lookaheadKm = next)
+                            settings.copy(sparkline = settings.sparkline.copy(lookaheadKm = next))
                         }
                     }
                 }
