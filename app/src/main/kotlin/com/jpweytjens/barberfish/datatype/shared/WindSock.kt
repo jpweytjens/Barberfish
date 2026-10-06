@@ -61,6 +61,18 @@ fun windUnitFor(profile: UserProfile): WindUnit =
 fun windSockBands(speed: Double, unit: WindUnit): Int =
     (speed / unit.perBand).roundToInt().coerceIn(0, WindSockGeometry.MAX_BANDS)
 
+/**
+ * Where the wind blows relative to [courseDeg], clockwise in [0, 360): 0 straight from behind, 180
+ * straight ahead. The same convention as the headwind extension's own headwind stream, so the field
+ * agrees with that extension's fields on the same course.
+ */
+fun relativeWindDeg(windFromDeg: Double, courseDeg: Double): Double =
+    ((windFromDeg + 180.0 - courseDeg) % 360.0 + 360.0) % 360.0
+
+/** The along-course part of [windSpeed] at [relativeWindDeg]: positive into the wind. */
+fun headwindComponent(windSpeed: Double, relativeWindDeg: Double): Double =
+    -cos(relativeWindDeg * PI / 180.0) * windSpeed
+
 /** Grade-field convention: bare into the wind, minus with it, no decimals. */
 fun formatHeadwind(speed: Double): String = speed.roundToInt().toString()
 
