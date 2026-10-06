@@ -28,15 +28,13 @@ object WindSockGeometry {
     fun lengthDp(bands: Int): Float = bands.coerceIn(0, MAX_BANDS) * BAND_LENGTH_DP
 }
 
-/** The headwind extension's id and the four streams Barberfish reads from it. */
+/** The headwind extension's id and the two streams Barberfish reads from it. */
 const val HEADWIND_EXTENSION = "karoo-headwind"
 
 /** The headwind extension's Android package, for the config screen's installed check. */
 const val HEADWIND_PACKAGE = "de.timklge.karooheadwind"
 val WIND_DIRECTION_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windDirection")
-val HEADWIND_ANGLE_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "headwind")
 val WIND_SPEED_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windSpeed")
-val HEADWIND_SPEED_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "headwindSpeed")
 
 /** The one map symbol id. A ShowSymbols for an existing id updates it in place. */
 const val WIND_SOCK_ID = "barberfish-wind-sock"

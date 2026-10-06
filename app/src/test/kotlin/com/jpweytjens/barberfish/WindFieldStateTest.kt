@@ -43,17 +43,25 @@ class WindFieldStateTest {
         )
     private val cfg = WindFieldConfig(colorMode = ZoneColorMode.TEXT)
 
+    private fun state(
+        windFrom: StreamState,
+        windSpeed: StreamState,
+        courseDeg: Double? = 0.0,
+        colorMode: ZoneColorMode = ZoneColorMode.TEXT,
+    ) =
+        WindField.toFieldState(
+            windDirection = windFrom,
+            windSpeed = windSpeed,
+            courseDeg = courseDeg,
+            profile = metric,
+            cfg = WindFieldConfig(colorMode = colorMode),
+        )
+
     @Test
     fun front_right_headwind_gives_number_arrow_and_red() {
-        val state =
-            WindField.toFieldState(
-                angle = streaming("a", 225.0),
-                headwindSpeed = streaming("h", 12.4),
-                windSpeed = streaming("w", 15.0),
-                profile = metric,
-                cfg = cfg,
-            )
-        assertEquals("12", state.primary)
+        // Riding north, 15 km/h from the north-east: 225 degrees, 15 cos 45 = 10.6 into the wind.
+        val state = state(streaming("d", 45.0), streaming("w", 15.0))
+        assertEquals("11", state.primary)
         assertEquals("Wind", state.label)
         assertEquals(225f, state.windArrowDeg ?: -1f, 0.001f)
         assertTrue((state.color as FieldColor.Threshold).factor < 0f)
@@ -61,73 +69,50 @@ class WindFieldStateTest {
 
     @Test
     fun tailwind_prints_minus_and_green() {
-        val state =
-            WindField.toFieldState(
-                angle = streaming("a", 0.0),
-                headwindSpeed = streaming("h", -7.6),
-                windSpeed = streaming("w", 8.0),
-                profile = metric,
-                cfg = cfg,
-            )
+        val state = state(streaming("d", 180.0), streaming("w", 8.0))
         assertEquals("-8", state.primary)
+        assertEquals(0f, state.windArrowDeg ?: -1f, 0.001f)
         assertTrue((state.color as FieldColor.Threshold).factor > 0f)
     }
 
     @Test
+    fun the_reading_turns_with_the_course() {
+        // The same north wind: dead ahead riding north, on the left riding east.
+        val north = state(streaming("d", 0.0), streaming("w", 10.0), courseDeg = 0.0)
+        val east = state(streaming("d", 0.0), streaming("w", 10.0), courseDeg = 90.0)
+        assertEquals("10", north.primary)
+        assertEquals(180f, north.windArrowDeg ?: -1f, 0.001f)
+        assertEquals("0", east.primary)
+        assertEquals(90f, east.windArrowDeg ?: -1f, 0.001f)
+    }
+
+    @Test
     fun calm_draws_no_arrow_and_prints_zero() {
-        val state =
-            WindField.toFieldState(
-                angle = streaming("a", 90.0),
-                headwindSpeed = streaming("h", 0.2),
-                windSpeed = streaming("w", 1.0),
-                profile = metric,
-                cfg = cfg,
-            )
+        val state = state(streaming("d", 270.0), streaming("w", 1.0))
         assertEquals("0", state.primary)
         assertNull(state.windArrowDeg)
     }
 
     @Test
     fun no_forecast_is_the_no_wind_data_state_and_drops_the_hud_column() {
-        // Before the first forecast the extension's windSpeed stream is silent while the other
-        // two already stream zeros; the SDK reports the silent one as NotAvailable.
-        val state =
-            WindField.toFieldState(
-                angle = streaming("a", 0.0),
-                headwindSpeed = streaming("h", 0.0),
-                windSpeed = StreamState.NotAvailable,
-                profile = metric,
-                cfg = cfg,
-            )
+        // Before the first forecast the extension's streams are silent; the SDK reports a silent
+        // stream as NotAvailable.
+        val state = state(StreamState.NotAvailable, StreamState.NotAvailable)
         assertEquals("No wind data", state.primary)
         assertTrue(state.noSensor)
         assertEquals(FieldColor.StreamState, state.color)
     }
 
     @Test
-    fun a_searching_stream_also_reads_no_wind_data() {
-        val state =
-            WindField.toFieldState(
-                angle = StreamState.Searching,
-                headwindSpeed = streaming("h", 0.0),
-                windSpeed = streaming("w", 0.0),
-                profile = metric,
-                cfg = cfg,
-            )
+    fun one_silent_stream_is_enough_for_no_wind_data() {
+        val state = state(streaming("d", 0.0), StreamState.Searching)
         assertEquals("No wind data", state.primary)
         assertTrue(state.noSensor)
     }
 
     @Test
     fun colour_off_keeps_the_arrow_but_not_the_colour() {
-        val state =
-            WindField.toFieldState(
-                angle = streaming("a", 180.0),
-                headwindSpeed = streaming("h", 20.0),
-                windSpeed = streaming("w", 20.0),
-                profile = metric,
-                cfg = WindFieldConfig(colorMode = ZoneColorMode.NONE),
-            )
+        val state = state(streaming("d", 0.0), streaming("w", 20.0), colorMode = ZoneColorMode.NONE)
         assertEquals(FieldColor.Default, state.color)
         assertEquals(180f, state.windArrowDeg ?: -1f, 0.001f)
     }
@@ -140,78 +125,30 @@ class WindFieldStateTest {
         assertTrue(states.any { it.windArrowDeg == 180f })
     }
 
-    private val live =
-        WindField.toFieldState(
-            angle = streaming("a", 225.0),
-            headwindSpeed = streaming("h", 12.4),
-            windSpeed = streaming("w", 15.0),
-            profile = metric,
-            cfg = cfg,
-        )
-
     @Test
     fun before_any_course_the_field_is_searching() {
-        val state = WindField.heldWindState(previous = null, hasCourse = false, fresh = live)
+        val state = state(streaming("d", 45.0), streaming("w", 15.0), courseDeg = null)
         assertEquals("Searching…", state.primary)
         assertEquals("Wind", state.label)
     }
 
     @Test
-    fun with_a_course_the_fresh_reading_shows() {
-        val state = WindField.heldWindState(previous = null, hasCourse = true, fresh = live)
-        assertEquals(live, state)
-    }
-
-    @Test
-    fun without_a_course_the_last_live_reading_is_held_ungreyed() {
-        // At rest the extension reports a dead tailwind at full strength; ignore it.
-        val restingTailwind =
-            WindField.toFieldState(
-                angle = streaming("a", 0.0),
-                headwindSpeed = streaming("h", -15.0),
-                windSpeed = streaming("w", 15.0),
-                profile = metric,
-                cfg = cfg,
-            )
-        val state =
-            WindField.heldWindState(previous = live, hasCourse = false, fresh = restingTailwind)
-        assertEquals(live, state)
-    }
-
-    @Test
-    fun a_text_state_always_shows_even_without_a_course() {
-        val state =
-            WindField.heldWindState(
-                previous = live,
-                hasCourse = false,
-                fresh = WindField.noWindData(),
-            )
+    fun no_wind_data_shows_even_before_any_course() {
+        val state = state(StreamState.NotAvailable, StreamState.NotAvailable, courseDeg = null)
         assertEquals("No wind data", state.primary)
     }
 
     @Test
-    fun a_held_text_state_is_not_treated_as_a_reading() {
-        val state =
-            WindField.heldWindState(
-                previous = WindField.noWindData(),
-                hasCourse = false,
-                fresh = live,
-            )
-        assertEquals("Searching…", state.primary)
-    }
-
-    @Test
-    fun the_live_flow_holds_the_reading_when_a_later_fix_has_no_course() = runBlocking {
+    fun the_live_flow_projects_the_wind_onto_the_held_course() = runBlocking {
         val here = LatLng(51.0, 4.0)
-        val fixes = MutableStateFlow(RiderFix(null, null, null))
-        val headwindSpeed = MutableStateFlow(streaming("h", 12.4))
+        val fixes = MutableStateFlow(RiderFix(null, null))
+        val windFrom = MutableStateFlow(streaming("d", 45.0))
         val seen = mutableListOf<String>()
         val collector =
             launch(Dispatchers.Unconfined) {
-                WindField.heldStates(
+                WindField.fieldStates(
                         fixes = fixes,
-                        angle = MutableStateFlow(streaming("a", 225.0)),
-                        headwindSpeed = headwindSpeed,
+                        windDirection = windFrom,
                         windSpeed = MutableStateFlow(streaming("w", 15.0)),
                         profile = metric,
                         cfg = cfg,
@@ -221,18 +158,19 @@ class WindFieldStateTest {
         yield()
         assertEquals(listOf("Searching…"), seen)
 
-        fixes.value = RiderFix(here, 90.0, 90.0)
+        fixes.value = RiderFix(here, 0.0)
         yield()
-        assertEquals("12", seen.last())
+        assertEquals("11", seen.last())
 
-        // At rest the fix carries no course and the extension reports a dead tailwind at full
-        // strength; the field must keep the last reading, not show the tailwind.
-        fixes.value = RiderFix(here, 90.0, null)
+        // At rest streamRiderFix keeps the last course; a wind shift still reaches the field,
+        // projected onto that held course.
+        windFrom.value = streaming("d", 0.0)
         yield()
-        headwindSpeed.value = streaming("h", -15.0)
+        assertEquals("15", seen.last())
+
+        fixes.value = RiderFix(here, 180.0)
         yield()
-        assertEquals("12", seen.last())
-        assertTrue("-15" !in seen)
+        assertEquals("-15", seen.last())
 
         collector.cancel()
     }
