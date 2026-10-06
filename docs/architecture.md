@@ -352,17 +352,22 @@ most; calm draws no arrow in the field. Speed arrives in the Headwind
 extension's configured unit, which Barberfish cannot read; it assumes that
 extension's default for the Karoo profile (km/h or mph).
 
+The field and the sock read the same two streams, `windDirection` and
+`windSpeed`, and use the same course: the one from `streamRiderFix`, held at its
+last non-null value so it survives a stop. The field projects the wind onto that
+course with `relativeWindDeg` and `headwindComponent`, which follow the Headwind
+extension's own convention; `WindProjectionTest` pins them against a port of its
+formula, so the field agrees with that extension's fields on the same course.
+Its relative streams go unused, since they take the extension's own course and
+report a full tailwind whenever it has none.
+
 Non-streaming states. The Headwind extension caches its forecast, interpolates
 between forecast hours by the clock, and reports no data age, so staleness is
-not detectable from outside and Barberfish does not fake one. Its streams keep
-emitting while a forecast is missing (zeros) and while the fix has no course
-(a tailwind at full strength), so `WindField` applies its own rule,
-`heldWindState`: a text state always shows; with a course the fresh reading
-shows; without one the last live reading is held, ungreyed; before any live
-reading, "Searching…". The course comes from `streamRiderFix`, shared with the
-map sock, which holds it at the last non-null value. Every stream state other
-than streaming reads "No wind data", with `noSensor` so a HUD column
-collapses.
+not detectable from outside and Barberfish does not fake one (a download-time
+stream is requested in karoo-headwind#202). Any wind stream other than
+streaming reads "No wind data", with `noSensor` so a HUD column collapses, even
+before the first course. With wind but no course yet, the field reads
+"Searching…".
 
 App detection lives in the config screen only: `MainActivity` asks the package
 manager for the Headwind package on every resume (the manifest's `<queries>`
