@@ -70,14 +70,16 @@ class SpeedWindSlotTest {
             smoothing,
         )
 
-    private fun wind(angle: Double, headwind: Double, windSpeed: Double) =
-        WindField.toFieldState(single(angle), single(headwind), single(windSpeed), metric, cfg)
+    // Riding north (course 0): the wind's direction is where it blows from.
+    private fun wind(windFromDeg: Double, windSpeed: Double) =
+        WindField.toFieldState(single(windFromDeg), single(windSpeed), 0.0, metric, cfg)
 
     @Test
     fun both_live_stack_speed_over_the_wind() {
-        val w = wind(225.0, 12.4, 15.0)
+        // 15 km/h from the north-east: 225 degrees, 15 cos 45 = 10.6 into the wind.
+        val w = wind(45.0, 15.0)
         val s = speedWindState(speed(28.4), w)
-        assertEquals("12", s.primary)
+        assertEquals("11", s.primary)
         assertEquals("28.4", s.speedRow)
         assertEquals("Speed", s.label)
         assertEquals(R.drawable.ic_col_speed, s.iconRes)
@@ -90,21 +92,21 @@ class SpeedWindSlotTest {
 
     @Test
     fun tailwind_colours_green() {
-        val s = speedWindState(speed(30.0), wind(0.0, -6.0, 6.0))
+        val s = speedWindState(speed(30.0), wind(180.0, 6.0))
         assertEquals("-6", s.primary)
         assertTrue((s.color as FieldColor.Threshold).factor > 0f)
     }
 
     @Test
     fun calm_keeps_the_stack_without_an_arrow() {
-        val s = speedWindState(speed(25.0), wind(90.0, 0.0, 1.0))
+        val s = speedWindState(speed(25.0), wind(90.0, 1.0))
         assertNull(s.windArrowDeg)
         assertNotNull(s.speedRow)
     }
 
     @Test
     fun smoothed_speed_label_passes_through() {
-        val s = speedWindState(speed(25.0, SpeedSmoothingStream.S3), wind(90.0, 3.0, 9.0))
+        val s = speedWindState(speed(25.0, SpeedSmoothingStream.S3), wind(90.0, 9.0))
         assertEquals("3s Speed", s.label)
     }
 
@@ -127,7 +129,7 @@ class SpeedWindSlotTest {
 
     @Test
     fun speed_missing_shows_the_plain_wind() {
-        val w = wind(225.0, 12.4, 15.0)
+        val w = wind(45.0, 15.0)
         assertEquals(w, speedWindState(FieldState.searching("Speed"), w))
     }
 
@@ -148,7 +150,7 @@ class SpeedWindSlotTest {
 
     @Test
     fun stack_follows_both_flows() = runBlocking {
-        val w = wind(180.0, 10.0, 10.0)
+        val w = wind(0.0, 10.0)
         val states = flowOf(w).withSpeedStates(flowOf(speed(20.0))).toList()
         assertEquals("20.0", states.last().speedRow)
         assertEquals("10", states.last().primary)
