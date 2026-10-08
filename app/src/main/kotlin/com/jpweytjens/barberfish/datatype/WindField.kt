@@ -4,12 +4,13 @@ import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
-import com.jpweytjens.barberfish.datatype.shared.HEADWIND_ANGLE_STREAM
-import com.jpweytjens.barberfish.datatype.shared.HEADWIND_SPEED_STREAM
+import com.jpweytjens.barberfish.datatype.shared.WIND_DIRECTION_STREAM
 import com.jpweytjens.barberfish.datatype.shared.WIND_SPEED_STREAM
 import com.jpweytjens.barberfish.datatype.shared.WindUnit
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.formatHeadwind
+import com.jpweytjens.barberfish.datatype.shared.headwindComponent
+import com.jpweytjens.barberfish.datatype.shared.relativeWindDeg
 import com.jpweytjens.barberfish.datatype.shared.windFieldColor
 import com.jpweytjens.barberfish.datatype.shared.windSockBands
 import com.jpweytjens.barberfish.datatype.shared.windUnitFor
@@ -26,14 +27,13 @@ import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.scan
 
 /**
  * Wind from the Headwind extension: a plain arrow turned by the rider-relative angle beside the
- * signed headwind component. Three of that extension's streams feed it; the profile decides the
- * unit the bands assume (see WindUnit).
+ * signed headwind component. That extension's absolute wind direction and speed are projected onto
+ * the rider's course, the same held course the map sock uses; the profile decides the unit the
+ * bands assume (see WindUnit).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WindField(private val karooSystem: KarooSystemService) :
@@ -65,84 +65,54 @@ class WindField(private val karooSystem: KarooSystemService) :
                 noSensor = true,
             )
 
-        /**
-         * What to show given the fresh reading and whether the fix carries a course. A text state
-         * always shows. With a course the fresh reading shows. Without one the last live reading is
-         * held, not greyed: the wind has not changed, only our heading is undefined, and the
-         * extension reports a dead tailwind at rest. Before any live reading, "Searching…".
-         */
-        fun heldWindState(
-            previous: FieldState?,
-            hasCourse: Boolean,
-            fresh: FieldState,
-        ): FieldState =
-            when {
-                fresh.color == FieldColor.StreamState -> fresh
-                hasCourse -> fresh
-                previous != null && previous.color != FieldColor.StreamState -> previous
-                else -> FieldState.searching(LABEL, ICON)
-            }
-
         /** Shared by the standalone field and the HUD slot. */
         fun liveStates(
             karooSystem: KarooSystemService,
             profile: UserProfile,
             cfg: WindFieldConfig,
         ): Flow<FieldState> =
-            heldStates(
+            fieldStates(
                 karooSystem.streamRiderFix(),
-                karooSystem.streamDataFlow(HEADWIND_ANGLE_STREAM),
-                karooSystem.streamDataFlow(HEADWIND_SPEED_STREAM),
+                karooSystem.streamDataFlow(WIND_DIRECTION_STREAM),
                 karooSystem.streamDataFlow(WIND_SPEED_STREAM),
                 profile,
                 cfg,
             )
 
-        /**
-         * The field's states over time: the fresh reading from the three streams, passed through
-         * [heldWindState] with whether the latest fix itself carried a course.
-         */
-        // Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
-        // renderHeaderBitmap): one parameter per independent input, no grouping type earns its
-        // keep.
-        @Suppress("LongParameterList")
-        internal fun heldStates(
+        /** The field's states over time: the latest wind, projected onto the latest held course. */
+        internal fun fieldStates(
             fixes: Flow<RiderFix>,
-            angle: Flow<StreamState>,
-            headwindSpeed: Flow<StreamState>,
+            windDirection: Flow<StreamState>,
             windSpeed: Flow<StreamState>,
             profile: UserProfile,
             cfg: WindFieldConfig,
         ): Flow<FieldState> =
-            combine(fixes, angle, headwindSpeed, windSpeed) { rider, a, h, w ->
-                    (rider.fixCourseDeg != null) to toFieldState(a, h, w, profile, cfg)
-                }
-                .scan<Pair<Boolean, FieldState>, FieldState?>(null) { held, (hasCourse, fresh) ->
-                    heldWindState(held, hasCourse, fresh)
-                }
-                .filterNotNull()
+            combine(fixes, windDirection, windSpeed) { rider, direction, speed ->
+                toFieldState(direction, speed, rider.courseDeg, profile, cfg)
+            }
 
-        // Suppressed: the stream guard plus the three value fallbacks share one text state
-        // for every non-streaming case, which is inherently more returns than the default
-        // threshold allows.
+        /**
+         * One reading from the two wind streams and the held course. Any non-streaming wind stream
+         * reads "No wind data", even before a course; with wind but no course yet, "Searching…".
+         */
+        // Suppressed: the stream guard plus the value and course fallbacks share one text state
+        // each, which is inherently more returns than the default threshold allows.
         @Suppress("ReturnCount")
         fun toFieldState(
-            angle: StreamState,
-            headwindSpeed: StreamState,
+            windDirection: StreamState,
             windSpeed: StreamState,
+            courseDeg: Double?,
             profile: UserProfile,
             cfg: WindFieldConfig,
         ): FieldState {
-            if (
-                angle !is StreamState.Streaming ||
-                    headwindSpeed !is StreamState.Streaming ||
-                    windSpeed !is StreamState.Streaming
-            ) {
+            if (windDirection !is StreamState.Streaming || windSpeed !is StreamState.Streaming) {
                 return noWindData()
             }
-            val angleDeg = angle.single() ?: return noWindData()
-            val headwind = headwindSpeed.single() ?: return noWindData()
+            val windFromDeg = windDirection.single() ?: return noWindData()
             val speed = windSpeed.single() ?: return noWindData()
+            if (courseDeg == null) return FieldState.searching(LABEL, ICON)
+            val angleDeg = relativeWindDeg(windFromDeg, courseDeg)
+            val headwind = headwindComponent(speed, angleDeg)
             val unit = windUnitFor(profile)
             val bands = windSockBands(speed, unit)
             return FieldState(

@@ -28,15 +28,13 @@ object WindSockGeometry {
     fun lengthDp(bands: Int): Float = bands.coerceIn(0, MAX_BANDS) * BAND_LENGTH_DP
 }
 
-/** The headwind extension's id and the four streams Barberfish reads from it. */
+/** The headwind extension's id and the two streams Barberfish reads from it. */
 const val HEADWIND_EXTENSION = "karoo-headwind"
 
 /** The headwind extension's Android package, for the config screen's installed check. */
 const val HEADWIND_PACKAGE = "de.timklge.karooheadwind"
 val WIND_DIRECTION_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windDirection")
-val HEADWIND_ANGLE_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "headwind")
 val WIND_SPEED_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windSpeed")
-val HEADWIND_SPEED_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "headwindSpeed")
 
 /** The one map symbol id. A ShowSymbols for an existing id updates it in place. */
 const val WIND_SOCK_ID = "barberfish-wind-sock"
@@ -60,6 +58,18 @@ fun windUnitFor(profile: UserProfile): WindUnit =
 /** Standing bands for [speed] in [unit]: one per 3 knots, five at most, calm below half a band. */
 fun windSockBands(speed: Double, unit: WindUnit): Int =
     (speed / unit.perBand).roundToInt().coerceIn(0, WindSockGeometry.MAX_BANDS)
+
+/**
+ * Where the wind blows relative to [courseDeg], clockwise in [0, 360): 0 straight from behind, 180
+ * straight ahead. The same convention as the headwind extension's own headwind stream, so the field
+ * agrees with that extension's fields on the same course.
+ */
+fun relativeWindDeg(windFromDeg: Double, courseDeg: Double): Double =
+    ((windFromDeg + 180.0 - courseDeg) % 360.0 + 360.0) % 360.0
+
+/** The along-course part of [windSpeed] at [relativeWindDeg]: positive into the wind. */
+fun headwindComponent(windSpeed: Double, relativeWindDeg: Double): Double =
+    -cos(relativeWindDeg * PI / 180.0) * windSpeed
 
 /** Grade-field convention: bare into the wind, minus with it, no decimals. */
 fun formatHeadwind(speed: Double): String = speed.roundToInt().toString()
