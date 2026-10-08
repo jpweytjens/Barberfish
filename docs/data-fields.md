@@ -81,6 +81,10 @@ graphical Profile and Overview fields have [a page of their own](elevation-profi
 Wind reads the Headwind extension's forecast. Without it the field shows "No
 wind data", and the map windsock (switched on in the Wind card) stays hidden.
 
+As a HUD slot, Wind can also show your speed: turn on Show speed on the slot and
+the speed sits above the arrow and headwind number, with its own smoothing. The
+colour stays on the wind. Without wind data the slot shows plain speed.
+
 ## Duration formats
 
 Duration fields (time, ETA, daylight) use one of three formats, all unambiguous at any length:
