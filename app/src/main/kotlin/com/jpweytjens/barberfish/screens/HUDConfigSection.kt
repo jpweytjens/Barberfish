@@ -586,7 +586,7 @@ private fun HUDSlotFieldCard(
                     )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
-                HUDSlotField.Wind -> {}
+                HUDSlotField.Wind -> HUDWindCard(slot, onUpdate)
                 HUDSlotField.Distance -> {}
                 HUDSlotField.DistanceRemaining -> {}
                 HUDSlotField.ElevationRemaining -> {}
