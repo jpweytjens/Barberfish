@@ -68,6 +68,8 @@ android {
         disable += "ContentDescription"
         // Dependency freshness is a maintenance task, not a per-commit check.
         disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+        // targetSdk 34 is a deliberate choice for the Karoo, not a lag to be flagged.
+        disable += "OldTargetApi"
     }
 }
 

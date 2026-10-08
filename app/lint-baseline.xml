@@ -2,28 +2,6 @@
 <issues format="6" by="lint 8.13.2" type="baseline" client="gradle" dependencies="false" name="AGP (8.13.2)" variant="all" version="8.13.2">
 
     <issue
-        id="OldTargetApi"
-        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
-        errorLine1="        targetSdk = 34"
-        errorLine2="        ~~~~~~~~~~~~~~">
-        <location
-            file="build.gradle.kts"
-            line="22"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="OldTargetApi"
-        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details."
-        errorLine1="targetSdk = &quot;34&quot;"
-        errorLine2="            ~~~~">
-        <location
-            file="$HOME/Desktop/Barberfish/gradle/libs.versions.toml"
-            line="4"
-            column="13"/>
-    </issue>
-
-    <issue
         id="ModifierParameter"
         message="Modifier parameter should be the first optional parameter"
         errorLine1="    modifier: Modifier = Modifier,"
