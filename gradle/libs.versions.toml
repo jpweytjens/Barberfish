@@ -5,8 +5,7 @@ targetSdk = "34"
 kotlin = "2.4.20"
 
 [plugins]
-android-application = { id = "com.android.application", version = "8.13.2" }
-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version = "9.4.1" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 detekt = { id = "dev.detekt", version = "2.0.0-alpha.6" }
