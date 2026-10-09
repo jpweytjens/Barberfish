@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
-import android.graphics.Typeface
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 import io.hammerhead.karooext.models.ViewConfig
@@ -69,11 +68,8 @@ fun renderSpeedWindValueBitmap(
     val width = cellWidthPx.toInt().coerceAtLeast(1)
 
     fun paintAt(sizePx: Float, color: Int) =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("relative", Typeface.NORMAL)
-            textSize = sizePx
+        valuePaint(sizePx).apply {
             this.color = color
-            letterSpacing = LETTER_SPACING
             textAlign =
                 when (alignment) {
                     ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
