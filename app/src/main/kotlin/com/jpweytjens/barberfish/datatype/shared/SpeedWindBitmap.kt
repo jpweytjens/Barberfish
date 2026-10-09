@@ -9,12 +9,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 import io.hammerhead.karooext.models.ViewConfig
 
-/** Gap between the two rows, as in [renderTwoRowValueBitmap]. */
-internal const val SPEED_WIND_ROW_GAP_PX = 4f
-
-/** Share of a row's band a digit fills. Same value as TWO_ROW_DIGIT_FILL in BitmapValue.kt. */
-internal const val SPEED_WIND_DIGIT_FILL = 0.86f
-
 /** Where the speed-over-wind stack puts things, in px. */
 internal data class SpeedWindGeometry(
     val bandPx: Float,
@@ -34,18 +28,18 @@ internal fun speedWindGeometry(
     arrowBoxPx: Int,
     density: Float,
 ): SpeedWindGeometry {
-    val band = ((bitmapHeightPx - SPEED_WIND_ROW_GAP_PX) / 2f).coerceAtLeast(1f)
+    val band = ((bitmapHeightPx - TWO_ROW_GAP_PX) / 2f).coerceAtLeast(1f)
     val gap = (WIND_ARROW_GAP_DP * density).toInt()
-    return SpeedWindGeometry(band, SPEED_WIND_ROW_GAP_PX, arrowBoxPx, gap, arrowBoxPx + gap)
+    return SpeedWindGeometry(band, TWO_ROW_GAP_PX, arrowBoxPx, gap, arrowBoxPx + gap)
 }
 
 /**
  * The Wind slot with Show speed: [speedText] on the top row and [windText] on the bottom row, with
  * the wind arrow rotated by [angleDeg] in an [arrowBoxPx] square left of both rows, as
  * [renderWindArrowValueBitmap] places it. Both numbers share one font, sized so a digit fills
- * [SPEED_WIND_DIGIT_FILL] of a band and shrunk only if the wider row does not fit, and share one
- * edge per [alignment]. A null [angleDeg] (calm) leaves the arrow column empty so nothing moves.
- * Colour stays on the wind number; speed and arrow take the header colour.
+ * [TWO_ROW_DIGIT_FILL] of a band and shrunk only if the wider row does not fit, and share one edge
+ * per [alignment]. A null [angleDeg] (calm) leaves the arrow column empty so nothing moves. Colour
+ * stays on the wind number; speed and arrow take the header colour.
  */
 // Suppressed: matches the sibling renderers (renderWindArrowValueBitmap, renderTwoRowValueBitmap),
 // one parameter per independent input.
@@ -81,7 +75,7 @@ fun renderSpeedWindValueBitmap(
     val bounds = Rect()
     paintAt(100f, speedColor).getTextBounds("0", 0, 1, bounds)
     var fontPx =
-        if (bounds.height() > 0) 100f * geo.bandPx * SPEED_WIND_DIGIT_FILL / bounds.height()
+        if (bounds.height() > 0) 100f * geo.bandPx * TWO_ROW_DIGIT_FILL / bounds.height()
         else geo.bandPx
     val column = (width - geo.textLeftPx).coerceAtLeast(1).toFloat()
     val probe = paintAt(fontPx, speedColor)

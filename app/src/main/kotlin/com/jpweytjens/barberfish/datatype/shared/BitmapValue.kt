@@ -48,7 +48,10 @@ fun valueBitmapHeightPx(valueFontBaseSp: Int, density: Float): Int {
 
 // Fraction of a row's band the digits fill, leaving a small vertical margin so the top row
 // doesn't clip against the bitmap's top edge and the rows stay readable.
-private const val TWO_ROW_DIGIT_FILL = 0.86f
+internal const val TWO_ROW_DIGIT_FILL = 0.86f
+
+// Gap between the two stacked rows.
+internal const val TWO_ROW_GAP_PX = 4f
 
 /**
  * Render two stacked value rows into a full-cell-width `ARGB_8888` bitmap. The two rows share the
@@ -70,7 +73,7 @@ fun renderTwoRowValueBitmap(
     cellWidthPx: Float,
     color: Int,
     alignment: ViewConfig.Alignment,
-    rowGapPx: Float = 4f,
+    rowGapPx: Float = TWO_ROW_GAP_PX,
     marker: String = ASCENT_MARKER,
     row1Icon: Bitmap? = null,
     row2Icon: Bitmap? = null,

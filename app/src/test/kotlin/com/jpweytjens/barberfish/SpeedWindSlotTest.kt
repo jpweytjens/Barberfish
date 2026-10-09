@@ -5,8 +5,8 @@ import com.jpweytjens.barberfish.datatype.WindField
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
-import com.jpweytjens.barberfish.datatype.shared.SPEED_WIND_ROW_GAP_PX
 import com.jpweytjens.barberfish.datatype.shared.SlotState
+import com.jpweytjens.barberfish.datatype.shared.TWO_ROW_GAP_PX
 import com.jpweytjens.barberfish.datatype.shared.speedWindGeometry
 import com.jpweytjens.barberfish.datatype.shared.visibleColumns
 import com.jpweytjens.barberfish.datatype.speedWindState
@@ -181,7 +181,7 @@ class SpeedWindSlotTest {
         assertEquals(60, g.boxPx)
         assertEquals(7, g.gapPx)
         assertEquals(67, g.textLeftPx)
-        assertEquals(4f, SPEED_WIND_ROW_GAP_PX, 0f)
+        assertEquals(4f, TWO_ROW_GAP_PX, 0f)
     }
 
     @Test
