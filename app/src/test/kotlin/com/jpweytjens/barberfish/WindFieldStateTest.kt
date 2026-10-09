@@ -123,6 +123,8 @@ class WindFieldStateTest {
         assertTrue(states.size >= 4)
         assertTrue(states.any { it.windArrowDeg == null })
         assertTrue(states.any { it.windArrowDeg == 180f })
+        // A two-digit tailwind, as wide as the arrow's reference reading.
+        assertTrue(states.any { it.primary == "-24" })
     }
 
     @Test

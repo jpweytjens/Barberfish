@@ -138,6 +138,7 @@ class WindField(private val karooSystem: KarooSystemService) :
                     Sample(270f, 1.0, 14.0),
                     Sample(225f, 12.4, 15.0),
                     Sample(180f, 29.0, 29.0),
+                    Sample(20f, -24.0, 25.0),
                 )
                 .map { s ->
                     val bands = windSockBands(s.speed, unit)
