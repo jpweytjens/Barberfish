@@ -18,6 +18,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.WIND_ARROW_GAP_DP
+import com.jpweytjens.barberfish.datatype.shared.WIND_REFERENCE_TEXT
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
@@ -27,6 +28,7 @@ import com.jpweytjens.barberfish.datatype.shared.renderWindArrowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.speedWindValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.valuePaint
 import com.jpweytjens.barberfish.datatype.shared.windArrowBoxPx
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
@@ -204,12 +206,19 @@ private fun makeFieldRemoteViews(
     // single point every field value (standalone, HUD slot, preview) flows through.
     val valueText = field.primary.replace(',', '.')
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
-    // The wind arrow takes a square box of the value's height on the left; the number gets the
-    // rest and shrinks only if that is not enough.
+    // The wind arrow takes a square box on the left, sized once here for the number's width and
+    // the drawing; the number gets the rest and shrinks only if that is not enough.
+    val windGapPx = (WIND_ARROW_GAP_DP * density).toInt()
+    val fullSizePaint = valuePaint(sizeConfig.valueFontSizeBase * density)
+    val arrowBoxPx =
+        windArrowBoxPx(
+            bitmapHeightPx,
+            cellWidthPx,
+            fullSizePaint.measureText(WIND_REFERENCE_TEXT),
+            windGapPx,
+        )
     val valueWidthPx =
-        if (field.windArrowDeg != null)
-            cellWidthPx - windArrowBoxPx(bitmapHeightPx) - WIND_ARROW_GAP_DP * density
-        else cellWidthPx
+        if (field.windArrowDeg != null) cellWidthPx - arrowBoxPx - windGapPx else cellWidthPx
     val (fontSp, maxLines) =
         fontSizeForCell(
             valueText,
@@ -258,6 +267,7 @@ private fun makeFieldRemoteViews(
                 field,
                 valueText,
                 bitmapHeightPx,
+                arrowBoxPx,
                 cellWidthPx,
                 colors,
                 alignment,
@@ -269,6 +279,7 @@ private fun makeFieldRemoteViews(
                 text = valueText,
                 fontSizePx = fontSp * density,
                 bitmapHeightPx = bitmapHeightPx,
+                arrowBoxPx = arrowBoxPx,
                 cellWidthPx = cellWidthPx,
                 textColor = colors.valueText.toArgb(),
                 // Theme default text, or the on-fill pick in BACKGROUND mode: the arrow never

@@ -7,7 +7,6 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.SPEED_WIND_ROW_GAP_PX
 import com.jpweytjens.barberfish.datatype.shared.SlotState
-import com.jpweytjens.barberfish.datatype.shared.WindArrowGeometry
 import com.jpweytjens.barberfish.datatype.shared.speedWindGeometry
 import com.jpweytjens.barberfish.datatype.shared.visibleColumns
 import com.jpweytjens.barberfish.datatype.speedWindState
@@ -177,20 +176,20 @@ class SpeedWindSlotTest {
 
     @Test
     fun geometry_on_a_karoo_3_hud_slot() {
-        val g = speedWindGeometry(bitmapHeightPx = 60, density = 1.875f)
+        val g = speedWindGeometry(bitmapHeightPx = 60, arrowBoxPx = 60, density = 1.875f)
         assertEquals(28f, g.bandPx, 1e-6f)
-        assertEquals(28, g.boxPx)
+        assertEquals(60, g.boxPx)
         assertEquals(7, g.gapPx)
-        assertEquals(35, g.textLeftPx)
+        assertEquals(67, g.textLeftPx)
         assertEquals(4f, SPEED_WIND_ROW_GAP_PX, 0f)
-        assertTrue(WindArrowGeometry.sweepRadiusPx(g.boxPx.toFloat()) <= g.bandPx / 2f)
     }
 
     @Test
-    fun arrow_box_never_exceeds_a_band() {
-        for (h in listOf(40, 60, 67, 90, 130)) {
-            val g = speedWindGeometry(h, 1.875f)
-            assertTrue(g.boxPx <= g.bandPx)
+    fun the_rows_start_after_the_single_row_arrow_box() {
+        for (box in listOf(30, 45, 60)) {
+            val g = speedWindGeometry(bitmapHeightPx = 60, arrowBoxPx = box, density = 1.875f)
+            assertEquals(box, g.boxPx)
+            assertEquals(box + g.gapPx, g.textLeftPx)
         }
     }
 

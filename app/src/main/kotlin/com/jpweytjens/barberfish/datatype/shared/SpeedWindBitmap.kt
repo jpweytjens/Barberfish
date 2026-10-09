@@ -26,19 +26,23 @@ internal data class SpeedWindGeometry(
 )
 
 /**
- * The stack splits the value height into two bands like Ride Remaining. The wind arrow's box is a
- * square of one band, at the left edge, with the usual gap before the number column.
+ * The stack splits the value height into two bands like Ride Remaining. The wind arrow keeps the
+ * [arrowBoxPx] square of the single-row Wind slot, at the left edge, with the usual gap before the
+ * number column, so turning Show speed on or off leaves the arrow where it was.
  */
-internal fun speedWindGeometry(bitmapHeightPx: Int, density: Float): SpeedWindGeometry {
+internal fun speedWindGeometry(
+    bitmapHeightPx: Int,
+    arrowBoxPx: Int,
+    density: Float,
+): SpeedWindGeometry {
     val band = ((bitmapHeightPx - SPEED_WIND_ROW_GAP_PX) / 2f).coerceAtLeast(1f)
-    val box = windArrowBoxPx(band.toInt())
     val gap = (WIND_ARROW_GAP_DP * density).toInt()
-    return SpeedWindGeometry(band, SPEED_WIND_ROW_GAP_PX, box, gap, box + gap)
+    return SpeedWindGeometry(band, SPEED_WIND_ROW_GAP_PX, arrowBoxPx, gap, arrowBoxPx + gap)
 }
 
 /**
  * The Wind slot with Show speed: [speedText] on the top row and [windText] on the bottom row, with
- * the wind arrow rotated by [angleDeg] in a fixed column left of the wind number, as
+ * the wind arrow rotated by [angleDeg] in an [arrowBoxPx] square left of both rows, as
  * [renderWindArrowValueBitmap] places it. Both numbers share one font, sized so a digit fills
  * [SPEED_WIND_DIGIT_FILL] of a band and shrunk only if the wider row does not fit, and share one
  * edge per [alignment]. A null [angleDeg] (calm) leaves the arrow column empty so nothing moves.
@@ -52,6 +56,7 @@ fun renderSpeedWindValueBitmap(
     windText: String,
     angleDeg: Float?,
     bitmapHeightPx: Int,
+    arrowBoxPx: Int,
     cellWidthPx: Float,
     speedColor: Int,
     windColor: Int,
@@ -59,7 +64,8 @@ fun renderSpeedWindValueBitmap(
     alignment: ViewConfig.Alignment,
     context: Context,
 ): Bitmap {
-    val geo = speedWindGeometry(bitmapHeightPx, context.resources.displayMetrics.density)
+    val geo =
+        speedWindGeometry(bitmapHeightPx, arrowBoxPx, context.resources.displayMetrics.density)
     val width = cellWidthPx.toInt().coerceAtLeast(1)
 
     fun paintAt(sizePx: Float, color: Int) =
@@ -114,13 +120,14 @@ fun renderSpeedWindValueBitmap(
                 text = "",
                 fontSizePx = 1f,
                 bitmapHeightPx = geo.boxPx,
+                arrowBoxPx = geo.boxPx,
                 cellWidthPx = geo.boxPx.toFloat(),
                 textColor = arrowColor,
                 arrowColor = arrowColor,
                 alignment = ViewConfig.Alignment.LEFT,
                 context = context,
             )
-        canvas.drawBitmap(arrow, 0f, windTop + (geo.bandPx - geo.boxPx) / 2f, null)
+        canvas.drawBitmap(arrow, 0f, (bitmapHeightPx - geo.boxPx) / 2f, null)
     }
     return bitmap
 }
@@ -136,6 +143,7 @@ internal fun speedWindValueBitmap(
     field: FieldState,
     valueText: String,
     bitmapHeightPx: Int,
+    arrowBoxPx: Int,
     cellWidthPx: Float,
     colors: ColorConfig,
     alignment: ViewConfig.Alignment,
@@ -146,6 +154,7 @@ internal fun speedWindValueBitmap(
         windText = valueText,
         angleDeg = field.windArrowDeg,
         bitmapHeightPx = bitmapHeightPx,
+        arrowBoxPx = arrowBoxPx,
         cellWidthPx = cellWidthPx,
         speedColor = colors.headerText.toArgb(),
         windColor = colors.valueText.toArgb(),

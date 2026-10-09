@@ -6,24 +6,38 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
-import android.graphics.Typeface
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withRotation
+import androidx.core.graphics.withTranslation
 import io.hammerhead.karooext.models.ViewConfig
 
 /** Gap between the arrow box and the number, in dp. */
 internal const val WIND_ARROW_GAP_DP = 4f
 
-/** The arrow's sweep circle has the diameter of the value's cap height: the box is that square. */
-internal fun windArrowBoxPx(bitmapHeightPx: Int): Int = bitmapHeightPx
+/** The widest headwind reading the arrow leaves full-size room for: a minus and two digits. */
+internal const val WIND_REFERENCE_TEXT = "-29"
 
 /**
- * One value bitmap: the arrow on the left, rotated by [angleDeg] about the box centre, and [text]
- * on the right with its baseline on the bitmap's bottom edge, as [renderValueBitmap] does. The
- * bitmap always spans the full cell width, so the arrow sits at a fixed x whatever the number's
- * width. The number's font size is decided by the caller, which hands [fontSizeForCell] the width
- * left after the arrow box and gap. [arrowColor] is the cell's header text colour, never the zone
- * colour: colour stays on the number.
+ * Side of the arrow's square box: what the cell leaves after the gap and [referenceWidthPx] (the
+ * width of [WIND_REFERENCE_TEXT] at the full value size), between half and all of the value height.
+ * It depends on the cell, not the reading, so the arrow keeps its size while the wind changes.
+ */
+internal fun windArrowBoxPx(
+    bitmapHeightPx: Int,
+    cellWidthPx: Float,
+    referenceWidthPx: Float,
+    gapPx: Int,
+): Int =
+    (cellWidthPx - gapPx - referenceWidthPx).toInt().coerceIn(bitmapHeightPx / 2, bitmapHeightPx)
+
+/**
+ * One value bitmap: the arrow on the left in an [arrowBoxPx] square centred on the value height,
+ * rotated by [angleDeg] about the box centre, and [text] on the right with its baseline on the
+ * bitmap's bottom edge, as [renderValueBitmap] does. The bitmap always spans the full cell width,
+ * so the arrow sits at a fixed x whatever the number's width. The number's font size is decided by
+ * the caller, which hands [fontSizeForCell] the width left after the arrow box and gap. The caller
+ * sizes the box with [windArrowBoxPx], once for both. [arrowColor] is the cell's header text
+ * colour, never the zone colour: colour stays on the number.
  */
 // Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
 // renderHeaderBitmap) — one parameter per independent input, no grouping type would earn its keep.
@@ -33,6 +47,7 @@ fun renderWindArrowValueBitmap(
     text: String,
     fontSizePx: Float,
     bitmapHeightPx: Int,
+    arrowBoxPx: Int,
     cellWidthPx: Float,
     textColor: Int,
     arrowColor: Int,
@@ -40,14 +55,10 @@ fun renderWindArrowValueBitmap(
     context: Context,
 ): Bitmap {
     val density = context.resources.displayMetrics.density
-    val box = windArrowBoxPx(bitmapHeightPx)
     val gap = (WIND_ARROW_GAP_DP * density).toInt()
     val textPaint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("relative", Typeface.NORMAL)
-            textSize = fontSizePx
+        valuePaint(fontSizePx).apply {
             color = textColor
-            letterSpacing = LETTER_SPACING
             textAlign =
                 when (alignment) {
                     ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
@@ -60,15 +71,17 @@ fun renderWindArrowValueBitmap(
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
 
-    drawWindArrow(canvas, angleDeg, box.toFloat(), arrowColor)
+    canvas.withTranslation(0f, (bitmapHeightPx - arrowBoxPx) / 2f) {
+        drawWindArrow(this, angleDeg, arrowBoxPx.toFloat(), arrowColor)
+    }
 
     val bounds = Rect()
     textPaint.getTextBounds(text, 0, text.length, bounds)
     val baselineY = (bitmapHeightPx - bounds.bottom).toFloat()
     val xPos =
         when (alignment) {
-            ViewConfig.Alignment.LEFT -> (box + gap).toFloat()
-            ViewConfig.Alignment.CENTER -> (box + gap + width) / 2f
+            ViewConfig.Alignment.LEFT -> (arrowBoxPx + gap).toFloat()
+            ViewConfig.Alignment.CENTER -> (arrowBoxPx + gap + width) / 2f
             ViewConfig.Alignment.RIGHT -> width.toFloat()
         }
     canvas.drawText(text, xPos, baselineY, textPaint)

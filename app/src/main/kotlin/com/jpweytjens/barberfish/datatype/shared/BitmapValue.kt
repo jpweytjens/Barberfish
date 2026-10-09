@@ -16,6 +16,14 @@ import kotlin.math.roundToInt
 private const val MIN_BITMAP_HEIGHT_PX = 30
 internal const val LETTER_SPACING = -0.04f
 
+/** The paint value text is drawn with, so a width measured with it is the width drawn. */
+internal fun valuePaint(fontSizePx: Float): Paint =
+    Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("relative", Typeface.NORMAL)
+        textSize = fontSizePx
+        letterSpacing = LETTER_SPACING
+    }
+
 /**
  * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow
  * icon (see [renderTwoRowValueBitmap]).
