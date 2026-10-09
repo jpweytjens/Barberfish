@@ -16,6 +16,14 @@ import kotlin.math.roundToInt
 private const val MIN_BITMAP_HEIGHT_PX = 30
 private const val LETTER_SPACING = -0.04f
 
+/** The paint value text is drawn with, so a width measured with it is the width drawn. */
+internal fun valuePaint(fontSizePx: Float): Paint =
+    Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("relative", Typeface.NORMAL)
+        textSize = fontSizePx
+        letterSpacing = LETTER_SPACING
+    }
+
 /**
  * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow
  * icon (see [renderTwoRowValueBitmap]).
@@ -70,13 +78,7 @@ fun renderTwoRowValueBitmap(
     val width = cellWidthPx.toInt().coerceAtLeast(1)
     val bandPx = ((bitmapHeightPx - rowGapPx) / 2f).coerceAtLeast(1f)
 
-    fun paintAt(sizePx: Float) =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("relative", Typeface.NORMAL)
-            textSize = sizePx
-            this.color = color
-            letterSpacing = LETTER_SPACING
-        }
+    fun paintAt(sizePx: Float) = valuePaint(sizePx).apply { this.color = color }
 
     val bounds = Rect()
     // Height-fit: a digit fills most of one band (margin avoids top/bottom clipping).
@@ -166,11 +168,8 @@ fun renderValueBitmap(
     alignment: ViewConfig.Alignment,
 ): Bitmap {
     val paint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("relative", Typeface.NORMAL)
-            textSize = fontSizePx
+        valuePaint(fontSizePx).apply {
             this.color = color
-            letterSpacing = LETTER_SPACING
             textAlign =
                 when (alignment) {
                     ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
