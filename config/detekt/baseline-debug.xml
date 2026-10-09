@@ -137,8 +137,5 @@
     <ID>TooManyFunctions:HUDConfigSection.kt:com.jpweytjens.barberfish.screens.HUDConfigSection.kt</ID>
     <ID>TooManyFunctions:MainActivity.kt:com.jpweytjens.barberfish.screens.MainActivity.kt</ID>
     <ID>TooManyFunctions:Settings.kt:com.jpweytjens.barberfish.extension.Settings.kt</ID>
-    <ID>UnusedVariable:BarberfishView.kt:maxLines</ID>
-    <ID>UnusedVariable:BarberfishView.kt:val labelArgb = colors.headerText.toArgb()</ID>
-    <ID>UnusedVariable:HUDConfigSection.kt:val f = slot.field</ID>
   </CurrentIssues>
 </SmellBaseline>
