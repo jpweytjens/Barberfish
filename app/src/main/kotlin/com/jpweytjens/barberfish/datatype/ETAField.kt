@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.AvgSpeedPrior
 import com.jpweytjens.barberfish.datatype.shared.ETAInput
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.computeRidingETA
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.initETAState
@@ -147,7 +148,7 @@ class ETAField(
                     when (kind) {
                         ETAKind.REMAINING_RIDE_TIME -> formatTime(sec, format)
                         ETAKind.TIME_TO_DESTINATION -> formatTime(sec, format)
-                        ETAKind.TIME_OF_ARRIVAL -> formatClockTime(sec)
+                        ETAKind.TIME_OF_ARRIVAL -> formatTimeOfDay(PreviewRide.clockS + sec)
                     }
                 FieldState(
                     primary = displayValue,
@@ -170,7 +171,14 @@ class ETAField(
 
         private fun formatClockTime(secondsFromNow: Long): String {
             val cal = Calendar.getInstance().apply { timeInMillis += secondsFromNow * 1000 }
-            return "%d:%02d".format(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+            return formatTimeOfDay(
+                cal.get(Calendar.HOUR_OF_DAY) * 3600L + cal.get(Calendar.MINUTE) * 60L
+            )
+        }
+
+        private fun formatTimeOfDay(secondsSinceMidnight: Long): String {
+            val s = secondsSinceMidnight % 86400L
+            return "%d:%02d".format(s / 3600L, s % 3600L / 60L)
         }
     }
 }
