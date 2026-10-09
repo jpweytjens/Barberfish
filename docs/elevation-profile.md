@@ -1,12 +1,12 @@
 # Elevation profile
 
-A route on the map tells you where to turn, not when to save your legs. The elevation profile answers that second question: a strip of the terrain ahead, colored by grade, with a dot marking where you are. One glance tells you whether the road tips up, how steep, and for how long, early enough to shift, eat, or ease off before the climb instead of on it.
+The elevation profile shows the next 5 to 20 km of your route side on: a strip of terrain colored by grade, with a dot where you are. Where the [grade map](grade-map.md) shows which bend a climb starts at, the profile shows how long it lasts and how high it goes, early enough to shift or eat before its foot.
 
 <img src="screenshots/hud_sparkline.jpg" alt="3-column HUD with the elevation profile strip over the map view">
 
 The profile renders in three places, each with its own settings in the Barberfish app:
 
-- The HUD strip, drawn below the 3- or 4-column HUD. Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded or you are riding to a destination, and Climbs keeps it hidden until a climb nears, then [frames that climb foot to summit](gallery.md#climbs-mode).
+- The HUD strip, drawn below the 3- or 4-column [HUD](hud.md). Its mode is Off, Climbs, or On: On shows the profile whenever a route is loaded or you are riding to a destination, and Climbs keeps it hidden until a climb nears, then [frames that climb foot to summit](gallery.md#climbs-mode).
 - The Profile field, the same lookahead profile as a standalone data field on any page layout.
 - The [Overview field](#the-overview-field), the whole route at once.
 
@@ -25,7 +25,7 @@ The fill uses the same [gradient palette](color-palettes.md) as the Grade field,
   </tr>
 </table>
 
-The color reflects the trend of the road, not the number on a grade field. Before coloring, the profile merges small elevation wiggles into longer stretches (the Simplification setting) and colors each stretch by its average grade. On rolling terrain the two can disagree: a gentle descent broken by short rises can average out slightly uphill, land inside the emphasis handles, and stay uncolored even though the grade field read negative most of the way. Turning Simplification down narrows the gap by keeping more of the small detail, at the cost of a busier profile that changes color more often.
+Each colored stretch is a simplified segment averaged over its length, so the color reflects the trend of the road rather than the number on the Grade field, and on rolling terrain the two can disagree ([how the coloring works](algorithms.md#grade-coloring)).
 
 Climbs detected by Karoo tint the outline blue, and points of interest on the route appear as markers at their distance down the road.
 
@@ -44,9 +44,7 @@ The strip shows a fixed window of road ahead: 5, 10, or 20 km. Tapping the profi
 
 ## The position dot
 
-At the start of a route the dot sits at the far left edge, the whole window ahead of it. As distance accumulates the dot slides right until it settles about an eighth of the way in, and there it stays for most of the ride. From that anchor the road scrolls past the dot rather than the dot moving across the road: a short stretch of road behind you stays visible on the left, and the terrain ahead compresses gently into the distance, so the road right in front of you gets the most pixels.
-
-The anchor holds until less than one window of route remains. Then the window pins to the end of the route, stops scrolling, and the dot moves again, traversing from its anchor to the right edge over the final kilometers.
+For most of a ride the dot sits an eighth of the way in from the left and the road scrolls past it, so a short stretch behind you stays in view and the road in front gets the most pixels, with the terrain ahead compressing gently into the distance. Only the ends differ: the dot starts at the left edge with the whole window ahead and slides to its anchor over the first kilometres, and once less than one window of route remains the window pins to the finish and the dot travels on to the right edge.
 
 <table>
   <tr>
@@ -65,7 +63,7 @@ The dot is yellow while you are on the route, purple when Karoo is routing you t
 
 ## Rerouting
 
-Leaving the route turns the dot red. Karoo plots a rejoin path back to your route (the red line on the map) but provides no elevation data for it, so the detour itself cannot be drawn. While the rejoin line is active the profile currently jumps back to the start of the route; once you rejoin, your position is recalculated and the window lands back where you actually are. The jump is a known bug, tracked in [#24](https://github.com/jpweytjens/Barberfish/issues/24).
+Leaving the route turns the dot red. Karoo plots a rejoin path back to your route (the red line on the map) but provides no elevation data for it, so the detour itself cannot be drawn. While the rejoin line is active the profile holds your last on-route position, so the window stays put; once you rejoin, your position is recalculated and the window lands back where you actually are.
 
 ## The Overview field
 
@@ -82,8 +80,8 @@ The HUD strip and the Profile field carry the same settings, kept separately per
 | Setting | Options | Effect |
 | --- | --- | --- |
 | Lookahead | 5 / 10 / 20 km | Distance shown ahead of your position. Tapping the profile cycles it. |
-| Emphasis | Handles on the palette bar | Color starts at each handle's grade; gentler grades stay uncolored so meaningful climbs stand out. Parking a handle at the end of the bar turns that side off. On palettes with a flat band spanning zero, dragging a handle past the flat band colors it too, so every color in the palette can be shown. Climb and descent handles are separate when the palette colors descents. |
-| Simplification | Off / Mild / Medium / Max | Merges small elevation wiggles into larger same-color blocks. |
+| Emphasis | Handles on the palette bar | Grade at which color starts; gentler grades stay unfilled. What a handle can reach depends on the palette ([Emphasis](algorithms.md#emphasis)). |
+| Simplification | Off / Mild / Medium / Max | Floor on the smallest bump the profile keeps ([Simplification](algorithms.md#simplification)). |
 | X-warp | Off / Mild / Medium / Max | Fisheye magnification around the dot: nearby road gets more pixels, distant road fewer. |
 | Y-zoom | Close / Normal / Wide | Zoom on elevation changes. Close amplifies minor bumps, Wide smooths them out. |
 | Climbs | On / Off | Blue outline on climbs detected by Karoo. |

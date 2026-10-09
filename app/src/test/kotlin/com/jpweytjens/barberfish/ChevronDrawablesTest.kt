@@ -8,18 +8,10 @@ import org.junit.Test
 class ChevronDrawablesTest {
 
     @Test
-    fun hsluv_takes_the_barberfish_yellow() {
-        assertEquals(
-            gradeChevronDrawable(GradePalette.BARBERFISH),
-            gradeChevronDrawable(GradePalette.HSLUV),
-        )
-    }
-
-    @Test
-    fun barberfish_and_karoo_share_the_karoo_yellow() {
+    fun hsluv_takes_the_karoo_yellow() {
         assertEquals(
             gradeChevronDrawable(GradePalette.KAROO),
-            gradeChevronDrawable(GradePalette.BARBERFISH),
+            gradeChevronDrawable(GradePalette.HSLUV),
         )
     }
 }

@@ -146,29 +146,6 @@ internal fun drawnExtent(
     return drawStart to drawEnd
 }
 
-/**
- * [spec] re-cut to start at [fromM]: the piece the rider is on, with the ridden part removed. Its
- * id, extent and depth are unchanged, so the planner updates it in place. If nothing drawable is
- * left (progress inside the route-end trim), returns null and the caller hides the piece, one
- * bucket early rather than a bucket late.
- */
-internal fun trimPieceFrom(
-    spec: GradeMapPolylineSpec,
-    fromM: Double,
-    index: RouteIndex,
-    capTrimM: Double,
-    casingCapTrimM: Double,
-): GradeMapPolylineSpec? {
-    val (drawStart, drawEnd) =
-        drawnExtent(spec.startM, spec.endM, spec.trimStart, spec.trimEnd, capTrimM)
-    val (casingStart, casingEnd) =
-        drawnExtent(spec.startM, spec.endM, spec.trimStart, spec.trimEnd, casingCapTrimM)
-    val fill = extractSubPolyline(index.gps, index.cumDist, maxOf(fromM, drawStart), drawEnd)
-    val casing = extractSubPolyline(index.gps, index.cumDist, maxOf(fromM, casingStart), casingEnd)
-    if (fill.size < 2 || casing.size < 2) return null
-    return spec.copy(encoded = encodeGpsPolyline(fill), casingEncoded = encodeGpsPolyline(casing))
-}
-
 /** One stroke width on screen: the width the run is drawn at is the length it must own. */
 internal const val MIN_RUN_PX = 12.0
 
@@ -182,9 +159,9 @@ private const val MAX_CELLS = 1e6
  * Cell length: the grade baseline, or one stroke width on screen, whichever is larger.
  *
  * This is a legibility guard — it sets how much route one colour must own before the overlay may
- * change colour again, so a run is never drawn shorter than it is wide. The sparkline's own
- * `MIN_FILL_PX` answers a different question: it drops a fill narrower than a single pixel, which
- * is a rendering guard against a band that would come out invisible.
+ * change colour again, so a run is never drawn shorter than it is wide. The sparkline has no such
+ * guard: its fills are polygons, and a sub-pixel one blends into its column through anti-aliasing
+ * instead of coming out invisible.
  */
 internal fun minRunLengthM(metresPerPixel: Double): Double =
     maxOf(GRADE_BASELINE_M, MIN_RUN_PX * metresPerPixel)

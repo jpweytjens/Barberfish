@@ -9,53 +9,48 @@
 
 [Barberfishes](https://en.wikipedia.org/wiki/Johnrandallia) keep Hammerheads sharp, in [the ocean](https://www.instagram.com/reels/DEGADWAPPEy/) and on your bike.
 Native-feeling data field enhancements for the [Hammerhead Karoo](https://www.hammerhead.io/).
-
-Barberfish fields sit alongside the native ones, match their look, and quietly add a bit more: a 3- or 4-column HUD, an elevation profile of the road ahead, a grade that holds steady at any speed, an ETA that learns as you ride, and smoothing, color palettes, and thresholds set per field. Everything is set up in the Barberfish app on your Karoo with live previews; changes apply mid-ride.
+Barberfish fields sit alongside the native ones, match their look, and quietly add a bit more.
 
 <table>
   <tr>
-    <td align="center">Elevation profile below a 3-column HUD on the map view</td>
+    <td align="center">Grade map and elevation profile below a 3-column HUD, on the <a href="https://en.wikipedia.org/wiki/Molenberg_(Zwalm)">Molenberg</a></td>
     <td align="center">A full page of Barberfish fields, from the HUD to the route overview</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/screenshots/hud_sparkline.jpg" alt="3-column HUD with elevation profile over the map view"></td>
+    <td align="center"><img src="docs/screenshots/hud_sparkline.jpg" alt="Map page with a 3-column HUD, the elevation profile, and the route drawn as a grade-colored band with chevrons up the Molenberg"></td>
     <td align="center"><img src="docs/screenshots/barberfish_fields.jpg" alt="Data page with 3-column HUD, elevation profile, zone-colored grade, elapsed time, both average speeds, route overview, and ride remaining"></td>
   </tr>
 </table>
 
 ## Highlights
 
-- A 3- or 4-column HUD groups any fields side by side, with zone coloring, smoothing, and formatting set per slot.
-- With a route loaded, the elevation profile below the HUD shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
-- Grade is [smoothed over the last 30 m of road](docs/algorithms.md#grade) rather than a time window, so it holds steady at any speed and stops moving when you do.
-- ETA [learns from how you have actually been riding](docs/algorithms.md#eta), so the estimate sharpens as the ride goes on instead of starting from a generic guess.
-- Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md) kept legible in light and dark mode.
-- Threshold coloring for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
-- Per-field setup in the Barberfish app with live previews, covering [every field and its options](docs/data-fields.md).
+- A 3- or 4-column HUD [groups any fields side by side](docs/hud.md), with zone coloring, smoothing, and formatting set per slot.
+- With a route loaded, the [elevation profile](docs/elevation-profile.md) shows the terrain ahead or, in Climbs mode, [frames each climb foot to summit](docs/gallery.md#climbs-mode).
+- [Overview](docs/elevation-profile.md#the-overview-field) draws the whole route with a dot for where you are, and Ride Remaining stacks the distance and climbing left.
+- The grade map [colors the route on the map page by grade](docs/grade-map.md), with direction chevrons on top. It is in beta.
+- Grade is [fitted to the road rather than the clock](docs/algorithms.md#grade): steady at any speed, and unmoved by a stop, a pause at a light, or barometer drift while you wait.
+- Zone and grade coloring as colored text or a filled cell, with [palettes from other bike computers and training apps](docs/color-palettes.md).
+- [Threshold coloring](docs/data-fields.md#thresholds) for speed, average speed, and cadence, against a fixed target, a min/max range, or your own running average.
 
-The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo: climbs mode, light mode, the native comparison, and the config screens.
+The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo. The [documentation index](docs/README.md) lists every guide.
 
 ## Data fields
 
-40 fields across eleven categories: power, heart rate, speed, cadence, wind, climbing, navigation, time, ETA, daylight, and the HUD. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
+40 fields, from power and heart rate to navigation, ETA, and daylight. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
 ![Every Barberfish field, rendered as it appears in the Karoo field picker](docs/screenshots/all_fields.png)
 
 ## Color palettes
 
-Zone and grade palettes designed for Barberfish, alongside palettes matching other bike computers and training apps, each kept legible in light and dark mode. The [palette set](docs/color-palettes.md) shows every palette in both modes, with the contrast tuning behind them.
-
-Two Barberfish-designed grade palettes, shown in Text mode on light and dark, then Fill. Both color descents, with a teal limb down to -10% and steeper; among the palettes from other platforms, only Turbo also colors descents. Surgeonfish respaces the same reading in even steps and also comes as a power and HR zone palette.
+The Barberfish grade palette colors descents as well as climbs, where most palettes stop at flat, in [even perceptual steps](docs/color-palettes.md#perceptually-uniform-palettes). The [palettes page](docs/color-palettes.md) has the full set, including palettes matching other bike computers and training apps, each kept legible in both themes.
 
 ![Barberfish grade palette in both themes and fill mode](docs/palettes/palette-grade-barberfish.svg)
 
-![Surgeonfish grade palette in both themes and fill mode](docs/palettes/palette-grade-surgeonfish.svg)
-
 ## Configuration
 
-Every field is set up in the Barberfish app on your Karoo, with live previews and no companion app. Changes apply mid-ride. The [data fields](docs/data-fields.md) page lists every option.
+Every field is set up in the Barberfish app on your Karoo, with live previews. Changes apply mid-ride.
 
-<img src="docs/screenshots/hud_config.jpg" alt="HUD config with live preview, 4-column layout, and fill-mode zones" width="480">
+<img src="docs/screenshots/hud_config.jpg" alt="HUD config with a 4-column live preview and the Power column selected, its data field, smoothing, and zone color options below" width="480">
 
 ## Compatibility
 
@@ -69,15 +64,11 @@ Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Desi
 2. Sideload it:
    * Karoo 3: share the downloaded APK to the Hammerhead companion app, following [Hammerhead's sideloading instructions](https://support.hammerhead.io/hc/en-us/articles/31576497036827-Karoo-Extension-Sideloading).
    * Karoo 2: install from a computer following [DC Rainmaker's instructions](https://www.dcrainmaker.com/2021/02/how-to-sideload-android-apps-on-your-hammerhead-karoo-1-karoo-2.html).
+3. Add Barberfish fields to a data page like any native field, [from your profile](https://support.hammerhead.io/hc/en-us/articles/25601814671259-Karoo-OS-Customising-Profiles): they are listed under Extensions.
 
 ### Beta builds
 
 New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta channel, before they ship here. Betas are less tested, so expect rough edges. A beta replaces your stable install and carries your settings over, and later betas arrive as regular updates in the Karoo's extension manager.
-
-## Roadmap
-
-- Gradient-aware forward-looking ETA: see [Godot](https://github.com/jpweytjens/godot)
-- Workout target field: continuous deviation from the target (power, HR, pace) with zone coloring reflecting how far off target you are
 
 ## Credits
 
@@ -85,12 +76,11 @@ New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta 
 - [awesome-karoo](https://github.com/timklge/awesome-karoo): a curated list of Karoo extensions and resources
 - [Hammerhead Visual Data Field System](https://www.figma.com/design/Adr23SlulPNE2RBu1VI28C/%3CH%3E-Visual-Data-Field-System?node-id=1-64&p=f): the Figma design guide used to match the native Karoo look and feel
 - [Edward Tufte](https://www.edwardtufte.com/): the sparkline behind the elevation profile
-- [Diátaxis](https://diataxis.fr/): the structure behind the documentation
 - The Karoo community on [Reddit](https://www.reddit.com/r/Karoo/) and the [Hammerhead forums](https://support.hammerhead.io/hc/en-us/community/topics): feedback and suggestions
 
 ## Contributing
 
-Bug reports and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish), especially suggestions for new HUD data fields.
+Bug reports, feature requests and pull requests are welcome on [GitHub](https://github.com/jpweytjens/barberfish), especially on the grade map while it is in beta.
 
 ### For extension developers
 

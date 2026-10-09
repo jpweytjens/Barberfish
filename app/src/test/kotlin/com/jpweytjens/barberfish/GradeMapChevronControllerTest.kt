@@ -83,17 +83,16 @@ class GradeMapChevronControllerTest {
     }
 
     @Test
-    fun changed_spec_is_hidden_then_reshown() {
+    fun changed_spec_is_reshown_without_a_hide() {
         val controller = GradeMapChevronController()
         val fake = FakeEmitter()
         controller.emit(fake, listOf(spec("a", bearing = 10f)), yellow)
         fake.events.clear()
         controller.emit(fake, listOf(spec("a", bearing = 20f)), yellow)
-        assertEquals(listOf("a"), fake.hiddenIds())
+        // A show replaces the id in place; a hide in the same batch races it and can
+        // blank the chevron for good (observed on-device, 2026-08-22).
+        assertTrue(fake.hiddenIds().isEmpty())
         assertEquals(listOf("a"), fake.shownIds())
-        // Hide must precede show so a stale symbol never survives beside the update.
-        assertTrue(fake.events[0] is HideSymbols)
-        assertTrue(fake.events[1] is ShowSymbols)
     }
 
     @Test

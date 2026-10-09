@@ -24,8 +24,8 @@ class GradeMapWindowTest {
 
     /**
      * Alternating 200 m blocks of 10 per cent and 3 per cent. Against 200 m cells every cell covers
-     * exactly one block, so consecutive cells land in different bands (salmon, then mint) and no
-     * two of them coalesce — the run list is the cell list.
+     * exactly one block, so consecutive cells land in different bands (orange, then yellow-green)
+     * and no two of them coalesce — the run list is the cell list.
      */
     private fun staircaseElev(d: Double): Double {
         var elev = 0.0
@@ -86,7 +86,7 @@ class GradeMapWindowTest {
         // so the 2 to 5 band, not the 20-plus band.
         val runs = guard(cellM = 800.0, endM = 800.0, elev = ::spikeElev)
         assertEquals(1, runs.size)
-        assertEquals(Color(0xFF40D078).toArgb(), runs.single().colorArgb)
+        assertEquals(Color(0xFFB2D40F).toArgb(), runs.single().colorArgb)
     }
 
     @Test
@@ -99,7 +99,7 @@ class GradeMapWindowTest {
     fun a_steady_climb_sitting_on_a_band_edge_stays_one_run() {
         // Pins the rounding step in resampleRunsToCells. Without it the chord noise alone
         // decides the band on every cell of a climb whose true grade is a whole per cent, and
-        // the overlay stripes between salmon and yellow down a stretch the rider sees as one
+        // the overlay stripes between orange and yellow down a stretch the rider sees as one
         // steady gradient.
         val runs =
             guard(
@@ -113,7 +113,7 @@ class GradeMapWindowTest {
             runs.size,
         )
         // Rounded back onto the edge, so it lands in the band its true grade belongs to.
-        assertEquals(Color(0xFFF08868).toArgb(), runs.single().colorArgb)
+        assertEquals(Color(0xFFEC990C).toArgb(), runs.single().colorArgb)
     }
 
     @Test(timeout = 10_000)

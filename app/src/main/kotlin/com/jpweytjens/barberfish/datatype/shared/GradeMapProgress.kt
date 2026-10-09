@@ -13,14 +13,16 @@ import kotlin.math.ceil
  * are ignored and the latch holds its last on-route value. [trackRoute] resets the latch when the
  * route identity changes (new polyline or reversal).
  *
- * A jump of more than [maxLoneJumpM] in one sample is held until a second sample lands within a
- * bucket of it. Removing the route delivers one last distance sample that reads as arrival before
- * the stream goes unavailable; committed, it would hide every chevron until the route identity
- * changes. A real jump (route loaded mid-way, a long GPS gap) repeats on the next tick.
+ * A jump of more than [maxLoneJumpM] in one sample is held until a second sample lands within
+ * [jumpAgreementM] of it. Removing the route delivers one last distance sample that reads as
+ * arrival before the stream goes unavailable; committed, it would hide every chevron until the
+ * route identity changes. A real jump (route loaded mid-way, a long GPS gap) repeats on the next
+ * tick.
  */
 internal class GradeMapProgress(
-    private val bucketM: Double = 50.0,
+    private val bucketM: Double = 10.0,
     private val maxLoneJumpM: Double = 1_000.0,
+    private val jumpAgreementM: Double = 50.0,
 ) {
     private var routeKey: Long? = null
     private var bucket = 0
@@ -77,7 +79,7 @@ internal class GradeMapProgress(
         if ((newBucket - bucket) * bucketM > maxLoneJumpM) {
             val held = heldBucket
             heldBucket = newBucket
-            if (held == null || abs(newBucket - held) > 1) return false
+            if (held == null || abs(newBucket - held) * bucketM > jumpAgreementM) return false
         }
         heldBucket = null
         bucket = newBucket

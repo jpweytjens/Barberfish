@@ -5,10 +5,10 @@ the single-cell fields first, then the 3- and 4-column HUD strips.
 
 <img src="screenshots/all_fields.png" alt="Every Barberfish field rendered from its live preview, with the 3-column and 4-column HUD strips at the bottom">
 
-The table lists the same fields grouped by category. The Enhancements
-columns list the options each field supports. All of them are set per field
-in the Barberfish app, with live previews; changes apply mid-ride. The
-graphical Profile and Overview fields have [a page of their own](elevation-profile.md).
+Below, the same fields by category, with the palette, threshold, format and
+smoothing options each one supports; all are set per field in the Barberfish
+app, with live previews, and apply mid-ride. The [HUD](hud.md) has a page
+of its own, as do [Profile and Overview](elevation-profile.md).
 
 <table>
   <thead>
@@ -101,13 +101,17 @@ Power Zone and HR Zone toggle between integer (`3`) and one-decimal float (`3.4`
 
 Speed, average speed, and cadence support threshold coloring. Speed compares against a fixed target or its running average. Average speed and cadence compare against a fixed target or a min/max range with warning bands. The scale itself is documented in [Threshold colors](color-palettes.md#threshold-colors).
 
+<img src="screenshots/threshold_controls.jpg" width="360" alt="The Speed field's threshold controls: a source picker offering Fixed, Avg total and Avg moving, a target of 30 km/h, and under and over margins of 10 percent">
+
+The source picker is what sets Speed apart: Fixed compares against the target you type, Avg total and Avg moving against your own average so far. Under and Over set how far below and above the target, as a percentage of it, the color reaches full red or full green.
+
 <table>
   <tr>
-    <td align="center">Target mode around a 25 km/h target</td>
+    <td align="center">Target mode around a 30 km/h target</td>
     <td align="center">Range mode across a 20 to 30 km/h range</td>
   </tr>
   <tr>
-    <td align="center"><img src="palettes/threshold-legend-target.svg" alt="Speeds around a 25 km/h target: red below, fading through neutral at the target, green above"></td>
+    <td align="center"><img src="palettes/threshold-legend-target.svg" alt="Speeds around a 30 km/h target: red below, fading through neutral at the target, green above"></td>
     <td align="center"><img src="palettes/threshold-legend-range.svg" alt="Speeds across a 20 to 30 km/h range: red then orange below min, green within, orange then red above max"></td>
   </tr>
 </table>

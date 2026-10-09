@@ -10,15 +10,18 @@
 # Pre-staged device assumption: the Barberfish profile, data pages, and per-field
 # config are already set up as you want them shown. This script navigates and
 # captures; it does not mutate your config, with one exception: the ride shots
-# briefly set the HUD config to drive the on-device HUD, then restore the
-# snapshot taken at session start.
+# briefly set the HUD and palette config to drive the on-device fields (the
+# Barberfish palettes unless a shot shows others), then restore the snapshot
+# taken at session start.
 #
 # Ride shots additionally assume: the Barberfish profile is selected in
-# ride-replay with its four data pages; replay sensors are paired to that
+# ride-replay with its four data pages, and Climber off on it (its panel would
+# cover the map on a climb); replay sensors are paired to that
 # profile; the Tranquilo ride is starred in ride-replay and its recording is
 # at /sdcard/FitFiles/tranquilo.fit; pages 3-4 field colorMode is pre-staged
 # per shot; the debug APK (with HardwareActionReceiver / ConfigReceiver) is
-# installed. K3 only (single device).
+# installed. K3 only (single device). hud_hr_missing also needs a ride-replay build with
+# per-sensor states ("Separate sensors" on, its four devices paired to the profile).
 #
 # Taps and crops are anchored on element *text* via _shot_ui.py + uiautomator,
 # not fixed coordinates, so a reordered or restructured settings screen still
@@ -33,15 +36,28 @@
 # Shots (increment 1, no ride needed):
 #   design_karoo
 # Shots (increment 2, share one discardable ride session):
-#   hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode
-#   karoo_vs_barberfish
-set -euo pipefail
+#   hud_sparkline palettes climbs_counter climbs_profile barberfish_fields light_mode
+#   karoo_vs_barberfish grade_map hud_hr_missing
+set -Eeuo pipefail
+# Most helpers discard adb's output, so an unhandled failure would end the run without a word.
+# Name the line and command instead. Quiet inside $(...), where the caller handles the failure.
+trap 'rc=$? cmd=$BASH_COMMAND; if [[ $BASH_SUBSHELL -eq 0 ]]; then echo "  ! line $LINENO: $cmd (exit $rc)" >&2; fi' ERR
 cd "$(dirname "$0")/.."
 
 OUTDIR="${OUTDIR:-screencaps/shots}"
 STAGE="$(mktemp -d)"
 UI="$STAGE/ui.xml"
-trap 'rm -rf "$STAGE"' EXIT
+on_exit() { # a failed shot still ends the ride and restores the config, then drops the snapshot
+    local rc=$?
+    set +e
+    if (( SESSION_UP )); then
+        (( rc )) && echo "  ! run failed; ending the ride and restoring the config" >&2
+        session_end || echo "  ! cleanup incomplete: check the ride and config on the device" >&2
+    fi
+    A shell dumpsys deviceidle enable >/dev/null 2>&1
+    rm -rf "$STAGE"
+}
+trap on_exit EXIT
 mkdir -p "$OUTDIR"
 
 KAROO_DFD=io.hammerhead.settingsapp/.dataFieldSettings.DataFieldSettingsActivity
@@ -75,6 +91,9 @@ wake()  { A shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true; }
 settle(){ sleep "${1:-1}"; }
 
 dump() { # refresh $UI with the current view hierarchy
+    # Clear the last dump first: on a screen that never idles (an animated preview) the dump fails,
+    # and the stale file would answer for a screen no longer shown.
+    rm -f "$UI"; A shell rm -f /sdcard/ui.xml >/dev/null 2>&1
     A shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1
     A pull /sdcard/ui.xml "$UI" >/dev/null 2>&1
 }
@@ -135,6 +154,21 @@ config_get() { # config_get <name> <local out file> — dump live config and pul
 }
 set_hud() { config_set hud "$1"; }
 get_hud() { config_get hud "$1"; }
+own_hud() { set_hud "$STAGE/hud_saved.json"; }   # the user's HUD, snapshotted at session start
+set_profile() { config_set field_sparkline "$1"; }   # the Profile field (the HUD strip rides with hud)
+set_zone() { config_set zone "$1"; }   # power, HR and grade palettes
+get_zone() { config_get zone "$1"; }
+# The replay drives GPS, not the barometer, so a live Grade reads 0.0% all ride; pin it for
+# shots that show the field, and clear it again (session_end clears it too).
+# Written twice: the first pin after a live reading was seen not to reach a running Grade view,
+# while a pin replacing another pin did, every time (K3, 2026-09-21). The first write is a
+# throwaway value, which has to differ or the second write changes nothing.
+pin_grade() { # pin_grade <fixture json> — the first write is a throwaway (see above)
+    echo '{"percent": 0.3}' > "$STAGE/grade_pin_first.json"
+    config_set grade_pin "$STAGE/grade_pin_first.json"
+    config_set grade_pin "$1"
+}
+unpin_grade() { config_set grade_pin scripts/fixtures/grade_pin_off.json; }
 
 # ---- ride-replay control (it.gangitano.karooridereplay) ----------------------
 RR=it.gangitano.karooridereplay/.MainActivity
@@ -143,35 +177,143 @@ replay_load() { # open replay, pick tranquilo, start playback
     replay_open
     dump
     if ui has text "SELECT RIDE" >/dev/null 2>&1; then
+        # Tranquilo is starred, so it sits at the top, but scroll_to only goes down and the
+        # list keeps its last scroll position. Fling back to the top first.
+        local i; for i in $(seq 1 15); do A shell input swipe $((W/2)) 200 $((W/2)) 780 150; done
+        settle 1; dump
         scroll_to text* "tranquilo" || { echo "  ! tranquilo not in replay list" >&2; return 1; }
         tap text* "tranquilo"; settle 2
     fi
     dump
-    ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 2; }
+    # `if`, not `&&`: a false check as a function's last command is its exit status, and under
+    # `set -e` that ends the run (seen when the replay was already playing).
+    if ui has text "Play" >/dev/null 2>&1; then tap text "Play"; settle 2; fi
 }
-replay_pause() { replay_open; ui has text "Pause" >/dev/null 2>&1 && { tap text "Pause"; settle 1; }; }
+replay_pause() {
+    replay_open; dump
+    if ui has text "Pause" >/dev/null 2>&1; then tap text "Pause"; settle 1; fi
+}
+replay_resume() { # resume playback and go back to the ride; otherwise the next capture
+    # shows the replay screen with the HUD reading "No data"
+    dump; ui has text "Play" >/dev/null 2>&1 && { tap text "Play"; settle 1; }
+    dump
+    if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi
+    ride_front
+}
 replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that fraction
     replay_open
-    local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 55 + f*(455-55)}')
+    # The track spans x 34 to 445 (thumb centre at 0 and at the ride's end; K3, 2026-09-25).
+    local x; x=$(awk -v f="$1" 'BEGIN{printf "%d", 34 + f*(445-34) + 0.5}')
     tap_xy "$x" 312; settle 1   # track y verified on-device; adjust if the thumb does not move
+    # Scrubbing pauses playback and leaves the replay app in front.
+    replay_resume
 }
 
 # ---- rideapp ride lifecycle (fixed coords where the ride screen won't dump) --
 ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     dump
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
-    tap_xy 429 732; settle 6   # green play FAB on the profile carousel
+    profile_front Barberfish
+    tap_xy 429 732             # green play FAB on the profile carousel
+    # The ride screen can take well over the old fixed 6 s to come up (K3, 2026-09-25); a page
+    # swipe before it does moves the profile carousel instead. Wait for it to be in front.
+    local i
+    for i in $(seq 1 45); do
+        settle 1
+        if ride_in_front; then settle 3; return 0; fi
+    done
+    echo "  ! ride screen never came up" >&2; return 1
 }
-ride_load_route() { # ride_load_route <route name> — control center -> ADD Route -> Follow
-    press_button control_center; settle 1
-    tap_xy 239 184; settle 3            # ADD Route tile
-    scroll_to text* "$1" || { echo "  ! route not found: $1" >&2; return 1; }
-    local xy; xy=$(ui tap text* "$1"); tap_xy $xy; settle 3   # open the route detail
+profile_front() { # profile_front <name> — home screen, with that profile's card in the middle
+    # "To ride" uncovers whatever the launcher was left on (menu grid, app info, ...). Home lands on
+    # the launcher's carousel or its menu grid, whichever it last showed, and Back on the grid flips
+    # to the carousel (K3, 2026-09-30). Card titles end in a no-break space, and matching the whole
+    # title keeps "Barberfish" from also taking "Barberfish sweep". Fling to the first card, then
+    # step right until the named card spans the middle of the screen.
+    local title="$1"$'\xc2\xa0' i box x1 x2
+    A shell input keyevent KEYCODE_HOME; settle 2
     dump
-    ui has text "Follow route" >/dev/null 2>&1 && { tap text "Follow route"; settle 5; }
+    if ui has text "Rides" >/dev/null 2>&1; then A shell input keyevent KEYCODE_BACK; settle 1.5; fi
+    for i in $(seq 1 8); do A shell input swipe 120 480 400 480 150; done
+    settle 1
+    for i in $(seq 1 12); do
+        dump
+        if box=$(ui box text "$title" 2>/dev/null); then
+            read -r x1 _ x2 _ <<<"$box"
+            if (( x1 < W/2 && x2 > W/2 )); then return 0; fi
+        fi
+        A shell input swipe 400 480 120 480 300; settle 1.2
+    done
+    echo "  ! profile $1 not on the home screen" >&2; return 1
 }
-ride_end() { # finish flag -> confirm -> Delete -> confirm (discard the throwaway recording)
-    tap_xy 40 732; settle 2             # finish flag (bottom-left of the map overlay)
+ride_running() { # a ride screen exists in any task, in front or not
+    A shell dumpsys activity activities 2>/dev/null | grep -q -F "rideapp/.views.ride.RideActivity"
+}
+ride_in_front() {
+    A shell dumpsys activity activities 2>/dev/null \
+        | grep -m1 -F "ResumedActivity=" | grep -q -F "rideapp/.views.ride.RideActivity"
+}
+ride_front() { # "To ride" only sends the replay to the back, so the screen beneath it comes up:
+    # the home screen, or the route list the route was loaded from. Starting the ride screen's
+    # component brings the running ride's task forward from any of them.
+    (( RIDE_UP )) || return 0
+    local i
+    for i in $(seq 1 10); do
+        if ride_in_front; then return 0; fi
+        if (( i == 2 )); then
+            A shell am start -n io.hammerhead.rideapp/.views.ride.RideActivity \
+                -a android.intent.action.MAIN -c android.intent.category.LAUNCHER >/dev/null 2>&1
+        fi
+        settle 1
+    done
+    echo "  ! ride screen not in front" >&2; return 1
+}
+cc_ride_panel() { # open the control center on its Ride panel
+    # It opens on whichever panel was last shown and auto-closes after ~10 s. In-ride the
+    # panels run System, Display, Ride, Devices; only Ride carries a yellow tab icon at
+    # (403,53), so go to the left end and step right until that pixel is yellow.
+    local i px
+    press_button control_center; settle 1.2
+    for i in 1 2 3; do A shell input swipe 80 300 400 300 200; settle 0.7; done
+    for i in 1 2 3 4; do
+        A exec-out screencap -p > "$STAGE/cc.png"
+        px=$(magick "$STAGE/cc.png" -format '%[fx:int(255*p{403,53}.r)] %[fx:int(255*p{403,53}.g)] %[fx:int(255*p{403,53}.b)]' info:)
+        read -r r g b <<< "$px"
+        if (( r > 180 && g > 160 && b < 120 )); then return 0; fi
+        A shell input swipe 400 300 80 300 300; settle 1.2
+    done
+    echo "  ! control center Ride panel not found" >&2; return 1
+}
+ride_load_route() { # ride_load_route <route name> — control center -> ADD Route -> search -> Follow
+    cc_ride_panel || return 1
+    tap_xy 239 184; settle 3            # ADD Route tile
+    tap_xy 37 89; settle 2              # search (the full list is too long to scroll through)
+    A shell input text "$1"; settle 2
+    tap_xy 443 747; settle 3            # keyboard search key
+    # Open the first result by position: in a dump the route name matches the search box first,
+    # and tapping that only reopens the keyboard. The detail screen confirms it is the right route.
+    tap_xy 240 600; settle 3
+    dump
+    if ! { ui has text "$1" && ui has text "Follow route"; } >/dev/null 2>&1; then
+        echo "  ! route not found: $1" >&2; return 1
+    fi
+    tap text "Follow route"; settle 5
+}
+ride_end() { # pause -> finish flag -> confirm -> Delete -> confirm (discard the recording)
+    # Pause, which shows the finish flag on any data page. A press sent while the ride screen
+    # rebuilds (after a theme flip) is lost, and the taps below then land on the map; so check
+    # that the top bar turned yellow, as it does paused (#FFE714; black or white riding).
+    local i px r g b
+    for i in 1 2 3; do
+        press_button bottom_right; settle 2
+        A exec-out screencap -p > "$STAGE/pause.png"
+        px=$(magick "$STAGE/pause.png" -format '%[fx:int(255*p{20,85}.r)] %[fx:int(255*p{20,85}.g)] %[fx:int(255*p{20,85}.b)]' info:)
+        read -r r g b <<< "$px"
+        if (( r > 180 && g > 160 && b < 120 )); then break; fi
+        (( i == 3 )) && { echo "  ! ride did not pause" >&2; return 1; }
+        settle 2
+    done
+    tap_xy 40 732; settle 2             # finish flag (bottom-left of the pause overlay)
     tap_xy 429 732; settle 4            # confirm end
     scroll_to text "Delete" || { echo "  ! Delete not found on summary" >&2; return 1; }
     tap text "Delete"; settle 2
@@ -179,12 +321,94 @@ ride_end() { # finish flag -> confirm -> Delete -> confirm (discard the throwawa
 }
 
 # ---- data-page navigation ----------------------------------------------------
-goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), from page 1
-    tap_xy 240 400; settle 1            # tap map to make sure the ride view has focus
+goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), counted from the map
+    # page, which goto_map_page recognizes; the ride can be on any page when this is called
+    goto_map_page
     local i
     for (( i=1; i<$1; i++ )); do A shell input swipe 400 400 80 400 250; settle 1; done
 }
+goto_page_like() { # goto_page_like <reference jpg> <crop WxH+X+Y> <max RMSE> — swipe left until
+    # a crop of the screen matches the same crop of a committed shot.
+    # "To ride" returns to whichever data page the ride was last on, so counting swipes from
+    # page 1 lands anywhere. Recognize the page instead by a region that is fixed on it: the
+    # Grade / Elapsed time label row on the fields page (RMSE 0.007 on a match, 0.27 or more
+    # elsewhere), the column of map buttons on the map page (0.25 to 0.33 on a match, 0.85
+    # elsewhere). `magick compare` exits 1 whenever the images differ, so its status is ignored
+    # and only the printed distance is read.
+    local i d
+    magick "$1" -crop "$2" +repage "$STAGE/page_ref.png"
+    tap_xy 240 400; settle 1
+    for i in 1 2 3 4 5 6; do
+        A exec-out screencap -p > "$STAGE/page_probe.png"
+        magick "$STAGE/page_probe.png" -crop "$2" +repage "$STAGE/page_band.png"
+        d=$(magick compare -metric RMSE "$STAGE/page_band.png" "$STAGE/page_ref.png" null: 2>&1 \
+            | sed 's/.*(\(.*\))/\1/' || true)
+        if awk -v d="$d" -v m="$3" 'BEGIN{exit !(d < m)}'; then return 0; fi
+        A shell input swipe 400 400 80 400 250; settle 1.5
+    done
+    echo "  ! page like $1 not found" >&2; return 1
+}
+goto_map_page()    { goto_page_like docs/screenshots/hud_sparkline.jpg    90x280+18+405 0.5; }
+goto_fields_page() { goto_page_like docs/screenshots/barberfish_fields.jpg 480x40+0+362  0.2; }
 settle_drawer() { settle "${1:-6}"; }   # the bottom pill auto-hides after a few idle seconds
+map_extensions_toggle() { # flip the puzzle toggle (extension map effects) in the map layers menu
+    tap_xy 63 452; settle 1             # layers button, left edge of the map
+    tap_xy 160 548; settle 1            # puzzle icon, second row of the menu
+    tap_xy 63 452; settle 1             # close the menu
+}
+
+# ---- profile editor (Karoo's data page layout screen) ------------------------
+# In a ride, a seek puts the Karoo off route for good, so route-driven HUD states (the climb counter
+# and profile) cannot be reached by seeking. The editor's HUD preview plays a synthetic climb
+# instead, cycling hidden, counter, profile; the climb shots are taken there. The editor stops
+# redrawing the preview after a while, and a config change starts it again (K3, 2026-10-02).
+editor_page() { # editor_page <page name> — open that data page of the Barberfish profile's layout
+    # Taps only: the profile and page lists delete an entry on a swipe. The configurator reopens
+    # where it was left, so stop it first to start at the profile list (unsaved edits are dropped;
+    # the shots make none).
+    A shell am force-stop io.hammerhead.profileconfiguratorapp >/dev/null 2>&1
+    A shell input keyevent KEYCODE_HOME; settle 2
+    dump
+    if ! ui has text "Profiles" >/dev/null 2>&1; then A shell input keyevent KEYCODE_BACK; settle 1.5; fi
+    tap text "Profiles"; settle 2
+    tap text "Barberfish"; settle 2     # exact match, so not "Barberfish sweep"
+    tap text "DATA PAGES"; settle 2
+    tap text "$1"; settle 3
+}
+climb_phase() { # climb_phase counter|profile — wait for the HUD preview's climb cycle to reach it
+    # Read the strip under the HUD values (K3, 2026-10-02): the counter is white text in the
+    # middle (0.07 of the band) with nothing on the left, the profile fills it with colour (0.33 or
+    # more saturated); hidden, the values sit low and their digits reach into the band's left.
+    local i c w l
+    for i in $(seq 1 60); do
+        A exec-out screencap -p > "$STAGE/phase.png"
+        c=$(magick "$STAGE/phase.png" -crop 460x40+10+205 +repage -colorspace HSL -channel G \
+            -separate -threshold 40% -format "%[fx:mean]" info:)
+        w=$(magick "$STAGE/phase.png" -crop 140x30+170+205 +repage -colorspace gray -threshold 80% \
+            -format "%[fx:mean]" info:)
+        l=$(magick "$STAGE/phase.png" -crop 140x30+10+205 +repage -colorspace gray -threshold 80% \
+            -format "%[fx:mean]" info:)
+        case "$1" in
+            counter) LC_ALL=C awk -v c="$c" -v w="$w" -v l="$l" 'BEGIN{exit !(c < 0.02 && w > 0.04 && l < 0.02)}' && return 0 ;;
+            profile) LC_ALL=C awk -v c="$c" 'BEGIN{exit !(c > 0.25)}' && return 0 ;;
+        esac
+        settle 2
+    done
+    echo "  ! HUD preview never showed the climb $1" >&2; return 1
+}
+climb_dot_past() { # climb_dot_past <x> — wait for the profile's position dot to pass x in the strip
+    # The dot holds at the foot for ~25 s while the window tracks the approach, then climbs at
+    # ~4 px/s (K3, 2026-10-04). It is the only yellow in the strip; its box gives its x.
+    local i x
+    for i in $(seq 1 60); do
+        A exec-out screencap -p > "$STAGE/dot.png"
+        x=$(magick "$STAGE/dot.png" -crop 470x50+5+195 +repage \
+            -fx '(r>0.85&&g>0.75&&b<0.35)?1:0' -format "%@" info: | sed 's/.*+\([0-9]*\)+[0-9]*$/\1/')
+        (( x >= $1 && x < 470 )) && return 0
+        settle 2
+    done
+    echo "  ! profile dot never passed x=$1" >&2; return 1
+}
 
 # ---- capture / crop ----------------------------------------------------------
 cap() { wake; A exec-out screencap -p > "$STAGE/$1.png"; }
@@ -222,21 +446,70 @@ restore_theme() {
 # The ride shots share one discardable ride: snapshot the user's HUD, start the
 # replay + ride, load the route once (RIDE REMAINING / OVERVIEW / PROFILE / climbs
 # all need it), capture, then end+discard and restore the HUD.
-RIDE_SHOTS=(hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish)
-SESSION_UP=0
-session_start() {
+RIDE_SHOTS=(hud_sparkline palettes barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
+SESSION_UP=0   # the config snapshot is taken, so session_end has something to restore
+RIDE_UP=0      # our ride is running, so session_end has a ride to end
+config_snapshot() { # snapshot the config the shots change, so session_end can restore it
     (( SESSION_UP )) && return 0
     get_hud "$STAGE/hud_saved.json"
+    get_zone "$STAGE/zone_saved.json"
+    config_get field_sparkline "$STAGE/profile_saved.json"
+    SESSION_UP=1
+    set_zone scripts/fixtures/zone/barberfish.json   # house palettes unless a shot sets others
+}
+session_start() {
+    (( RIDE_UP )) && return 0
+    if ride_running; then
+        echo "  ! a ride is already running; end it on the device first" >&2; return 1
+    fi
+    config_snapshot
     replay_load
     ride_start
+    RIDE_UP=1
     ride_load_route Tranquilo
-    SESSION_UP=1
+    check_sensors
 }
-session_end() {
+session_end() { # restore the config first: it is the part a half-finished run must not lose
     (( SESSION_UP )) || return 0
-    ride_end
-    [[ -f "$STAGE/hud_saved.json" ]] && set_hud "$STAGE/hud_saved.json"
     SESSION_UP=0
+    unpin_grade
+    [[ -f "$STAGE/hud_saved.json" ]] && set_hud "$STAGE/hud_saved.json"
+    [[ -f "$STAGE/zone_saved.json" ]] && set_zone "$STAGE/zone_saved.json"
+    [[ -f "$STAGE/time_saved.json" ]] && config_set time "$STAGE/time_saved.json"
+    [[ -f "$STAGE/profile_saved.json" ]] && set_profile "$STAGE/profile_saved.json"
+    (( RIDE_UP )) || return 0
+    RIDE_UP=0
+    ride_front
+    ride_end
+}
+check_sensors() { # stop before shooting if the replay sensors are not reaching the ride
+    # Shown on the hero's HUD (Speed, HR, 3s Power), as the ride screen does not dump: the label
+    # row must match the hero's, which it does not when a column is dropped (RMSE 0.035 or less
+    # on a match, 0.40 or more with HR dropped), and each value must be digit-tall, not a
+    # "Searching…" line (57 px against 25 px; K3, 2026-09-30).
+    local i c h d ok
+    set_hud scripts/fixtures/hud/hud_sparkline.json
+    goto_map_page
+    magick docs/screenshots/hud_sparkline.jpg -crop 480x32+0+72 +repage "$STAGE/labels_hero.png"
+    for i in $(seq 1 12); do
+        cap sensors
+        magick "$STAGE/sensors.png" -crop 480x32+0+72 +repage "$STAGE/labels_live.png"
+        d=$(magick compare -metric RMSE "$STAGE/labels_live.png" "$STAGE/labels_hero.png" null: 2>&1 \
+            | sed 's/.*(\(.*\))/\1/' || true)
+        ok=0
+        if awk -v d="$d" 'BEGIN{exit !(d < 0.15)}'; then
+            ok=1
+            for c in 0 1 2; do
+                h=$(magick "$STAGE/sensors.png" -crop 160x100+$((c*160))+105 +repage \
+                    -colorspace gray -threshold 40% -trim -format "%h" info: 2>/dev/null || echo 0)
+                (( h >= 45 )) || ok=0
+            done
+        fi
+        (( ok )) && return 0
+        settle 5
+    done
+    echo "  ! HUD shows no live HR or Power: are the replay sensors paired to the profile?" >&2
+    return 1
 }
 needs_session() { # true if any requested target is a ride shot
     local t s
@@ -279,37 +552,55 @@ shot_hud_sparkline() { # page 1: map + 3-col HUD + elevation profile strip (READ
     echo "hud_sparkline: map page, HUD 3-col Speed/HR/Power, sparkline on"
     session_start
     set_hud scripts/fixtures/hud/hud_sparkline.json
-    goto_page 1; settle_drawer
+    # Minute 31 of the replay: a hairpin on the climb, so the band and the profile both show it.
+    replay_seek 0.236; settle 20
+    goto_map_page; settle_drawer
     cap hud_sparkline
     magick "$STAGE/hud_sparkline.png" -quality 92 "$OUTDIR/hud_sparkline.jpg"
     echo "  -> $OUTDIR/hud_sparkline.jpg"
 }
 
-shot_climbs_counter() { # page 1: HUD in CLIMBS mode showing the climb counter, on a climb
-    echo "climbs_counter: map page, HUD climb counter"
+shot_palettes() { # page 1: the hud_sparkline layout under two non-house palette pairs
+    echo "palettes: hud_sparkline layout on the switchbacks, Turbo + Wahoo (Text), Garmin + Intervals.icu (Fill)"
     session_start
-    set_hud scripts/fixtures/hud/climbs_counter.json
-    # Must park on one of Tranquilo's categorized climbs so the native climber engages and the
-    # HUD counter reads "Climb N/M"; tune this fraction against the reference. On an uncategorized
-    # pitch the counter does not show.
-    replay_seek 0.28
-    press_button drawer_action  # collapse the native climber panel to its closed (down-chevron)
-                                # state; drawer_action cycles closed/half/full, so may need tuning
-    goto_page 1; settle_drawer
+    local pair hud zone name
+    for pair in "hud_sparkline turbo_wahoo" "hud_sparkline_fill garmin_intervals"; do
+        read -r hud zone <<<"$pair"
+        name="palette_$zone"
+        set_hud "scripts/fixtures/hud/$hud.json"
+        set_zone "scripts/fixtures/zone/$zone.json"
+        # Switchbacks on the climb, so the band fills the map ahead. Repeated per capture so
+        # both land on the same spot.
+        replay_seek 0.20; settle 20
+        goto_map_page; settle_drawer
+        cap "$name"
+        magick "$STAGE/$name.png" -quality 92 "$OUTDIR/$name.jpg"
+        # The HUD and its profile strip alone, for the palette page's descent comparison
+        magick "$STAGE/$name.png" -crop 480x218+0+60 +repage -quality 92 "$OUTDIR/${name}_profile.jpg"
+        echo "  -> $OUTDIR/$name.jpg, ${name}_profile.jpg"
+    done
+    set_zone scripts/fixtures/zone/barberfish.json
+}
+
+shot_climbs_counter() { # editor: the HUD preview in CLIMBS mode, showing the climb counter
+    echo "climbs_counter: Map Page in the profile editor, HUD climb counter"
+    config_snapshot
+    editor_page "Map Page"
+    set_hud scripts/fixtures/hud/climbs_counter.json   # after opening: a config change restarts the preview
+    climb_phase counter
     cap climbs_counter
     magick "$STAGE/climbs_counter.png" -quality 92 "$OUTDIR/climbs_counter.jpg"
     echo "  -> $OUTDIR/climbs_counter.jpg"
 }
 
-shot_climbs_profile() { # page 1: HUD 3-col Speed/HR/Grade + profile strip, on a climb
-    echo "climbs_profile: map page, HUD grade + profile"
-    session_start
-    set_hud scripts/fixtures/hud/climbs_profile.json
-    # Park on a categorized climb so GRADE reads a settled positive value (it shows "Searching…"
-    # on flats/descents); tune against the reference.
-    replay_seek 0.28
-    press_button drawer_action  # collapse the native climber panel (see shot_climbs_counter)
-    goto_page 1; settle_drawer
+shot_climbs_profile() { # editor: HUD 3-col Speed/HR/Grade + the climb profile, a little way up
+    echo "climbs_profile: Map Page in the profile editor, HUD grade + profile"
+    config_snapshot
+    editor_page "Map Page"
+    set_hud scripts/fixtures/hud/climbs_profile.json   # after opening: a config change restarts the preview
+    # The strip is coloured past the summit too, so take the first profile after the counter: the
+    # climb from its foot. Then wait for the dot to get partway up.
+    climb_phase counter; climb_phase profile; climb_dot_past 200
     cap climbs_profile
     magick "$STAGE/climbs_profile.png" -quality 92 "$OUTDIR/climbs_profile.jpg"
     echo "  -> $OUTDIR/climbs_profile.jpg"
@@ -319,35 +610,123 @@ shot_barberfish_fields() { # page 2: full data page (HUD row + profile + fields)
     echo "barberfish_fields: data page 2"
     session_start
     set_hud scripts/fixtures/hud/barberfish_fields.json
-    goto_page 2; settle_drawer
+    config_get time "$STAGE/time_saved.json"
+    config_set time scripts/fixtures/time_racing.json
+    pin_grade scripts/fixtures/grade_pin_descent.json
+    # Scrub to the long descent after minute 45 so the profile ahead matches the pinned
+    # grade, and ride it for a few minutes so the elapsed time is not seconds.
+    replay_seek 0.343; settle 240
+    # Pause the ride for a minute so ride time falls behind elapsed time and the two
+    # average speeds separate; with no stop they read the same to one decimal. Pausing
+    # the replay app instead does not pause the ride (paused time stayed at 6 s, K3
+    # 2026-09-22).
+    press_button bottom_right; settle 60; press_button bottom_right; settle 3
+    goto_fields_page; settle_drawer
     cap barberfish_fields
+    unpin_grade
+    [[ -f "$STAGE/time_saved.json" ]] && config_set time "$STAGE/time_saved.json"
     magick "$STAGE/barberfish_fields.png" -quality 92 "$OUTDIR/barberfish_fields.jpg"
     echo "  -> $OUTDIR/barberfish_fields.jpg"
 }
 
-shot_light_mode() { # page 3 in day mode: 4-col zone HUD + fill-mode field pairs
-    echo "light_mode: data page 3, day mode"
+shot_light_mode() { # page 4 in day mode: the HUD, Profile and route fields
+    echo "light_mode: data page 4, day mode"
     session_start
-    set_hud scripts/fixtures/hud/light_mode.json
+    own_hud   # the HUD is one config for every page; show the one set up for this page
+    set_profile scripts/fixtures/profile/blocks.json   # Max simplification, flat band uncoloured
+    replay_seek 0.236; settle 20   # on the big climb, where power and HR have values (the hero's spot)
     save_theme; set_day
-    goto_page 3; settle_drawer
+    goto_page 4; settle_drawer
     cap light_mode
     magick "$STAGE/light_mode.png" -quality 92 "$OUTDIR/light_mode.jpg"
     echo "  -> $OUTDIR/light_mode.jpg"
     restore_theme
 }
 
-shot_karoo_vs_barberfish() { # page 4: native vs Barberfish paired single fields (no HUD row)
-    echo "karoo_vs_barberfish: data page 4"
+shot_karoo_vs_barberfish() { # page 3: native vs Barberfish paired single fields (no HUD row)
+    echo "karoo_vs_barberfish: data page 3"
     session_start
-    goto_page 4; settle_drawer
+    own_hud   # see shot_light_mode
+    replay_seek 0.236; settle 20   # see shot_light_mode
+    goto_page 3; settle_drawer
     cap karoo_vs_barberfish
     magick "$STAGE/karoo_vs_barberfish.png" -quality 92 "$OUTDIR/karoo_vs_barberfish.jpg"
     echo "  -> $OUTDIR/karoo_vs_barberfish.jpg"
 }
 
+shot_grade_map() { # page 1: the same map view with the grade map on, then off (grade map page hero pair)
+    echo "grade_map: map page, grade map on then off"
+    session_start
+    set_hud scripts/fixtures/hud/hud_sparkline.json
+    # Park around the 10 km mark, where the route climbs; tune against the reference. Assumes the
+    # map's extension effects are on at entry (the puzzle toggle is a flip, its state cannot be read).
+    replay_seek 0.246
+    goto_page 1; settle_drawer
+    cap grade_map_on
+    magick "$STAGE/grade_map_on.png" -quality 92 "$OUTDIR/grade_map_on.jpg"
+    echo "  -> $OUTDIR/grade_map_on.jpg"
+    map_extensions_toggle; settle 3
+    cap grade_map_off
+    magick "$STAGE/grade_map_off.png" -quality 92 "$OUTDIR/grade_map_off.jpg"
+    echo "  -> $OUTDIR/grade_map_off.jpg"
+    map_extensions_toggle; settle 3    # leave the map as found
+}
+
+# The replay's HR sensor, stepped through its tap cycle (streaming, searching, missing) on the
+# replay screen until its readout shows <state>: "···" searching, "--" missing, a number streaming.
+# Needs the forked replay with "Separate sensors" on and its four devices paired to the profile;
+# with one combined device the readouts do not respond to taps.
+replay_hr() { # replay_hr streaming|searching|missing
+    local i now
+    replay_open
+    for i in 1 2 3; do
+        dump
+        if ui has text "--" >/dev/null 2>&1; then now=missing
+        elif ui has text "···" >/dev/null 2>&1; then now=searching
+        else now=streaming; fi
+        [[ "$now" == "$1" ]] && return 0
+        tap text "HR"; settle 1
+    done
+    echo "  ! replay HR never reached $1 (Separate sensors off?)" >&2; return 1
+}
+to_ride() { dump; if ui has text "To ride" >/dev/null 2>&1; then tap text "To ride"; settle 3; fi; ride_front; }
+
+shot_hud_hr_missing() { # page 1: the hero's HUD while the Karoo searches for HR, then without it
+    echo "hud_hr_missing: map page, HR searching in its own column, then the 2-column HUD"
+    session_start
+    set_hud scripts/fixtures/hud/hud_sparkline.json
+    replay_seek 0.236; settle 20
+    # A sensor that goes missing is searched for first, keeping its column; the Karoo gives up
+    # after a while, reports it not available, and the column drops. It retries a few minutes
+    # later and the column returns as searching (K3, 2026-09-25).
+    replay_hr missing; to_ride
+    goto_map_page; settle_drawer
+    cap hud_hr_searching
+    magick "$STAGE/hud_hr_searching.png" -quality 92 "$OUTDIR/hud_hr_searching.jpg"
+    echo "  -> $OUTDIR/hud_hr_searching.jpg"
+    # Watch the HUD label row, which holds still while values tick and moves only with the
+    # columns. No seek back to the hero's spot: seeking pauses the replay, and the live fields
+    # read No data for a while after.
+    local band="480x32+0+72" t d
+    magick "$STAGE/hud_hr_searching.png" -crop "$band" +repage "$STAGE/labels_ref.png"
+    for (( t=0; t<600; t+=5 )); do
+        settle 5
+        A exec-out screencap -p > "$STAGE/labels_probe.png"
+        magick "$STAGE/labels_probe.png" -crop "$band" +repage "$STAGE/labels_now.png"
+        d=$(magick compare -metric RMSE "$STAGE/labels_now.png" "$STAGE/labels_ref.png" null: 2>&1 \
+            | sed 's/.*(\(.*\))/\1/' || true)
+        if awk -v d="$d" 'BEGIN{exit !(d > 0.05)}'; then break; fi
+    done
+    echo "  ... label row moved after about ${t}s of searching"
+    settle_drawer
+    cap hud_hr_hidden
+    magick "$STAGE/hud_hr_hidden.png" -quality 92 "$OUTDIR/hud_hr_hidden.jpg"
+    echo "  -> $OUTDIR/hud_hr_hidden.jpg"
+    replay_hr streaming; to_ride
+}
+
 # ============================= main ==========================================
-ALL=(design_karoo hud_sparkline climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish)
+ALL=(design_karoo hud_sparkline palettes climbs_counter climbs_profile barberfish_fields light_mode karoo_vs_barberfish grade_map hud_hr_missing)
 targets=("$@"); [[ ${#targets[@]} -eq 0 ]] && targets=("${ALL[@]}")
 
 require_device || { echo "no device" >&2; exit 1; }
@@ -363,6 +742,4 @@ for s in "${targets[@]}"; do
     fi
 done
 session_end
-
-A shell dumpsys deviceidle enable >/dev/null 2>&1 || true
 echo "done."

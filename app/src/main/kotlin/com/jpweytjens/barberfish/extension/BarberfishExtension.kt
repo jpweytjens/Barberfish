@@ -39,7 +39,6 @@ import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.PieceVisibility
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
@@ -61,7 +60,6 @@ import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
-import com.jpweytjens.barberfish.datatype.shared.trimPieceFrom
 import com.jpweytjens.barberfish.datatype.shared.windSockBands
 import com.jpweytjens.barberfish.datatype.shared.windSockSymbol
 import com.jpweytjens.barberfish.datatype.shared.windUnitFor
@@ -113,6 +111,10 @@ private const val SEED_ZOOM = 15.0
 // Screen radius in pixels beyond which a ridden repeated visit is out of view and may hide. The
 // Karoo 3 screen is 480 by 800 px, so this exceeds every visible distance from the rider.
 private const val VIEW_RADIUS_PX = 800.0
+
+// Route distance in pixels past the rider's progress within which chevrons draw, so a later leg
+// that passes close by on the ground shows no marks until it is nearly next.
+private const val CHEVRON_LOOKAHEAD_PX = 800.0
 
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
@@ -285,17 +287,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     riderFix,
                     d.viewRadiusM,
                 )
-                val pieces =
-                    d.specs.polylines.mapNotNull { spec ->
-                        when (
-                            val v = d.visibility.visibilityOf(spec.visitKey, spec.startM, spec.endM)
-                        ) {
-                            PieceVisibility.Hidden -> null
-                            PieceVisibility.Shown -> spec
-                            is PieceVisibility.Trimmed ->
-                                trimPieceFrom(spec, v.fromM, d.index, d.capTrimM, d.casingCapTrimM)
-                        }
-                    }
+                val pieces = d.specs.polylines.filter { d.visibility.pieceDrawable(it.visitKey) }
                 val batches =
                     layerPlanner.plan(pieces, GRADE_BAND_WIDTH_DP, GRADE_BAND_CASING_WIDTH_DP)
                 Timber.d(
@@ -318,6 +310,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         // Before the first fix, the window sits on the route start.
                         riderFix ?: d.index.gps.first(),
                         d.viewRadiusM,
+                        d.chevronLookaheadM,
                     ),
                     d.iconRes,
                 )
@@ -567,10 +560,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 index = index,
                                 visibility = ride,
                                 specs = specs,
-                                capTrimM = capTrimM,
-                                casingCapTrimM = casingCapTrimM,
                                 collisionRadiusM = chevronCollision,
                                 viewRadiusM = VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
+                                chevronLookaheadM =
+                                    CHEVRON_LOOKAHEAD_PX * metresPerPixel(viewport.zoomLevel),
                                 sdkRouteDistanceM = route.routeDistance,
                                 iconRes = gradeChevronDrawable(inputs.palette),
                             )
@@ -675,10 +668,9 @@ private class RouteDrawing(
     val index: RouteIndex,
     val visibility: RideVisibility,
     val specs: GradeMapSpecs,
-    val capTrimM: Double,
-    val casingCapTrimM: Double,
     val collisionRadiusM: Double,
     val viewRadiusM: Double,
+    val chevronLookaheadM: Double,
     // The rideapp's route length, for rescaling latch progress onto the polyline axis.
     val sdkRouteDistanceM: Double,
     @DrawableRes val iconRes: Int,

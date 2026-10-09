@@ -47,13 +47,12 @@ internal class GradeMapChevronController(private val idOf: (Int) -> String = ::g
         val iconChanged = lastIconRes != null && lastIconRes != iconRes
         val restyled = if (iconChanged) current.keys - changed else emptySet()
         val reissued = recentlyRemoved.flatMapTo(mutableSetOf()) { it.first } - current.keys
-        // Redrawn stale ids ([assumeStale] sentinels) are re-shown without a preceding hide:
-        // ShowSymbols replaces an existing id in place, while a hide in the same batch races
-        // the show in the rideapp's async symbol processing and blanks the chevron
-        // (observed on-device, 2026-08-22).
-        val redrawnStale =
-            current.keys.filterTo(mutableSetOf()) { id -> previous[id]?.lat?.isNaN() == true }
-        val hideIds = removed + (changed - redrawnStale) + reissued
+        // Changed ids, including redrawn stale ones ([assumeStale] sentinels), are re-shown
+        // without a preceding hide: ShowSymbols replaces an existing id in place, while a hide
+        // in the same batch races the show in the rideapp's async symbol processing and blanks
+        // the chevron (observed on-device, 2026-08-22). A zoom re-cut moves every chevron in
+        // the window under the same positional ids, so pairing them lost the whole set.
+        val hideIds = removed + reissued
         hideIds.chunked(SYMBOLS_PER_EFFECT).forEach { emitter.onNext(HideSymbols(it)) }
         val showSpecs = specs.filter { it.id !in previous || it.id in changed || it.id in restyled }
         showSpecs

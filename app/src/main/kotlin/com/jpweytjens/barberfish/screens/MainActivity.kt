@@ -132,6 +132,7 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
 import com.jpweytjens.barberfish.datatype.shared.hrZoneColor
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.powerZoneColor
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -1314,7 +1315,7 @@ internal const val SECTION_ANIM_MS = 200
 private val GRADE_MAP_TUNING_OPTIONS = listOf(true to "Sync", false to "Independent")
 
 @Composable
-private fun GradeMapCard(
+internal fun GradeMapCard(
     config: GradeMapConfig,
     sparklineConfig: SparklineConfig,
     gradePalette: GradePalette,
@@ -1336,13 +1337,15 @@ private fun GradeMapCard(
             onChange = { onUpdate(config.copy(enabled = it)) },
         )
 
-        if (config.enabled) {
-            GradeMapPreview(
-                config = config,
-                sparklineConfig = sparklineConfig,
-                gradePalette = gradePalette,
-            )
+        // Always shown: when off it draws the route the way the Karoo map does, so the toggle
+        // compares the two looks in place.
+        GradeMapPreview(
+            config = config,
+            sparklineConfig = sparklineConfig,
+            gradePalette = gradePalette,
+        )
 
+        if (config.enabled) {
             ChoiceRow(
                 label = "TUNING",
                 options = GRADE_MAP_TUNING_OPTIONS,
@@ -1360,38 +1363,32 @@ private fun GradeMapCard(
                     palette = gradePalette,
                     climbEdge = effTuning.climbEdge,
                     descentEdge = effTuning.descentEdge,
-                    onEdgesChange = { _, _ -> },
-                    neutral = null,
+                    onClimbEdgeChange = {},
+                    onDescentEdgeChange = {},
+                    neutral = mapNeutral(gradePalette, readable = false),
                     enabled = false,
                 )
             } else {
                 // Effective edges, not the map's own resolution: per resolveGradeMapTuning's
                 // contract the unsynced overlay keeps following the sparkline's descent edge
                 // until something deliberately writes GradeMapConfig.descentEdge. The handles
-                // sit at the grades the fill actually starts at, and dragging the climb handle
-                // must NOT pin the descent side: descent is written back only when the descent
-                // handle itself moved.
+                // sit at the grades the fill actually starts at, and each side is written only
+                // when its own handle moves, so dragging the climb handle never pins the
+                // descent side.
                 val effTuning = resolveGradeMapTuning(config, sparklineConfig, gradePalette)
                 LabeledHelper("EMPHASIS") {
                     HelperText(
-                        "Filter out gentle grades so meaningful climbs and descents stand out."
+                        "Filter out gentle grades so meaningful climbs and descents stand out. " +
+                            "Grades between the handles keep the map's neutral colour."
                     )
                 }
                 GradeBandSlider(
                     palette = gradePalette,
                     climbEdge = effTuning.climbEdge,
                     descentEdge = effTuning.descentEdge,
-                    onEdgesChange = { climb, descent ->
-                        onUpdate(
-                            config.copy(
-                                climbEdge = climb,
-                                descentEdge =
-                                    if (descent != effTuning.descentEdge) descent
-                                    else config.descentEdge,
-                            )
-                        )
-                    },
-                    neutral = null,
+                    onClimbEdgeChange = { onUpdate(config.copy(climbEdge = it)) },
+                    onDescentEdgeChange = { onUpdate(config.copy(descentEdge = it)) },
+                    neutral = mapNeutral(gradePalette, readable = false),
                 )
 
                 LabeledHelper("SIMPLIFICATION") {
@@ -2082,7 +2079,7 @@ private fun <T> EnumDropdown(
 private fun zonePaletteLabel(palette: ZonePalette) =
     when (palette) {
         ZonePalette.KAROO -> "Karoo"
-        ZonePalette.SURGEONFISH -> "Surgeonfish"
+        ZonePalette.BARBERFISH -> "Barberfish"
         ZonePalette.WAHOO -> "Wahoo"
         ZonePalette.INTERVALS -> "Intervals.icu"
         ZonePalette.ZWIFT -> "Zwift"

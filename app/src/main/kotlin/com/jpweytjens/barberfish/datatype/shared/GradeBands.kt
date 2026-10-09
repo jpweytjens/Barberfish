@@ -5,23 +5,6 @@ import com.jpweytjens.barberfish.extension.GradePalette
 
 // Grade color bands — sorted descending, highest threshold first
 
-// Barberfish grade bands — two-sided. The climb side above 2% carries the same
-// hexes as the Karoo power palette's zones 2–7; -2% to 2% is a quiet green-grey,
-// kin to the descent limb, which deepens from teal to slate.
-private val BARBERFISH_GRADE_BANDS =
-    listOf(
-        20.0 to Color(0xFF9020A0), // [20, ∞)   — purple
-        14.0 to Color(0xFFD01020), // [14, 20)  — red
-        11.0 to Color(0xFFF06020), // [11, 14)  — orange
-        8.0 to Color(0xFFF08868), //  [8, 11)  — salmon
-        5.0 to Color(0xFFF0D800), //  [5, 8)   — yellow
-        2.0 to Color(0xFF40D078), //  [2, 5)   — mint green
-        -2.0 to Color(0xFF92B4A5), // [-2, 2)   — flat green-grey
-        -6.0 to Color(0xFF50A39C), // [-6, -2)  — teal
-        -10.0 to Color(0xFF1C6E86), // [-10, -6) — deep teal
-        Double.NEGATIVE_INFINITY to Color(0xFF384778), // (-∞, -10) — slate
-    )
-
 private val WAHOO_GRADE_BANDS =
     listOf(
         20.0 to Color(0xFF540000), // 20%+
@@ -76,19 +59,6 @@ private val ZWIFT_GRADE_BANDS =
 // Readable grade bands — HSLuv-corrected to |Lc| ≥ 45 against the datafield
 // background. Dark variants target #000000 (night mode); Light variants
 // target #FFFFFF (day mode). Pre-computed via scripts/apca_hsluv.py.
-private val BARBERFISH_GRADE_BANDS_READABLE_DARK =
-    listOf(
-        20.0 to Color(0xFFDE5AF3), // was #9020A0
-        14.0 to Color(0xFFFC5C61), // was #D01020
-        11.0 to Color(0xFFF86421), // was #F06020
-        8.0 to Color(0xFFF08868),
-        5.0 to Color(0xFFF0D800),
-        2.0 to Color(0xFF40D078),
-        -2.0 to Color(0xFF92B4A5),
-        -6.0 to Color(0xFF50A39C),
-        -10.0 to Color(0xFF2DA0C2), // was #1C6E86
-        Double.NEGATIVE_INFINITY to Color(0xFF8392CF), // was #384778
-    )
 private val ZWIFT_GRADE_BANDS_READABLE_DARK =
     listOf(
         9.0 to Color(0xFFEB6D66), //  9%+    — red
@@ -142,20 +112,20 @@ private val TURBO_GRADE_BANDS =
         Double.NEGATIVE_INFINITY to Color(0xFF401C4C), // (-∞, -9) — dark purple
     )
 
-// Surgeonfish grade bands — Barberfish's thresholds under a sharper ramp: HSLuv-spaced
+// Barberfish grade bands — two-sided, the house palette: HSLuv-spaced
 // green→yellow→orange→red climbs with a dark purple band above 20%, and saturated blue
 // descents that deepen toward navy, after the blue limb of Kovesi's CET rainbow maps.
-// Climb bands and the flat band reuse the Surgeonfish power zone palette (see ZoneColoring.kt),
+// Climb bands and the flat band reuse the Barberfish power zone palette (see ZoneColoring.kt),
 // exactly as KAROO_GRADE_BANDS reuses karooPowerColors; the descent bands are grade-only.
-private val SURGEONFISH_GRADE_BANDS =
+private val BARBERFISH_GRADE_BANDS =
     listOf(
-        20.0 to surgeonfishPowerColors[6], // [20, ∞)   — purple
-        14.0 to surgeonfishPowerColors[5], // [14, 20)  — red
-        11.0 to surgeonfishPowerColors[4], // [11, 14)  — red-orange
-        8.0 to surgeonfishPowerColors[3], //  [8, 11)  — orange
-        5.0 to surgeonfishPowerColors[2], //  [5, 8)   — yellow
-        2.0 to surgeonfishPowerColors[1], //  [2, 5)   — yellow-green
-        -2.0 to surgeonfishPowerColors[0], // [-2, 2)   — flat green (muted, s70)
+        20.0 to barberfishPowerColors[6], // [20, ∞)   — purple
+        14.0 to barberfishPowerColors[5], // [14, 20)  — red
+        11.0 to barberfishPowerColors[4], // [11, 14)  — red-orange
+        8.0 to barberfishPowerColors[3], //  [8, 11)  — orange
+        5.0 to barberfishPowerColors[2], //  [5, 8)   — yellow
+        2.0 to barberfishPowerColors[1], //  [2, 5)   — yellow-green
+        -2.0 to barberfishPowerColors[0], // [-2, 2)   — flat green (muted, s70)
         -6.0 to Color(0xFF3298C4), // [-6, -2)  — azure
         -10.0 to Color(0xFF1A74B3), // [-10, -6) — blue
         Double.NEGATIVE_INFINITY to Color(0xFF104F89), // (-∞, -10) — navy
@@ -173,33 +143,20 @@ private val TURBO_GRADE_BANDS_READABLE_DARK =
         -9.0 to Color(0xFF7092EC),
         Double.NEGATIVE_INFINITY to Color(0xFFBF79D9),
     )
-private val SURGEONFISH_GRADE_BANDS_READABLE_DARK =
+private val BARBERFISH_GRADE_BANDS_READABLE_DARK =
     listOf(
-        20.0 to surgeonfishPowerColorsReadableDark[6],
-        14.0 to surgeonfishPowerColorsReadableDark[5],
-        11.0 to surgeonfishPowerColorsReadableDark[4],
-        8.0 to surgeonfishPowerColorsReadableDark[3],
-        5.0 to surgeonfishPowerColorsReadableDark[2],
-        2.0 to surgeonfishPowerColorsReadableDark[1],
-        -2.0 to surgeonfishPowerColorsReadableDark[0],
+        20.0 to barberfishPowerColorsReadableDark[6],
+        14.0 to barberfishPowerColorsReadableDark[5],
+        11.0 to barberfishPowerColorsReadableDark[4],
+        8.0 to barberfishPowerColorsReadableDark[3],
+        5.0 to barberfishPowerColorsReadableDark[2],
+        2.0 to barberfishPowerColorsReadableDark[1],
+        -2.0 to barberfishPowerColorsReadableDark[0],
         -6.0 to Color(0xFF359FCC), // was #3298C4
         -10.0 to Color(0xFF269AEB), // , was #1A74B3
         Double.NEGATIVE_INFINITY to Color(0xFF3397FA), // , was #104F89
     )
 
-private val BARBERFISH_GRADE_BANDS_READABLE_LIGHT =
-    listOf(
-        20.0 to Color(0xFF9020A0),
-        14.0 to Color(0xFFD01020),
-        11.0 to Color(0xFFF06020),
-        8.0 to Color(0xFFF08868),
-        5.0 to Color(0xFFC0AC00), // was #F0D800
-        2.0 to Color(0xFF3BC16F), // was #40D078
-        -2.0 to Color(0xFF91B3A4), // was #92B4A5
-        -6.0 to Color(0xFF50A39C),
-        -10.0 to Color(0xFF1C6E86),
-        Double.NEGATIVE_INFINITY to Color(0xFF384778),
-    )
 private val ZWIFT_GRADE_BANDS_READABLE_LIGHT =
     listOf(
         9.0 to Color(0xFFEA5147),
@@ -246,15 +203,15 @@ private val TURBO_GRADE_BANDS_READABLE_LIGHT =
         -9.0 to Color(0xFF5783E9),
         Double.NEGATIVE_INFINITY to Color(0xFF401C4C),
     )
-private val SURGEONFISH_GRADE_BANDS_READABLE_LIGHT =
+private val BARBERFISH_GRADE_BANDS_READABLE_LIGHT =
     listOf(
-        20.0 to surgeonfishPowerColorsReadableLight[6],
-        14.0 to surgeonfishPowerColorsReadableLight[5],
-        11.0 to surgeonfishPowerColorsReadableLight[4],
-        8.0 to surgeonfishPowerColorsReadableLight[3],
-        5.0 to surgeonfishPowerColorsReadableLight[2],
-        2.0 to surgeonfishPowerColorsReadableLight[1],
-        -2.0 to surgeonfishPowerColorsReadableLight[0],
+        20.0 to barberfishPowerColorsReadableLight[6],
+        14.0 to barberfishPowerColorsReadableLight[5],
+        11.0 to barberfishPowerColorsReadableLight[4],
+        8.0 to barberfishPowerColorsReadableLight[3],
+        5.0 to barberfishPowerColorsReadableLight[2],
+        2.0 to barberfishPowerColorsReadableLight[1],
+        -2.0 to barberfishPowerColorsReadableLight[0],
         -6.0 to Color(0xFF3298C4),
         -10.0 to Color(0xFF1A74B3),
         Double.NEGATIVE_INFINITY to Color(0xFF104F89),
@@ -273,12 +230,6 @@ private fun gradeThresholdColors(
                 !readable -> BARBERFISH_GRADE_BANDS
                 isNightMode -> BARBERFISH_GRADE_BANDS_READABLE_DARK
                 else -> BARBERFISH_GRADE_BANDS_READABLE_LIGHT
-            }
-        GradePalette.SURGEONFISH ->
-            when {
-                !readable -> SURGEONFISH_GRADE_BANDS
-                isNightMode -> SURGEONFISH_GRADE_BANDS_READABLE_DARK
-                else -> SURGEONFISH_GRADE_BANDS_READABLE_LIGHT
             }
         GradePalette.WAHOO ->
             when {
@@ -358,11 +309,10 @@ internal fun gradeBandStops(palette: GradePalette): GradeBandStops {
 }
 
 /**
- * The band strictly containing zero, if [palette] has one: a designed rest state (Barberfish and
- * Surgeonfish today). Its colour is the map neutral and its far edges are the selector's crossover
- * stops, so the two can never disagree. lo must be a real threshold: a one-sided palette's lowest
- * band has an open low end that is not a floor (see [gradeBands]' KDoc), and it must not match
- * here.
+ * The band strictly containing zero, if [palette] has one: a designed rest state (Barberfish
+ * today). Its colour is the map neutral and its far edges are the selector's crossover stops, so
+ * the two can never disagree. lo must be a real threshold: a one-sided palette's lowest band has an
+ * open low end that is not a floor (see [gradeBands]' KDoc), and it must not match here.
  */
 internal fun zeroStraddlingBand(
     palette: GradePalette,
@@ -375,8 +325,8 @@ internal fun zeroStraddlingBand(
 
 /**
  * The map overlay's neutral for [palette]: what a run inside the emphasis edges paints. A palette
- * with a band strictly containing zero (Barberfish and Surgeonfish) uses that band's colour, so its
- * flat band and the map neutral stay one colour; every other palette keeps the shared [FlatGrey].
+ * with a band strictly containing zero (Barberfish) uses that band's colour, so its flat band and
+ * the map neutral stay one colour; every other palette keeps the shared [FlatGrey].
  */
 internal fun mapNeutral(
     palette: GradePalette,

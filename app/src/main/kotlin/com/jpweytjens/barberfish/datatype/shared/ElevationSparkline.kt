@@ -172,10 +172,6 @@ private fun vwSimplify(
  * 4. Ahead outline (right of dot): opaque white on night / black on day, strokeWidth 3px
  * 5. Position dot: circle radius [DOT_RADIUS_PX], colour from [dotColor] (default teal)
  */
-// A rendering guard: below a pixel a fill draws as nothing, so it is dropped rather than
-// left to round to an arbitrary column. Not the map overlay's minRunLengthM, which is a
-// legibility guard sized to the stroke width and decides where a colour may change at all.
-private const val MIN_FILL_PX = 1f // skip colour fills narrower than this many pixels
 private const val RATCHET_DECAY_M_PER_M = 40f / 1000f // 40 m scale decay per 1000 m ridden
 private const val WARP_STEP_TARGET_M =
     25f // finer than typical elevation polyline spacing (~80-100m), GPS movement per render
@@ -185,6 +181,57 @@ private const val POI_RADIUS_PX = 7f
 private const val MARKER_STROKE_PX = 1.5f
 // Half-stroke + radius, ceil'd: keeps the stroked outer edge of the dot/POI inside the bitmap.
 internal const val MARKER_PAD_PX = 8f
+
+/** Consecutive segments of one fill colour: the points from the run's first to its last. */
+internal data class FillRun(val points: List<Pair<Float, Float>>, val color: Int)
+
+/**
+ * Groups the segments of [points] into same-colour runs, one polygon each, so segments of one
+ * colour share no vertical seam. [colorOf] maps a segment's grade in percent to its fill colour, or
+ * null for a segment that draws no fill; a null segment ends the run before it, and so does a
+ * change of colour or a segment that does not advance along the road. Every run is kept, however
+ * narrow the x mapping makes it: a sub-pixel polygon blends into its column through anti-aliasing,
+ * so a far-end stretch too compressed to resolve shows the mix of its bands rather than a gap. Not
+ * the map overlay's minRunLengthM, which is a legibility guard sized to the stroke width and
+ * decides where a colour may change at all.
+ */
+internal fun gradeFillRuns(
+    points: List<Pair<Float, Float>>,
+    colorOf: (grade: Double) -> Int?,
+): List<FillRun> {
+    val runs = mutableListOf<FillRun>()
+    var runColor: Int? = null
+    val runPts = mutableListOf<Pair<Float, Float>>()
+
+    fun flushRun() {
+        runColor?.let { runs.add(FillRun(runPts.toList(), it)) }
+        runPts.clear()
+        runColor = null
+    }
+
+    for (i in 0 until points.lastIndex) {
+        val (d1, e1) = points[i]
+        val (d2, e2) = points[i + 1]
+        val distDelta = d2 - d1
+        if (distDelta <= 0f) {
+            flushRun()
+            continue
+        }
+        val segColor = colorOf((e2 - e1) / distDelta * 100.0)
+        if (segColor == null) {
+            flushRun()
+            continue
+        }
+        if (segColor != runColor) {
+            flushRun()
+            runColor = segColor
+        }
+        if (runPts.isEmpty()) runPts.add(d1 to e1)
+        runPts.add(d2 to e2)
+    }
+    flushRun()
+    return runs
+}
 
 /** Result of [renderElevationSparkline]. Destructurable for call-site convenience. */
 internal data class ElevationSparklineResult(val bitmap: Bitmap?, val displayedRange: Float)
@@ -313,49 +360,13 @@ internal fun renderElevationSparkline(
         canvas.drawPath(path, paint)
     }
 
-    // 2. Climb fills — merge consecutive same-color segments into one polygon to eliminate seams.
+    // 2. Climb fills: one polygon per same-colour run, so segments of one colour share no seam.
+    // The silhouette is this strip's neutral: a segment inside the edges draws no polygon at
+    // all and the silhouette painted in step 1 shows through.
     paint.style = Paint.Style.FILL
-    run {
-        var runColor: Int? = null
-        val runPts = mutableListOf<Pair<Float, Float>>()
-
-        fun flushRun() {
-            val color = runColor ?: return
-            if (runPts.size < 2) {
-                runPts.clear()
-                runColor = null
-                return
-            }
-            val fillWidth = toX(runPts.last().first) - toX(runPts.first().first)
-            if (fillWidth < MIN_FILL_PX) {
-                runPts.clear()
-                runColor = null
-                return
-            }
-            val path = Path()
-            path.moveTo(toX(runPts.first().first), toY(runPts.first().second))
-            runPts.drop(1).forEach { (d, e) -> path.lineTo(toX(d), toY(e)) }
-            path.lineTo(toX(runPts.last().first), heightPx.toFloat())
-            path.lineTo(toX(runPts.first().first), heightPx.toFloat())
-            path.close()
-            paint.color = color
-            canvas.drawPath(path, paint)
-            runPts.clear()
-            runColor = null
-        }
-
-        for (i in 0 until visible.lastIndex) {
-            val (d1, e1) = visible[i]
-            val (d2, e2) = visible[i + 1]
-            val distDelta = d2 - d1
-            if (distDelta <= 0f) {
-                flushRun()
-                continue
-            }
-            val grade = (e2 - e1) / distDelta * 100.0
-            // The silhouette is this strip's neutral: a segment inside the edges draws no
-            // polygon at all and the silhouette painted in step 1 shows through.
-            val neutral = if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY
+    val neutral = if (isNightMode) SPARKLINE_SILHOUETTE_NIGHT else SPARKLINE_SILHOUETTE_DAY
+    val fillRuns =
+        gradeFillRuns(visible) { grade ->
             val resolved =
                 gradeBandColor(
                     grade = grade,
@@ -366,19 +377,17 @@ internal fun renderElevationSparkline(
                     readable = readable,
                     isNightMode = isNightMode,
                 )
-            val segColor = if (resolved == neutral) null else resolved.toArgb()
-            if (segColor == null) {
-                flushRun()
-                continue
-            }
-            if (segColor != runColor) {
-                flushRun()
-                runColor = segColor
-            }
-            if (runPts.isEmpty()) runPts.add(d1 to e1)
-            runPts.add(d2 to e2)
+            if (resolved == neutral) null else resolved.toArgb()
         }
-        flushRun()
+    fillRuns.forEach { run ->
+        val path = Path()
+        path.moveTo(toX(run.points.first().first), toY(run.points.first().second))
+        run.points.drop(1).forEach { (d, e) -> path.lineTo(toX(d), toY(e)) }
+        path.lineTo(toX(run.points.last().first), heightPx.toFloat())
+        path.lineTo(toX(run.points.first().first), heightPx.toFloat())
+        path.close()
+        paint.color = run.color
+        canvas.drawPath(path, paint)
     }
 
     // 2b. Dark overlay on past region to grey out grade fills

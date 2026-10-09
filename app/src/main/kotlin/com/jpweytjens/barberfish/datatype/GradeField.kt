@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import com.jpweytjens.barberfish.BuildConfig
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -16,6 +17,7 @@ import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.ZoneDisplayMode
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
+import com.jpweytjens.barberfish.extension.streamGradePin
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
@@ -24,6 +26,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.scan
 
@@ -36,7 +39,7 @@ class GradeField(private val karooSystem: KarooSystemService) :
                 cfg to zones
             }
             .flatMapLatest { (cfg, zones) ->
-                gradeOlsFlow(karooSystem).map { reading ->
+                gradeFlow(context, karooSystem).map { reading ->
                     toGradeFieldState(
                         reading,
                         cfg,
@@ -52,6 +55,24 @@ class GradeField(private val karooSystem: KarooSystemService) :
             .flatMapLatest { (cfg, zones) -> cyclePreview(previewStates(cfg, zones)) }
 
     companion object {
+        /**
+         * The live grade reading: the OLS fit, or on debug builds the pinned reading while one is
+         * set (see [pinnedOrLive]).
+         */
+        fun gradeFlow(context: Context, karooSystem: KarooSystemService): Flow<GradeReading> =
+            if (!BuildConfig.DEBUG) gradeOlsFlow(karooSystem)
+            else
+                pinnedOrLive(context.streamGradePin().map { it.percent }, gradeOlsFlow(karooSystem))
+
+        /**
+         * [live] while [pin] is null; a fresh reading at the pinned percent otherwise. Switching
+         * the pin restarts [live], so the OLS window rebuilds once the pin clears.
+         */
+        fun pinnedOrLive(pin: Flow<Float?>, live: Flow<GradeReading>): Flow<GradeReading> =
+            pin.flatMapLatest { percent ->
+                if (percent == null) live else flowOf(GradeReading.Fresh(percent))
+            }
+
         fun gradeOlsFlow(karooSystem: KarooSystemService): Flow<GradeReading> {
             val elevFlow =
                 karooSystem.streamDataFlow(DataType.Type.PRESSURE_ELEVATION_CORRECTION).map { state

@@ -1,36 +1,6 @@
 # Changelog
 
-## 4.0
-
-New data fields:
-- Distance, the ride odometer
-- Distance Remaining to the destination
-- Ascent Remaining, the climbing left to the destination
-- Descent Remaining to the destination
-- Ride Remaining, the distance and climbing left stacked in one field
-- Overview, a plain elevation profile of the whole route with a dot for where you are
-- Distance and the remaining fields also selectable as HUD slots
-- The standalone elevation sparkline is now called Profile
-
-Data Field Design:
-- Barberfish fields now match Karoo's Data Icons and Label Size settings. Karoo doesn't share those choices with extensions, so mirror them once in the new Data Field Design config section.
-
-Config previews:
-- Field previews now play one simulated ride: power, heart rate, cadence, and grade rise and fall together, elapsed time is moving plus paused, and dawn and dusk track sunrise and sunset
-- Similar fields preview different values: average speed Total reads below Moving, last lap trails the current lap
-
-Colors:
-- Threshold text colors now adjust per theme like the zone palettes: red and green read clearly at night, the range warning orange in daylight
-- A one-sided min or max range in text mode no longer fades from white in light mode, where it was invisible
-
-New defaults, saved settings stay as they are:
-- Speed starts at instant rather than 3s smoothing
-- Power Zone and HR Zone start with one decimal
-
-Grade map (beta):
-- While navigating a route, the map's route line and direction chevrons take the same grade colors as the elevation profile, so you can see where the climbs are without leaving the map
-- The new Grade Map card under Climbing turns it on and picks what gets colored, the line or the chevrons. Its emphasis and detail follow the elevation profile by default, or can be set on their own
-- Beta means less riding than the rest of 4.0; if the map misbehaves, turn it off and report what you saw
+## Unreleased
 
 Wind (needs the Headwind extension):
 - A Wind field and HUD slot: the headwind or tailwind speed, colored by the threshold scale, with an arrow showing where the wind blows relative to you
@@ -38,28 +8,54 @@ Wind (needs the Headwind extension):
 - The Wind card greys out with an install hint when the Headwind extension is missing
 - The Wind HUD slot can show your speed above the wind: turn on Show speed on the slot, with its own speed smoothing. Thanks to Aryeh95 for the contribution.
 
-Grade:
-- Shows a whole number or one decimal, with or without the % sign
-- The HUD grade column has the same choices, set on the column itself
+## 4.0
 
-Profile and Overview:
-- Hide the header to give the elevation trace the whole cell
+Grade map (beta, feedback welcome):
+- While navigating, the route line on the map is colored by grade, in the same colors as the elevation profile, so climbs and descents show without leaving the map
+- Chevrons along the line point the way. They can bunch on the steepest road, where the grade changes, or sit in between
+- Road already ridden loses its chevrons, and on out-and-backs and laps the road ahead is drawn on top
+- Off route, the Karoo's path back is drawn in red until you rejoin
+- Turn it on in the new Grade Map card under Climbing, which also sets which grades are colored
 
-Placeholders and icons:
-- The generic Not available is gone; fields now say why data is missing, like the native ones: No sensor for an unpaired sensor, No route and Off route on route fields, Needs 30s power data on NP
-- Time field icons stay plain until the ride starts, then turn green, matching the native Ride Time field
-- The green icon tint now uses Karoo's darker shade in light mode
+New data fields:
+- Distance, Distance Remaining, Ascent Remaining and Descent Remaining, also available as HUD slots
+- Ride Remaining: the distance and climbing left, stacked in one field
+- Overview: the whole route's elevation profile, with a dot for where you are
+
+Palettes and colors:
+- New Barberfish palette for grade, power and HR zones: Karoo's climb colors in even steps, a muted flat band, and blue descents
+- Emphasis, which picks the grades that get color, is set by dragging handles on the palette bar, separately for climbs and descents. The handles snap to the palette's bands, and the profile and map color exactly what the bar shows
+
+Fields:
+- The elevation sparkline field is now called Profile
+- Fields can follow Karoo's Data Icons and Label Size settings, set once in the new Data Field Design section
+- Grade shows a whole number or one decimal, with or without the % sign, on the field and in the HUD
+- Profile and Overview can hide their header, giving the elevation line the whole cell
+- Fields say why data is missing, like the native ones: No sensor, No route, Off route
+- A HUD column whose sensor isn't paired is dropped, and the others share its width
+
+Config screen:
+- Previews play one simulated ride, so related fields show values that belong together
+- The Global section is split into Palettes and Time
+
+New defaults (saved settings are kept):
+- Speed starts unsmoothed instead of at 3s
+- Power Zone and HR Zone start with one decimal
 
 Fixes:
-- A route ridden in reverse now shows saved POIs on the elevation profile where you meet them, rather than mirrored to the far end of the route
-- The position dot on the elevation profile no longer sits half outside the field at the very start and end of a route
-- Global POIs now show on the elevation profile, not just the POIs that are part of the route. Thanks to Theolean for the report.
-- The Profile field no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
-- Profile climb highlights no longer vanish when you enter the climb. Barberfish now keeps a ride-long climb inventory per route, using the caching approach worked out in timklge's karoo-routegraph.
-- POI dots on the elevation profile are now solid instead of slightly see-through
-- Grade in fill mode keeps its color while holding the last value, instead of dropping to grey text
-- The held-grey grade reading is now readable in light mode, not only dark
-- Searching and other placeholder text now sits at the same height as in the native fields, instead of slightly low
+- Global POIs now show on the elevation profile, not only the route's own. Thanks to Theolean for the report.
+- Profile no longer goes blank when the HUD sparkline is set to Climbs or Off. Thanks to Jamie Bishop for the report.
+- Climb highlights on the profile hold steady as you enter a climb and while off route. Thanks to timklge's karoo-routegraph for the inspiration.
+- Off route, the profile holds your last on-route position instead of jumping back to the start
+- On a route ridden in reverse, POIs show where you meet them, not mirrored to the far end
+- The elevation profile no longer leaves black gaps: short colored stretches toward the far end, and flat road at exactly 0% with Emphasis off, are now filled
+- In Fill mode, Grade keeps its color while it holds its last value, and the greyed value is readable in light mode
+- A min or max range with only one end set is no longer invisible in Text mode on light theme
+- Smaller touch-ups: time field icons turn green when the ride starts, threshold text colors adjust to the theme, the position dot stays inside the field at the route ends, POI dots are solid, placeholder text sits at the native height, green icons use Karoo's darker shade in light mode
+
+Beta testers:
+- Thanks to Theolean for testing the 4.0 betas.
+- Want to try new features before they ship? Betafish, the beta channel, gets them first: github.com/jpweytjens/Betafish
 
 ## 3.3.1
 

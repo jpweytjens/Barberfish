@@ -108,10 +108,16 @@ private const val HUD_SPARKLINE_CELL_RESERVATION_DP = 34f
 // Total height of the HUD preview container (3 or 4 cells side-by-side + sparkline strip).
 private val HUD_PREVIEW_HEIGHT = 90.dp
 
-// Sweep position the preview freezes at in screenshot mode (LocalScreenshotMode): between the two
-// climbs of the On-mode RvV fixture — past the long shallow one, short of the punchy one — so
-// the screenshot always shows the same recognisable climb profile.
-private const val SCREENSHOT_SWEEP_POSITION_M = 5300f
+// Sweep position the preview freezes at in screenshot mode (LocalScreenshotMode): on the steep
+// ramp of the second climb of the On-mode RvV fixture (12 to 16 % between 6663 and 6750 m), so
+// the dot sits in the orange band and agrees with the climb moment's 13 % grade
+// (SCREENSHOT_MOMENT_INDEX).
+private const val SCREENSHOT_SWEEP_POSITION_M = 6690f
+
+// Preview moment the slot row freezes at in screenshot mode: the steep climb of the preview ride
+// (PreviewRide index 4), where power, heart rate and grade all sit in coloured bands rather than
+// the uniform zone 1 of the warm-up moment.
+private const val SCREENSHOT_MOMENT_INDEX = 4
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,8 +129,14 @@ internal fun HUDConfigSection(
     profile: UserProfile,
     onUpdate: (HUDConfig) -> Unit,
     onSparklineUpdate: (SparklineConfig) -> Unit,
+    initialSelectedSlot: Int? = null,
 ) {
-    var selection by remember { mutableStateOf<HudSelection?>(null) }
+    // initialSelectedSlot is the column selected when the section first composes, so a screenshot
+    // can show a slot's card open. The config screen leaves it null: nothing is selected until
+    // the user taps.
+    var selection by remember {
+        mutableStateOf<HudSelection?>(initialSelectedSlot?.let { HudSelection.Slot(it) })
+    }
     val selectedSlot = (selection as? HudSelection.Slot)?.index
     val stripSelected = selection is HudSelection.Strip
 
@@ -388,8 +400,11 @@ private fun HUDPreview(
     var index by remember { mutableIntStateOf(0) }
     LaunchedEffect(states, screenshotMode) {
         index = 0
-        if (screenshotMode)
-            return@LaunchedEffect // freeze on the first state for reproducible shots
+        if (screenshotMode) {
+            // Freeze on the climb moment for reproducible shots (see SCREENSHOT_MOMENT_INDEX).
+            index = SCREENSHOT_MOMENT_INDEX.coerceIn(states.indices)
+            return@LaunchedEffect
+        }
         while (true) {
             delay(PREVIEW_DELAY_MS)
             index = (index + 1) % states.size
@@ -849,9 +864,8 @@ internal fun SparklineOptionsControls(
         palette = zoneConfig.gradePalette,
         climbEdge = climbEdge,
         descentEdge = descentEdge,
-        onEdgesChange = { climb, descent ->
-            onUpdate(config.copy(climbEdge = climb, descentEdge = descent))
-        },
+        onClimbEdgeChange = { onUpdate(config.copy(climbEdge = it)) },
+        onDescentEdgeChange = { onUpdate(config.copy(descentEdge = it)) },
         neutral = null,
     )
     ChoiceRow(

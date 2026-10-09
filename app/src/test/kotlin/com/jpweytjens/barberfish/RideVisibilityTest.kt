@@ -3,7 +3,6 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.RouteFixtures.point
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.PieceVisibility
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
 import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
@@ -36,7 +35,7 @@ class RideVisibilityTest {
     fun at_progress_zero_the_first_visits_are_exposed_and_return_chevrons_are_ineligible() {
         val visibility = RideVisibility(short)
         short.visits.forEach { v ->
-            assertEquals(PieceVisibility.Shown, visibility.visibilityOf(v.key, v.startM, v.endM))
+            assertTrue(visibility.pieceDrawable(v.key))
         }
         assertEquals(0, visibility.exposedVisit(short.visit(0).unit)?.key)
         assertTrue(visibility.chevronDrawable(50.0))
@@ -60,8 +59,8 @@ class RideVisibilityTest {
         // inside the 100 m radius; visit 0 returns at 500 m, outside it.
         assertEquals(setOf(1, 2), visibility.hiddenVisits)
         assertEquals(3, visibility.exposedVisit(short.visit(2).unit)?.key)
-        assertEquals(PieceVisibility.Hidden, visibility.visibilityOf(2, 200.0, 300.0))
-        assertEquals(PieceVisibility.Shown, visibility.visibilityOf(0, 0.0, 100.0))
+        assertFalse(visibility.pieceDrawable(2))
+        assertTrue(visibility.pieceDrawable(0))
         visibility.update(400.0, null, viewRadiusM = 100.0)
         assertEquals(setOf(0, 1, 2), visibility.hiddenVisits)
     }
@@ -82,15 +81,16 @@ class RideVisibilityTest {
     }
 
     @Test
-    fun a_final_visit_hides_by_piece_and_trims_the_piece_under_the_rider() {
+    fun a_final_visit_stays_drawn_behind_the_rider_and_loses_only_its_passed_chevrons() {
         val visibility = RideVisibility(short)
         visibility.update(350.0, null, viewRadiusM = 100.0)
-        // Visit 3 (300-400 m) has no successor: a piece ending before progress is hidden, the
-        // piece straddling progress is trimmed, a piece ahead is shown.
-        assertEquals(PieceVisibility.Hidden, visibility.visibilityOf(3, 300.0, 340.0))
-        assertEquals(PieceVisibility.Trimmed(350.0), visibility.visibilityOf(3, 300.0, 400.0))
-        assertEquals(PieceVisibility.Shown, visibility.visibilityOf(4, 400.0, 500.0))
+        // Visit 3 (300-400 m) has no successor, so nothing beneath it needs uncovering: its
+        // pieces stay although the rider is halfway along it.
+        assertTrue(visibility.pieceDrawable(3))
+        assertTrue(visibility.pieceDrawable(4))
         assertTrue(visibility.hiddenVisits.none { it == 3 })
+        assertFalse(visibility.chevronDrawable(320.0))
+        assertTrue(visibility.chevronDrawable(380.0))
     }
 
     @Test
@@ -125,12 +125,26 @@ class RideVisibilityTest {
         val returning = chevron(short, 550.0)
         assertEquals(
             listOf(outbound),
-            selectChevrons(listOf(outbound, returning), visibility, 20.0, short.gps.first(), 1e6),
+            selectChevrons(
+                listOf(outbound, returning),
+                visibility,
+                20.0,
+                short.gps.first(),
+                1e6,
+                1e6,
+            ),
         )
         visibility.update(500.0, null, viewRadiusM = 100.0)
         assertEquals(
             listOf(returning),
-            selectChevrons(listOf(outbound, returning), visibility, 20.0, short.gps.first(), 1e6),
+            selectChevrons(
+                listOf(outbound, returning),
+                visibility,
+                20.0,
+                short.gps.first(),
+                1e6,
+                1e6,
+            ),
         )
     }
 
@@ -159,10 +173,10 @@ class RideVisibilityTest {
         }
         assertEquals(10, candidates.size)
         val visibility = RideVisibility(index)
-        val atStart = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6)
+        val atStart = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6, 1e6)
         assertEquals(listOf(50.0, 150.0, 250.0, 350.0, 450.0), atStart.map { it.distanceM })
         visibility.update(500.0, null, viewRadiusM = 1000.0)
-        val afterApex = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6)
+        val afterApex = selectChevrons(candidates, visibility, 20.0, index.gps.first(), 1e6, 1e6)
         assertEquals(listOf(550.0, 650.0, 750.0, 850.0, 950.0), afterApex.map { it.distanceM })
     }
 
@@ -181,12 +195,32 @@ class RideVisibilityTest {
         val start = index.gps.first()
         assertEquals(
             listOf(50.0, 150.0),
-            selectChevrons(candidates, visibility, 20.0, start, 200.0).map { it.distanceM },
+            selectChevrons(candidates, visibility, 20.0, start, 200.0, 1e6).map { it.distanceM },
         )
         visibility.update(500.0, null, viewRadiusM = 1000.0)
         assertEquals(
             listOf(850.0, 950.0),
-            selectChevrons(candidates, visibility, 20.0, start, 200.0).map { it.distanceM },
+            selectChevrons(candidates, visibility, 20.0, start, 200.0, 1e6).map { it.distanceM },
+        )
+    }
+
+    @Test
+    fun selection_drops_marks_beyond_the_route_lookahead_even_when_close_by() {
+        // A 2 km square lap that ends where it starts: the last side comes back to the rider
+        // on the ground, but is 2 km ahead along the route.
+        val index = index(RouteFixtures.laps(2000.0, 1, 100.0))
+        val first = chevron(index, 50.0)
+        val last = chevron(index, 1950.0)
+        val visibility = RideVisibility(index)
+        val start = index.gps.first()
+        assertEquals(
+            listOf(first),
+            selectChevrons(listOf(first, last), visibility, 20.0, start, 1e6, 1000.0),
+        )
+        visibility.update(1000.0, null, viewRadiusM = 100.0)
+        assertEquals(
+            listOf(last),
+            selectChevrons(listOf(first, last), visibility, 20.0, start, 1e6, 1000.0),
         )
     }
 }

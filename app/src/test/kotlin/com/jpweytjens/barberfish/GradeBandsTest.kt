@@ -18,7 +18,7 @@ import org.junit.Test
 class GradeBandsTest {
 
     private val NEUTRAL = Color(0xFFC4C4C4)
-    private val zeroStraddling = setOf(GradePalette.BARBERFISH, GradePalette.SURGEONFISH)
+    private val zeroStraddling = setOf(GradePalette.BARBERFISH)
 
     @Test
     fun karoo_bands_are_ordered_low_to_high_with_open_ends() {
@@ -132,7 +132,7 @@ class GradeBandsTest {
                 neutral = NEUTRAL,
                 readable = false,
             )
-        assertEquals(Color(0xFF50A39C), c)
+        assertEquals(Color(0xFF3298C4), c)
     }
 
     @Test
@@ -194,17 +194,8 @@ class GradeBandsTest {
         assertEquals(10, bands.size)
         val flat = bands.single { it.lo == -2.0 }
         assertEquals(2.0, flat.hi)
-        assertEquals(Color(0xFF92B4A5), flat.color)
+        assertEquals(Color(0xFF5CC066), flat.color)
         assertEquals(3, bands.count { (it.hi ?: Double.POSITIVE_INFINITY) <= 0.0 })
-    }
-
-    @Test
-    fun barberfish_keeps_karoo_climb_colours_above_two_percent() {
-        val bf =
-            gradeBands(GradePalette.BARBERFISH, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
-        val karoo =
-            gradeBands(GradePalette.KAROO, readable = false).filter { (it.lo ?: 0.0) >= 2.0 }
-        assertEquals(karoo.map { it.color }, bf.map { it.color })
     }
 
     // Exactly 0.0 needs no special branch: it is coloured iff an edge at or across zero
@@ -224,7 +215,7 @@ class GradeBandsTest {
                 neutral = sentinel,
                 readable = false,
             )
-        assertEquals(Color(0xFF92B4A5), c)
+        assertEquals(Color(0xFF5CC066), c)
     }
 
     @Test
@@ -254,11 +245,11 @@ class GradeBandsTest {
                 neutral = sentinel,
                 readable = false,
             )
-        assertEquals(Color(0xFF92B4A5), c)
+        assertEquals(Color(0xFF5CC066), c)
     }
 
     // The map paints every cell, so what "uncoloured" looks like is itself a palette
-    // decision. Barberfish and Surgeonfish keep their flat band and the map neutral one
+    // decision. Barberfish keeps its flat band and the map neutral one
     // colour; palettes without a band strictly containing zero keep the shared grey.
 
     @Test
@@ -323,12 +314,8 @@ class GradeBandsTest {
             assertEquals("$palette", 2.0, flat?.hi)
         }
         assertEquals(
-            Color(0xFF92B4A5),
-            zeroStraddlingBand(GradePalette.BARBERFISH, readable = false)?.color,
-        )
-        assertEquals(
             Color(0xFF5CC066),
-            zeroStraddlingBand(GradePalette.SURGEONFISH, readable = false)?.color,
+            zeroStraddlingBand(GradePalette.BARBERFISH, readable = false)?.color,
         )
         GradePalette.entries
             .filter { it !in zeroStraddling }
@@ -354,7 +341,7 @@ class GradeBandsTest {
                     neutral = sentinel,
                     readable = false,
                 )
-            assertEquals("grade $grade", Color(0xFF92B4A5), c)
+            assertEquals("grade $grade", Color(0xFF5CC066), c)
         }
     }
 
@@ -371,7 +358,7 @@ class GradeBandsTest {
                     neutral = sentinel,
                     readable = false,
                 )
-            assertEquals("grade $grade", Color(0xFF92B4A5), c)
+            assertEquals("grade $grade", Color(0xFF5CC066), c)
         }
         // Above the descent edge and with climbs off, nothing colours.
         val above =
@@ -409,7 +396,7 @@ class GradeBandsTest {
                 neutral = sentinel,
                 readable = false,
             )
-        assertEquals(Color(0xFF1C6E86), steep)
+        assertEquals(Color(0xFF1A74B3), steep)
     }
 
     @Test

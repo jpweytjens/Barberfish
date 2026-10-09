@@ -1,22 +1,12 @@
 package com.jpweytjens.barberfish.datatype.shared
 
-/** What the map should hold for one drawing piece at the current progress. */
-internal sealed interface PieceVisibility {
-    data object Shown : PieceVisibility
-
-    data object Hidden : PieceVisibility
-
-    /** Drawn from [fromM] to the piece's end: the rider is on it. */
-    data class Trimmed(val fromM: Double) : PieceVisibility
-}
-
 /**
  * Which visits of a route are still drawn as the rider progresses. Visits with a later visit to the
  * same ground are retained after being ridden, so the colours the rider just passed do not flip to
  * the return leg's behind them; they hide once out of view or once the next visit starts within a
  * view radius of route distance ahead, which on a return leg is the moment that ground enters the
- * screen. A visit with no successor is not tracked here: its pieces hide as progress passes their
- * ends, and the piece under the rider is trimmed to progress.
+ * screen. A visit with no successor covers nothing that still needs showing, so it is never hidden:
+ * its pieces stay drawn behind the rider and only its passed chevrons go.
  *
  * Hidden state is keyed on [RouteVisit.key], a pure function of the route, so it survives colour
  * and zoom rebuilds and a fresh instance can reconstruct it from progress after a restart. Only
@@ -51,17 +41,8 @@ internal class RideVisibility(private val index: RouteIndex) {
         return changed
     }
 
-    fun visibilityOf(visitKey: Int, pieceStartM: Double, pieceEndM: Double): PieceVisibility {
-        val visit = index.visit(visitKey)
-        if (visit.nextVisitM != null) {
-            return if (visit.key in hidden) PieceVisibility.Hidden else PieceVisibility.Shown
-        }
-        return when {
-            pieceEndM <= progressM -> PieceVisibility.Hidden
-            pieceStartM < progressM -> PieceVisibility.Trimmed(progressM)
-            else -> PieceVisibility.Shown
-        }
-    }
+    /** True when the pieces of visit [visitKey] stay on the map: it has not been hidden. */
+    fun pieceDrawable(visitKey: Int): Boolean = visitKey !in hidden
 
     /** The visit of [unit] whose colour and chevrons show now: the earliest not hidden. */
     fun exposedVisit(unit: Int): RouteVisit? =
@@ -79,22 +60,29 @@ internal class RideVisibility(private val index: RouteIndex) {
 }
 
 /**
- * The chevrons to draw now: every drawable candidate within [viewRadiusM] of [rider], in ride
- * order, skipping one within [collisionRadiusM] of a mark already kept. Collision is decided here,
- * at draw time, so a candidate suppressed by a mark that later hides is reconsidered on the next
- * update. The window keeps the symbol count near what fits on screen whatever the route length; the
- * band itself is drawn whole.
+ * The chevrons to draw now: every drawable candidate within [viewRadiusM] of [rider] and at most
+ * [lookaheadM] of route distance past progress, in ride order, skipping one within
+ * [collisionRadiusM] of a mark already kept. The lookahead keeps a later leg that passes close by
+ * on the ground, such as the return side of a loop, from showing its marks early. Collision is
+ * decided here, at draw time, so a candidate suppressed by a mark that later hides is reconsidered
+ * on the next update. The window keeps the symbol count near what fits on screen whatever the route
+ * length; the band itself is drawn whole.
  */
+// Suppressed: each window bound is an independent input, and bundling them would invent a type
+// that means nothing outside this call.
+@Suppress("LongParameterList")
 internal fun selectChevrons(
     candidates: List<ClimbChevronSpec>,
     visibility: RideVisibility,
     collisionRadiusM: Double,
     rider: LatLng,
     viewRadiusM: Double,
+    lookaheadM: Double,
 ): List<ClimbChevronSpec> {
     val kept = mutableListOf<ClimbChevronSpec>()
     val inWindow = candidates.filter { candidate ->
         visibility.chevronDrawable(candidate.distanceM) &&
+            candidate.distanceM <= visibility.progressM + lookaheadM &&
             latLngDistanceM(rider, LatLng(candidate.lat, candidate.lng)) <= viewRadiusM
     }
     for (candidate in inWindow) {

@@ -1,23 +1,23 @@
 package com.jpweytjens.barberfish
 
+import com.jpweytjens.barberfish.datatype.shared.EdgeStop
 import com.jpweytjens.barberfish.datatype.shared.FlatGrey
+import com.jpweytjens.barberfish.datatype.shared.GRADE_AXIS_MAX
+import com.jpweytjens.barberfish.datatype.shared.GRADE_AXIS_MIN
+import com.jpweytjens.barberfish.datatype.shared.GRADE_EDGE_OFF
+import com.jpweytjens.barberfish.datatype.shared.climbEdgeStops
+import com.jpweytjens.barberfish.datatype.shared.descentEdgeStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
 import com.jpweytjens.barberfish.datatype.shared.mapNeutral
+import com.jpweytjens.barberfish.datatype.shared.nearestEdgeStop
+import com.jpweytjens.barberfish.datatype.shared.reachableClimbStops
+import com.jpweytjens.barberfish.datatype.shared.reachableDescentStops
 import com.jpweytjens.barberfish.extension.GradePalette
-import com.jpweytjens.barberfish.screens.EdgeStop
-import com.jpweytjens.barberfish.screens.GRADE_AXIS_MAX
-import com.jpweytjens.barberfish.screens.GRADE_AXIS_MIN
-import com.jpweytjens.barberfish.screens.GRADE_EDGE_OFF
 import com.jpweytjens.barberfish.screens.axisFraction
 import com.jpweytjens.barberfish.screens.barRuns
-import com.jpweytjens.barberfish.screens.climbEdgeStops
-import com.jpweytjens.barberfish.screens.descentEdgeStops
 import com.jpweytjens.barberfish.screens.gradeCells
 import com.jpweytjens.barberfish.screens.gradeTickStops
-import com.jpweytjens.barberfish.screens.nearestEdgeStop
 import com.jpweytjens.barberfish.screens.pressSide
-import com.jpweytjens.barberfish.screens.reachableClimbStops
-import com.jpweytjens.barberfish.screens.reachableDescentStops
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -94,18 +94,19 @@ class GradeCellGeometryTest {
     @Test
     fun stored_zero_lands_on_the_zero_stop_where_one_exists() {
         assertEquals(0.0, nearestEdgeStop(climbEdgeStops(GradePalette.KAROO), 0.0).edge, 0.0)
-        // Barberfish has no zero stop: a stored 0.0 still snaps to the innermost stop.
+        // Barberfish has no zero stop: nearestEdgeStop alone breaks the tie toward Off.
+        // selectGradeEdges resolves a stored 0.0 as fully on before it gets here.
         assertEquals(2.0, nearestEdgeStop(climbEdgeStops(GradePalette.BARBERFISH), 0.0).edge, 0.0)
     }
 
     @Test
     fun bar_runs_merge_the_filtered_middle_into_one_neutral_run() {
-        val sage = mapNeutral(GradePalette.BARBERFISH, readable = false)
+        val flat = mapNeutral(GradePalette.BARBERFISH, readable = false)
         val runs =
-            barRuns(GradePalette.BARBERFISH, climbEdge = 14.0, descentEdge = -6.0, neutral = sage)
-        // slate, deep teal, one merged neutral run (-6..14), red, purple
+            barRuns(GradePalette.BARBERFISH, climbEdge = 14.0, descentEdge = -6.0, neutral = flat)
+        // navy, blue, one merged neutral run (-6..14), red, purple
         assertEquals(listOf(5.0f, 4.0f, 20.0f, 6.0f, 5.0f), runs.map { it.weight })
-        assertEquals(sage, runs[2].color)
+        assertEquals(flat, runs[2].color)
     }
 
     @Test

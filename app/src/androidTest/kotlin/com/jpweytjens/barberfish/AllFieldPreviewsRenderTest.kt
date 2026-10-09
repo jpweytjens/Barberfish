@@ -110,8 +110,8 @@ class AllFieldPreviewsRenderTest {
                 context.dataStore.edit { it.clear() }
                 context.saveZoneConfig(
                     ZoneConfig(
-                        hrPalette = ZonePalette.SURGEONFISH,
-                        powerPalette = ZonePalette.SURGEONFISH,
+                        hrPalette = ZonePalette.BARBERFISH,
+                        powerPalette = ZonePalette.BARBERFISH,
                         gradePalette = GradePalette.BARBERFISH,
                     )
                 )
@@ -245,9 +245,10 @@ class AllFieldPreviewsRenderTest {
             )
             // The grid tile sampled from previewFlow lands wherever the clock-driven
             // sweep happens to be; overwrite it with the pinned render so the
-            // all-fields overview shows bands and POIs on every recapture.
+            // all-fields overview shows the same bands on every recapture. POIs off:
+            // at tile size the markers read as noise over the fill.
             writePreviewPng(
-                profileRender(3_000f, true),
+                profileRender(3_000f, false),
                 sparkline.typeId,
                 cellConfig,
                 design,

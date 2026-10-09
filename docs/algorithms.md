@@ -3,12 +3,11 @@
 Most GPS bike computer manufacturers, Hammerhead included, don't publish the
 algorithms behind their built-in smoothing and ETA fields. Barberfish uses
 explicit, documented ones so the field's behaviour is something you can
-predict. This page holds the mechanisms behind the
-[README highlights](../README.md#highlights).
+predict. This page holds the mechanisms behind the Grade field, the grade coloring shared by the elevation profile and the grade map, and ETA.
 
 ## Grade
 
-Grade is smoothed over distance rather than time, fitting an [ordinary least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) line through the last 30 m of elevation. A fixed-window time average has to pick between jittering with every cadence stroke (short window) and smearing the start and end of a climb (long window). The OLS-over-distance variant sidesteps the trade by following the road instead of the clock: it holds steady at any speed and stops moving when you do. At the start of a ride, before it has 30 m of road to fit, it shows "Searching…"; when you stop, it holds the last reading in grey rather than going blank.
+Grade is the slope of a [least squares](https://en.wikipedia.org/wiki/Ordinary_least_squares) line fitted through the last 30 m of road, so it reads the same at any speed and stops moving when you do; an average over the last few seconds would instead jitter with every pedal stroke when short and smear the foot and crest of a climb when long. Before the first 30 m it shows "Searching…", and when you stop it holds the last reading in grey rather than going blank.
 
 <table>
   <tr>
@@ -23,6 +22,47 @@ Grade is smoothed over distance rather than time, fitting an [ordinary least squ
   </tr>
 </table>
 
+## Grade coloring
+
+A route's elevation trace is a list of points a few metres apart, each a distance along the road and a height. Colored point by point, a rolling road flickers between colors and says nothing about the climb, so the elevation profile and the grade map color stretches instead. Two settings shape them, the same on the Profile field, the HUD strip and the grade map: Simplification decides where a stretch starts and ends, and Emphasis which stretches take a color.
+
+### Simplification
+
+The stretches are the trace with its least significant points dropped. The point whose removal moves the line least goes first, and removal continues until every remaining point marks a bump of at least a set size, its width along the road times its height: Off keeps every point, Mild drops sensor noise, Medium merges short wiggles, Max leaves blocks. The corner where flat turns to climb survives even at Max, because removing it would move the line a lot. This is [Visvalingam–Whyatt](https://en.wikipedia.org/wiki/Visvalingam%E2%80%93Whyatt_algorithm) simplification. Each stretch between two surviving points becomes one segment colored by its average grade, so the color shows the trend of the road rather than the number on the Grade field; on rolling terrain a gentle descent broken by short rises can average uphill and stay unfilled while the field reads negative. Lower Simplification narrows that gap, at the cost of a profile that changes color more often.
+
+### Emphasis
+
+Every segment now has a grade, and Emphasis sets the grade at which color starts. The control is a handle on the palette bar. It snaps to the palette's band boundaries, so it colors whole bands: from the handle's band up on the climb side, and from its band down on the descent side. Gentler road stays quiet, unfilled on the profile and drawn in the map's neutral, so flat road stays flat and the climbs stand out. Parking a handle at the end of the bar turns that side off.
+
+<table>
+  <tr>
+    <td></td>
+    <td align="center">Handles met at the flat band: every band takes a color</td>
+    <td align="center">The default: the flat band between the handles stays quiet</td>
+    <td align="center">Karoo colors no descents, so its bar has a climb handle only</td>
+  </tr>
+  <tr>
+    <td>Profile</td>
+    <td align="center"><img src="screenshots/emphasis_all.jpg" alt="Barberfish palette bar with both handles at -2 percent, so every band from the flat band up and every descent band is colored"></td>
+    <td align="center"><img src="screenshots/emphasis_default.jpg" alt="Barberfish palette bar with the climb handle at 2 percent and the descent handle at -2 percent, the flat band between them an empty outline"></td>
+    <td align="center"><img src="screenshots/emphasis_climbs.jpg" alt="Karoo palette bar starting at 0 percent with a single climb handle at 5 percent, the stretch below it an empty outline, and no descent side"></td>
+  </tr>
+  <tr>
+    <td>Grade map</td>
+    <td align="center"><img src="screenshots/emphasis_map_all.jpg" alt="The same Barberfish bar as the Grade Map card shows it: every band colored, so no neutral appears"></td>
+    <td align="center"><img src="screenshots/emphasis_map_default.jpg" alt="Barberfish bar as the Grade Map card shows it: the flat band between the handles painted in the map's muted green neutral"></td>
+    <td align="center"><img src="screenshots/emphasis_map_climbs.jpg" alt="Karoo bar as the Grade Map card shows it: the stretch from 0 to 5 percent painted grey"></td>
+  </tr>
+</table>
+
+The two rows are the same handles on the two surfaces, and they differ only where a stretch of road stays quiet: with the handles met nothing does, so the first column is the same picture twice. The Profile leaves the quiet stretch as an outline, because it paints nothing there and its silhouette shows through; the grade map paints it in the neutral it uses on the road, the flat band's muted green on Barberfish and grey on every other palette.
+
+What a handle can reach depends on the palette, which is why the [palettes page](color-palettes.md#grade-palettes) lists two properties per palette. A descent handle exists only on a palette that colors descents (Barberfish and Turbo); on the others no descent takes a color anywhere, and the bar has a climb handle only. And on a palette whose flat band spans zero (Barberfish), the climb handle has one more stop, at the lower edge of that band, which colors the flat band too and puts every color in the palette on the road. A palette whose bands start at zero has no such stop, because its flat band is already the first climb band.
+
+### One pipeline, three surfaces
+
+The HUD strip, the Profile field and the grade map run the same segmentation and the same emphasis, so a color means the same grade on all three; the map takes its settings from the Profile field unless its Tuning is set to Independent. The same segments are the input to the next ETA, which prices each one by its gradient instead of coloring it.
+
 ## ETA
 
-ETA blends a 5-minute fast and 1-hour slow [DEWMA](https://github.com/jpweytjens/godot) of recent speed with a configurable prior, so the estimate sharpens as the ride goes on rather than starting from a generic guess. It is not yet gradient-aware, so the climb you can see coming will still pull the arrival time inward. The forward-looking replacement lives in [Godot](https://github.com/jpweytjens/godot).
+An arrival estimate that carries the speed so far to the finish is fine on the flat and wrong on hills: a descent pulls the ETA in just before the climb pushes it out. The current field blends a 5-minute and a 1-hour [DEWMA](https://en.wikipedia.org/wiki/Exponential_smoothing#Double_exponential_smoothing) of speed with a configurable prior, so the estimate sharpens over the ride and one descent no longer swings it, but it still cannot see the climb ahead. On hilly terrain the ride so far says less about the road than the route's profile does. [Godot](https://github.com/jpweytjens/godot), the planned replacement, takes the [same segments](#grade-coloring) as the grade coloring and prices each by its gradient, so a climb ahead pushes the arrival out before you reach it.

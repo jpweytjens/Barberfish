@@ -37,25 +37,25 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jpweytjens.barberfish.datatype.shared.EdgeStop
+import com.jpweytjens.barberfish.datatype.shared.GRADE_AXIS_MAX
+import com.jpweytjens.barberfish.datatype.shared.GRADE_AXIS_MIN
 import com.jpweytjens.barberfish.datatype.shared.GradeBand
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.TextDark
 import com.jpweytjens.barberfish.datatype.shared.bestTextOnBackground
+import com.jpweytjens.barberfish.datatype.shared.climbEdgeStops
+import com.jpweytjens.barberfish.datatype.shared.descentEdgeStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBandColor
-import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.gradeBands
-import com.jpweytjens.barberfish.datatype.shared.gradeFloor
-import com.jpweytjens.barberfish.datatype.shared.zeroStraddlingBand
+import com.jpweytjens.barberfish.datatype.shared.reachableClimbStops
+import com.jpweytjens.barberfish.datatype.shared.reachableDescentStops
+import com.jpweytjens.barberfish.datatype.shared.selectGradeEdges
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
-
-// The clamped axis every proportional grade visualization shares.
-// Terminal open bands run to these edges; see the 2026-08-01 spec, Decision 2.
-internal const val GRADE_AXIS_MIN = -15.0
-internal const val GRADE_AXIS_MAX = 25.0
 
 /** One renderable cell: a band clamped to the axis, with its exemplar reading. */
 internal data class GradeCell(
@@ -160,79 +160,6 @@ internal fun barRuns(
     return runs
 }
 
-// An edge parked past every stop, so that side colours nothing. Double.MAX_VALUE rather than
-// POSITIVE_INFINITY because the edge is persisted and JSON has no infinity literal.
-internal const val GRADE_EDGE_OFF = Double.MAX_VALUE
-
-/** One snap position: where the thumb sits on the axis and the edge selecting it stores. */
-internal data class EdgeStop(val axisGrade: Double, val edge: Double)
-
-// The palette's true zero boundary, if it has one: a band starting at 0 (Turbo's flattest
-// climb band) or a floor at 0 (the one-sided palettes). There an edge of 0.0 means no
-// filtering on that side, so the handle gets a stop for it. A band merely straddling zero
-// (Barberfish's flat band) has no zero boundary; its far edges carry the crossover stops
-// instead.
-private fun hasClimbZeroStop(palette: GradePalette): Boolean =
-    gradeBands(palette, readable = false).any { it.lo == 0.0 } ||
-        gradeFloor(palette, readable = false) == 0.0
-
-private fun hasDescentZeroStop(palette: GradePalette): Boolean =
-    gradeBands(palette, readable = false).any { band ->
-        band.hi == 0.0 && (band.lo ?: Double.NEGATIVE_INFINITY) < 0.0
-    }
-
-// The climb slider's positions: the crossover stop at a zero-straddling flat band's lo
-// (everything from there up, flat band included), or fully-on at 0 where the palette has a
-// real zero edge; then the palette's climb stops; then Off at the axis end. The two leading
-// stops are mutually exclusive by construction: a band table has a zero edge or a
-// zero-straddling band, never both.
-internal fun climbEdgeStops(palette: GradePalette): List<EdgeStop> =
-    listOfNotNull(
-        zeroStraddlingBand(palette, readable = false)?.lo?.let { EdgeStop(it, it) },
-        if (hasClimbZeroStop(palette)) EdgeStop(0.0, 0.0) else null,
-    ) +
-        gradeBandStops(palette).climb.map { EdgeStop(it, it) } +
-        EdgeStop(GRADE_AXIS_MAX, GRADE_EDGE_OFF)
-
-// The descent slider's positions: Off at the axis end, the palette's descent stops, then
-// fully-on at 0 or the crossover stop at a zero-straddling flat band's hi, mirroring the
-// climb side.
-internal fun descentEdgeStops(palette: GradePalette): List<EdgeStop> =
-    listOf(EdgeStop(GRADE_AXIS_MIN, -GRADE_EDGE_OFF)) +
-        gradeBandStops(palette).descent.sorted().map { EdgeStop(it, it) } +
-        listOfNotNull(
-            if (hasDescentZeroStop(palette)) EdgeStop(0.0, 0.0) else null,
-            zeroStraddlingBand(palette, readable = false)?.hi?.let { EdgeStop(it, it) },
-        )
-
-// The position a stored edge lands on: nearest stop by axis distance, so a stale edge (a
-// retired stop, a parked sentinel) snaps rather than strands the thumb. On a distance tie (a
-// stored 0.0 on a crossover palette sits exactly between the innermost stop and the
-// crossover) the stop nearer Off wins: the conservative reading colours less, and keeps
-// legacy skip-zero migrations painting exactly the bands they always painted. A null edge
-// means that side colours nothing, which is the Off position.
-internal fun nearestEdgeStop(stops: List<EdgeStop>, edge: Double?): EdgeStop {
-    val off = stops.first { abs(it.edge) == GRADE_EDGE_OFF }
-    if (edge == null) return off
-    val clamped = edge.coerceIn(GRADE_AXIS_MIN, GRADE_AXIS_MAX)
-    return stops.minWith(
-        compareBy({ abs(it.axisGrade - clamped) }, { abs(it.axisGrade - off.axisGrade) })
-    )
-}
-
-/**
- * The stops a side may reach without passing the other handle. Handles may meet (a shared position
- * colours everything, the two half-lines overlap) but never cross. Off sits at the axis end caps,
- * always on its own side of any selection, so it always survives.
- */
-internal fun reachableClimbStops(stops: List<EdgeStop>, descentSel: EdgeStop?): List<EdgeStop> =
-    if (descentSel == null) stops else stops.filter { it.axisGrade >= descentSel.axisGrade }
-
-internal fun reachableDescentStops(stops: List<EdgeStop>, climbSel: EdgeStop): List<EdgeStop> =
-    stops.filter {
-        it.axisGrade <= climbSel.axisGrade
-    }
-
 /**
  * The side a press grabs: false climb, true descent, null undecided (the first horizontal movement
  * names it). The side whose nearest reachable stop is closest to the press wins, which keeps
@@ -261,16 +188,17 @@ internal fun pressSide(
  * palette's stops, and park at the end caps for Off. [neutral] is what the surface being configured
  * paints inside the edges; null means it paints nothing (the Profile), rendered as an outlined
  * groove. [enabled] false draws no handles and attaches no gesture: pure display for the map card's
- * Sync branch. One-sided palettes have no descent handle and pass [descentEdge] through
- * [onEdgesChange] unchanged. [ground] is the card body behind the bar; the handle halo reads from
- * it.
+ * Sync branch. Each side reports through its own callback, only when its own handle moves, so the
+ * untouched side is never written back: a one-sided palette has no descent handle and never calls
+ * [onDescentEdgeChange]. [ground] is the card body behind the bar; the handle halo reads from it.
  */
 @Composable
 internal fun GradeBandSlider(
     palette: GradePalette,
     climbEdge: Double?,
     descentEdge: Double?,
-    onEdgesChange: (climbEdge: Double, descentEdge: Double?) -> Unit,
+    onClimbEdgeChange: (Double) -> Unit,
+    onDescentEdgeChange: (Double) -> Unit,
     neutral: Color?,
     enabled: Boolean = true,
     ground: Color = Grey200,
@@ -289,14 +217,15 @@ internal fun GradeBandSlider(
 
     val bands = gradeBands(palette, readable = false)
     val cells = gradeCells(bands)
-    // Climb resolves first, from the full stop list, then bounds the descent side: a crossed
-    // stored pair (hand-edited DataStore, version skew) normalizes into a legal meet instead
-    // of crossed handles. Climb-first is arbitrary but deterministic.
+    // The handles sit where selectGradeEdges puts them: the same resolution gradeEdges feeds
+    // the renderers, so the bar and the profile cannot disagree. The callers already pass
+    // snapped edges, and resolving again is the identity on them.
     val climbStopsAll = climbEdgeStops(palette)
     val descentStopsAll = descentEdgeStops(palette).takeIf { it.size > 1 }
-    val climbSel = nearestEdgeStop(climbStopsAll, climbEdge)
+    val selection = selectGradeEdges(palette, climbEdge, descentEdge)
+    val climbSel = selection.climb
+    val descentSel = selection.descent
     val descentStops = descentStopsAll?.let { reachableDescentStops(it, climbSel) }
-    val descentSel = descentStops?.let { nearestEdgeStop(it, descentEdge) }
     val climbStops = reachableClimbStops(climbStopsAll, descentSel)
     val coincident = descentSel != null && descentSel.axisGrade == climbSel.axisGrade
     val runs = barRuns(palette, climbSel.edge, descentSel?.edge, neutral)
@@ -305,9 +234,8 @@ internal fun GradeBandSlider(
     // its own updates cause; these keep its captures current.
     val currentClimbSel by rememberUpdatedState(climbSel)
     val currentDescentSel by rememberUpdatedState(descentSel)
-    val currentClimbEdge by rememberUpdatedState(climbEdge)
-    val currentDescentEdge by rememberUpdatedState(descentEdge)
-    val currentOnEdgesChange by rememberUpdatedState(onEdgesChange)
+    val currentOnClimbEdgeChange by rememberUpdatedState(onClimbEdgeChange)
+    val currentOnDescentEdgeChange by rememberUpdatedState(onDescentEdgeChange)
     val currentClimbStops by rememberUpdatedState(climbStops)
     val currentDescentStops by rememberUpdatedState(descentStops)
 
@@ -323,18 +251,11 @@ internal fun GradeBandSlider(
                     if (onDescentSide) {
                         val stops = currentDescentStops ?: return
                         val hit = stops.minBy { abs(it.axisGrade - grade) }
-                        if (hit.edge != currentDescentSel?.edge) {
-                            // The climb side didn't move: report its raw incoming edge
-                            // unchanged, not the snapped display value, so a caller can tell
-                            // "unmoved" from "moved to a value that happens to match a stop".
-                            currentOnEdgesChange(currentClimbEdge ?: currentClimbSel.edge, hit.edge)
-                        }
+                        if (hit.edge != currentDescentSel?.edge)
+                            currentOnDescentEdgeChange(hit.edge)
                     } else {
                         val hit = currentClimbStops.minBy { abs(it.axisGrade - grade) }
-                        if (hit.edge != currentClimbSel.edge) {
-                            // Same for the descent side here: pass its raw edge through.
-                            currentOnEdgesChange(hit.edge, currentDescentEdge)
-                        }
+                        if (hit.edge != currentClimbSel.edge) currentOnClimbEdgeChange(hit.edge)
                     }
                 }
                 awaitEachGesture {

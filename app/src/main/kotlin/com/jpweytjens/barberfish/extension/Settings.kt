@@ -10,14 +10,18 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
+import com.jpweytjens.barberfish.datatype.shared.snapGradeEdges
+import com.jpweytjens.barberfish.datatype.shared.zeroStraddlingBand
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNames
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "barberfish")
 
@@ -184,10 +188,13 @@ enum class SparklineMode {
  * on Barberfish than on the other six palettes, which all open a band at 0.0. Persisting the
  * threshold instead of the count keeps a stored config meaning what it meant when it was written.
  *
- * A count of 0 ("Off") maps to an edge of 0.0 on both sides, keeping exactly what the count meant:
- * colour every climb from grade 0 up, colour every descent. Counts of 1 and up step outward through
- * the stops and clamp to the last one. A side with no bands at all (every palette but Barberfish
- * and Turbo, on the descent side) has no edge and stays uncoloured.
+ * A count of 0 ("Off") means colour everything on that side. On a palette with a real zero edge
+ * that is an edge of 0.0. On a palette whose flat band straddles zero (Barberfish) the count starts
+ * at the first band past the flat band instead, so the migrated default leaves the palette's rest
+ * state uncoloured, as it always did, and never produces a bare 0.0 that `snapGradeEdges` would
+ * read as fully on. Counts of 1 and up step outward through the stops and clamp to the last one. A
+ * side with no bands at all (every palette but Barberfish and Turbo, on the descent side) has no
+ * edge and stays uncoloured.
  */
 internal fun edgesFromSkipBands(
     skipBands: Int,
@@ -195,7 +202,9 @@ internal fun edgesFromSkipBands(
     palette: GradePalette,
 ): Pair<Double?, Double?> {
     val stops = gradeBandStops(palette)
-    return stops.climb.stopAt(skipBands) to stops.descent.stopAt(skipBandsDescent)
+    val floor = if (zeroStraddlingBand(palette, readable = false) != null) 1 else 0
+    return stops.climb.stopAt(maxOf(skipBands, floor)) to
+        stops.descent.stopAt(maxOf(skipBandsDescent, floor))
 }
 
 private fun List<Double>.stopAt(skipCount: Int): Double? =
@@ -235,11 +244,14 @@ data class SparklineConfig(
 
     /**
      * The resolved (climb, descent) edges: the stored thresholds when set, otherwise the legacy
-     * counts migrated through [palette]. A null in the result means that side stays uncoloured.
+     * counts migrated through [palette], both snapped to [palette]'s stops. This is the one
+     * authority for the effective edge: a stored value is palette independent and goes stale on a
+     * palette switch, so every renderer and the slider read through here and see the same snapped
+     * pair. A null in the result means that side stays uncoloured.
      */
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) = edgesFromSkipBands(skipBands, skipBandsDescent, palette)
-        return (climbEdge ?: climb) to (descentEdge ?: descent)
+        return snapGradeEdges(palette, climbEdge ?: climb, descentEdge ?: descent)
     }
 }
 
@@ -517,8 +529,8 @@ data class GradeMapConfig(
 ) {
     /**
      * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,
-     * otherwise the legacy count migrated through [palette]. A null in the result means that side
-     * stays uncoloured.
+     * otherwise the legacy count migrated through [palette], both snapped to [palette]'s stops. A
+     * null in the result means that side stays uncoloured.
      *
      * WARNING: this is the overlay's own answer, not the effective one. It ignores
      * [syncWithSparkline], which defaults to true, so a synced overlay follows the field
@@ -526,14 +538,16 @@ data class GradeMapConfig(
      * sparkline, palette)`, which applies the sync the same way it already does for the other
      * shared settings.
      *
-     * The descent edge here is the migrated count only, and the map has no descent count, so it
-     * always resolves as 0. An unsynced overlay takes its descent edge from the field sparkline
-     * instead; only the climb side of this pair is the overlay's own.
+     * The descent side is the stored edge once the map card's descent handle has written one,
+     * otherwise the count-zero migration. Both snap like the climb side, so the migrated value
+     * reads as the palette's fully-on descent stop: 0 on Turbo, -2 on Barberfish, null on a
+     * one-sided palette. An unsynced overlay with no stored descent edge takes it from the field
+     * sparkline instead; see `resolveGradeMapTuning`.
      */
     fun gradeEdges(palette: GradePalette): Pair<Double?, Double?> {
         val (climb, descent) =
             edgesFromSkipBands(skipBands, skipBandsDescent = 0, palette = palette)
-        return (climbEdge ?: climb) to (descentEdge ?: descent)
+        return snapGradeEdges(palette, climbEdge ?: climb, descentEdge ?: descent)
     }
 }
 
@@ -703,10 +717,11 @@ suspend fun Context.saveMaxPowerFieldConfig(config: MaxPowerFieldConfig) =
 
 // --- GradeFieldConfig ---
 
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 enum class GradePalette(val label: String) {
-    BARBERFISH("Barberfish"),
-    SURGEONFISH("Surgeonfish"),
+    // Betas stored this palette as SURGEONFISH before it took the house name.
+    @JsonNames("SURGEONFISH") BARBERFISH("Barberfish"),
     KAROO("Karoo"),
     WAHOO("Wahoo"),
     GARMIN("Garmin"),
@@ -779,6 +794,19 @@ private val timeConfigKey = stringPreferencesKey("time_config")
 fun Context.streamTimeConfig(): Flow<TimeConfig> = streamConfig(timeConfigKey, TimeConfig())
 
 suspend fun Context.saveTimeConfig(config: TimeConfig) = saveConfig(timeConfigKey, config)
+
+// --- GradePin ---
+// A pinned grade reading for screenshot captures. The ride-replay app drives GPS but not the
+// barometer the Grade field fits, so a replayed ride reads 0.0% throughout. Set through the
+// debug ConfigReceiver and honoured by debug builds only; a null percent means live.
+
+@Serializable data class GradePin(val percent: Float? = null)
+
+private val gradePinKey = stringPreferencesKey("grade_pin")
+
+fun Context.streamGradePin(): Flow<GradePin> = streamConfig(gradePinKey, GradePin())
+
+suspend fun Context.saveGradePin(pin: GradePin) = saveConfig(gradePinKey, pin)
 
 // --- DataFieldDesignConfig ---
 // Mirrors Karoo OS "Data Field Design" options the SDK does not expose to extensions

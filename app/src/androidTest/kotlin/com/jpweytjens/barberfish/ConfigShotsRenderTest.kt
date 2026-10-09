@@ -40,24 +40,25 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
-import com.jpweytjens.barberfish.extension.AvgSpeedConfig
-import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.datatype.shared.mapNeutral
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
-import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
-import com.jpweytjens.barberfish.screens.AvgSpeedThresholdControls
-import com.jpweytjens.barberfish.screens.CadenceThresholdControls
 import com.jpweytjens.barberfish.screens.CollapsibleSection
 import com.jpweytjens.barberfish.screens.ConfigSection
 import com.jpweytjens.barberfish.screens.DataFieldDesignSectionContent
+import com.jpweytjens.barberfish.screens.GradeBandSlider
+import com.jpweytjens.barberfish.screens.GradeMapCard
 import com.jpweytjens.barberfish.screens.HUDConfigSection
 import com.jpweytjens.barberfish.screens.LocalDataFieldDesign
 import com.jpweytjens.barberfish.screens.LocalScreenshotMode
@@ -103,9 +104,21 @@ class ConfigShotsRenderTest {
                 ),
             maxHr = 190,
             restingHr = 60,
-            heartRateZones = emptyList(),
-            ftp = 250,
-            powerZones = emptyList(),
+            // Zone ceilings at 60/70/80/90/100 % of max HR and 55/75/90/105/120/150 % of FTP,
+            // so the preview ride's moments land in distinct zones instead of all in zone 1.
+            heartRateZones = zones(114, 133, 152, 171, 190),
+            ftp = 220,
+            powerZones = zones(121, 165, 198, 231, 264, 330, 2000),
+        )
+
+    private fun zones(vararg maxes: Int) = maxes.map { UserProfile.Zone(min = 0, max = it) }
+
+    // The house palettes, for every shot that doesn't set out to show another one.
+    private val houseZones =
+        ZoneConfig(
+            hrPalette = ZonePalette.BARBERFISH,
+            powerPalette = ZonePalette.BARBERFISH,
+            gradePalette = GradePalette.BARBERFISH,
         )
 
     private fun setShotContent(
@@ -249,21 +262,22 @@ class ConfigShotsRenderTest {
 
     @Test
     fun hudConfig() {
-        setShotContent(fixedHeight = true) {
+        // The Power column is selected so its slot card shows below the preview. With the card
+        // open the section is taller than the K3 screen, so paged and stitched like the palettes.
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
             var hudConfig by remember {
                 mutableStateOf(
                     HUDConfig(
                         columns = 4,
+                        // One slot per colour mode, so the shot shows all three at once.
                         leftSlot =
                             HUDSlotConfig(
                                 field = HUDSlotField.Speed,
-                                colorMode = ZoneColorMode.BACKGROUND,
+                                colorMode = ZoneColorMode.NONE,
                             ),
                         middleSlot =
-                            HUDSlotConfig(
-                                field = HUDSlotField.HR,
-                                colorMode = ZoneColorMode.BACKGROUND,
-                            ),
+                            HUDSlotConfig(field = HUDSlotField.HR, colorMode = ZoneColorMode.TEXT),
                         rightSlot =
                             HUDSlotConfig(
                                 field = HUDSlotField.Power,
@@ -284,16 +298,115 @@ class ConfigShotsRenderTest {
                 HUDConfigSection(
                     hudConfig = hudConfig,
                     sparklineConfig = sparklineConfig,
-                    zoneConfig = ZoneConfig(),
+                    zoneConfig = houseZones,
                     timeCfg = TimeConfig(),
                     profile = shotProfile,
                     onUpdate = { hudConfig = it },
                     onSparklineUpdate = { sparklineConfig = it },
+                    initialSelectedSlot = 2,
                 )
             }
         }
-        capture("hud_config")
+        captureTall("hud_config", scrollState)
     }
+
+    @Test
+    fun gradeMapConfig() {
+        // Own tuning rather than the default sync with the profile, so the shot shows every
+        // control the card has. Taller than the K3 screen, so paged and stitched like the palettes.
+        val scrollState = ScrollState(0)
+        setShotContent(scrollable = true, scrollState = scrollState) {
+            var gradeMapConfig by remember {
+                mutableStateOf(GradeMapConfig(syncWithSparkline = false))
+            }
+            GradeMapCard(
+                config = gradeMapConfig,
+                sparklineConfig = SparklineConfig(),
+                gradePalette = GradePalette.BARBERFISH,
+                selected = true,
+                onSelect = {},
+                onUpdate = { gradeMapConfig = it },
+            )
+        }
+        captureTall("grade_map_config", scrollState)
+    }
+
+    // The Emphasis bar on its own, one shot per setting the algorithms page contrasts, in two
+    // rows: the Profile's bar (no neutral, an outlined groove between the handles) and the Grade
+    // Map card's (the map neutral painted there). One test each: the compose rule takes a single
+    // setContent per test.
+    private fun emphasisShot(
+        name: String,
+        palette: GradePalette,
+        climbEdge: Double,
+        descentEdge: Double?,
+        neutral: Color? = null,
+    ) {
+        setShotContent {
+            GradeBandSlider(
+                palette = palette,
+                climbEdge = climbEdge,
+                descentEdge = descentEdge,
+                onClimbEdgeChange = {},
+                onDescentEdgeChange = {},
+                neutral = neutral,
+            )
+        }
+        capture(name)
+    }
+
+    // Handles met at the flat band's lower edge: every band takes a colour.
+    @Test
+    fun emphasisAll() =
+        emphasisShot("emphasis_all", GradePalette.BARBERFISH, climbEdge = -2.0, descentEdge = -2.0)
+
+    // The default one-band skip: the flat band between the handles stays quiet.
+    @Test
+    fun emphasisDefault() =
+        emphasisShot(
+            "emphasis_default",
+            GradePalette.BARBERFISH,
+            climbEdge = 2.0,
+            descentEdge = -2.0,
+        )
+
+    // A one-sided palette: no descent takes a colour, so the bar has a climb handle only. The
+    // handle sits at 5 so the quiet stretch below it is wide enough to read.
+    @Test
+    fun emphasisClimbs() =
+        emphasisShot("emphasis_climbs", GradePalette.KAROO, climbEdge = 5.0, descentEdge = null)
+
+    // The same three settings as the Grade Map card shows them: the map neutral between the
+    // handles instead of the Profile's groove.
+    @Test
+    fun emphasisMapAll() =
+        emphasisShot(
+            "emphasis_map_all",
+            GradePalette.BARBERFISH,
+            climbEdge = -2.0,
+            descentEdge = -2.0,
+            neutral = mapNeutral(GradePalette.BARBERFISH, readable = false),
+        )
+
+    @Test
+    fun emphasisMapDefault() =
+        emphasisShot(
+            "emphasis_map_default",
+            GradePalette.BARBERFISH,
+            climbEdge = 2.0,
+            descentEdge = -2.0,
+            neutral = mapNeutral(GradePalette.BARBERFISH, readable = false),
+        )
+
+    @Test
+    fun emphasisMapClimbs() =
+        emphasisShot(
+            "emphasis_map_climbs",
+            GradePalette.KAROO,
+            climbEdge = 5.0,
+            descentEdge = null,
+            neutral = mapNeutral(GradePalette.KAROO, readable = false),
+        )
 
     @Test
     fun paletteConfig() {
@@ -313,7 +426,7 @@ class ConfigShotsRenderTest {
                         .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                PalettesSectionContent(zoneConfig = ZoneConfig(), onUpdate = {})
+                PalettesSectionContent(zoneConfig = houseZones, onUpdate = {})
             }
         }
         captureTall("palette_config", scrollState)
@@ -333,26 +446,17 @@ class ConfigShotsRenderTest {
         capture("design_barberfish")
     }
 
+    // The Speed field's threshold controls: the one block with the source picker.
     @Test
     fun thresholdControls() {
-        val scrollState = ScrollState(0)
-        setShotContent(scrollable = true, scrollState = scrollState) {
+        setShotContent {
             SpeedThresholdControls(
                 config = SpeedFieldConfig(thresholdKph = 30.0),
                 profile = shotProfile,
                 onConfigChange = {},
             )
-            AvgSpeedThresholdControls(
-                config = AvgSpeedConfig(mode = ThresholdMode.MIN_MAX, minKph = 20.0, maxKph = 35.0),
-                profile = shotProfile,
-                onConfigChange = {},
-            )
-            CadenceThresholdControls(
-                config = CadenceThresholdConfig(thresholdRpm = 90.0),
-                onConfigChange = {},
-            )
         }
-        captureTall("threshold_controls", scrollState)
+        capture("threshold_controls")
     }
 
     private companion object {
