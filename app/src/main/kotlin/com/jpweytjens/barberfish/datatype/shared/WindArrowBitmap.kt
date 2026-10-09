@@ -31,13 +31,23 @@ internal fun windArrowBoxPx(
     (cellWidthPx - gapPx - referenceWidthPx).toInt().coerceIn(bitmapHeightPx / 2, bitmapHeightPx)
 
 /**
- * One value bitmap: the arrow on the left in an [arrowBoxPx] square centred on the value height,
- * rotated by [angleDeg] about the box centre, and [text] on the right with its baseline on the
- * bitmap's bottom edge, as [renderValueBitmap] does. The bitmap always spans the full cell width,
- * so the arrow sits at a fixed x whatever the number's width. The number's font size is decided by
- * the caller, which hands [fontSizeForCell] the width left after the arrow box and gap. The caller
- * sizes the box with [windArrowBoxPx], once for both. [arrowColor] is the cell's header text
- * colour, never the zone colour: colour stays on the number.
+ * Top of the [arrowBoxPx] square, so the arrow's pivot sits at the centre of [digitHeightPx]-tall
+ * digits standing on the bitmap's bottom edge, kept inside the bitmap.
+ */
+internal fun windArrowTopPx(bitmapHeightPx: Int, arrowBoxPx: Int, digitHeightPx: Float): Float =
+    (bitmapHeightPx - digitHeightPx / 2f - arrowBoxPx / 2f).coerceIn(
+        0f,
+        (bitmapHeightPx - arrowBoxPx).toFloat(),
+    )
+
+/**
+ * One value bitmap: the arrow on the left in an [arrowBoxPx] square centred on [digitHeightPx]-tall
+ * digits (see [windArrowTopPx]), rotated by [angleDeg] about the box centre, and [text] on the
+ * right with its baseline on the bitmap's bottom edge, as [renderValueBitmap] does. The bitmap
+ * always spans the full cell width, so the arrow sits at a fixed x whatever the number's width. The
+ * number's font size is decided by the caller, which hands [fontSizeForCell] the width left after
+ * the arrow box and gap. The caller sizes the box with [windArrowBoxPx], once for both.
+ * [arrowColor] is the cell's header text colour, never the zone colour: colour stays on the number.
  */
 // Suppressed: matches the sibling renderers in BitmapValue.kt (renderTwoRowValueBitmap,
 // renderHeaderBitmap) — one parameter per independent input, no grouping type would earn its keep.
@@ -48,6 +58,7 @@ fun renderWindArrowValueBitmap(
     fontSizePx: Float,
     bitmapHeightPx: Int,
     arrowBoxPx: Int,
+    digitHeightPx: Float,
     cellWidthPx: Float,
     textColor: Int,
     arrowColor: Int,
@@ -71,7 +82,7 @@ fun renderWindArrowValueBitmap(
     bitmap.density = Bitmap.DENSITY_NONE
     val canvas = Canvas(bitmap)
 
-    canvas.withTranslation(0f, (bitmapHeightPx - arrowBoxPx) / 2f) {
+    canvas.withTranslation(0f, windArrowTopPx(bitmapHeightPx, arrowBoxPx, digitHeightPx)) {
         drawWindArrow(this, angleDeg, arrowBoxPx.toFloat(), arrowColor)
     }
 

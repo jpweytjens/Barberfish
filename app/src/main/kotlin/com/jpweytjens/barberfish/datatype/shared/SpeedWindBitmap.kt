@@ -121,6 +121,9 @@ fun renderSpeedWindValueBitmap(
                 fontSizePx = 1f,
                 bitmapHeightPx = geo.boxPx,
                 arrowBoxPx = geo.boxPx,
+                // A box-tall bitmap with box-tall "digits" puts the arrow at its top edge; the
+                // drawBitmap below centres it on the gap between the rows.
+                digitHeightPx = geo.boxPx.toFloat(),
                 cellWidthPx = geo.boxPx.toFloat(),
                 textColor = arrowColor,
                 arrowColor = arrowColor,

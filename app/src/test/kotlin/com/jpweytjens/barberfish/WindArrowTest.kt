@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.WindArrowGeometry
 import com.jpweytjens.barberfish.datatype.shared.windArrowBoxPx
+import com.jpweytjens.barberfish.datatype.shared.windArrowTopPx
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,6 +39,18 @@ class WindArrowTest {
     fun a_narrow_cell_gives_the_arrow_what_the_reference_leaves() {
         // 110 px cell, 7 px gap, 60 px reference: 43 px, between half and full height.
         assertEquals(43, windArrowBoxPx(60, 110f, 60f, 7))
+    }
+
+    @Test
+    fun the_arrow_centres_on_digits_standing_on_the_bottom_edge() {
+        // 60 px value, 43 px digits: centre at 38.5, so a 30 px box starts at 23.5.
+        assertEquals(23.5f, windArrowTopPx(60, 30, 43f), 0.001f)
+    }
+
+    @Test
+    fun the_arrow_box_stays_inside_the_value_bitmap() {
+        // 20 px digits would centre the 60 px box above the top edge: it pins to 0.
+        assertEquals(0f, windArrowTopPx(60, 60, 20f), 0.001f)
     }
 
     @Test

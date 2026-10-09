@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Build
 import android.util.TypedValue
@@ -208,6 +209,7 @@ private fun makeFieldRemoteViews(
     val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
     // The wind arrow takes a square box on the left, sized once here for the number's width and
     // the drawing; the number gets the rest and shrinks only if that is not enough.
+    // The arrow centres on full-size digits, so a shrunk number does not move it either.
     val windGapPx = (WIND_ARROW_GAP_DP * density).toInt()
     val fullSizePaint = valuePaint(sizeConfig.valueFontSizeBase * density)
     val arrowBoxPx =
@@ -217,6 +219,7 @@ private fun makeFieldRemoteViews(
             fullSizePaint.measureText(WIND_REFERENCE_TEXT),
             windGapPx,
         )
+    val digitHeightPx = Rect().also { fullSizePaint.getTextBounds("0", 0, 1, it) }.height()
     val valueWidthPx =
         if (field.windArrowDeg != null) cellWidthPx - arrowBoxPx - windGapPx else cellWidthPx
     val (fontSp, maxLines) =
@@ -280,6 +283,7 @@ private fun makeFieldRemoteViews(
                 fontSizePx = fontSp * density,
                 bitmapHeightPx = bitmapHeightPx,
                 arrowBoxPx = arrowBoxPx,
+                digitHeightPx = digitHeightPx.toFloat(),
                 cellWidthPx = cellWidthPx,
                 textColor = colors.valueText.toArgb(),
                 // Theme default text, or the on-fill pick in BACKGROUND mode: the arrow never
