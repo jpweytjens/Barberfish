@@ -14,6 +14,7 @@ import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
+import com.jpweytjens.barberfish.datatype.shared.GRADE_EDGE_OFF
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
@@ -176,7 +177,9 @@ class AllFieldPreviewsRenderTest {
             // recaptures never move the windows. 3 km in, the default 5 km lookahead
             // frames the Muur and the second climb with their summit POIs.
             val sparkline = types.filterIsInstance<ElevationSparklineField>().single()
-            val sparkCfg = SparklineConfig()
+            // Descents uncolored: the doc renders are about climbs, and on the ridden side a
+            // compressed steep descent otherwise leaves a dimmed sliver of fill.
+            val sparkCfg = SparklineConfig(descentEdge = -GRADE_EDGE_OFF)
             val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
             val elevPoints =
                 visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
