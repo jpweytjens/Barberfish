@@ -84,19 +84,39 @@ fun renderTwoRowValueBitmap(
     fun paintAt(sizePx: Float) = valuePaint(sizePx).apply { this.color = color }
 
     val bounds = Rect()
+
+    // A row with an icon is drawn as [icon][gap][number], the [marker] glyph stripped: the icon is
+    // 1.3x the number's height and the gap 0.12x the font. Both the width fit and the drawing
+    // read it from here, so the fit measures what is drawn.
+    class RowUnit(val number: String, val iconPx: Float, val gapPx: Float, val numberPx: Float) {
+        val widthPx = iconPx + gapPx + numberPx
+    }
+    fun rowUnit(text: String, p: Paint): RowUnit {
+        val number = if (text.startsWith(marker)) text.removePrefix(marker) else text
+        val numberBounds = Rect().also { p.getTextBounds(number, 0, number.length, it) }
+        return RowUnit(
+            number,
+            numberBounds.height() * 1.3f,
+            p.textSize * 0.12f,
+            p.measureText(number),
+        )
+    }
+    fun rowWidth(text: String, icon: Bitmap?, p: Paint): Float =
+        if (icon == null) p.measureText(text) else rowUnit(text, p).widthPx
+
     // Height-fit: a digit fills most of one band (margin avoids top/bottom clipping).
     paintAt(100f).getTextBounds("0", 0, 1, bounds)
     var fontPx =
         if (bounds.height() > 0) 100f * (bandPx * TWO_ROW_DIGIT_FILL) / bounds.height() else bandPx
-    // Width-fit: shrink so the wider row fits the cell.
+    // Width-fit: shrink so the wider row, as drawn, fits the cell. Icon and gap scale with the
+    // font, so one factor fits the whole row.
     run {
         val p = paintAt(fontPx)
-        val needed = maxOf(p.measureText(row1), p.measureText(row2))
+        val needed = maxOf(rowWidth(row1, row1Icon, p), rowWidth(row2, row2Icon, p))
         if (needed > width) fontPx *= width / needed
     }
     val paint = paintAt(fontPx)
     val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
-    val iconGapPx = fontPx * 0.12f
 
     val bitmap = Bitmap.createBitmap(width, bitmapHeightPx, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
@@ -124,28 +144,25 @@ fun renderTwoRowValueBitmap(
             canvas.drawText(text, xPos, center - (bounds.top + bounds.bottom) / 2f, paint)
             return
         }
-        val number = if (text.startsWith(marker)) text.removePrefix(marker) else text
         paint.textAlign = Paint.Align.LEFT
-        paint.getTextBounds(number, 0, number.length, bounds)
-        val numW = paint.measureText(number)
-        val iconSize = bounds.height() * 1.3f
-        val unitW = iconSize + iconGapPx + numW
+        val unit = rowUnit(text, paint)
+        paint.getTextBounds(unit.number, 0, unit.number.length, bounds)
         val unitLeft =
             when (alignment) {
                 ViewConfig.Alignment.LEFT -> 0f
-                ViewConfig.Alignment.CENTER -> (width - unitW) / 2f
-                ViewConfig.Alignment.RIGHT -> width - unitW
+                ViewConfig.Alignment.CENTER -> (width - unit.widthPx) / 2f
+                ViewConfig.Alignment.RIGHT -> width - unit.widthPx
             }
-        val iconTop = center - iconSize / 2f
+        val iconTop = center - unit.iconPx / 2f
         canvas.drawBitmap(
             icon,
             null,
-            RectF(unitLeft, iconTop, unitLeft + iconSize, iconTop + iconSize),
+            RectF(unitLeft, iconTop, unitLeft + unit.iconPx, iconTop + unit.iconPx),
             iconPaint,
         )
         canvas.drawText(
-            number,
-            unitLeft + iconSize + iconGapPx,
+            unit.number,
+            unitLeft + unit.iconPx + unit.gapPx,
             center - (bounds.top + bounds.bottom) / 2f,
             paint,
         )
