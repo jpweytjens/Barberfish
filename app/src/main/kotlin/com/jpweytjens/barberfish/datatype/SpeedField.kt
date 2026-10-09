@@ -19,6 +19,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
+import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -127,7 +128,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                     rangePercentAbove = rangePercentAbove,
                 )
             return FieldState(
-                "%.1f".format(converted),
+                "%.1f".format(Locale.ROOT, converted),
                 label = label,
                 color = color,
                 iconRes = R.drawable.ic_col_speed,
@@ -167,7 +168,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                         )
                     }
                 FieldState(
-                    "%.1f".format(converted),
+                    "%.1f".format(Locale.ROOT, converted),
                     label = label,
                     color = color,
                     iconRes = R.drawable.ic_col_speed,

@@ -28,18 +28,6 @@
     <ID>CyclomaticComplexMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun hrZoneColor: Color</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun powerZoneColor: Color</ID>
-    <ID>ImplicitDefaultLocale:AvgSpeedField.kt:"%.1f".format(converted)</ID>
-    <ID>ImplicitDefaultLocale:ETAField.kt:ETAField.Companion$"%d:%02d".format(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))</ID>
-    <ID>ImplicitDefaultLocale:GradeField.kt:GradeField.Companion$"%.0f".format(percent)</ID>
-    <ID>ImplicitDefaultLocale:GradeField.kt:GradeField.Companion$"%.1f".format(percent)</ID>
-    <ID>ImplicitDefaultLocale:HRZoneField.kt:HRZoneField.Companion$"%.1f".format(raw)</ID>
-    <ID>ImplicitDefaultLocale:MainActivity.kt:"%.0f".format(d)</ID>
-    <ID>ImplicitDefaultLocale:PowerZoneField.kt:PowerZoneField.Companion$"%.1f".format(raw)</ID>
-    <ID>ImplicitDefaultLocale:SpeedField.kt:SpeedField.Companion$"%.1f".format(converted)</ID>
-    <ID>ImplicitDefaultLocale:TimeField.kt:"${h}h${m}'%02d\"".format(s)</ID>
-    <ID>ImplicitDefaultLocale:TimeField.kt:"${m}'%02d\"".format(s)</ID>
-    <ID>ImplicitDefaultLocale:TimeField.kt:"%d:%02d:%02d".format(h, m, s)</ID>
-    <ID>ImplicitDefaultLocale:ValueFormat.kt:"%.${decimals}f".format(value.coerceAtLeast(0.0))</ID>
     <ID>LargeClass:MainActivity.kt:MainActivity : ComponentActivity</ID>
     <ID>LongMethod:BarberfishExtension.kt:BarberfishExtension$override fun startMap</ID>
     <ID>LongMethod:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>

@@ -20,6 +20,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
+import java.util.Locale
 import kotlinx.coroutines.flow.Flow
 
 class HRZoneField(private val karooSystem: KarooSystemService) :
@@ -46,7 +47,7 @@ class HRZoneField(private val karooSystem: KarooSystemService) :
             val value =
                 when (displayMode) {
                     ZoneDisplayMode.INTEGER -> zoneInt.toString()
-                    ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
+                    ZoneDisplayMode.FLOAT -> "%.1f".format(Locale.ROOT, raw)
                 }
             val color = zoneFieldColor(zoneInt, colorMode, profile, zones, isHr = true)
             return FieldState(
@@ -68,7 +69,7 @@ class HRZoneField(private val karooSystem: KarooSystemService) :
                 val value =
                     when (cfg.zoneDisplayMode) {
                         ZoneDisplayMode.INTEGER -> zoneInt.toString()
-                        ZoneDisplayMode.FLOAT -> "%.1f".format(raw)
+                        ZoneDisplayMode.FLOAT -> "%.1f".format(Locale.ROOT, raw)
                     }
                 val color = zoneFieldColor(zoneInt, cfg.colorMode, profile, zones, isHr = true)
                 FieldState(

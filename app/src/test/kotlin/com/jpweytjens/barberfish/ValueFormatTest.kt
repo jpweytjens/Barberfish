@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.formatFixed
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -14,4 +15,15 @@ class ValueFormatTest {
     @Test fun negative_clamped_to_zero() = assertEquals("0.0", formatFixed(-3.0, 1))
 
     @Test fun exact_zero() = assertEquals("0", formatFixed(0.0, 0))
+
+    @Test
+    fun decimal_point_under_a_comma_locale() {
+        val default = Locale.getDefault()
+        Locale.setDefault(Locale.GERMANY)
+        try {
+            assertEquals("47.2", formatFixed(47.234, 1))
+        } finally {
+            Locale.setDefault(default)
+        }
+    }
 }

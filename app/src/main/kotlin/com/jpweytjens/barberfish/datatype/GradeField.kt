@@ -22,6 +22,7 @@ import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
+import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -120,8 +121,8 @@ class GradeField(private val karooSystem: KarooSystemService) :
         private fun formatGrade(percent: Double, cfg: GradeFieldConfig): String {
             val num =
                 when (cfg.precision) {
-                    ZoneDisplayMode.INTEGER -> "%.0f".format(percent)
-                    ZoneDisplayMode.FLOAT -> "%.1f".format(percent)
+                    ZoneDisplayMode.INTEGER -> "%.0f".format(Locale.ROOT, percent)
+                    ZoneDisplayMode.FLOAT -> "%.1f".format(Locale.ROOT, percent)
                 }
             return if (cfg.showPercentSign) "$num%" else num
         }
