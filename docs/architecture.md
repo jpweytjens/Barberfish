@@ -150,7 +150,7 @@ For HUD slots the SDK `textSize` does not apply, since each slot fills only a th
 | HUD columns | Preset                     | `valueFontSizeBase` |
 | ----------- | -------------------------- | ------------------- |
 | 3-col       | `ViewSizeConfig.HUD_THREE` | 42 sp               |
-| 4-col       | `ViewSizeConfig.HUD_FOUR`  | 32 sp               |
+| 4-col       | `ViewSizeConfig.HUD_FOUR`  | 34 sp               |
 
 ### Dynamic shrinking: `fontSizeForCell`
 
