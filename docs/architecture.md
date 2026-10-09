@@ -275,9 +275,14 @@ in both. Calm hides the symbol.
 The `Wind` field gets a plain line arrow, not the sock: the number beside it
 already carries strength, so the glyph carries direction only. `WindArrowGeometry`
 holds its proportions and `renderWindArrowValueBitmap` composes it into the value
-bitmap, rotated by the rider-relative angle about the centre of a box the height
-of the value, in the cell's header text colour so colour stays on the number.
-The number takes the remaining width through the usual `fontSizeForCell` shrink.
+bitmap, rotated by the rider-relative angle about the centre of a square box, in
+the cell's header text colour so colour stays on the number. The box takes what
+the cell leaves once "-29" fits beside it at full size, between half and all of
+the value height: a two-digit reading keeps its full size, and the arrow keeps
+one size per cell however the wind changes. Its centre sits on the centre of the
+digits, or on the gap between the rows when Show speed stacks the ride speed
+above the wind. The number takes the remaining width through the usual
+`fontSizeForCell` shrink.
 Strength on the map follows the airfield rule, one band per 3 knots, five at
 most; calm draws no arrow in the field. Speed arrives in the Headwind
 extension's configured unit, which Barberfish cannot read; it assumes that
