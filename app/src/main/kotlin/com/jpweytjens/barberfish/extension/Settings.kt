@@ -129,6 +129,8 @@ data class HUDSlotConfig(
     val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
     val gradePrecision: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
     val gradeShowPercentSign: Boolean = true,
+    // Wind slot only: ride speed stacked above the wind.
+    val windShowSpeed: Boolean = false,
 )
 
 @Serializable
