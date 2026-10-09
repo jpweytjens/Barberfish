@@ -52,11 +52,11 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         // Slots whose sensor is unpaired are hidden; the weighted slot row hands their width to
         // the survivors, and sizing follows the visible count rather than the configured one.
         val visible = state.visibleColumns()
-        val paddingHPx = (4f * density).toInt()
+        val paddingHPx = hudPaddingHPx(density)
         // hud_root insets the slot row by paddingHPx per side and the HUD cell is narrower
         // than the screen, so the colSpan-based fallback width overshoots and the label
         // bitmap gets cropped (scaleType=center). Pass the real slot width instead.
-        val slotWidthPx = (config.viewSize.first - 2f * paddingHPx) / visible.size
+        val slotWidthPx = hudSlotWidthPx(config.viewSize.first, visible.size, density)
         val sizeConfig =
             config
                 .toHudSlotSizeConfig(visible.size, design)
@@ -102,3 +102,13 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         return rv
     }
 }
+
+/** The HUD strip's horizontal inset on each side of the slot row. */
+internal fun hudPaddingHPx(density: Float): Int = (4f * density).toInt()
+
+/**
+ * Width of one HUD slot in a strip [stripWidthPx] wide holding [slots] slots. The config preview
+ * renders at this width too, so its sizing matches the live HUD.
+ */
+internal fun hudSlotWidthPx(stripWidthPx: Int, slots: Int, density: Float): Float =
+    (stripWidthPx - 2f * hudPaddingHPx(density)) / slots

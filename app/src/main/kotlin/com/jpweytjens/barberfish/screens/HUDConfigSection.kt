@@ -55,6 +55,7 @@ import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.applySparklineHeaderChrome
+import com.jpweytjens.barberfish.datatype.hudSlotWidthPx
 import com.jpweytjens.barberfish.datatype.shared.BarberfishYellow
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
@@ -507,14 +508,27 @@ private fun HUDPreviewCell(
             if (reserveSparklineSpace) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val design = LocalDataFieldDesign.current
+        // Render at the live HUD's slot width (the strip spans the screen) and let FillWidth
+        // scale it into this cell, so every size and shrink decision matches the device.
+        val liveWidthPx =
+            hudSlotWidthPx(
+                    LocalContext.current.resources.displayMetrics.widthPixels,
+                    columns,
+                    density,
+                )
+                .toInt()
+                .coerceAtLeast(1)
+        val renderHeightPx =
+            (slotHeightPx.toLong() * liveWidthPx / widthPx.coerceAtLeast(1)).toInt()
         val sizeConfig =
-            remember(baseConfig, widthPx, slotHeightPx, sparklineMarginPx, design) {
+            remember(baseConfig, liveWidthPx, renderHeightPx, sparklineMarginPx, design) {
                 baseConfig.copy(
-                    cellWidthPxOverride = widthPx.toFloat(),
+                    cellWidthPxOverride = liveWidthPx.toFloat(),
                     showIcons = design.showIcons,
                 )
             }
-        val bitmap = rememberFieldPreviewBitmap(field, colorMode, sizeConfig, widthPx, slotHeightPx)
+        val bitmap =
+            rememberFieldPreviewBitmap(field, colorMode, sizeConfig, liveWidthPx, renderHeightPx)
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = null,
