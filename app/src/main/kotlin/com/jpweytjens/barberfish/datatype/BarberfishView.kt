@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Build
@@ -339,6 +340,7 @@ private fun makeFieldRemoteViews(
                 cellWidthPx,
                 density,
                 wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                paint = Paint().apply { typeface = Typeface.MONOSPACE },
             )
         rv.setViewVisibility(R.id.field_value, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
@@ -415,7 +417,7 @@ private fun applyHeaderChrome(
                 labelAvailableWidthPx,
                 density,
                 wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                typeface = Typeface.DEFAULT,
+                paint = Paint().apply { typeface = Typeface.DEFAULT },
             )
         labelFontSp = sp.toFloat()
         labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment

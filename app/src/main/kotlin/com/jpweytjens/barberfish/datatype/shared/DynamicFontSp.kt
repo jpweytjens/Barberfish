@@ -11,9 +11,8 @@ import android.graphics.Typeface
  * below [wrapThresholdSp]; in that case the font is sized to fit the longer half after splitting at
  * the word boundary nearest the midpoint.
  *
- * [typeface] defaults to [Typeface.MONOSPACE] for value text; pass [Typeface.DEFAULT] for label
- * text (proportional font). [bold] switches to the bold variant of [typeface] for measurement — use
- * when the rendered text uses [FontWeight.Bold].
+ * Measures with a copy of [paint] at the base size, so pass the paint the text is drawn with. It
+ * defaults to [valuePaint], the value renderers' paint; its own text size is ignored.
  */
 fun fontSizeForCell(
     text: String,
@@ -21,17 +20,12 @@ fun fontSizeForCell(
     cellWidthPx: Float,
     density: Float,
     wrapThresholdSp: Int = 20,
-    typeface: Typeface = Typeface.MONOSPACE,
-    bold: Boolean = false,
+    paint: Paint = valuePaint(0f),
 ): Pair<Int, Int> {
-    val paint =
-        Paint().apply {
-            this.typeface = if (bold) Typeface.create(typeface, Typeface.BOLD) else typeface
-            textSize = fontSizeBaseSp * density
-        }
+    val measuring = Paint(paint).apply { textSize = fontSizeBaseSp * density }
 
     fun measureSp(str: String): Int {
-        val w = paint.measureText(str)
+        val w = measuring.measureText(str)
         if (w <= cellWidthPx) return fontSizeBaseSp
         return (fontSizeBaseSp * cellWidthPx / w).toInt().coerceAtLeast(1)
     }
