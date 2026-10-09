@@ -1,9 +1,11 @@
 package com.jpweytjens.barberfish
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import androidx.datastore.preferences.core.edit
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
@@ -13,6 +15,7 @@ import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -22,11 +25,14 @@ import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.datatype.sparklineImageSize
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
-import com.jpweytjens.barberfish.extension.streamActiveHUDConfig
+import com.jpweytjens.barberfish.extension.dataStore
+import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import com.jpweytjens.barberfish.extension.updateActiveHUDConfig
@@ -78,13 +84,37 @@ class AllFieldPreviewsRenderTest {
     @Test
     fun rendersAllFieldPreviewPngs() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val context = instrumentation.targetContext
+        // Dark theme whatever the device is set to: the renders read night mode from the
+        // context's configuration.
+        val context =
+            instrumentation.targetContext.let {
+                val night =
+                    Configuration(it.resources.configuration).apply {
+                        uiMode =
+                            (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                                Configuration.UI_MODE_NIGHT_YES
+                    }
+                it.createConfigurationContext(night)
+            }
         val karooSystem = KarooSystemService(context)
         val connected = CountDownLatch(1)
         karooSystem.connect { connected.countDown() }
         assertTrue("Karoo system did not connect", connected.await(15, TimeUnit.SECONDS))
 
+        // The docs show the defaults, not the device's settings: render from a cleared store
+        // with only the palettes set, and put the rider's settings back afterwards.
+        val riderSettings = runBlocking { context.dataStore.data.first() }
         try {
+            runBlocking {
+                context.dataStore.edit { it.clear() }
+                context.saveZoneConfig(
+                    ZoneConfig(
+                        hrPalette = ZonePalette.BARBERFISH,
+                        powerPalette = ZonePalette.BARBERFISH,
+                        gradePalette = GradePalette.BARBERFISH,
+                    )
+                )
+            }
             val design = DataFieldDesignConfig()
             val outDir = File(context.getExternalFilesDir(null), "previews").apply { mkdirs() }
             val types = barberfishDataTypes(karooSystem)
@@ -107,22 +137,16 @@ class AllFieldPreviewsRenderTest {
                 writePreviewPng(sample, sample.type.typeId, config, design, context, outDir)
             }
 
-            // Second HUD render: flip the HUD setting to 4 columns so both variants
-            // land in the contact sheet, then restore the rider's config. The preview shows
-            // the active profile's HUD, so edit that one, not necessarily the Shared HUD.
+            // Second HUD render: the default HUD at 4 columns, so both variants land in the
+            // contact sheet.
             val hud = types.filterIsInstance<HUDDataType>().single()
-            val originalHud = runBlocking { context.streamActiveHUDConfig().first() }
-            try {
-                runBlocking {
-                    context.updateActiveHUDConfig { it.copy(slots = it.slots.copy(columns = 4)) }
-                }
-                // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
-                // two HUD renders show different values.
-                val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
-                writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
-            } finally {
-                runBlocking { context.updateActiveHUDConfig { originalHud } }
+            runBlocking {
+                context.updateActiveHUDConfig { it.copy(slots = it.slots.copy(columns = 4)) }
             }
+            // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
+            // two HUD renders show different values.
+            val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
+            writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
 
             // Doc renders: the three Grade statuses as single-cell crops for
             // docs/algorithms.md, written to a subdir so the contact-sheet grid
@@ -264,6 +288,12 @@ class AllFieldPreviewsRenderTest {
                 outDir,
             )
         } finally {
+            runBlocking {
+                context.dataStore.edit {
+                    it.clear()
+                    it += riderSettings
+                }
+            }
             karooSystem.disconnect()
         }
     }
