@@ -75,11 +75,15 @@ import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.Symbol
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
@@ -595,27 +599,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         val windJob: Job = scope.launch {
             // A dead generation may have left the sock painted; start clean.
             windSockController.clear(emitter)
-            val fixFlow = karooSystem.streamRiderFix()
-            val zoomFlow =
-                karooSystem
-                    .consumerFlow<OnMapZoomLevel>()
-                    .map { it.zoomLevel }
-                    .onStart {
-                        emit(SEED_ZOOM)
-                    }
-            combine(
-                    applicationContext.streamWindSockConfig(),
-                    fixFlow,
-                    zoomFlow,
-                    applicationContext.streamHeadwindSnapshots(),
-                    forecastClock(),
-                ) { cfg, (fix, course), zoom, snapshot, now ->
-                    val wind = snapshot.windAt(fix, now)
-                    val bands = wind?.let { windSockBands(it.speedMs) } ?: 0
-                    val muted = isForecastStale(snapshot?.lastSuccessfulFetchEpochSeconds, now)
-                    WindInputs(cfg.enabled, fix, course, zoom, wind?.fromDeg, bands, muted)
-                }
-                .collect { w -> windSockController.emit(emitter, w.toSockSymbol(density)) }
+            windSockSymbols(density).collect { symbol -> windSockController.emit(emitter, symbol) }
         }
         emitter.setCancellable {
             Timber.d("grademap: startMap cancelled")
@@ -624,6 +608,37 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             scope.cancel()
         }
     }
+
+    /**
+     * The map sock's symbol over time, null to hide it. While the sock is off nothing is subscribed
+     * behind it: no Headwind binding, no fixes, zoom or clock.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun windSockSymbols(density: Float): Flow<Symbol.Icon?> =
+        applicationContext
+            .streamWindSockConfig()
+            .map { it.enabled }
+            .distinctUntilChanged()
+            .flatMapLatest { enabled ->
+                if (!enabled) flowOf(null)
+                else
+                    combine(
+                            karooSystem.streamRiderFix(),
+                            karooSystem
+                                .consumerFlow<OnMapZoomLevel>()
+                                .map { it.zoomLevel }
+                                .onStart { emit(SEED_ZOOM) },
+                            applicationContext.streamHeadwindSnapshots(),
+                            forecastClock(),
+                        ) { (fix, course), zoom, snapshot, now ->
+                            val wind = snapshot.windAt(fix, now)
+                            val bands = wind?.let { windSockBands(it.speedMs) } ?: 0
+                            val muted =
+                                isForecastStale(snapshot?.lastSuccessfulFetchEpochSeconds, now)
+                            WindInputs(fix, course, zoom, wind?.fromDeg, bands, muted)
+                        }
+                        .map { it.toSockSymbol(density) }
+            }
 }
 
 // How long progress ticks are held after a route change, while the distance stream may
@@ -736,7 +751,6 @@ private data class ViewportSignature(
 
 // One collected snapshot of the wind sock's four independent inputs.
 private data class WindInputs(
-    val enabled: Boolean,
     val fix: LatLng?,
     val courseDeg: Double?,
     val zoom: Double,
@@ -745,11 +759,7 @@ private data class WindInputs(
     val muted: Boolean,
 )
 
-// Suppressed: four independent readiness gates on one flow snapshot are the sock's actual
-// precondition; splitting them would either lose the null-safety smart cast or invent a type
-// for one call.
-@Suppress("ComplexCondition")
 private fun WindInputs.toSockSymbol(density: Float): Symbol.Icon? =
-    if (enabled && fix != null && courseDeg != null && windFromDeg != null)
+    if (fix != null && courseDeg != null && windFromDeg != null)
         windSockSymbol(fix, courseDeg, zoom, density, windFromDeg, bands, muted)
     else null
