@@ -396,7 +396,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     )
                 }
             HUDSlotField.Wind ->
-                WindField.liveStates(karooSystem, profile, WindFieldConfig(slot.colorMode))
+                WindField.liveStates(context, karooSystem, profile, WindFieldConfig(slot.colorMode))
                     .withSpeed(slot, karooSystem, profile)
             HUDSlotField.Distance ->
                 karooSystem.streamDataFlow(ValueKind.DISTANCE.sourceType).map {

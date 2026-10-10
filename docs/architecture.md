@@ -256,10 +256,11 @@ Zone coloring and threshold coloring produce a `FieldColor` sealed variant. `Fie
 
 ## Wind sock
 
-Barberfish reads wind from the Headwind extension (`karoo-headwind`) through the
-same stream helper every field uses, with extension-qualified ids
-(`TYPE_EXT::karoo-headwind::windDirection` and so on). The rideapp serves any
-extension's streams to any other, and the Headwind README invites it.
+Barberfish reads wind from the Headwind extension (`karoo-headwind`) through its
+weather service, with the client library that extension publishes
+(`de.timklge.headwind:client`). `streamHeadwindSnapshots` binds to the service
+and emits each snapshot: the cached forecast for the points along the route, in
+SI units, and the times of the last successful and failed downloads.
 
 The map gets a windsock seen from above. Its geometry lives in
 `WindSockGeometry`; the five drawables are generated from the same numbers by
@@ -284,28 +285,33 @@ digits, or on the gap between the rows when Show speed stacks the ride speed
 above the wind. The number takes the remaining width through the usual
 `fontSizeForCell` shrink.
 Strength on the map follows the airfield rule, one band per 3 knots, five at
-most; calm draws no arrow in the field. Speed arrives in the Headwind
-extension's configured unit, which Barberfish cannot read; it assumes that
-extension's default for the Karoo profile (km/h or mph).
+most; calm draws no arrow in the field. Speed arrives in m/s, so the bands need
+no unit, and the field converts the headwind to the profile's km/h or mph like
+any other speed.
 
-The field and the sock read the same two streams, `windDirection` and
-`windSpeed`, and use the same course: the one from `streamRiderFix`, held at its
-last non-null value so it survives a stop. The field projects the wind onto that
-course with `relativeWindDeg` and `headwindComponent`, which follow the Headwind
-extension's own convention; `WindProjectionTest` pins them against a port of its
-formula, so the field agrees with that extension's fields on the same course.
-Its relative streams go unused, since they take the extension's own course and
-report a full tailwind whenever it has none.
+The snapshot holds forecast points, not the wind at the rider, so `windAt` works
+that out. Each point's wind is blended linearly between the hourly entries
+around now, then the two points nearest the rider are blended by inverse
+distance. Headwind's own fields blend the same way but treat speed and direction
+as two numbers; `windAt` blends the wind as a vector, so two opposing winds
+cancel instead of reading as a crosswind that blows at neither point. The two
+only part noticeably during a sharp veer. A clock moves the blend on once a
+minute, as often as Headwind recomputes its own.
 
-Non-streaming states. The Headwind extension caches its forecast, interpolates
-between forecast hours by the clock, and reports no data age, so staleness is
-not detectable from outside and Barberfish does not fake one (a download-time
-stream is requested in karoo-headwind#202). Any wind stream other than
-streaming reads "No wind data", with `noSensor` so a HUD column collapses, even
-before the first course. With wind but no course yet, the field reads
-"Searching…".
+The field and the sock use the same blend and the same course: the one from
+`streamRiderFix`, held at its last non-null value so it survives a stop. The
+field projects the wind onto that course with `relativeWindDeg` and
+`headwindComponent`, which follow the Headwind extension's own convention;
+`WindProjectionTest` pins them against a port of its formula, so the field
+agrees with that extension's fields on the same course.
+
+No snapshot, or a snapshot without a forecast, reads "No wind data", with
+`noSensor` so a HUD column collapses, even before the first course. That covers
+Headwind missing, not set up, and offline before its first download. With wind
+but no course yet, the field reads "Searching…".
 
 App detection lives in the config screen only: `MainActivity` asks the package
 manager for the Headwind package on every resume (the manifest's `<queries>`
 entry makes it visible) and greys the Wind card with an install hint when it is
-absent. The field and the map sock work from the streams alone.
+absent. The field and the map sock work from the service alone, and read a
+service they cannot bind as no forecast.

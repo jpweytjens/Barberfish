@@ -42,8 +42,6 @@ import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
-import com.jpweytjens.barberfish.datatype.shared.WIND_DIRECTION_STREAM
-import com.jpweytjens.barberfish.datatype.shared.WIND_SPEED_STREAM
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRejoinSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
@@ -51,6 +49,7 @@ import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.forecastClock
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
@@ -60,9 +59,9 @@ import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
+import com.jpweytjens.barberfish.datatype.shared.windAt
 import com.jpweytjens.barberfish.datatype.shared.windSockBands
 import com.jpweytjens.barberfish.datatype.shared.windSockSymbol
-import com.jpweytjens.barberfish.datatype.shared.windUnitFor
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -603,30 +602,16 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     .onStart {
                         emit(SEED_ZOOM)
                     }
-            val windFlow =
-                combine(
-                    karooSystem.streamDataFlow(WIND_DIRECTION_STREAM),
-                    karooSystem.streamDataFlow(WIND_SPEED_STREAM),
-                    karooSystem.streamUserProfile(),
-                ) { direction, speed, profile ->
-                    val from =
-                        (direction as? StreamState.Streaming)
-                            ?.dataPoint
-                            ?.values
-                            ?.get(DataType.Field.SINGLE)
-                    val kph =
-                        (speed as? StreamState.Streaming)
-                            ?.dataPoint
-                            ?.values
-                            ?.get(DataType.Field.SINGLE)
-                    from to (kph?.let { windSockBands(it, windUnitFor(profile)) } ?: 0)
-                }
-            combine(applicationContext.streamWindSockConfig(), fixFlow, zoomFlow, windFlow) {
-                    cfg,
-                    (fix, course),
-                    zoom,
-                    (from, bands) ->
-                    WindInputs(cfg.enabled, fix, course, zoom, from, bands)
+            combine(
+                    applicationContext.streamWindSockConfig(),
+                    fixFlow,
+                    zoomFlow,
+                    applicationContext.streamHeadwindSnapshots(),
+                    forecastClock(),
+                ) { cfg, (fix, course), zoom, snapshot, now ->
+                    val wind = snapshot.windAt(fix, now)
+                    val bands = wind?.let { windSockBands(it.speedMs) } ?: 0
+                    WindInputs(cfg.enabled, fix, course, zoom, wind?.fromDeg, bands)
                 }
                 .collect { w -> windSockController.emit(emitter, w.toSockSymbol(density)) }
         }

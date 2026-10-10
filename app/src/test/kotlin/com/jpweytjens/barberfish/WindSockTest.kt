@@ -3,7 +3,6 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.WIND_SOCK_ID
-import com.jpweytjens.barberfish.datatype.shared.WindUnit
 import com.jpweytjens.barberfish.datatype.shared.destinationLatLng
 import com.jpweytjens.barberfish.datatype.shared.formatHeadwind
 import com.jpweytjens.barberfish.datatype.shared.latLngDistanceM
@@ -21,28 +20,23 @@ class WindSockTest {
 
     // --- bands ---
 
-    @Test
-    fun bands_follow_the_airfield_rule_in_kph() {
-        assertEquals(0, windSockBands(0.0, WindUnit.KPH))
-        assertEquals(0, windSockBands(2.7, WindUnit.KPH))
-        assertEquals(1, windSockBands(3.0, WindUnit.KPH))
-        assertEquals(2, windSockBands(10.0, WindUnit.KPH))
-        assertEquals(3, windSockBands(15.0, WindUnit.KPH))
-        assertEquals(4, windSockBands(20.0, WindUnit.KPH))
-        assertEquals(5, windSockBands(28.0, WindUnit.KPH))
-        assertEquals(5, windSockBands(60.0, WindUnit.KPH))
-    }
+    private fun knots(kn: Double) = kn * 1852.0 / 3600.0
 
     @Test
-    fun bands_follow_the_airfield_rule_in_mph() {
-        assertEquals(1, windSockBands(3.0, WindUnit.MPH))
-        assertEquals(3, windSockBands(10.0, WindUnit.MPH))
-        assertEquals(5, windSockBands(17.3, WindUnit.MPH))
+    fun bands_follow_the_airfield_rule_of_one_per_3_knots() {
+        assertEquals(0, windSockBands(0.0))
+        assertEquals(0, windSockBands(knots(1.4)))
+        assertEquals(1, windSockBands(knots(1.6)))
+        assertEquals(1, windSockBands(knots(3.0)))
+        assertEquals(3, windSockBands(knots(9.0)))
+        assertEquals(4, windSockBands(knots(12.0)))
+        assertEquals(5, windSockBands(knots(15.0)))
+        assertEquals(5, windSockBands(knots(40.0)))
     }
 
     @Test
     fun negative_speed_is_treated_as_calm() {
-        assertEquals(0, windSockBands(-4.0, WindUnit.KPH))
+        assertEquals(0, windSockBands(-1.0))
     }
 
     // --- number ---
@@ -58,27 +52,27 @@ class WindSockTest {
 
     // --- colour ---
 
+    private fun kmh(kmh: Double) = kmh / 3.6
+
     @Test
     fun colour_is_red_into_the_wind_and_green_with_it() {
-        val head = windFieldColor(20.0, WindUnit.KPH, ZoneColorMode.TEXT) as FieldColor.Threshold
+        val head = windFieldColor(kmh(20.0), ZoneColorMode.TEXT) as FieldColor.Threshold
         assertEquals(-1f, head.factor, 0.001f)
-        val tail = windFieldColor(-10.0, WindUnit.KPH, ZoneColorMode.TEXT) as FieldColor.Threshold
+        val tail = windFieldColor(kmh(-10.0), ZoneColorMode.TEXT) as FieldColor.Threshold
         assertEquals(0.5f, tail.factor, 0.001f)
-        val calm = windFieldColor(0.0, WindUnit.KPH, ZoneColorMode.TEXT) as FieldColor.Threshold
+        val calm = windFieldColor(0.0, ZoneColorMode.TEXT) as FieldColor.Threshold
         assertEquals(0f, calm.factor, 0.001f)
     }
 
     @Test
-    fun colour_saturates_and_scales_with_the_unit() {
-        val strong = windFieldColor(45.0, WindUnit.KPH, ZoneColorMode.TEXT) as FieldColor.Threshold
+    fun colour_saturates_at_20_kmh() {
+        val strong = windFieldColor(kmh(45.0), ZoneColorMode.TEXT) as FieldColor.Threshold
         assertEquals(-1f, strong.factor, 0.001f)
-        val mph = windFieldColor(6.2, WindUnit.MPH, ZoneColorMode.TEXT) as FieldColor.Threshold
-        assertEquals(-0.5f, mph.factor, 0.01f)
     }
 
     @Test
     fun colour_off_gives_default() {
-        assertEquals(FieldColor.Default, windFieldColor(20.0, WindUnit.KPH, ZoneColorMode.NONE))
+        assertEquals(FieldColor.Default, windFieldColor(kmh(20.0), ZoneColorMode.NONE))
     }
 
     // --- geometry on the map ---

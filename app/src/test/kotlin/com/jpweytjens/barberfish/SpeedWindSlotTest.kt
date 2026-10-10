@@ -7,6 +7,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.TWO_ROW_GAP_PX
+import com.jpweytjens.barberfish.datatype.shared.Wind
 import com.jpweytjens.barberfish.datatype.shared.speedWindGeometry
 import com.jpweytjens.barberfish.datatype.shared.visibleColumns
 import com.jpweytjens.barberfish.datatype.speedWindState
@@ -19,7 +20,6 @@ import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
 import com.jpweytjens.barberfish.extension.WindFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.DataPoint
-import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
 import kotlinx.coroutines.flow.emptyFlow
@@ -57,9 +57,6 @@ class SpeedWindSlotTest {
         )
     private val cfg = WindFieldConfig(colorMode = ZoneColorMode.TEXT)
 
-    private fun single(v: Double) =
-        StreamState.Streaming(DataPoint("x", mapOf(DataType.Field.SINGLE to v)))
-
     private fun speed(kph: Double, smoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0) =
         SpeedField.toFieldState(
             StreamState.Streaming(
@@ -70,8 +67,8 @@ class SpeedWindSlotTest {
         )
 
     // Riding north (course 0): the wind's direction is where it blows from.
-    private fun wind(windFromDeg: Double, windSpeed: Double) =
-        WindField.toFieldState(single(windFromDeg), single(windSpeed), 0.0, metric, cfg)
+    private fun wind(windFromDeg: Double, windKmh: Double) =
+        WindField.toFieldState(Wind(windFromDeg, windKmh / 3.6), 0.0, metric, cfg)
 
     @Test
     fun both_live_stack_speed_over_the_wind() {

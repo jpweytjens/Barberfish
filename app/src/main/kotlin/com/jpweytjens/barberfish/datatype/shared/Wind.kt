@@ -1,14 +1,33 @@
 package com.jpweytjens.barberfish.datatype.shared
 
 import de.timklge.headwind.client.HeadwindForecastPoint
+import de.timklge.headwind.client.HeadwindSnapshot
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 /** Wind as forecasts state it: where it blows from (degrees, 0 = north) and its speed in m/s. */
 internal data class Wind(val fromDeg: Double, val speedMs: Double)
+
+/** How often the blend moves on with the clock; Headwind recomputes its own fields as often. */
+private const val FORECAST_CLOCK_MS = 60_000L
+
+/** The time in epoch seconds, now and then once a minute, for [windAt]. */
+internal fun forecastClock(): Flow<Long> = flow {
+    while (true) {
+        emit(System.currentTimeMillis() / 1000)
+        delay(FORECAST_CLOCK_MS)
+    }
+}
+
+/** [windAt] over a whole snapshot: null without one, or before Headwind has a forecast. */
+internal fun HeadwindSnapshot?.windAt(position: LatLng?, epochSeconds: Long): Wind? =
+    this?.forecast?.let { windAt(it, position, epochSeconds) }
 
 /**
  * The Headwind forecast's wind at [position] and [epochSeconds]. Each point's wind is first blended

@@ -1,40 +1,14 @@
 package com.jpweytjens.barberfish.datatype.shared
 
 import com.jpweytjens.barberfish.extension.ZoneColorMode
-import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.Symbol
-import io.hammerhead.karooext.models.UserProfile
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/**
- * The windsock glyph's fixed geometry, in dp. The drawables in res/drawable/ic_wind_sock_N.xml are
- * generated from the same numbers by scripts/gen_wind_sock_drawables.py; WindSockDrawablesTest pins
- * the two together. Every sock is a complete sock with the same mouth and tip; only the length and
- * the band count change.
- */
-object WindSockGeometry {
-    const val MAX_BANDS = 5
-    const val BAND_LENGTH_DP = 6.4f
-    const val MOUTH_HALF_WIDTH_DP = 5.3f
-    const val TIP_HALF_WIDTH_DP = 1.3f
-    const val STROKE_DP = 2f
-
-    /** The drawable is a square this wide with the mouth at its centre, sock extending upward. */
-    const val ICON_SIZE_DP = 64f
-
-    fun lengthDp(bands: Int): Float = bands.coerceIn(0, MAX_BANDS) * BAND_LENGTH_DP
-}
-
-/** The headwind extension's id and the two streams Barberfish reads from it. */
-const val HEADWIND_EXTENSION = "karoo-headwind"
-
 /** The headwind extension's Android package, for the config screen's installed check. */
 const val HEADWIND_PACKAGE = "de.timklge.karooheadwind"
-val WIND_DIRECTION_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windDirection")
-val WIND_SPEED_STREAM: String = DataType.dataTypeId(HEADWIND_EXTENSION, "windSpeed")
 
 /** The one map symbol id. A ShowSymbols for an existing id updates it in place. */
 const val WIND_SOCK_ID = "barberfish-wind-sock"
@@ -42,22 +16,12 @@ const val WIND_SOCK_ID = "barberfish-wind-sock"
 /** Mast distance ahead of the puck centre: puck tip 18 dp, longest sock 32 dp, 3 dp clearance. */
 const val WIND_SOCK_MAST_DP = 53f
 
-/**
- * The unit the headwind extension sends speed in. It defaults to the Karoo profile's family and
- * cannot be read across extensions, so Barberfish assumes the default. One band per 3 knots.
- */
-enum class WindUnit(val perBand: Double) {
-    KPH(5.56),
-    MPH(3.45),
-}
+/** One sock band: 3 knots, in m/s. */
+private const val BAND_MS = 3 * 1852.0 / 3600.0
 
-fun windUnitFor(profile: UserProfile): WindUnit =
-    if (profile.preferredUnit.distance == UserProfile.PreferredUnit.UnitType.IMPERIAL) WindUnit.MPH
-    else WindUnit.KPH
-
-/** Standing bands for [speed] in [unit]: one per 3 knots, five at most, calm below half a band. */
-fun windSockBands(speed: Double, unit: WindUnit): Int =
-    (speed / unit.perBand).roundToInt().coerceIn(0, WindSockGeometry.MAX_BANDS)
+/** Standing bands for [speedMs]: one per 3 knots, five at most, calm below half a band. */
+fun windSockBands(speedMs: Double): Int =
+    (speedMs / BAND_MS).roundToInt().coerceIn(0, WindSockGeometry.MAX_BANDS)
 
 /**
  * Where the wind blows relative to [courseDeg], clockwise in [0, 360): 0 straight from behind, 180
@@ -74,18 +38,13 @@ fun headwindComponent(windSpeed: Double, relativeWindDeg: Double): Double =
 /** Grade-field convention: bare into the wind, minus with it, no decimals. */
 fun formatHeadwind(speed: Double): String = speed.roundToInt().toString()
 
-/** Headwind speed at which the colour saturates: 20 km/h, the same wind in mph. */
-private const val WIND_COLOR_FULL_SCALE_KPH = 20.0
+/** Headwind at which the colour saturates: 20 km/h, in m/s. */
+private const val WIND_COLOR_FULL_SCALE_MS = 20.0 / 3.6
 
 /** Threshold scale with the target at zero: red rising into a headwind, green with a tailwind. */
-fun windFieldColor(
-    headwindSpeed: Double,
-    unit: WindUnit,
-    colorMode: ZoneColorMode,
-): FieldColor {
+fun windFieldColor(headwindMs: Double, colorMode: ZoneColorMode): FieldColor {
     if (colorMode == ZoneColorMode.NONE) return FieldColor.Default
-    val fullScale = WIND_COLOR_FULL_SCALE_KPH * unit.perBand / WindUnit.KPH.perBand
-    val factor = (-headwindSpeed / fullScale).coerceIn(-1.0, 1.0).toFloat()
+    val factor = (-headwindMs / WIND_COLOR_FULL_SCALE_MS).coerceIn(-1.0, 1.0).toFloat()
     return FieldColor.Threshold(factor)
 }
 

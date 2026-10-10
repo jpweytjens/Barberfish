@@ -1,7 +1,11 @@
 package com.jpweytjens.barberfish.extension
 
+import android.content.Context
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.LatLng
+import de.timklge.headwind.client.HeadwindClient
+import de.timklge.headwind.client.HeadwindServiceUnavailableException
+import de.timklge.headwind.client.HeadwindSnapshot
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.KarooEvent
@@ -16,6 +20,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.scan
 
 fun KarooSystemService.streamDataFlow(dataTypeId: String): Flow<StreamState> = callbackFlow {
@@ -36,6 +42,16 @@ fun KarooSystemService.streamUserProfile(): Flow<UserProfile> = consumerFlow()
 fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consumerFlow()
 
 fun KarooSystemService.streamRideState(): Flow<RideState> = consumerFlow()
+
+/**
+ * The Headwind extension's weather snapshots from its service. Null until the first arrives, and
+ * from then on for good when Headwind is not installed or its service cannot be bound.
+ */
+fun Context.streamHeadwindSnapshots(): Flow<HeadwindSnapshot?> =
+    HeadwindClient(this)
+        .snapshots()
+        .onStart<HeadwindSnapshot?> { emit(null) }
+        .catch { e -> if (e is HeadwindServiceUnavailableException) emit(null) else throw e }
 
 /**
  * Position and course from location fixes. The course is held at the last non-null value: at rest
