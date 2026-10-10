@@ -12,6 +12,7 @@ detekt = { id = "dev.detekt", version = "2.0.0-alpha.6" }
 
 [libraries]
 hammerhead-karoo-ext = { module = "io.hammerhead:karoo-ext", version = "1.1.9" }
+headwind-client = { module = "de.timklge.headwind:client", version = "1.7.1" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version = "1.17.0" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version = "1.2.1" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.11.0" }

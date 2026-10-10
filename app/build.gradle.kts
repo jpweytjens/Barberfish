@@ -117,6 +117,7 @@ tasks.register("generateManifest") {
 
 dependencies {
     implementation(libs.hammerhead.karoo.ext)
+    implementation(libs.headwind.client)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
