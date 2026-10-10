@@ -57,6 +57,7 @@ import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
 import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
+import com.jpweytjens.barberfish.datatype.shared.whileOn
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -336,252 +337,272 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 karooSystem.consumerFlow<OnLocationChanged>().map {
                     GradeMapLocationTick(LatLng(it.lat, it.lng))
                 }
-            merge(rebuildFlow, progressFlow, locationFlow).collect { event ->
-                when (event) {
-                    is GradeMapProgressTick -> {
-                        val route = lastRoute ?: return@collect
-                        if (System.currentTimeMillis() < progressSettleUntilMs) return@collect
-                        val advanced =
-                            progressLatch.advance(
-                                event.distanceToDestinationM,
-                                event.onRoute,
-                                route.routeDistance,
-                            )
-                        if (advanced) {
-                            Timber.d("grademap: progress=${progressLatch.progressM.toInt()}m")
-                            drawing?.let { drawRoute(it) }
-                        } else {
-                            progressLatch.heldM?.let {
-                                Timber.d(
-                                    "grademap: progress held at ${it.toInt()}m (distanceToDestination=${event.distanceToDestinationM} onRoute=${event.onRoute} routeDist=${route.routeDistance.toInt()})"
+            // Withdraws everything this generation drew and persists that nothing is painted.
+            suspend fun clearDrawing() {
+                drawing = null
+                emitLayerBatches(emitter, layerPlanner.clearAll())
+                chevronController.clearAll(emitter)
+                rejoinController.clearAll(emitter)
+                rejoinChevronController.clearAll(emitter)
+                persistDrawnIdSpans(GradeMapDrawnIdSpans())
+            }
+            // Off: no nav, GPS, zoom or distance streams, only one event that clears the map.
+            applicationContext
+                .streamGradeMapConfig()
+                .whileOn({ it.enabled }, off = GradeMapOff) {
+                    merge(rebuildFlow, progressFlow, locationFlow)
+                }
+                .collect { event ->
+                    when (event) {
+                        GradeMapOff -> {
+                            // A disable keeps the latch, since the route identity is unchanged.
+                            lastRoute = null
+                            clearDrawing()
+                        }
+                        is GradeMapProgressTick -> {
+                            val route = lastRoute ?: return@collect
+                            if (System.currentTimeMillis() < progressSettleUntilMs) return@collect
+                            val advanced =
+                                progressLatch.advance(
+                                    event.distanceToDestinationM,
+                                    event.onRoute,
+                                    route.routeDistance,
                                 )
+                            if (advanced) {
+                                Timber.d("grademap: progress=${progressLatch.progressM.toInt()}m")
+                                drawing?.let { drawRoute(it) }
+                            } else {
+                                progressLatch.heldM?.let {
+                                    Timber.d(
+                                        "grademap: progress held at ${it.toInt()}m (distanceToDestination=${event.distanceToDestinationM} onRoute=${event.onRoute} routeDist=${route.routeDistance.toInt()})"
+                                    )
+                                }
                             }
                         }
-                    }
-                    is GradeMapLocationTick -> riderFix = event.fix
-                    is GradeMapRebuild -> {
-                        val inputs = event.inputs
-                        val viewport = event.viewport
-                        val route =
-                            inputs.state as? OnNavigationState.NavigationState.NavigatingRoute
-                        // Keep the progress branch's view of the route current.
-                        lastRoute = route?.takeIf { inputs.enabled }
-                        if (!inputs.enabled || route == null) {
-                            // Navigation cleared forgets progress; a mere disable keeps the
-                            // latch, since the route identity is unchanged.
-                            if (route == null) {
-                                progressLatch.clear()
-                                routeIndex = null
-                                routeIndexKey = null
-                                visibility = null
+                        is GradeMapLocationTick -> riderFix = event.fix
+                        is GradeMapRebuild -> {
+                            val inputs = event.inputs
+                            val viewport = event.viewport
+                            val route =
+                                inputs.state as? OnNavigationState.NavigationState.NavigatingRoute
+                            // Keep the progress branch's view of the route current.
+                            lastRoute = route?.takeIf { inputs.enabled }
+                            if (!inputs.enabled || route == null) {
+                                // Navigation cleared forgets progress; a mere disable keeps the
+                                // latch, since the route identity is unchanged.
+                                if (route == null) {
+                                    progressLatch.clear()
+                                    routeIndex = null
+                                    routeIndexKey = null
+                                    visibility = null
+                                }
+                                clearDrawing()
+                                return@collect
                             }
-                            drawing = null
-                            emitLayerBatches(emitter, layerPlanner.clearAll())
-                            chevronController.clearAll(emitter)
-                            rejoinController.clearAll(emitter)
-                            rejoinChevronController.clearAll(emitter)
-                            persistDrawnIdSpans(GradeMapDrawnIdSpans())
-                            return@collect
-                        }
-                        // Reset the latch when the route identity changes.
-                        val routeKey = gradeMapRouteKey(route.routePolyline, route.reversed)
-                        if (progressLatch.trackRoute(routeKey)) {
-                            progressSettleUntilMs = System.currentTimeMillis() + PROGRESS_SETTLE_MS
-                        }
-                        val index =
-                            routeIndex?.takeIf { routeIndexKey == routeKey }
-                                ?: run {
-                                    val builtAtMs = System.currentTimeMillis()
-                                    buildRouteIndex(route.routePolyline, route.reversed).also {
-                                        val buildMs = System.currentTimeMillis() - builtAtMs
-                                        routeIndex = it
-                                        routeIndexKey = routeKey
-                                        visibility = RideVisibility(it)
-                                        val repeated =
-                                            it.visits.filter { v -> v.nextVisitM != null }
-                                        val repeatSummary =
-                                            repeated.take(12).joinToString(",") { v ->
-                                                "${v.startM.toInt()}-${v.endM.toInt()}"
-                                            } + if (repeated.size > 12) "..." else ""
-                                        val scaledEndM =
-                                            polylineAxisProgressM(
-                                                route.routeDistance,
-                                                route.routeDistance,
-                                                it.lengthM,
+                            // Reset the latch when the route identity changes.
+                            val routeKey = gradeMapRouteKey(route.routePolyline, route.reversed)
+                            if (progressLatch.trackRoute(routeKey)) {
+                                progressSettleUntilMs =
+                                    System.currentTimeMillis() + PROGRESS_SETTLE_MS
+                            }
+                            val index =
+                                routeIndex?.takeIf { routeIndexKey == routeKey }
+                                    ?: run {
+                                        val builtAtMs = System.currentTimeMillis()
+                                        buildRouteIndex(route.routePolyline, route.reversed).also {
+                                            val buildMs = System.currentTimeMillis() - builtAtMs
+                                            routeIndex = it
+                                            routeIndexKey = routeKey
+                                            visibility = RideVisibility(it)
+                                            val repeated =
+                                                it.visits.filter { v -> v.nextVisitM != null }
+                                            val repeatSummary =
+                                                repeated.take(12).joinToString(",") { v ->
+                                                    "${v.startM.toInt()}-${v.endM.toInt()}"
+                                                } + if (repeated.size > 12) "..." else ""
+                                            val scaledEndM =
+                                                polylineAxisProgressM(
+                                                    route.routeDistance,
+                                                    route.routeDistance,
+                                                    it.lengthM,
+                                                )
+                                            Timber.d(
+                                                "grademap: route index ${it.visits.size} visits, " +
+                                                    "${repeated.size} repeated, " +
+                                                    "deepest=${it.visits.maxOfOrNull { v -> v.depth }} " +
+                                                    "axisRatio=${route.routeDistance / it.lengthM} " +
+                                                    "scaledEnd=${scaledEndM.toInt()}m " +
+                                                    "buildMs=$buildMs repeats=$repeatSummary"
                                             )
-                                        Timber.d(
-                                            "grademap: route index ${it.visits.size} visits, " +
-                                                "${repeated.size} repeated, " +
-                                                "deepest=${it.visits.maxOfOrNull { v -> v.depth }} " +
-                                                "axisRatio=${route.routeDistance / it.lengthM} " +
-                                                "scaledEnd=${scaledEndM.toInt()}m " +
-                                                "buildMs=$buildMs repeats=$repeatSummary"
-                                        )
+                                        }
                                     }
+                            val ride = visibility ?: RideVisibility(index).also { visibility = it }
+                            // Spacing/window are zoom-driven; latitude only scales the cos(lat)
+                            // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
+                            // sparsest case — which is the safe direction to err. Once a fix lands
+                            // it tightens to the true value.
+                            val chevronWindow =
+                                nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
+                            val chevronCollision =
+                                chevronIconLengthM(
+                                    CHEVRON_ICON_HEIGHT_DP,
+                                    density,
+                                    viewport.lat,
+                                    viewport.zoomLevel,
+                                )
+                            // Viewport filtering disabled for now — the rideapp's IPC reordering
+                            // between HideSymbols and ShowSymbols causes chevrons to vanish when
+                            // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
+                            // already prevents excessive rebuilds.
+                            val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? =
+                                null
+                            // Diagnostic only — buildGradeMapSpecs colours from the elevation
+                            // polyline and ignores climbs. Logged raw, matching what
+                            // SparklineDataFlow consumes; the reference frame of reroute-time
+                            // climb distances is unverified, so no correction is applied.
+                            val climbRanges =
+                                route.climbs.map {
+                                    it.startDistance to (it.startDistance + it.length)
                                 }
-                        val ride = visibility ?: RideVisibility(index).also { visibility = it }
-                        // Spacing/window are zoom-driven; latitude only scales the cos(lat)
-                        // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
-                        // sparsest case — which is the safe direction to err. Once a fix lands
-                        // it tightens to the true value.
-                        val chevronWindow =
-                            nativeChevronWindowHalfM(xdpi, viewport.lat, viewport.zoomLevel)
-                        val chevronCollision =
-                            chevronIconLengthM(
-                                CHEVRON_ICON_HEIGHT_DP,
-                                density,
-                                viewport.lat,
-                                viewport.zoomLevel,
-                            )
-                        // Viewport filtering disabled for now — the rideapp's IPC reordering
-                        // between HideSymbols and ShowSymbols causes chevrons to vanish when
-                        // the set shrinks rapidly (200 → 5). The bucketed distinctUntilChanged
-                        // already prevents excessive rebuilds.
-                        val bounds: com.jpweytjens.barberfish.datatype.shared.LatLngBounds? = null
-                        // Diagnostic only — buildGradeMapSpecs colours from the elevation
-                        // polyline and ignores climbs. Logged raw, matching what
-                        // SparklineDataFlow consumes; the reference frame of reroute-time
-                        // climb distances is unverified, so no correction is applied.
-                        val climbRanges =
-                            route.climbs.map {
-                                it.startDistance to (it.startDistance + it.length)
-                            }
-                        val routeLat =
-                            decodeGpsPolyline(route.routePolyline).firstOrNull()?.lat
-                                ?: viewport.lat
-                        val capTrimM =
-                            lineCapTrimM(
-                                GRADE_BAND_WIDTH_DP,
-                                density,
-                                routeLat,
-                                viewport.zoomLevel,
-                            )
-                        val casingCapTrimM =
-                            lineCapTrimM(
-                                GRADE_BAND_CASING_WIDTH_DP,
-                                density,
-                                routeLat,
-                                viewport.zoomLevel,
-                            )
-                        val specs =
-                            buildGradeMapSpecs(
-                                routePolyline = route.routePolyline,
-                                routeElevationPolyline = route.routeElevationPolyline,
-                                palette = inputs.palette,
-                                readable = false,
-                                tuning = inputs.tuning,
-                                includeChevrons = true,
-                                chevronBlend = inputs.chevronBlend,
-                                chevronGradeFullPct = CHEVRON_GRADE_FULL_PCT,
-                                chevronChangeWindowM = CHEVRON_CHANGE_WINDOW_M,
-                                chevronChangeFullPctPerM = CHEVRON_CHANGE_FULL_PCT_PER_M,
-                                chevronSpacingMaxM =
-                                    CHEVRON_SPACING_MAX_PX * metresPerPixel(viewport.zoomLevel),
-                                chevronSpacingMinM =
-                                    CHEVRON_SPACING_MIN_PX * metresPerPixel(viewport.zoomLevel),
-                                chevronWindowHalfM = chevronWindow,
-                                chevronMinSpacingM = 0.0,
-                                chevronViewport = bounds,
-                                capTrimM = capTrimM,
-                                casingCapTrimM = casingCapTrimM,
-                                reversed = route.reversed,
-                                metresPerPixel = metresPerPixel(viewport.zoomLevel),
-                                routeIndex = index,
-                            )
-                        Timber.d(
-                            "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
-                        )
-                        if (BuildConfig.DEBUG) {
-                            val elev =
-                                decodeElevationPolyline(route.routeElevationPolyline.orEmpty())
-                            Timber.d(
-                                "grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
-                            )
-                            // Direction diagnostic. routePolyline always arrives in saved
-                            // order, so gpsFirst/gpsLast are identical forward and reversed;
-                            // segStart is what moves once the reversal is applied.
-                            val gpsPts = decodeGpsPolyline(route.routePolyline)
-                            val segStart =
-                                specs.polylines.firstOrNull()?.let {
-                                    decodeGpsPolyline(it.encoded).firstOrNull()
-                                }
-                            Timber.d(
-                                "grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}"
-                            )
-                            val segLen =
-                                specs.polylines
-                                    .map { decodeGpsPolyline(it.encoded) }
-                                    .map {
-                                        if (it.size < 2) 0.0 else cumulativeDistancesM(it).last()
-                                    }
-                                    .sorted()
-                            Timber.d(
-                                "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
-                            )
-                        }
-                        // The reroute band: the path back to the route while off it, in the
-                        // rerouting red with chevrons at the route's sparse cadence.
-                        val rejoinSpecs =
-                            route.rejoinPolyline?.let {
-                                buildRejoinSpecs(
-                                    rejoinPolyline = it,
-                                    colorArgb = RerouteRed.toArgb(),
-                                    chevronSpacingM =
+                            val routeLat =
+                                decodeGpsPolyline(route.routePolyline).firstOrNull()?.lat
+                                    ?: viewport.lat
+                            val capTrimM =
+                                lineCapTrimM(
+                                    GRADE_BAND_WIDTH_DP,
+                                    density,
+                                    routeLat,
+                                    viewport.zoomLevel,
+                                )
+                            val casingCapTrimM =
+                                lineCapTrimM(
+                                    GRADE_BAND_CASING_WIDTH_DP,
+                                    density,
+                                    routeLat,
+                                    viewport.zoomLevel,
+                                )
+                            val specs =
+                                buildGradeMapSpecs(
+                                    routePolyline = route.routePolyline,
+                                    routeElevationPolyline = route.routeElevationPolyline,
+                                    palette = inputs.palette,
+                                    readable = false,
+                                    tuning = inputs.tuning,
+                                    includeChevrons = true,
+                                    chevronBlend = inputs.chevronBlend,
+                                    chevronGradeFullPct = CHEVRON_GRADE_FULL_PCT,
+                                    chevronChangeWindowM = CHEVRON_CHANGE_WINDOW_M,
+                                    chevronChangeFullPctPerM = CHEVRON_CHANGE_FULL_PCT_PER_M,
+                                    chevronSpacingMaxM =
                                         CHEVRON_SPACING_MAX_PX * metresPerPixel(viewport.zoomLevel),
-                                    chevronMinSpacingM = chevronCollision,
+                                    chevronSpacingMinM =
+                                        CHEVRON_SPACING_MIN_PX * metresPerPixel(viewport.zoomLevel),
+                                    chevronWindowHalfM = chevronWindow,
+                                    chevronMinSpacingM = 0.0,
+                                    chevronViewport = bounds,
                                     capTrimM = capTrimM,
                                     casingCapTrimM = casingCapTrimM,
+                                    reversed = route.reversed,
+                                    metresPerPixel = metresPerPixel(viewport.zoomLevel),
+                                    routeIndex = index,
+                                )
+                            Timber.d(
+                                "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
+                            )
+                            if (BuildConfig.DEBUG) {
+                                val elev =
+                                    decodeElevationPolyline(route.routeElevationPolyline.orEmpty())
+                                Timber.d(
+                                    "grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
+                                )
+                                // Direction diagnostic. routePolyline always arrives in saved
+                                // order, so gpsFirst/gpsLast are identical forward and reversed;
+                                // segStart is what moves once the reversal is applied.
+                                val gpsPts = decodeGpsPolyline(route.routePolyline)
+                                val segStart =
+                                    specs.polylines.firstOrNull()?.let {
+                                        decodeGpsPolyline(it.encoded).firstOrNull()
+                                    }
+                                Timber.d(
+                                    "grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}"
+                                )
+                                val segLen =
+                                    specs.polylines
+                                        .map { decodeGpsPolyline(it.encoded) }
+                                        .map {
+                                            if (it.size < 2) 0.0
+                                            else cumulativeDistancesM(it).last()
+                                        }
+                                        .sorted()
+                                Timber.d(
+                                    "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
                                 )
                             }
-                        val newSpans =
-                            GradeMapDrawnIdSpans(
-                                segments = specs.segmentIdSpan,
-                                chevrons = specs.chevronIdSpan,
-                                rejoinChevrons = rejoinSpecs?.chevrons?.size ?: 0,
+                            // The reroute band: the path back to the route while off it, in the
+                            // rerouting red with chevrons at the route's sparse cadence.
+                            val rejoinSpecs =
+                                route.rejoinPolyline?.let {
+                                    buildRejoinSpecs(
+                                        rejoinPolyline = it,
+                                        colorArgb = RerouteRed.toArgb(),
+                                        chevronSpacingM =
+                                            CHEVRON_SPACING_MAX_PX *
+                                                metresPerPixel(viewport.zoomLevel),
+                                        chevronMinSpacingM = chevronCollision,
+                                        capTrimM = capTrimM,
+                                        casingCapTrimM = casingCapTrimM,
+                                    )
+                                }
+                            val newSpans =
+                                GradeMapDrawnIdSpans(
+                                    segments = specs.segmentIdSpan,
+                                    chevrons = specs.chevronIdSpan,
+                                    rejoinChevrons = rejoinSpecs?.chevrons?.size ?: 0,
+                                )
+                            persistDrawnIdSpans(
+                                GradeMapDrawnIdSpans(
+                                    segments = maxOf(drawnIdSpans.segments, newSpans.segments),
+                                    chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
+                                    rejoinChevrons =
+                                        maxOf(drawnIdSpans.rejoinChevrons, newSpans.rejoinChevrons),
+                                )
                             )
-                        persistDrawnIdSpans(
-                            GradeMapDrawnIdSpans(
-                                segments = maxOf(drawnIdSpans.segments, newSpans.segments),
-                                chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
-                                rejoinChevrons =
-                                    maxOf(drawnIdSpans.rejoinChevrons, newSpans.rejoinChevrons),
-                            )
-                        )
-                        val current =
-                            RouteDrawing(
-                                index = index,
-                                visibility = ride,
-                                specs = specs,
-                                collisionRadiusM = chevronCollision,
-                                viewRadiusM = VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
-                                chevronLookaheadM =
-                                    CHEVRON_LOOKAHEAD_PX * metresPerPixel(viewport.zoomLevel),
-                                sdkRouteDistanceM = route.routeDistance,
-                                iconRes = gradeChevronDrawable(inputs.palette),
-                            )
-                        drawing = current
-                        drawRoute(current)
-                        if (rejoinSpecs != null) {
-                            rejoinController.emit(
-                                emitter,
-                                casingEncoded = rejoinSpecs.casing,
-                                specs = listOfNotNull(rejoinSpecs.fill),
-                                fillWidth = GRADE_BAND_WIDTH_DP,
-                                casingWidth = GRADE_BAND_CASING_WIDTH_DP,
-                            )
-                            rejoinChevronController.emit(
-                                emitter,
-                                rejoinSpecs.chevrons,
-                                R.drawable.ic_climber_chevron_f80000,
-                            )
-                        } else {
-                            rejoinController.clearAll(emitter)
-                            rejoinChevronController.clearAll(emitter)
+                            val current =
+                                RouteDrawing(
+                                    index = index,
+                                    visibility = ride,
+                                    specs = specs,
+                                    collisionRadiusM = chevronCollision,
+                                    viewRadiusM =
+                                        VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
+                                    chevronLookaheadM =
+                                        CHEVRON_LOOKAHEAD_PX * metresPerPixel(viewport.zoomLevel),
+                                    sdkRouteDistanceM = route.routeDistance,
+                                    iconRes = gradeChevronDrawable(inputs.palette),
+                                )
+                            drawing = current
+                            drawRoute(current)
+                            if (rejoinSpecs != null) {
+                                rejoinController.emit(
+                                    emitter,
+                                    casingEncoded = rejoinSpecs.casing,
+                                    specs = listOfNotNull(rejoinSpecs.fill),
+                                    fillWidth = GRADE_BAND_WIDTH_DP,
+                                    casingWidth = GRADE_BAND_CASING_WIDTH_DP,
+                                )
+                                rejoinChevronController.emit(
+                                    emitter,
+                                    rejoinSpecs.chevrons,
+                                    R.drawable.ic_climber_chevron_f80000,
+                                )
+                            } else {
+                                rejoinController.clearAll(emitter)
+                                rejoinChevronController.clearAll(emitter)
+                            }
+                            persistDrawnIdSpans(newSpans)
                         }
-                        persistDrawnIdSpans(newSpans)
                     }
                 }
-            }
         }
         emitter.setCancellable {
             Timber.d("grademap: startMap cancelled")
@@ -611,6 +632,9 @@ private data class GradeMapProgressTick(
 ) : GradeMapEvent
 
 private data class GradeMapLocationTick(val fix: LatLng) : GradeMapEvent
+
+/** The grade map switched off: clear it. */
+private data object GradeMapOff : GradeMapEvent
 
 // Everything a progress tick needs to redraw the route without rebuilding it.
 // Suppressed: a snapshot holder, one field per independent input; bundling them would
