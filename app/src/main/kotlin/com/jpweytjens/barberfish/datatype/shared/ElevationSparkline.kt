@@ -707,7 +707,7 @@ internal fun buildWarpedXMapper(
         val routeDistanceM = windowStart + step * stepM
         val normalisedDistanceFromDot = kotlin.math.abs(routeDistanceM - positionM) / lookaheadM
         val pixelsPerMetre =
-            1f + logWarpK * kotlin.math.exp(-normalisedDistanceFromDot * logWarpK * 0.5f).toFloat()
+            1f + logWarpK * kotlin.math.exp(-normalisedDistanceFromDot * logWarpK * 0.5f)
         cumulative[step + 1] = cumulative[step] + pixelsPerMetre * stepM
     }
     val totalBudget = cumulative[steps]

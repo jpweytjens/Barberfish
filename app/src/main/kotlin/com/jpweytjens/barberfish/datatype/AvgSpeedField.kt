@@ -16,6 +16,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
+import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -78,7 +79,7 @@ internal fun avgSpeedFieldState(
             }
         }
     return FieldState(
-        primary = "%.1f".format(converted),
+        primary = "%.1f".format(Locale.ROOT, converted),
         label = if (includePaused) "Avg Speed\nTotal" else "Avg Speed\nMoving",
         color = color,
         iconRes = R.drawable.ic_speed_average,

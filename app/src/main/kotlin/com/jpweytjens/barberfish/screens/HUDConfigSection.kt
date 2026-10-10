@@ -43,6 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
@@ -512,7 +513,7 @@ private fun HUDPreviewCell(
         // scale it into this cell, so every size and shrink decision matches the device.
         val liveWidthPx =
             hudSlotWidthPx(
-                    LocalContext.current.resources.displayMetrics.widthPixels,
+                    LocalResources.current.displayMetrics.widthPixels,
                     columns,
                     density,
                 )
@@ -591,7 +592,7 @@ private fun HUDSlotFieldCard(
             modifier = Modifier.fillMaxWidth().background(Grey200).padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            when (val f = slot.field) {
+            when (slot.field) {
                 HUDSlotField.Power -> HUDPowerCard(slot, onUpdate)
                 HUDSlotField.AvgPower -> {}
                 HUDSlotField.NP -> {}

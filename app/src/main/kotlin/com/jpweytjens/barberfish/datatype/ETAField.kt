@@ -20,6 +20,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import java.util.Calendar
+import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -178,7 +179,7 @@ class ETAField(
 
         private fun formatTimeOfDay(secondsSinceMidnight: Long): String {
             val s = secondsSinceMidnight % 86400L
-            return "%d:%02d".format(s / 3600L, s % 3600L / 60L)
+            return "%d:%02d".format(Locale.ROOT, s / 3600L, s % 3600L / 60L)
         }
     }
 }

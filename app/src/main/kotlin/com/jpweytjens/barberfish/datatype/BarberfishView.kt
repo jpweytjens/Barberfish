@@ -197,7 +197,6 @@ private fun makeFieldRemoteViews(
 ): RemoteViews {
     val dm = context.resources.displayMetrics
     val density = dm.density
-    val labelArgb = colors.headerText.toArgb()
     val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
     val cellWidthPx =
         sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
@@ -223,7 +222,7 @@ private fun makeFieldRemoteViews(
     val digitHeightPx = Rect().also { fullSizePaint.getTextBounds("0", 0, 1, it) }.height()
     val valueWidthPx =
         if (field.windArrowDeg != null) cellWidthPx - arrowBoxPx - windGapPx else cellWidthPx
-    val (fontSp, maxLines) =
+    val (fontSp, _) =
         fontSizeForCell(
             valueText,
             sizeConfig.valueFontSizeBase,

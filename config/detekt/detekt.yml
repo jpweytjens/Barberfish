@@ -1,6 +1,7 @@
 # Overrides on top of detekt's default rule set (buildUponDefaultConfig in
 # app/build.gradle.kts). Findings older than detekt are grandfathered in
-# baseline.xml; new code is held to the full set.
+# baseline.xml (detekt) and baseline-debug.xml (detektDebug, with type
+# resolution); new code is held to the full set.
 
 complexity:
   # Composables routinely take many parameters by design.
@@ -43,5 +44,6 @@ style:
       - '**/datatype/shared/MapProjection.kt'
       - '**/datatype/shared/GpsPolyline.kt'
       - '**/datatype/shared/ETA.kt'
-    imports:
-      - 'android.*'
+    forbiddenImports:
+      - value: 'android.*'
+        reason: 'The pure-math files in shared/ must stay free of Android.'
