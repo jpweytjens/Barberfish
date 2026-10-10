@@ -16,7 +16,8 @@ import kotlinx.serialization.json.Json
 // Debug-only. Reads/writes a named Barberfish config from adb so capture scripts can set each
 // shot's config and snapshot/restore the user's own. Names: hud, zone (palettes), time
 // (formatting), grade_pin (a pinned Grade reading, {"percent": -4.2}; null clears it),
-// field_sparkline (the Profile field, not the HUD strip, which rides with hud) — add a
+// field_sparkline (the Profile field, not the HUD strip, which rides with hud), wind_sock
+// (the map sock, {"enabled": true}) — add a
 // config by adding one `when` branch. Never in release.
 //
 //   adb push shot.json /sdcard/Android/data/com.jpweytjens.barberfish/files/bf_config.json
@@ -78,6 +79,7 @@ class ConfigReceiver : BroadcastReceiver() {
             "grade_pin" -> app.saveGradePin(json.decodeFromString<GradePin>(text))
             "field_sparkline" ->
                 app.saveFieldSparklineConfig(json.decodeFromString<SparklineConfig>(text))
+            "wind_sock" -> app.saveWindSockConfig(json.decodeFromString<WindSockConfig>(text))
         }
     }
 
@@ -93,6 +95,7 @@ class ConfigReceiver : BroadcastReceiver() {
             "time" -> json.encodeToString(app.streamTimeConfig().first())
             "grade_pin" -> json.encodeToString(app.streamGradePin().first())
             "field_sparkline" -> json.encodeToString(app.streamFieldSparklineConfig().first())
+            "wind_sock" -> json.encodeToString(app.streamWindSockConfig().first())
             else -> null
         }
 }
