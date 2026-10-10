@@ -29,9 +29,10 @@ class WindSockDrawablesTest {
     @Test
     fun every_drawable_is_the_icon_square() {
         for (bands in 1..WindSockGeometry.MAX_BANDS) for (xml in drawable(bands)) {
-            assertTrue(xml.contains("android:width=\"64dp\""))
-            assertTrue(xml.contains("android:height=\"64dp\""))
-            assertTrue(xml.contains("android:viewportWidth=\"64\""))
+            val size = WindSockGeometry.ICON_SIZE_DP.toInt()
+            assertTrue(xml.contains("android:width=\"${size}dp\""))
+            assertTrue(xml.contains("android:height=\"${size}dp\""))
+            assertTrue(xml.contains("android:viewportWidth=\"$size\""))
         }
     }
 
@@ -80,8 +81,14 @@ class WindSockDrawablesTest {
 
     @Test
     fun length_is_band_count_times_band_length() {
-        assertEquals(6.4f, WindSockGeometry.lengthDp(1), 0.001f)
-        assertEquals(32f, WindSockGeometry.lengthDp(5), 0.001f)
+        assertEquals(9f, WindSockGeometry.lengthDp(1), 0.001f)
+        assertEquals(45f, WindSockGeometry.lengthDp(5), 0.001f)
+    }
+
+    @Test
+    fun the_longest_sock_fits_the_icon_from_its_centre() {
+        val longest = WindSockGeometry.lengthDp(WindSockGeometry.MAX_BANDS)
+        assertTrue(longest <= WindSockGeometry.ICON_SIZE_DP / 2f)
     }
 
     @Test

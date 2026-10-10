@@ -266,7 +266,7 @@ The map gets a windsock seen from above. Its geometry lives in
 `WindSockGeometry`; the five drawables are generated from the same numbers by
 `scripts/gen_wind_sock_drawables.py`, and `WindSockDrawablesTest` pins the two.
 
-On the map, `WindSockController` keeps one symbol on a mast 53 dp ahead of the
+On the map, `WindSockController` keeps one symbol on a mast 66 dp ahead of the
 puck along the course, oriented to the absolute direction the wind blows toward.
 The map rotates symbols with itself, so the same bearing reads relative to the
 rider on a heading-up map and true on a north-up map; the rideapp does not

@@ -10,8 +10,16 @@ import kotlin.math.sin
 /** The one map symbol id. A ShowSymbols for an existing id updates it in place. */
 const val WIND_SOCK_ID = "barberfish-wind-sock"
 
-/** Mast distance ahead of the puck centre: puck tip 18 dp, longest sock 32 dp, 3 dp clearance. */
-const val WIND_SOCK_MAST_DP = 53f
+/** How far the puck's tip sits ahead of its centre, and the gap a sock keeps from it. */
+private const val PUCK_TIP_DP = 18f
+private const val SOCK_CLEARANCE_DP = 3f
+
+/**
+ * Mast distance ahead of the puck centre: past the puck's tip by the longest sock and a gap, so a
+ * sock blowing straight back never touches the puck.
+ */
+const val WIND_SOCK_MAST_DP =
+    PUCK_TIP_DP + WindSockGeometry.MAX_BANDS * WindSockGeometry.BAND_LENGTH_DP + SOCK_CLEARANCE_DP
 
 /** One sock band: 3 knots, in m/s. */
 private const val BAND_MS = 3 * 1852.0 / 3600.0

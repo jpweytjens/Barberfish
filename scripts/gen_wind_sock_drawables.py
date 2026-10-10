@@ -1,8 +1,8 @@
 """Generate the windsock drawables, one per standing band count.
 
-Geometry (dp, must match the WindSockGeometry object): a 64 dp square with the sock's
-mouth at the centre and the sock extending upward. Mouth half-width 5.3, tip half-width 1.3,
-band length 6.4, five bands at most, orange first. The taper runs mouth to tip over the whole
+Geometry (dp, must match the WindSockGeometry object): a 96 dp square with the sock's
+mouth at the centre and the sock extending upward. Mouth half-width 7.4, tip half-width 1.8,
+band length 9, five bands at most, orange first. The taper runs mouth to tip over the whole
 length, so every sock is a complete sock; only the length and the band count change.
 
 Each band count also gets a muted sock for a stale forecast, grey where the live one is
@@ -11,10 +11,10 @@ orange: the grey a stale Wind field is drawn in (MutedTextGrey in FieldColors.kt
 
 from pathlib import Path
 
-SIZE = 64.0
-MOUTH = 5.3
-TIP = 1.3
-BAND = 6.4
+SIZE = 96.0
+MOUTH = 7.4
+TIP = 1.8
+BAND = 9.0
 MAX_BANDS = 5
 STROKE = 2.0
 ORANGE = "#FF6A00"

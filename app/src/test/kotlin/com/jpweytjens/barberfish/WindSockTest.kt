@@ -111,7 +111,8 @@ class WindSockTest {
         assertNotNull(symbol)
         val s = symbol ?: return
         assertEquals(WIND_SOCK_ID, s.id)
-        val expectedM = 53.0 * density * metresPerPixel(zoom)
+        // Puck tip 18 dp, the longest sock 45 dp, 3 dp clearance.
+        val expectedM = 66.0 * density * metresPerPixel(zoom)
         assertEquals(expectedM, latLngDistanceM(fix, LatLng(s.lat, s.lng)), 0.5)
         assertEquals(50.0 + expectedM / 111_320.0, s.lat, 1e-7)
     }
