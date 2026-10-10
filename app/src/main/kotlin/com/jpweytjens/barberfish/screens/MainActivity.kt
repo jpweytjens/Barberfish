@@ -122,7 +122,6 @@ import com.jpweytjens.barberfish.datatype.shared.Grey100
 import com.jpweytjens.barberfish.datatype.shared.Grey200
 import com.jpweytjens.barberfish.datatype.shared.Grey400
 import com.jpweytjens.barberfish.datatype.shared.Grey500
-import com.jpweytjens.barberfish.datatype.shared.HEADWIND_PACKAGE
 import com.jpweytjens.barberfish.datatype.shared.OceanBlue
 import com.jpweytjens.barberfish.datatype.shared.PREVIEW_DELAY_MS
 import com.jpweytjens.barberfish.datatype.shared.RDYLGN_GREEN
@@ -208,6 +207,7 @@ import com.jpweytjens.barberfish.extension.saveWindSockConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamUserProfile
+import de.timklge.headwind.client.HeadwindClient
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.UserProfile
 import io.hammerhead.karooext.models.ViewConfig
@@ -252,11 +252,11 @@ class MainActivity : ComponentActivity() {
     }
 
     // The two-argument overload is the one that runs on the Karoo's Android versions;
-    // the flags overload exists only from API 33. A disabled Headwind cannot stream either,
-    // so it counts as absent.
+    // the flags overload exists only from API 33. A disabled Headwind cannot serve its forecast
+    // either, so it counts as absent. The client library's manifest makes the package visible.
     @Suppress("DEPRECATION")
     private fun isHeadwindInstalled(): Boolean = runCatching {
-        packageManager.getApplicationInfo(HEADWIND_PACKAGE, 0).enabled
+        packageManager.getApplicationInfo(HeadwindClient.SERVICE_PACKAGE, 0).enabled
     }
         .getOrDefault(false)
 

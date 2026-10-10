@@ -7,9 +7,6 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-/** The headwind extension's Android package, for the config screen's installed check. */
-const val HEADWIND_PACKAGE = "de.timklge.karooheadwind"
-
 /** The one map symbol id. A ShowSymbols for an existing id updates it in place. */
 const val WIND_SOCK_ID = "barberfish-wind-sock"
 

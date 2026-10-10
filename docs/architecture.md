@@ -313,7 +313,7 @@ download is more than two hours old (it downloads hourly), the field keeps its
 reading but greys it, arrow included; the map sock keeps showing.
 
 App detection lives in the config screen only: `MainActivity` asks the package
-manager for the Headwind package on every resume (the manifest's `<queries>`
-entry makes it visible) and greys the Wind card with an install hint when it is
+manager for the Headwind package on every resume (the client library's
+`<queries>` entry, merged into ours, makes it visible) and greys the Wind card with an install hint when it is
 absent. The field and the map sock work from the service alone, and read a
 service they cannot bind as no forecast.
