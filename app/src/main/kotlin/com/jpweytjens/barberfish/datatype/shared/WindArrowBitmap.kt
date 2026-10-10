@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.withRotation
 import androidx.core.graphics.withTranslation
@@ -16,6 +17,13 @@ internal const val WIND_ARROW_GAP_DP = 4f
 
 /** The widest headwind reading the arrow leaves full-size room for: a minus and two digits. */
 internal const val WIND_REFERENCE_TEXT = "-29"
+
+/**
+ * The arrow's colour: the theme's text colour (or the on-fill pick in BACKGROUND mode), so it never
+ * takes the zone colour; but greyed with the number when the reading is [FieldColor.Muted].
+ */
+internal fun ColorConfig.windArrowArgb(color: FieldColor): Int =
+    (if (color is FieldColor.Muted) valueText else headerText).toArgb()
 
 /**
  * Side of the arrow's square box: what the cell leaves after the gap and [referenceWidthPx] (the

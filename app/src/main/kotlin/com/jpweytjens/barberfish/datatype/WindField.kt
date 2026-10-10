@@ -88,12 +88,29 @@ class WindField(private val karooSystem: KarooSystemService) :
             cfg: WindFieldConfig,
         ): Flow<FieldState> =
             combine(fixes, snapshots, clock) { rider, snapshot, now ->
-                toFieldState(snapshot.windAt(rider.position, now), rider.courseDeg, profile, cfg)
+                toFieldState(
+                    snapshot.windAt(rider.position, now),
+                    rider.courseDeg,
+                    profile,
+                    cfg,
+                    stale = isStale(snapshot?.lastSuccessfulFetchEpochSeconds, now),
+                )
             }
+
+        /** Headwind downloads hourly; two hours without a download means it has lost the feed. */
+        private const val STALE_AFTER_S = 2 * 3600L
+
+        /**
+         * Whether a forecast last downloaded at [fetchedAt] is too old to vouch for at [now], both
+         * in epoch seconds. An unknown download time counts as stale.
+         */
+        internal fun isStale(fetchedAt: Long?, now: Long): Boolean =
+            fetchedAt == null || now - fetchedAt > STALE_AFTER_S
 
         /**
          * One reading from the wind and the held course. No wind reads "No wind data", even before
-         * a course; with wind but no course yet, "Searching…".
+         * a course; with wind but no course yet, "Searching…". A [stale] reading keeps its number
+         * and arrow but greys.
          */
         // Suppressed: the wind and course fallbacks share one text state each, which is inherently
         // more returns than the default threshold allows.
@@ -103,6 +120,7 @@ class WindField(private val karooSystem: KarooSystemService) :
             courseDeg: Double?,
             profile: UserProfile,
             cfg: WindFieldConfig,
+            stale: Boolean = false,
         ): FieldState {
             if (wind == null) return noWindData()
             if (courseDeg == null) return FieldState.searching(LABEL, ICON)
@@ -111,7 +129,7 @@ class WindField(private val karooSystem: KarooSystemService) :
             return FieldState(
                 primary = formatHeadwind(ConvertType.SPEED.apply(headwindMs, profile)),
                 label = LABEL,
-                color = windFieldColor(headwindMs, cfg.colorMode),
+                color = if (stale) FieldColor.Muted else windFieldColor(headwindMs, cfg.colorMode),
                 iconRes = ICON,
                 colorMode = cfg.colorMode,
                 windArrowDeg = if (windSockBands(wind.speedMs) > 0) angleDeg.toFloat() else null,

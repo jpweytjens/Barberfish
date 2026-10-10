@@ -31,6 +31,7 @@ import com.jpweytjens.barberfish.datatype.shared.speedWindValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.valuePaint
+import com.jpweytjens.barberfish.datatype.shared.windArrowArgb
 import com.jpweytjens.barberfish.datatype.shared.windArrowBoxPx
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
@@ -286,9 +287,7 @@ private fun makeFieldRemoteViews(
                 digitHeightPx = digitHeightPx.toFloat(),
                 cellWidthPx = cellWidthPx,
                 textColor = colors.valueText.toArgb(),
-                // Theme default text, or the on-fill pick in BACKGROUND mode: the arrow never
-                // takes the zone colour.
-                arrowColor = colors.headerText.toArgb(),
+                arrowColor = colors.windArrowArgb(field.color),
                 alignment = alignment,
                 context = context,
             )

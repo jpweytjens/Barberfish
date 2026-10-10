@@ -174,6 +174,48 @@ class WindFieldStateTest {
         )
 
     @Test
+    fun a_stale_reading_greys_but_keeps_its_number_and_arrow() {
+        val fresh = state(kmh(45.0, 15.0))
+        val stale = WindField.toFieldState(kmh(45.0, 15.0), 0.0, metric, cfg, stale = true)
+        assertEquals(fresh.primary, stale.primary)
+        assertEquals(fresh.windArrowDeg, stale.windArrowDeg)
+        assertEquals(FieldColor.Muted, stale.color)
+    }
+
+    @Test
+    fun the_forecast_goes_stale_after_two_hours_without_a_download() {
+        assertEquals(false, WindField.isStale(now, now))
+        assertEquals(false, WindField.isStale(now, now + 2 * 3600))
+        assertEquals(true, WindField.isStale(now, now + 2 * 3600 + 1))
+        // Without a download time the age is unknown; the reading is not vouched for.
+        assertEquals(true, WindField.isStale(null, now))
+    }
+
+    @Test
+    fun the_live_flow_greys_once_the_last_download_is_old() = runBlocking {
+        val here = LatLng(51.0, 4.0)
+        val colors = mutableListOf<FieldColor>()
+        val clock = MutableStateFlow(now)
+        val collector =
+            launch(Dispatchers.Unconfined) {
+                WindField.fieldStates(
+                        fixes = MutableStateFlow(RiderFix(here, 0.0)),
+                        snapshots = MutableStateFlow(snapshot(here, 0.0, 15.0)),
+                        clock = clock,
+                        profile = metric,
+                        cfg = cfg,
+                    )
+                    .collect { colors += it.color }
+            }
+        yield()
+        assertTrue(colors.last() is FieldColor.Threshold)
+        clock.value = now + 3 * 3600
+        yield()
+        assertEquals(FieldColor.Muted, colors.last())
+        collector.cancel()
+    }
+
+    @Test
     fun the_live_flow_projects_the_wind_onto_the_held_course() = runBlocking {
         val here = LatLng(51.0, 4.0)
         val fixes = MutableStateFlow(RiderFix(null, null))

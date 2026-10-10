@@ -308,7 +308,9 @@ agrees with that extension's fields on the same course.
 No snapshot, or a snapshot without a forecast, reads "No wind data", with
 `noSensor` so a HUD column collapses, even before the first course. That covers
 Headwind missing, not set up, and offline before its first download. With wind
-but no course yet, the field reads "Searching…".
+but no course yet, the field reads "Searching…". When Headwind's last successful
+download is more than two hours old (it downloads hourly), the field keeps its
+reading but greys it, arrow included; the map sock keeps showing.
 
 App detection lives in the config screen only: `MainActivity` asks the package
 manager for the Headwind package on every resume (the manifest's `<queries>`

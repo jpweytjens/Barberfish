@@ -151,7 +151,7 @@ internal fun speedWindValueBitmap(
         cellWidthPx = cellWidthPx,
         speedColor = colors.headerText.toArgb(),
         windColor = colors.valueText.toArgb(),
-        arrowColor = colors.headerText.toArgb(),
+        arrowColor = colors.windArrowArgb(field.color),
         alignment = alignment,
         context = context,
     )
