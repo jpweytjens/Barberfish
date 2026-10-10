@@ -4,6 +4,7 @@ import com.jpweytjens.barberfish.datatype.WindField
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.Wind
+import com.jpweytjens.barberfish.datatype.shared.isForecastStale
 import com.jpweytjens.barberfish.extension.RiderFix
 import com.jpweytjens.barberfish.extension.WindFieldConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
@@ -184,11 +185,11 @@ class WindFieldStateTest {
 
     @Test
     fun the_forecast_goes_stale_after_two_hours_without_a_download() {
-        assertEquals(false, WindField.isStale(now, now))
-        assertEquals(false, WindField.isStale(now, now + 2 * 3600))
-        assertEquals(true, WindField.isStale(now, now + 2 * 3600 + 1))
+        assertEquals(false, isForecastStale(now, now))
+        assertEquals(false, isForecastStale(now, now + 2 * 3600))
+        assertEquals(true, isForecastStale(now, now + 2 * 3600 + 1))
         // Without a download time the age is unknown; the reading is not vouched for.
-        assertEquals(true, WindField.isStale(null, now))
+        assertEquals(true, isForecastStale(null, now))
     }
 
     @Test

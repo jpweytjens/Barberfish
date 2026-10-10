@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.forecastClock
 import com.jpweytjens.barberfish.datatype.shared.formatHeadwind
 import com.jpweytjens.barberfish.datatype.shared.headwindComponent
+import com.jpweytjens.barberfish.datatype.shared.isForecastStale
 import com.jpweytjens.barberfish.datatype.shared.relativeWindDeg
 import com.jpweytjens.barberfish.datatype.shared.windAt
 import com.jpweytjens.barberfish.datatype.shared.windFieldColor
@@ -93,19 +94,9 @@ class WindField(private val karooSystem: KarooSystemService) :
                     rider.courseDeg,
                     profile,
                     cfg,
-                    stale = isStale(snapshot?.lastSuccessfulFetchEpochSeconds, now),
+                    stale = isForecastStale(snapshot?.lastSuccessfulFetchEpochSeconds, now),
                 )
             }
-
-        /** Headwind downloads hourly; two hours without a download means it has lost the feed. */
-        private const val STALE_AFTER_S = 2 * 3600L
-
-        /**
-         * Whether a forecast last downloaded at [fetchedAt] is too old to vouch for at [now], both
-         * in epoch seconds. An unknown download time counts as stale.
-         */
-        internal fun isStale(fetchedAt: Long?, now: Long): Boolean =
-            fetchedAt == null || now - fetchedAt > STALE_AFTER_S
 
         /**
          * One reading from the wind and the held course. No wind reads "No wind data", even before

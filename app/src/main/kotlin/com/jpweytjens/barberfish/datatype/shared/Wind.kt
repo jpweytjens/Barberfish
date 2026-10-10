@@ -25,6 +25,17 @@ internal fun forecastClock(): Flow<Long> = flow {
     }
 }
 
+/** Headwind downloads hourly; two hours without a download means it has lost the feed. */
+private const val FORECAST_STALE_AFTER_S = 2 * 3600L
+
+/**
+ * Whether a forecast last downloaded at [fetchedAt] is too old to vouch for at [now], both in epoch
+ * seconds. An unknown download time counts as stale. The Wind field and the map sock both grey on
+ * it.
+ */
+internal fun isForecastStale(fetchedAt: Long?, now: Long): Boolean =
+    fetchedAt == null || now - fetchedAt > FORECAST_STALE_AFTER_S
+
 /** [windAt] over a whole snapshot: null without one, or before Headwind has a forecast. */
 internal fun HeadwindSnapshot?.windAt(position: LatLng?, epochSeconds: Long): Wind? =
     this?.forecast?.let { windAt(it, position, epochSeconds) }

@@ -127,6 +127,15 @@ class WindSockTest {
     }
 
     @Test
+    fun a_stale_forecast_draws_the_muted_sock() {
+        fun icon(muted: Boolean) =
+            windSockSymbol(LatLng(50.0, 4.0), 0.0, 14.0, 1.875f, 315.0, bands = 2, muted = muted)
+                ?.iconRes
+        assertEquals(R.drawable.ic_wind_sock_2, icon(muted = false))
+        assertEquals(R.drawable.ic_wind_sock_muted_2, icon(muted = true))
+    }
+
+    @Test
     fun calm_has_no_symbol() {
         assertNull(
             windSockSymbol(LatLng(50.0, 4.0), 0.0, 14.0, 1.875f, windFromDeg = 0.0, bands = 0)

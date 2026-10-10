@@ -53,6 +53,7 @@ import com.jpweytjens.barberfish.datatype.shared.forecastClock
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
+import com.jpweytjens.barberfish.datatype.shared.isForecastStale
 import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
@@ -611,7 +612,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 ) { cfg, (fix, course), zoom, snapshot, now ->
                     val wind = snapshot.windAt(fix, now)
                     val bands = wind?.let { windSockBands(it.speedMs) } ?: 0
-                    WindInputs(cfg.enabled, fix, course, zoom, wind?.fromDeg, bands)
+                    val muted = isForecastStale(snapshot?.lastSuccessfulFetchEpochSeconds, now)
+                    WindInputs(cfg.enabled, fix, course, zoom, wind?.fromDeg, bands, muted)
                 }
                 .collect { w -> windSockController.emit(emitter, w.toSockSymbol(density)) }
         }
@@ -740,6 +742,7 @@ private data class WindInputs(
     val zoom: Double,
     val windFromDeg: Double?,
     val bands: Int,
+    val muted: Boolean,
 )
 
 // Suppressed: four independent readiness gates on one flow snapshot are the sock's actual
@@ -748,5 +751,5 @@ private data class WindInputs(
 @Suppress("ComplexCondition")
 private fun WindInputs.toSockSymbol(density: Float): Symbol.Icon? =
     if (enabled && fix != null && courseDeg != null && windFromDeg != null)
-        windSockSymbol(fix, courseDeg, zoom, density, windFromDeg, bands)
+        windSockSymbol(fix, courseDeg, zoom, density, windFromDeg, bands, muted)
     else null

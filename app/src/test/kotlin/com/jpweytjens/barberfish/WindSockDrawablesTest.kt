@@ -1,7 +1,10 @@
 package com.jpweytjens.barberfish
 
+import androidx.compose.ui.graphics.toArgb
+import com.jpweytjens.barberfish.datatype.shared.MutedTextGrey
 import com.jpweytjens.barberfish.datatype.shared.WindSockGeometry
 import java.io.File
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,17 +15,20 @@ import org.junit.Test
  */
 class WindSockDrawablesTest {
 
-    private fun drawable(bands: Int): String {
+    private fun drawable(name: String): String {
         val root =
             generateSequence(File("").absoluteFile) { it.parentFile }
                 .first { File(it, "settings.gradle.kts").exists() }
-        return File(root, "app/src/main/res/drawable/ic_wind_sock_$bands.xml").readText()
+        return File(root, "app/src/main/res/drawable/$name.xml").readText()
     }
+
+    /** Both sets: the live sock and the muted one for a stale forecast. */
+    private fun drawable(bands: Int): List<String> =
+        listOf(drawable("ic_wind_sock_$bands"), drawable("ic_wind_sock_muted_$bands"))
 
     @Test
     fun every_drawable_is_the_icon_square() {
-        for (bands in 1..WindSockGeometry.MAX_BANDS) {
-            val xml = drawable(bands)
+        for (bands in 1..WindSockGeometry.MAX_BANDS) for (xml in drawable(bands)) {
             assertTrue(xml.contains("android:width=\"64dp\""))
             assertTrue(xml.contains("android:height=\"64dp\""))
             assertTrue(xml.contains("android:viewportWidth=\"64\""))
@@ -31,8 +37,7 @@ class WindSockDrawablesTest {
 
     @Test
     fun outline_runs_from_the_mouth_at_centre_to_the_tip_one_length_up() {
-        for (bands in 1..WindSockGeometry.MAX_BANDS) {
-            val xml = drawable(bands)
+        for (bands in 1..WindSockGeometry.MAX_BANDS) for (xml in drawable(bands)) {
             val outline =
                 Regex("<!-- outline -->\\s*<path[^>]*android:pathData=\"([^\"]+)\"")
                     .find(xml)
@@ -49,17 +54,28 @@ class WindSockDrawablesTest {
         }
     }
 
+    private val mutedGrey = "#%06X".format(Locale.ROOT, MutedTextGrey.toArgb() and 0xFFFFFF)
+
     @Test
     fun band_count_matches_the_filled_polygons() {
         for (bands in 1..WindSockGeometry.MAX_BANDS) {
-            val xml = drawable(bands)
-            val fills = Regex("android:fillColor=\"#(FF6A00|FFFFFF)\"").findAll(xml).count()
-            assertEquals(bands, fills)
-            assertTrue(
-                xml.indexOf("#FF6A00") <
-                    xml.indexOf("#FFFFFF").let { if (it < 0) Int.MAX_VALUE else it }
-            )
+            val (live, muted) = drawable(bands)
+            for ((xml, first) in listOf(live to "#FF6A00", muted to mutedGrey)) {
+                val fills = Regex("android:fillColor=\"($first|#FFFFFF)\"").findAll(xml).count()
+                assertEquals(bands, fills)
+                assertTrue(
+                    xml.indexOf(first) <
+                        xml.indexOf("#FFFFFF").let { if (it < 0) Int.MAX_VALUE else it }
+                )
+            }
         }
+    }
+
+    @Test
+    fun the_muted_sock_greys_like_a_muted_field() {
+        // The muted sock's first band is the grey a stale Wind field is drawn in.
+        assertTrue(drawable("ic_wind_sock_muted_1").contains(mutedGrey))
+        assertTrue(!drawable("ic_wind_sock_muted_1").contains("#FF6A00"))
     }
 
     @Test
@@ -70,8 +86,7 @@ class WindSockDrawablesTest {
 
     @Test
     fun mouth_and_tip_widths_match_geometry() {
-        for (bands in 1..WindSockGeometry.MAX_BANDS) {
-            val xml = drawable(bands)
+        for (bands in 1..WindSockGeometry.MAX_BANDS) for (xml in drawable(bands)) {
             val outline =
                 Regex("<!-- outline -->\\s*<path[^>]*android:pathData=\"([^\"]+)\"")
                     .find(xml)
@@ -117,8 +132,7 @@ class WindSockDrawablesTest {
 
     @Test
     fun stroke_width_matches_geometry() {
-        for (bands in 1..WindSockGeometry.MAX_BANDS) {
-            val xml = drawable(bands)
+        for (bands in 1..WindSockGeometry.MAX_BANDS) for (xml in drawable(bands)) {
             val strokeWidth =
                 Regex(
                         "<!-- outline -->.*android:strokeWidth=\"([^\"]+)\"",

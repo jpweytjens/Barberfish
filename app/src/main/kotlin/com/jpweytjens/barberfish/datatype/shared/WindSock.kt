@@ -60,9 +60,10 @@ internal fun destinationLatLng(from: LatLng, bearingDeg: Double, distanceM: Doub
 
 /**
  * The map sock for one fix: on the mast [WIND_SOCK_MAST_DP] ahead of [fix] along [courseDeg],
- * oriented to where the wind blows (the meteorological "from" direction plus 180). Null when calm,
- * so the caller hides the symbol. The map rotates symbols with itself, so the absolute bearing
- * reads relative on a heading-up map and true on a north-up one.
+ * oriented to where the wind blows (the meteorological "from" direction plus 180), grey when
+ * [muted] (a stale forecast). Null when calm, so the caller hides the symbol. The map rotates
+ * symbols with itself, so the absolute bearing reads relative on a heading-up map and true on a
+ * north-up one.
  */
 @Suppress("LongParameterList")
 internal fun windSockSymbol(
@@ -72,6 +73,7 @@ internal fun windSockSymbol(
     density: Float,
     windFromDeg: Double,
     bands: Int,
+    muted: Boolean = false,
 ): Symbol.Icon? {
     if (bands <= 0) return null
     val mastM = WIND_SOCK_MAST_DP * density * metresPerPixel(zoom)
@@ -81,7 +83,7 @@ internal fun windSockSymbol(
         id = WIND_SOCK_ID,
         lat = mast.lat,
         lng = mast.lng,
-        iconRes = windSockDrawable(bands),
+        iconRes = windSockDrawable(bands, muted),
         orientation = blowsTo.toFloat(),
     )
 }
