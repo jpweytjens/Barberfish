@@ -19,6 +19,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import java.util.Calendar
+import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -170,7 +171,8 @@ class ETAField(
 
         private fun formatClockTime(secondsFromNow: Long): String {
             val cal = Calendar.getInstance().apply { timeInMillis += secondsFromNow * 1000 }
-            return "%d:%02d".format(cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+            return "%d:%02d"
+                .format(Locale.ROOT, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
         }
     }
 }

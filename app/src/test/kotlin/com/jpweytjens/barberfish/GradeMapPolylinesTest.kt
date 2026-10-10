@@ -1077,8 +1077,8 @@ class GradeMapPolylinesTest {
         var prevDist = 0L
         var prevElev = 0L
         for ((d, e) in points) {
-            val dInt = Math.round(d * 10.0).toLong()
-            val eInt = Math.round(e * 10.0).toLong()
+            val dInt = Math.round(d * 10.0)
+            val eInt = Math.round(e * 10.0)
             encodeSigned(dInt - prevDist, sb)
             encodeSigned(eInt - prevElev, sb)
             prevDist = dInt

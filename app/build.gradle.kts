@@ -2,10 +2,9 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.detekt)
-    kotlin("plugin.serialization") version "2.0.20"
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val localProperties = Properties().apply {
@@ -14,7 +13,7 @@ val localProperties = Properties().apply {
 
 android {
     namespace = "com.jpweytjens.barberfish"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.jpweytjens.barberfish"

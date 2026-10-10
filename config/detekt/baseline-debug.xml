@@ -28,7 +28,6 @@
     <ID>CyclomaticComplexMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun hrZoneColor: Color</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun powerZoneColor: Color</ID>
-    <ID>LargeClass:GradeMapPolylinesTest.kt:GradeMapPolylinesTest</ID>
     <ID>LargeClass:MainActivity.kt:MainActivity : ComponentActivity</ID>
     <ID>LongMethod:BarberfishExtension.kt:BarberfishExtension$override fun startMap</ID>
     <ID>LongMethod:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>
@@ -56,11 +55,32 @@
     <ID>LongMethod:OverviewSparkline.kt:@OptIn(FlowPreview::class) fun overviewBitmapFlow: Flow&lt;Bitmap?&gt;</ID>
     <ID>LongMethod:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
     <ID>LongMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
+    <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun previewStates: List&lt;FieldState&gt;</ID>
+    <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun toFieldState: FieldState</ID>
+    <ID>LongParameterList:BarberfishView.kt:fun applySparklineHeaderChrome</ID>
+    <ID>LongParameterList:BarberfishView.kt:fun barberfishFieldRemoteViews: RemoteViews</ID>
+    <ID>LongParameterList:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>
+    <ID>LongParameterList:BarberfishView.kt:private fun makeFieldRemoteViews: RemoteViews</ID>
+    <ID>LongParameterList:BitmapValue.kt:fun renderHeaderBitmap: Bitmap</ID>
+    <ID>LongParameterList:BitmapValue.kt:fun renderTwoRowValueBitmap: Bitmap</ID>
+    <ID>LongParameterList:BitmapValue.kt:fun renderValueBitmap: Bitmap</ID>
+    <ID>LongParameterList:ChevronPlacement.kt:internal fun placeChevronsByCadence: List&lt;ChevronPlacement&gt;</ID>
+    <ID>LongParameterList:DynamicFontSp.kt:fun fontSizeForCell: Pair&lt;Int, Int&gt;</ID>
+    <ID>LongParameterList:ElevationSparkline.kt:internal fun buildWarpedXMapper: (Float) -&gt; Float</ID>
+    <ID>LongParameterList:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
+    <ID>LongParameterList:ElevationSparkline.kt:internal fun sparklineWindow: Pair&lt;Float, Float&gt;</ID>
+    <ID>LongParameterList:GradeBands.kt:internal fun gradeBandColor: Color</ID>
+    <ID>LongParameterList:GradeMapPolylines.kt:internal fun resampleRunsToCells: List&lt;GradeRun&gt;</ID>
+    <ID>LongParameterList:LapPowerField.kt:LapPowerField.Companion$fun toFieldState: FieldState</ID>
+    <ID>LongParameterList:OverviewSparkline.kt:fun renderOverviewSparkline: Bitmap?</ID>
+    <ID>LongParameterList:RejoinBand.kt:internal fun buildRejoinSpecs: RejoinSpecs</ID>
+    <ID>LongParameterList:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>LongParameterList:SpeedField.kt:SpeedField.Companion$fun toFieldState: FieldState</ID>
+    <ID>LongParameterList:ValueField.kt:ValueKind</ID>
+    <ID>LongParameterList:ZoneFieldFlow.kt:@OptIn(ExperimentalCoroutinesApi::class) internal fun &lt;Cfg&gt; zoneFieldLiveFlow: Flow&lt;FieldState&gt;</ID>
     <ID>LoopWithTooManyJumpStatements:ElevationSparkline.kt:for</ID>
     <ID>LoopWithTooManyJumpStatements:ElevationSparkline.kt:while</ID>
-    <ID>LoopWithTooManyJumpStatements:ZoneColoringTest.kt:ZoneColoringTest$for</ID>
     <ID>MatchingDeclarationName:BarberfishView.kt:SparklineRender</ID>
-    <ID>MatchingDeclarationName:ElevationSparklineTest.kt:ElevationStripTest</ID>
     <ID>MatchingDeclarationName:GpsPolyline.kt:LatLng</ID>
     <ID>MatchingDeclarationName:GradeMapTuning.kt:EffectiveGradeMapTuning</ID>
     <ID>MaxLineLength:BarberfishDataType.kt:BarberfishBase$"density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId"</ID>
@@ -71,7 +91,6 @@
     <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} &lt;collision=${segLen.count { it &lt; chevronCollision }}"</ID>
     <ID>MaxLineLength:MainActivity.kt:MainActivity$"Initial average speed (${ConvertType.SPEED.unit(userProfile)}) used for ETA until enough ride data is collected. "</ID>
     <ID>NestedBlockDepth:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
-    <ID>NestedBlockDepth:GradeThresholdTest.kt:GradeThresholdTest$@Test fun every_offered_count_names_the_grade_the_renderer_paints_from</ID>
     <ID>ReturnCount:AvgHRField.kt:AvgHRField.Companion$fun toFieldState: FieldState</ID>
     <ID>ReturnCount:AvgPowerField.kt:AvgPowerField.Companion$fun toFieldState: FieldState</ID>
     <ID>ReturnCount:CadenceField.kt:CadenceField.Companion$fun toFieldState: FieldState</ID>
@@ -106,11 +125,5 @@
     <ID>TooManyFunctions:HUDConfigSection.kt:com.jpweytjens.barberfish.screens.HUDConfigSection.kt</ID>
     <ID>TooManyFunctions:MainActivity.kt:com.jpweytjens.barberfish.screens.MainActivity.kt</ID>
     <ID>TooManyFunctions:Settings.kt:com.jpweytjens.barberfish.extension.Settings.kt</ID>
-    <ID>VariableNaming:ElevationSparklineTest.kt:ElevationStripTest$// Precision-1 Google Encoded Polyline for (0m, 100m), (500m, 110m), (1000m, 95m). // Confirmed format from Task 5 spike: lat = cumulative distance m, lng = elevation m, divisor = // 10. // Computed manually: encode [(0,1000),(5000,1100),(10000,950)] as standard polyline deltas. private val FIXTURE_POLYLINE = "?o}@owHgEowHjH"</ID>
-    <ID>VariableNaming:ElevationSparklineTest.kt:ElevationStripTest$private val ROUTE_LENGTH_M = 60_000f</ID>
-    <ID>VariableNaming:GradeBandsTest.kt:GradeBandsTest$private val NEUTRAL = Color(0xFFC4C4C4)</ID>
-    <ID>VariableNaming:GradeMapPolylinesTest.kt:GradeMapPolylinesTest$// Chevron spacing tests that only care about run/id/colour behaviour, not the cadence // blend itself, pin both spacing bounds to one value so placement is a fixed grid again. private val FIXED_CHEVRON_SPACING_M = 60.0</ID>
-    <ID>VariableNaming:OverviewSparklineTest.kt:OverviewSparklineTest$private val SPAN_M = 42_000f</ID>
-    <ID>VariableNaming:OverviewSparklineTest.kt:OverviewSparklineTest$private val START_M = 97.1f</ID>
   </CurrentIssues>
 </SmellBaseline>

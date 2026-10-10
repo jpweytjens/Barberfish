@@ -17,6 +17,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
+import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -30,8 +31,10 @@ fun formatTime(seconds: Long, format: TimeFormat): String {
     val m = (t % 3600) / 60
     val s = t % 60
     return when (format) {
-        TimeFormat.RACING -> if (h > 0) "${h}h${m}'%02d\"".format(s) else "${m}'%02d\"".format(s)
-        TimeFormat.CLOCK -> "%d:%02d:%02d".format(h, m, s)
+        TimeFormat.RACING ->
+            if (h > 0) "${h}h${m}'%02d\"".format(Locale.ROOT, s)
+            else "${m}'%02d\"".format(Locale.ROOT, s)
+        TimeFormat.CLOCK -> "%d:%02d:%02d".format(Locale.ROOT, h, m, s)
         TimeFormat.HM_S ->
             when {
                 h > 0 -> "${h}h${m}m${s}s"

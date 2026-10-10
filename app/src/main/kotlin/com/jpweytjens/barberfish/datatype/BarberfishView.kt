@@ -186,7 +186,6 @@ private fun makeFieldRemoteViews(
 ): RemoteViews {
     val dm = context.resources.displayMetrics
     val density = dm.density
-    val labelArgb = colors.headerText.toArgb()
     val layoutRes = layoutRes(alignment, sizeConfig.valueTranslationDp)
     val cellWidthPx =
         sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
@@ -196,7 +195,7 @@ private fun makeFieldRemoteViews(
     // locale can introduce is the decimal separator — safe to normalize to a dot here, the
     // single point every field value (standalone, HUD slot, preview) flows through.
     val valueText = field.primary.replace(',', '.')
-    val (fontSp, maxLines) =
+    val (fontSp, _) =
         fontSizeForCell(
             valueText,
             sizeConfig.valueFontSizeBase,
