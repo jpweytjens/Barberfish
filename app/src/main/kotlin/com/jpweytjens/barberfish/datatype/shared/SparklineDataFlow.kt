@@ -37,7 +37,13 @@ internal data class SparklineFrame(
     val hudEnabled: Boolean,
     // "Climb n/total" heads-up text shown in the strip before a climb's profile reveals.
     val counterText: String? = null,
-)
+) {
+    companion object {
+        /** The HUD strip switched off: nothing drawn and no area reserved. */
+        val OFF =
+            SparklineFrame(bitmap = null, displayedRange = 0f, lookaheadKm = 0, hudEnabled = false)
+    }
+}
 
 /**
  * Shared sparkline data pipeline used by both HUD and standalone sparkline field.

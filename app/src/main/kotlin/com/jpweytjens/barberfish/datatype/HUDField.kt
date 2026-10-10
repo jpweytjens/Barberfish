@@ -12,8 +12,10 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.HUD_UPDATE_INTERVAL_MS
 import com.jpweytjens.barberfish.datatype.shared.SlotState
+import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
+import com.jpweytjens.barberfish.datatype.shared.whileOn
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
@@ -29,6 +31,7 @@ import com.jpweytjens.barberfish.extension.MaxPowerFieldConfig
 import com.jpweytjens.barberfish.extension.NPFieldConfig
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerZoneFieldConfig
+import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SparklineTapReceiver
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -90,15 +93,21 @@ class HUDField(private val karooSystem: KarooSystemService) :
             val hudStateFlow = if (config.preview) previewFlow(context) else liveFlow(context)
             val dm = context.resources.displayMetrics
             val sparklineHeightPx = (HUD_SPARKLINE_HEIGHT_DP * dm.density).toInt()
+            // Off: no route, distance or POI streams behind the strip, only the empty frame.
             val sparklineFlow =
-                sparklineBitmapFlow(
-                    karooSystem,
-                    context,
-                    configFlow = context.streamHudSparklineConfig(),
-                    widthPx = dm.widthPixels,
-                    heightPx = sparklineHeightPx,
-                    isPreview = config.preview,
-                )
+                context.streamHudSparklineConfig().whileOn(
+                    { it.hudMode != SparklineMode.OFF },
+                    off = SparklineFrame.OFF,
+                ) {
+                    sparklineBitmapFlow(
+                        karooSystem,
+                        context,
+                        configFlow = context.streamHudSparklineConfig(),
+                        widthPx = dm.widthPixels,
+                        heightPx = sparklineHeightPx,
+                        isPreview = config.preview,
+                    )
+                }
             val transitionFlow: Flow<Int?> =
                 SparklineTapReceiver.tapSignal.flatMapLatest { (ts, km) ->
                     if (ts == 0L) flowOf(null)
