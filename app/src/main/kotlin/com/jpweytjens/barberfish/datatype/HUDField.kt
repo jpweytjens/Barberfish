@@ -213,21 +213,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                 Triple(cfg, zones, profile)
             }
             .flatMapLatest { (cfg, zones, profile) ->
-                combine(
-                    slotFlow(cfg.leftSlot, zones, profile, context),
-                    slotFlow(cfg.middleSlot, zones, profile, context),
-                    slotFlow(cfg.rightSlot, zones, profile, context),
-                    slotFlow(cfg.fourthSlot, zones, profile, context),
-                ) { left, middle, right, fourth ->
-                    HUDState(
-                        columns = cfg.columns,
-                        left = SlotState(left, cfg.leftSlot.colorMode),
-                        middle = SlotState(middle, cfg.middleSlot.colorMode),
-                        right = SlotState(right, cfg.rightSlot.colorMode),
-                        fourth = SlotState(fourth, cfg.fourthSlot.colorMode),
-                        profile = profile,
-                    )
-                }
+                hudStates(cfg, profile) { slot -> slotFlow(slot, zones, profile, context) }
             }
 
     override fun previewFlow(context: Context): Flow<HUDState> =
@@ -588,3 +574,29 @@ class HUDField(private val karooSystem: KarooSystemService) :
         }
     }
 }
+
+/**
+ * The live HUD's states for [cfg], with each slot's states from [slotFlow]. Only the slots the HUD
+ * shows are subscribed: a 3-column HUD's fourth slot holds a placeholder that [HUDState.slots]
+ * drops, so its streams never start.
+ */
+internal fun hudStates(
+    cfg: HUDConfig,
+    profile: UserProfile,
+    slotFlow: (HUDSlotConfig) -> Flow<FieldState>,
+): Flow<HUDState> =
+    combine(
+        slotFlow(cfg.leftSlot),
+        slotFlow(cfg.middleSlot),
+        slotFlow(cfg.rightSlot),
+        if (cfg.columns == 4) slotFlow(cfg.fourthSlot) else flowOf(FieldState.searching()),
+    ) { left, middle, right, fourth ->
+        HUDState(
+            columns = cfg.columns,
+            left = SlotState(left, cfg.leftSlot.colorMode),
+            middle = SlotState(middle, cfg.middleSlot.colorMode),
+            right = SlotState(right, cfg.rightSlot.colorMode),
+            fourth = SlotState(fourth, cfg.fourthSlot.colorMode),
+            profile = profile,
+        )
+    }
