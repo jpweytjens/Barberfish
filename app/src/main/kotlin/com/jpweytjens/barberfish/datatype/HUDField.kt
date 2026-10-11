@@ -1,8 +1,6 @@
 package com.jpweytjens.barberfish.datatype
 
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
 import android.view.View
@@ -194,20 +192,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         val layoutRes =
                             if (hudState.columns == 4) R.layout.barberfish_hud_four
                             else R.layout.barberfish_hud
-                        val intent =
-                            Intent(context, SparklineTapReceiver::class.java).apply {
-                                action = SparklineTapReceiver.ACTION
-                                putExtra(
-                                    SparklineTapReceiver.EXTRA_SURFACE,
-                                    SparklineTapReceiver.SURFACE_HUD,
-                                )
-                            }
                         val pi =
-                            PendingIntent.getBroadcast(
+                            SparklineTapReceiver.tapIntent(
                                 context,
+                                SparklineTapReceiver.SURFACE_HUD,
                                 layoutRes,
-                                intent,
-                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                             )
                         rv.setOnClickPendingIntent(R.id.hud_sparkline_container, pi)
                     }

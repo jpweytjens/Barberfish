@@ -1,8 +1,6 @@
 package com.jpweytjens.barberfish.datatype
 
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.view.View
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.R
@@ -72,17 +70,11 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
         }
         state.bitmap?.let { rv.setImageViewBitmap(R.id.sparkline_image, it) }
         if (!config.preview) {
-            val intent =
-                Intent(context, SparklineTapReceiver::class.java).apply {
-                    action = SparklineTapReceiver.ACTION
-                    putExtra(SparklineTapReceiver.EXTRA_SURFACE, SparklineTapReceiver.SURFACE_FIELD)
-                }
             val pi =
-                PendingIntent.getBroadcast(
+                SparklineTapReceiver.tapIntent(
                     context,
+                    SparklineTapReceiver.SURFACE_FIELD,
                     R.layout.barberfish_sparkline,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
             rv.setOnClickPendingIntent(R.id.sparkline_root, pi)
         }
