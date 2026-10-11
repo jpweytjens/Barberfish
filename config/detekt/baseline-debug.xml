@@ -24,7 +24,7 @@
     <ID>CyclomaticComplexMethod:HUDField.kt:HUDField.Companion$fun previewStates: List&lt;HUDState&gt;</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$@OptIn(ExperimentalComposeUiApi::class) @Composable private fun ConfigScreen</ID>
     <ID>CyclomaticComplexMethod:OverviewSparkline.kt:@OptIn(FlowPreview::class) fun overviewBitmapFlow: Flow&lt;Bitmap?&gt;</ID>
-    <ID>CyclomaticComplexMethod:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>CyclomaticComplexMethod:SparklineDataFlow.kt:internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
     <ID>CyclomaticComplexMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun hrZoneColor: Color</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun powerZoneColor: Color</ID>
@@ -53,7 +53,7 @@
     <ID>LongMethod:MainActivity.kt:@Composable internal fun GradeMapCard</ID>
     <ID>LongMethod:MainActivity.kt:MainActivity$@OptIn(ExperimentalComposeUiApi::class) @Composable private fun ConfigScreen</ID>
     <ID>LongMethod:OverviewSparkline.kt:@OptIn(FlowPreview::class) fun overviewBitmapFlow: Flow&lt;Bitmap?&gt;</ID>
-    <ID>LongMethod:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>LongMethod:SparklineDataFlow.kt:internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
     <ID>LongMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
     <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun previewStates: List&lt;FieldState&gt;</ID>
     <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun toFieldState: FieldState</ID>
@@ -74,7 +74,7 @@
     <ID>LongParameterList:LapPowerField.kt:LapPowerField.Companion$fun toFieldState: FieldState</ID>
     <ID>LongParameterList:OverviewSparkline.kt:fun renderOverviewSparkline: Bitmap?</ID>
     <ID>LongParameterList:RejoinBand.kt:internal fun buildRejoinSpecs: RejoinSpecs</ID>
-    <ID>LongParameterList:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>LongParameterList:SparklineDataFlow.kt:internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
     <ID>LongParameterList:SpeedField.kt:SpeedField.Companion$fun toFieldState: FieldState</ID>
     <ID>LongParameterList:ValueField.kt:ValueKind</ID>
     <ID>LongParameterList:ZoneFieldFlow.kt:@OptIn(ExperimentalCoroutinesApi::class) internal fun &lt;Cfg&gt; zoneFieldLiveFlow: Flow&lt;FieldState&gt;</ID>
