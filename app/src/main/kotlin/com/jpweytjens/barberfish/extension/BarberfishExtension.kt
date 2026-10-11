@@ -33,6 +33,7 @@ import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
+import com.jpweytjens.barberfish.datatype.shared.FollowedRoute
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_CASING_ID
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
@@ -48,6 +49,7 @@ import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.followedRoute
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
@@ -64,7 +66,6 @@ import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
-import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -231,7 +232,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         chevronBlend = gradeMapCfg.chevronBlend,
                         palette = zoneCfg.gradePalette,
                         tuning = eff,
-                        state = navEvent.state,
+                        route = navEvent.state.followedRoute(),
                     )
                 }
             // Branch B: zoom + location (changes on every GPS tick / map interaction).
@@ -259,7 +260,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 }
 
             val progressLatch = GradeMapProgress()
-            var lastRoute: OnNavigationState.NavigationState.NavigatingRoute? = null
+            var lastRoute: FollowedRoute? = null
             // Distance samples carry no route identity, so a sample queued behind a route
             // change was computed against the old route; fed to the fresh latch it would
             // commit a bogus monotonic jump on the new one. Hold ticks briefly after every
@@ -345,7 +346,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             progressLatch.advance(
                                 event.distanceToDestinationM,
                                 event.onRoute,
-                                route.routeDistance,
+                                route.distanceM,
                             )
                         if (advanced) {
                             Timber.d("grademap: progress=${progressLatch.progressM.toInt()}m")
@@ -353,7 +354,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         } else {
                             progressLatch.heldM?.let {
                                 Timber.d(
-                                    "grademap: progress held at ${it.toInt()}m (distanceToDestination=${event.distanceToDestinationM} onRoute=${event.onRoute} routeDist=${route.routeDistance.toInt()})"
+                                    "grademap: progress held at ${it.toInt()}m (distanceToDestination=${event.distanceToDestinationM} onRoute=${event.onRoute} routeDist=${route.distanceM.toInt()})"
                                 )
                             }
                         }
@@ -362,8 +363,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     is GradeMapRebuild -> {
                         val inputs = event.inputs
                         val viewport = event.viewport
-                        val route =
-                            inputs.state as? OnNavigationState.NavigationState.NavigatingRoute
+                        val route = inputs.route
                         // Keep the progress branch's view of the route current.
                         lastRoute = route?.takeIf { inputs.enabled }
                         if (!inputs.enabled || route == null) {
@@ -383,8 +383,13 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             persistDrawnIdSpans(GradeMapDrawnIdSpans())
                             return@collect
                         }
+                        Timber.d(
+                            "grademap: followed route destination=${route.destination != null} " +
+                                "polylineHash=${route.polyline.hashCode()} " +
+                                "distanceM=${route.distanceM.toInt()}"
+                        )
                         // Reset the latch when the route identity changes.
-                        val routeKey = gradeMapRouteKey(route.routePolyline, route.reversed)
+                        val routeKey = gradeMapRouteKey(route.polyline, route.reversed)
                         if (progressLatch.trackRoute(routeKey)) {
                             progressSettleUntilMs = System.currentTimeMillis() + PROGRESS_SETTLE_MS
                         }
@@ -392,7 +397,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             routeIndex?.takeIf { routeIndexKey == routeKey }
                                 ?: run {
                                     val builtAtMs = System.currentTimeMillis()
-                                    buildRouteIndex(route.routePolyline, route.reversed).also {
+                                    buildRouteIndex(route.polyline, route.reversed).also {
                                         val buildMs = System.currentTimeMillis() - builtAtMs
                                         routeIndex = it
                                         routeIndexKey = routeKey
@@ -405,15 +410,15 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                             } + if (repeated.size > 12) "..." else ""
                                         val scaledEndM =
                                             polylineAxisProgressM(
-                                                route.routeDistance,
-                                                route.routeDistance,
+                                                route.distanceM,
+                                                route.distanceM,
                                                 it.lengthM,
                                             )
                                         Timber.d(
                                             "grademap: route index ${it.visits.size} visits, " +
                                                 "${repeated.size} repeated, " +
                                                 "deepest=${it.visits.maxOfOrNull { v -> v.depth }} " +
-                                                "axisRatio=${route.routeDistance / it.lengthM} " +
+                                                "axisRatio=${route.distanceM / it.lengthM} " +
                                                 "scaledEnd=${scaledEndM.toInt()}m " +
                                                 "buildMs=$buildMs repeats=$repeatSummary"
                                         )
@@ -447,8 +452,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 it.startDistance to (it.startDistance + it.length)
                             }
                         val routeLat =
-                            decodeGpsPolyline(route.routePolyline).firstOrNull()?.lat
-                                ?: viewport.lat
+                            decodeGpsPolyline(route.polyline).firstOrNull()?.lat ?: viewport.lat
                         val capTrimM =
                             lineCapTrimM(
                                 GRADE_BAND_WIDTH_DP,
@@ -465,8 +469,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             )
                         val specs =
                             buildGradeMapSpecs(
-                                routePolyline = route.routePolyline,
-                                routeElevationPolyline = route.routeElevationPolyline,
+                                routePolyline = route.polyline,
+                                routeElevationPolyline = route.elevationPolyline,
                                 palette = inputs.palette,
                                 readable = false,
                                 tuning = inputs.tuning,
@@ -492,15 +496,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
                         )
                         if (BuildConfig.DEBUG) {
-                            val elev =
-                                decodeElevationPolyline(route.routeElevationPolyline.orEmpty())
+                            val elev = decodeElevationPolyline(route.elevationPolyline.orEmpty())
                             Timber.d(
-                                "grademap: routeDist=${route.routeDistance.toInt()}m rejoinDist=${route.rejoinDistance?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
+                                "grademap: routeDist=${route.distanceM.toInt()}m rejoinDist=${route.rejoinDistanceM?.toInt()} reversed=${route.reversed} elevSpan=${elev.firstOrNull()?.first?.toInt()}..${elev.lastOrNull()?.first?.toInt()} climbs=${route.climbs.size} ranges=${climbRanges.map { "${it.first.toInt()}-${it.second.toInt()}" }}"
                             )
                             // Direction diagnostic. routePolyline always arrives in saved
                             // order, so gpsFirst/gpsLast are identical forward and reversed;
                             // segStart is what moves once the reversal is applied.
-                            val gpsPts = decodeGpsPolyline(route.routePolyline)
+                            val gpsPts = decodeGpsPolyline(route.polyline)
                             val segStart =
                                 specs.polylines.firstOrNull()?.let {
                                     decodeGpsPolyline(it.encoded).firstOrNull()
@@ -556,7 +559,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 viewRadiusM = VIEW_RADIUS_PX * metresPerPixel(viewport.zoomLevel),
                                 chevronLookaheadM =
                                     CHEVRON_LOOKAHEAD_PX * metresPerPixel(viewport.zoomLevel),
-                                sdkRouteDistanceM = route.routeDistance,
+                                sdkRouteDistanceM = route.distanceM,
                                 iconRes = gradeChevronDrawable(inputs.palette),
                             )
                         drawing = current
@@ -635,11 +638,10 @@ internal data class GradeMapConfigInputs(
     // Sparkline-sync is resolved upstream, so everything downstream — the rebuild signature
     // and the specs themselves — reads one already-effective tuning.
     val tuning: EffectiveGradeMapTuning,
-    val state: OnNavigationState.NavigationState,
+    val route: FollowedRoute?,
 ) {
-    internal fun signature(): GradeMapConfigSignature {
-        val route = state as? OnNavigationState.NavigationState.NavigatingRoute
-        return GradeMapConfigSignature(
+    internal fun signature(): GradeMapConfigSignature =
+        GradeMapConfigSignature(
             enabled = enabled,
             chevronBlend = chevronBlend,
             palette = palette,
@@ -647,18 +649,20 @@ internal data class GradeMapConfigInputs(
             skipBands = tuning.skipBands,
             climbEdge = tuning.climbEdge,
             descentEdge = tuning.descentEdge,
-            routeElevationHash = route?.routeElevationPolyline?.hashCode() ?: 0,
-            routePolylineHash = route?.routePolyline?.hashCode() ?: 0,
+            routeElevationHash = route?.elevationPolyline?.hashCode() ?: 0,
+            routePolylineHash = route?.polyline?.hashCode() ?: 0,
             // Climbs stay out of the signature: buildGradeMapSpecs colours from the
             // elevation polyline and never reads them, and the upcoming-only list
             // shrinking at each climb foot would churn a full rebuild mid-climb.
             reversed = route?.reversed ?: false,
             // Bucket the rejoin offset to ~50 m so the filler tracks the rider riding the
             // rejoin path without rebuilding on every metre.
-            rejoinBucket = ((route?.rejoinDistance ?: 0.0) / 50.0).toInt(),
+            rejoinBucket = ((route?.rejoinDistanceM ?: 0.0) / 50.0).toInt(),
             rejoinHash = route?.rejoinPolyline?.hashCode() ?: 0,
+            // A loaded route and a nav-to-pin route over the same streets differ in length and
+            // rejoin handling, so switching between them must rebuild.
+            isDestination = route?.destination != null,
         )
-    }
 }
 
 internal data class GradeMapConfigSignature(
@@ -674,6 +678,7 @@ internal data class GradeMapConfigSignature(
     val reversed: Boolean,
     val rejoinBucket: Int,
     val rejoinHash: Int,
+    val isDestination: Boolean,
 )
 
 private data class ViewportInputs(
