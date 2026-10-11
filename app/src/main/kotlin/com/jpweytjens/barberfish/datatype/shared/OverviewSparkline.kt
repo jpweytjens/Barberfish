@@ -13,7 +13,6 @@ import com.jpweytjens.barberfish.extension.streamNavigationState
 import com.jpweytjens.barberfish.extension.streamRouteRemainingConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
-import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -170,8 +169,8 @@ fun overviewBitmapFlow(
         val isNight =
             (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
-        val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
-        val encoded = route?.routeElevationPolyline.orEmpty()
+        val followed = navState.state.followedRoute()
+        val encoded = followed?.elevationPolyline.orEmpty()
         if (encoded.isBlank() && !isPreview) return@combine null
 
         // Cache by route AND simplification so changing the knob re-simplifies.
@@ -184,7 +183,7 @@ fun overviewBitmapFlow(
         val points = cachedPoints
         if (points.size < 2) return@combine null
 
-        val routeLengthM = route?.routeDistance?.toFloat() ?: points.last().first
+        val routeLengthM = followed?.distanceM?.toFloat() ?: points.last().first
         val streaming = distState as? StreamState.Streaming
         val distToDest =
             streaming?.dataPoint?.values?.get(DataType.Field.DISTANCE_TO_DESTINATION)?.toFloat()
@@ -196,10 +195,15 @@ fun overviewBitmapFlow(
                 distToDest != null -> (routeLengthM - distToDest).coerceIn(0f, routeLengthM)
                 else -> 0f
             }
-        // Red only when actually off a navigated route; yellow otherwise (matches
-        // sparklineBitmapFlow).
+        // Red only when actually off a loaded route, purple on a nav-to-pin route, yellow
+        // otherwise (matches sparklineBitmapFlow).
         val dotColor =
-            if (route != null && !onRoute) KAROO_REJOIN_RED.toArgb() else BarberfishYellow.toArgb()
+            when {
+                followed != null && followed.destination == null && !onRoute ->
+                    KAROO_REJOIN_RED.toArgb()
+                followed?.destination != null -> KAROO_DESTINATION_PURPLE.toArgb()
+                else -> BarberfishYellow.toArgb()
+            }
         renderOverviewSparkline(points, positionM, widthPx, heightPx, dotColor, isNight)
     }
 }
