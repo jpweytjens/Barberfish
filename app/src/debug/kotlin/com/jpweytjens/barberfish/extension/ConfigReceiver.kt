@@ -14,7 +14,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 // Debug-only. Reads/writes a named Barberfish config from adb so capture scripts can set each
-// shot's config and snapshot/restore the user's own. Names: hud, zone (palettes), time
+// shot's config and snapshot/restore the user's own. Names: hud (the HUD the active profile
+// shows, as {slots, strip}), zone (palettes), time
 // (formatting), grade_pin (a pinned Grade reading, {"percent": -4.2}; null clears it),
 // field_sparkline (the Profile field, not the HUD strip, which rides with hud) — add a
 // config by adding one `when` branch. Never in release.
@@ -70,8 +71,7 @@ class ConfigReceiver : BroadcastReceiver() {
         when (name) {
             "hud" -> {
                 val cfg = json.decodeFromString<HUDConfig>(text)
-                app.saveHUDConfig(cfg)
-                app.saveHudSparklineConfig(cfg.sparkline)
+                app.updateActiveHUDConfig { cfg }
             }
             "zone" -> app.saveZoneConfig(json.decodeFromString<ZoneConfig>(text))
             "time" -> app.saveTimeConfig(json.decodeFromString<TimeConfig>(text))
@@ -83,12 +83,7 @@ class ConfigReceiver : BroadcastReceiver() {
 
     private suspend fun readConfig(app: Context, name: String): String? =
         when (name) {
-            "hud" ->
-                json.encodeToString(
-                    app.streamHUDConfig()
-                        .first()
-                        .copy(sparkline = app.streamHudSparklineConfig().first())
-                )
+            "hud" -> json.encodeToString(app.streamActiveHUDConfig().first())
             "zone" -> json.encodeToString(app.streamZoneConfig().first())
             "time" -> json.encodeToString(app.streamTimeConfig().first())
             "grade_pin" -> json.encodeToString(app.streamGradePin().first())

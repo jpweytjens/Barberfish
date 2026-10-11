@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import io.hammerhead.karooext.KarooSystemService
+import io.hammerhead.karooext.models.ActiveRideProfile
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.KarooEvent
 import io.hammerhead.karooext.models.OnGlobalPOIs
@@ -29,6 +30,9 @@ inline fun <reified T : KarooEvent> KarooSystemService.consumerFlow(): Flow<T> =
 }
 
 fun KarooSystemService.streamUserProfile(): Flow<UserProfile> = consumerFlow()
+
+/** The profile selected on the Karoo. Emits on connect and on every carousel swipe. */
+fun KarooSystemService.streamActiveRideProfile(): Flow<ActiveRideProfile> = consumerFlow()
 
 fun KarooSystemService.streamNavigationState(): Flow<OnNavigationState> = consumerFlow()
 
