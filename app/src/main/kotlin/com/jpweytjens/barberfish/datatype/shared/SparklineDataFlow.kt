@@ -20,7 +20,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.sample
 import timber.log.Timber
@@ -93,17 +95,22 @@ internal fun sparklineBitmapFlow(
             }
 
     return combine(
-        karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
+        // Converted before the combine, so distance ticks reuse the route instead of decoding
+        // it again.
+        karooSystem
+            .streamNavigationState()
+            .sample(HUD_UPDATE_INTERVAL_MS)
+            .map { it.state.followedRoute() }
+            .distinctUntilChanged(),
         distFlow,
         context.streamZoneConfig(),
         configFlow,
         globalPoisFlow,
-    ) { navState, distState, zoneConfig, sparkCfg, globalPois ->
+    ) { followed, distState, zoneConfig, sparkCfg, globalPois ->
         val isNightMode =
             (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
 
-        val followed = navState.state.followedRoute()
         // Climbs, POIs and the off-route freeze stay with a loaded route; nav-to-pin draws its
         // profile and position only.
         val route = followed?.takeIf { it.destination == null }

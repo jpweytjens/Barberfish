@@ -18,8 +18,10 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 
 private const val OVERVIEW_DOT_RADIUS_PX = 7f
@@ -161,15 +163,20 @@ fun overviewBitmapFlow(
         }
 
     return combine(
-        karooSystem.streamNavigationState().sample(HUD_UPDATE_INTERVAL_MS),
+        // Converted before the combine, so distance ticks reuse the route instead of decoding
+        // it again.
+        karooSystem
+            .streamNavigationState()
+            .sample(HUD_UPDATE_INTERVAL_MS)
+            .map { it.state.followedRoute() }
+            .distinctUntilChanged(),
         distFlow,
         context.streamRouteRemainingConfig(),
         sweepFlow,
-    ) { navState, distState, routeConfig, sweep ->
+    ) { followed, distState, routeConfig, sweep ->
         val isNight =
             (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
-        val followed = navState.state.followedRoute()
         val encoded = followed?.elevationPolyline.orEmpty()
         if (encoded.isBlank() && !isPreview) return@combine null
 
