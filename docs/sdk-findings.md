@@ -412,6 +412,29 @@ the end of the route.
 
 ---
 
+## Navigating to a pin replaces the route in the navigation state
+
+Dropping a pin on the map and tapping Navigate switches the navigation state to
+`NavigatingToDestination`. It carries the pin route's own `polyline`,
+`elevationPolyline` and `climbs`, plus the pin as `destination`. It has no route
+length, no `reversed` flag, no rejoin path and no route POIs, so the end of the
+elevation profile is the only length on hand. `DISTANCE_TO_DESTINATION` counts down
+to the pin on that same axis and `ON_ROUTE` reads on-route, so profile length minus
+remaining distance tracks the rider along the pin route. Measured on a 1,511 m pin
+route: progress advanced from 10 m to 150 m as the rider moved along it.
+
+A pin can be navigated on top of a loaded route. While it is active the state holds
+only the pin route: the loaded route stays on the map as a narrow native line
+without chevrons, but nothing in `OnNavigationState` describes it, and the route
+cannot be removed from the Karoo's own interface until the pin is cleared. Clearing
+the pin returns `NavigatingRoute` for the loaded route, with the same polyline as
+before.
+
+Still unverified: whether the pin route is recomputed when the rider strays from
+it. Over five minutes of standing near its start the polyline did not change.
+
+---
+
 ## One map effect is one Binder transaction, capped near 1 MB
 
 Observed on a Karoo 3 (2026-09-20) with a 295 km route at zoom 16. The chevron layer
