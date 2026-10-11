@@ -49,13 +49,11 @@ The function receives a `FieldState` and a `ViewSizeConfig` and nothing else: no
 
 Config-screen previews go through the same function. [`remoteViewsToBitmap`](../app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/RemoteViewsBitmap.kt) applies, measures, lays out and draws the `RemoteViews` into a `Bitmap`, which Compose shows with `Image(bitmap.asImageBitmap())`. A preview caller passes the exact cell width in pixels through `ViewSizeConfig.cellWidthPxOverride`, in place of the `dm.widthPixels * colSpan / 60` formula on-device rendering uses.
 
-### Decimal separator chokepoint
+### Decimal separator
 
-Fields format values with `"%.1f".format(...)`, which follows `Locale.getDefault()`. In a comma-decimal locale (es, de, fr, ...) that gives `9,2%` instead of `9.2%`. Native Karoo fields render a dot in every locale, and the comma is a descender that clips against the digit-tuned value bitmap (issue #6).
+Native Karoo fields render a dot as the decimal separator in every locale, and a comma would clip against the digit-tuned value bitmap (issue #6). So fields format their values with `Locale.ROOT`, which always gives a dot. `makeFieldRemoteViews` still replaces any comma with a dot in a local `valueText` before sizing and drawing, as a guard for a formatter that leaves out the locale.
 
-So `makeFieldRemoteViews` normalizes the value with `field.primary.replace(',', '.')` into a local `valueText`, which feeds both `fontSizeForCell` and `renderValueBitmap`. Every value passes through this one point, so standalone fields, HUD slots and previews are all covered without per-field changes.
-
-This is safe only because value strings carry no grouping separator (Karoo and Barberfish render `1234 W`, never `1,234`), so the only comma a locale can introduce is the decimal one. If a field ever adopts grouped formatting, replace the chokepoint with locale-fixed formatting at the source (`String.format(Locale.US, ...)`). A new value formatter inherits the dot; there is nothing to add.
+The guard is safe only because value strings carry no grouping separator (Karoo and Barberfish render `1234 W`, never `1,234`), so the only comma a locale can introduce is the decimal one.
 
 ---
 
@@ -74,12 +72,6 @@ barberfish_hud.xml (LinearLayout horizontal)
 ```
 
 The 4-col variant `barberfish_hud_four.xml` has the same shape plus a fourth `hud_slot_fourth` `FrameLayout`.
-
-### Per-profile settings
-
-HUD settings resolve per Karoo profile. The shared HUD keeps its keys, `three_column_config` and `sparkline_config`, and three more sit beside them: `hud_profile_overrides` (profile id to `HUDOverride(custom, config)`, where a `HUDConfig` is the HUD's `slots` plus its `strip`), `discovered_profiles` (id to name, in the order first seen) and `active_profile_id`. `BarberfishExtension` subscribes to `ActiveRideProfile` for the life of the service and records every emission. The event fires on connect and on every swipe of the home-screen profile carousel, which is how the config screen learns the profiles.
-
-One rule decides which settings apply. `hudScopeFor(id, overrides)` gives a profile its own settings only while `custom` is true, and `resolveHUDConfig` reads through it, so a profile switched back to Shared never shows its kept settings. The HUD's live and preview flows and its strip read `streamActiveHUDConfig()`. The strip tap writes through `updateActiveHUDConfig`, which targets the same scope, so a tap changes the HUD on screen. Config edits go through `applyHUDEdit`, applied to the screen state at once and again inside the DataStore edit on fresh preferences. While any of the screen's HUD writes is still pending, the screen holds back DataStore snapshots (`PendingHUDWrites`), since a snapshot from an earlier write lacks the later edits. Together these keep two quick edits from reverting each other.
 
 ---
 
@@ -101,6 +93,12 @@ barberfishFieldRemoteViews(field, alignment, colorMode, sizeConfig, preview, con
 For the HUD, `HUDDataType.startView()` computes one `ViewSizeConfig` (with `colSpanOverride=20`) and calls `barberfishFieldRemoteViews()` once per slot.
 
 `FieldState` is the runtime snapshot of one field: primary value string, header label, icon resource, zone color, and color rendering mode. `DataTypeImpl` subclasses emit `FieldState` values; views are pure functions of `FieldState` and configuration.
+
+---
+
+## Following the route
+
+A route reaches Barberfish in one of two navigation states: a loaded route, which also covers a reroute back onto it, or navigation to a dropped pin or POI. The two carry different fields, so every route-dependent surface (the HUD profile, Overview and the grade map) reads the state through one conversion, [`followedRoute()`](../app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/FollowedRoute.kt), which returns a `FollowedRoute`, or null when nothing is navigated. A pin route has no length, direction or rejoin path of its own, so `FollowedRoute` takes its length from the end of the elevation profile and marks it with a non-null `destination`. New route-dependent code reads `FollowedRoute` instead of matching navigation states itself, so a new kind of route reaches every surface at once.
 
 ---
 
