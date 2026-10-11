@@ -14,7 +14,6 @@ import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.OnGlobalPOIs
-import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -104,15 +103,17 @@ internal fun sparklineBitmapFlow(
             (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
 
-        val route = navState.state as? OnNavigationState.NavigationState.NavigatingRoute
-        val dest = navState.state as? OnNavigationState.NavigationState.NavigatingToDestination
+        val followed = navState.state.followedRoute()
+        // Climbs, POIs and the off-route freeze stay with a loaded route; nav-to-pin draws its
+        // profile and position only.
+        val route = followed?.takeIf { it.destination == null }
         // Climbs-mode preview uses a real climb (Col de Rates); other previews keep the
         // mixed RvV terrain so the On-mode preview stays realistic.
         val previewClimbs = isPreview && sparkCfg.hudMode == SparklineMode.CLIMBS
         val (elevEncoded, elevSource) =
             when {
-                route != null -> route.routeElevationPolyline.orEmpty() to 0
-                dest != null -> dest.elevationPolyline.orEmpty() to 1
+                route != null -> route.elevationPolyline.orEmpty() to 0
+                followed != null -> followed.elevationPolyline.orEmpty() to 1
                 previewClimbs -> "" to 4
                 isPreview -> "" to 2
                 else -> "" to 3
@@ -130,8 +131,7 @@ internal fun sparklineBitmapFlow(
             cachedElevKey = elevKey
         }
         val elevPoints = cachedElevPoints
-        val routeLengthM =
-            route?.routeDistance?.toFloat() ?: elevPoints.lastOrNull()?.first ?: 20_000f
+        val routeLengthM = route?.distanceM?.toFloat() ?: elevPoints.lastOrNull()?.first ?: 20_000f
         val streamingDist = distState as? StreamState.Streaming
         val distanceToDestinationM =
             streamingDist?.dataPoint?.values?.get(DataType.Field.DISTANCE_TO_DESTINATION)?.toFloat()
@@ -148,7 +148,7 @@ internal fun sparklineBitmapFlow(
             when {
                 isPreview ->
                     (System.currentTimeMillis() % 180_000L).toFloat() / 180_000f * routeLengthM
-                distanceToDestinationM != null && (route != null || dest != null) ->
+                distanceToDestinationM != null && followed != null ->
                     (routeLengthM - distanceToDestinationM).coerceIn(0f, routeLengthM)
                 else -> 0f
             }
@@ -160,7 +160,7 @@ internal fun sparklineBitmapFlow(
         val dotColor =
             when {
                 isOffRoute -> KAROO_REJOIN_RED.toArgb()
-                dest != null -> KAROO_DESTINATION_PURPLE.toArgb()
+                followed?.destination != null -> KAROO_DESTINATION_PURPLE.toArgb()
                 else -> BarberfishYellow.toArgb()
             }
         val distanceDeltaM = (positionM - lastPositionM).coerceAtLeast(0f)
@@ -176,7 +176,7 @@ internal fun sparklineBitmapFlow(
                 route != null ->
                     sharedClimbCache
                         .resolve(
-                            gradeMapRouteKey(route.routePolyline, route.reversed),
+                            gradeMapRouteKey(route.polyline, route.reversed),
                             route.climbs,
                             onRouteConfirmed,
                         )
@@ -208,10 +208,9 @@ internal fun sparklineBitmapFlow(
         // on (routePolyline, reversed, global POI ids). A global that already carries a projected
         // distance (rare) is used as-is.
         if (route != null) {
-            val globalKey =
-                Triple(route.routePolyline, route.reversed, globalPois.pois.map { it.id })
+            val globalKey = Triple(route.polyline, route.reversed, globalPois.pois.map { it.id })
             if (globalKey != cachedGlobalPoiKey) {
-                val decodedPts = decodeGpsPolyline(route.routePolyline)
+                val decodedPts = decodeGpsPolyline(route.polyline)
                 val routePts = if (route.reversed) decodedPts.asReversed() else decodedPts
                 val routeCum = cumulativeDistancesM(routePts)
                 cachedGlobalPoiDistances =
