@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.REFERENCE_ZOOM
 import com.jpweytjens.barberfish.datatype.shared.effectiveMinAreaM2
+import com.jpweytjens.barberfish.datatype.shared.followedRoute
 import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
@@ -12,6 +13,7 @@ import com.jpweytjens.barberfish.extension.GradeMapConfigInputs
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import io.hammerhead.karooext.models.OnNavigationState
+import io.hammerhead.karooext.models.Symbol
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -148,7 +150,7 @@ class GradeMapTuningTest {
                     climbEdge = climbEdge,
                     descentEdge = descentEdge,
                 ),
-            state = OnNavigationState.NavigationState.Idle,
+            route = null,
         )
 
     @Test
@@ -178,7 +180,7 @@ class GradeMapTuningTest {
                     chevronBlend = map.chevronBlend,
                     palette = palette,
                     tuning = resolveGradeMapTuning(map, sparkline, palette),
-                    state = OnNavigationState.NavigationState.Idle,
+                    route = null,
                 )
                 .signature()
 
@@ -218,11 +220,46 @@ class GradeMapTuningTest {
             )
         fun signatureFor(rejoin: String?) =
             inputsWithEdges(climbEdge = 5.0, descentEdge = null)
-                .copy(state = route(rejoin))
+                .copy(route = route(rejoin).followedRoute())
                 .signature()
         assertNotEquals(signatureFor(null), signatureFor("xyz"))
         assertNotEquals(signatureFor("xyz"), signatureFor("uvw"))
         assertEquals(signatureFor("xyz"), signatureFor("xyz"))
+    }
+
+    @Test
+    fun `map rebuild signature differs between nav-to-pin, a loaded route and no route`() {
+        val polyline = RouteFixtures.encoded(RouteFixtures.straight(1000.0, 500.0))
+        val elevation = RouteFixtures.flatElevation(1000.0)
+        val toPin =
+            OnNavigationState.NavigationState.NavigatingToDestination(
+                    destination = Symbol.POI(id = "pin", lat = 0.0, lng = 0.0),
+                    polyline = polyline,
+                    elevationPolyline = elevation,
+                    climbs = emptyList(),
+                )
+                .followedRoute()
+        val loaded =
+            OnNavigationState.NavigationState.NavigatingRoute(
+                    routePolyline = polyline,
+                    routeDistance = 1000.0,
+                    routeElevationPolyline = elevation,
+                    rejoinPolyline = null,
+                    rejoinDistance = null,
+                    name = "r",
+                    reversed = false,
+                    breadcrumb = false,
+                    pois = emptyList(),
+                    climbs = emptyList(),
+                )
+                .followedRoute()
+        val base = inputsWithEdges(climbEdge = 5.0, descentEdge = null)
+        val pinSignature = base.copy(route = toPin).signature()
+        val loadedSignature = base.copy(route = loaded).signature()
+        val noneSignature = base.copy(route = null).signature()
+        assertNotEquals(pinSignature, noneSignature)
+        assertNotEquals(pinSignature, loadedSignature)
+        assertNotEquals(loadedSignature, noneSignature)
     }
 
     @Test
