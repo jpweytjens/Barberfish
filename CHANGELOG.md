@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.0
+
+HUD:
+- Each Karoo profile can have its own HUD, so every bike shows the numbers that suit it. Thanks to Theolean for the request.
+
+Grade map and Overview:
+- Both now follow a route to a dropped pin or POI, as the HUD profile already did
+
+Settings reset:
+- If you last changed the HUD's profile strip before 3.1, it returns to its defaults after this update
+
 ## 4.0
 
 Grade map (beta, feedback welcome):
