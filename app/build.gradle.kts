@@ -124,6 +124,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
