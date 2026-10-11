@@ -16,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -59,9 +60,13 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
     }
 }
 
-/** The (state, design) pairs a view renders, one per emission of either. */
+/**
+ * The (state, design) pairs a view renders: each differs from the one before, so an update that
+ * repeats what is on screen builds no RemoteViews. A renderer that falls behind sees only the
+ * latest pair, since [combine] already keeps just the newest value of each input.
+ */
 internal fun <T, D> renderInputs(states: Flow<T>, design: Flow<D>): Flow<Pair<T, D>> =
-    combine(states, design) { state, d -> state to d }
+    combine(states, design) { state, d -> state to d }.distinctUntilChanged()
 
 abstract class BarberfishDataType(extensionId: String, typeId: String) :
     BarberfishBase<FieldState>(extensionId, typeId) {
