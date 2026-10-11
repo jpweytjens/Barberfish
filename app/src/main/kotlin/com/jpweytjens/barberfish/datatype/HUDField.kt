@@ -10,14 +10,15 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
-import com.jpweytjens.barberfish.datatype.shared.HUD_UPDATE_INTERVAL_MS
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
+import com.jpweytjens.barberfish.datatype.shared.onRenderTick
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.datatype.shared.whileOn
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
+import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRMaxPercentFieldConfig
@@ -61,11 +62,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -118,96 +119,98 @@ class HUDField(private val karooSystem: KarooSystemService) :
                             emit(null)
                         }
                 }
-            transitionFlow
-                .flatMapLatest { transitionKm ->
-                    combine(
-                        hudStateFlow.sample(HUD_UPDATE_INTERVAL_MS),
-                        sparklineFlow,
-                        context.streamDataFieldDesignConfig(),
-                    ) { hudState, frame, design ->
-                        val isNightMode =
-                            (context.resources.configuration.uiMode and
-                                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-                        val showSparklineArea =
-                            frame.hudEnabled &&
-                                (frame.bitmap != null ||
-                                    transitionKm != null ||
-                                    frame.counterText != null)
-                        val rv =
-                            buildHudRemoteViews(
-                                hudState,
-                                design,
-                                config,
-                                context,
-                                sparklineHeightPx = if (showSparklineArea) sparklineHeightPx else 0,
-                            )
-                        when {
-                            transitionKm != null && frame.hudEnabled -> {
-                                rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
-                                rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
-                                rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
-                                val displayDist =
-                                    ConvertType.DISTANCE.toDisplay(
-                                            transitionKm.toDouble(),
-                                            hudState.profile,
-                                        )
-                                        .toInt()
-                                val distUnit = ConvertType.DISTANCE.unit(hudState.profile)
-                                rv.setTextViewText(
-                                    R.id.hud_transition_text,
-                                    "$displayDist$distUnit",
-                                )
-                                val transitionColor = if (isNightMode) Color.WHITE else Color.BLACK
-                                rv.setTextColor(R.id.hud_transition_text, transitionColor)
-                                rv.setInt(
-                                    R.id.hud_transition_icon,
-                                    "setColorFilter",
-                                    transitionColor,
-                                )
-                            }
-                            frame.counterText != null -> {
-                                rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
-                                rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
-                                rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
-                                rv.setViewVisibility(R.id.hud_transition_icon, View.GONE)
-                                rv.setTextViewText(R.id.hud_transition_text, frame.counterText)
-                                rv.setTextColor(
-                                    R.id.hud_transition_text,
-                                    if (isNightMode) Color.WHITE else Color.BLACK,
-                                )
-                            }
-                            frame.bitmap != null -> {
-                                rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
-                                rv.setImageViewBitmap(R.id.hud_elevation_sparkline, frame.bitmap)
-                                rv.setViewVisibility(R.id.hud_elevation_sparkline, View.VISIBLE)
-                                rv.setViewVisibility(R.id.hud_sparkline_transition, View.GONE)
-                            }
-                            else -> rv.setViewVisibility(R.id.hud_sparkline_container, View.GONE)
-                        }
-                        if (!config.preview && frame.hudEnabled) {
-                            val layoutRes =
-                                if (hudState.columns == 4) R.layout.barberfish_hud_four
-                                else R.layout.barberfish_hud
-                            val intent =
-                                Intent(context, SparklineTapReceiver::class.java).apply {
-                                    action = SparklineTapReceiver.ACTION
-                                    putExtra(
-                                        SparklineTapReceiver.EXTRA_SURFACE,
-                                        SparklineTapReceiver.SURFACE_HUD,
+            hudRenderInputs(
+                    hudStateFlow,
+                    sparklineFlow,
+                    context.streamDataFieldDesignConfig(),
+                    transitionFlow,
+                )
+                .map { inputs ->
+                    val hudState = inputs.hudState
+                    val frame = inputs.frame
+                    val design = inputs.design
+                    val transitionKm = inputs.transitionKm
+                    val isNightMode =
+                        (context.resources.configuration.uiMode and
+                            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                    val showSparklineArea =
+                        frame.hudEnabled &&
+                            (frame.bitmap != null ||
+                                transitionKm != null ||
+                                frame.counterText != null)
+                    val rv =
+                        buildHudRemoteViews(
+                            hudState,
+                            design,
+                            config,
+                            context,
+                            sparklineHeightPx = if (showSparklineArea) sparklineHeightPx else 0,
+                        )
+                    when {
+                        transitionKm != null && frame.hudEnabled -> {
+                            rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
+                            rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
+                            val displayDist =
+                                ConvertType.DISTANCE.toDisplay(
+                                        transitionKm.toDouble(),
+                                        hudState.profile,
                                     )
-                                }
-                            val pi =
-                                PendingIntent.getBroadcast(
-                                    context,
-                                    layoutRes,
-                                    intent,
-                                    PendingIntent.FLAG_UPDATE_CURRENT or
-                                        PendingIntent.FLAG_IMMUTABLE,
-                                )
-                            rv.setOnClickPendingIntent(R.id.hud_sparkline_container, pi)
+                                    .toInt()
+                            val distUnit = ConvertType.DISTANCE.unit(hudState.profile)
+                            rv.setTextViewText(
+                                R.id.hud_transition_text,
+                                "$displayDist$distUnit",
+                            )
+                            val transitionColor = if (isNightMode) Color.WHITE else Color.BLACK
+                            rv.setTextColor(R.id.hud_transition_text, transitionColor)
+                            rv.setInt(
+                                R.id.hud_transition_icon,
+                                "setColorFilter",
+                                transitionColor,
+                            )
                         }
-                        rv
+                        frame.counterText != null -> {
+                            rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_elevation_sparkline, View.GONE)
+                            rv.setViewVisibility(R.id.hud_sparkline_transition, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_transition_icon, View.GONE)
+                            rv.setTextViewText(R.id.hud_transition_text, frame.counterText)
+                            rv.setTextColor(
+                                R.id.hud_transition_text,
+                                if (isNightMode) Color.WHITE else Color.BLACK,
+                            )
+                        }
+                        frame.bitmap != null -> {
+                            rv.setViewVisibility(R.id.hud_sparkline_container, View.VISIBLE)
+                            rv.setImageViewBitmap(R.id.hud_elevation_sparkline, frame.bitmap)
+                            rv.setViewVisibility(R.id.hud_elevation_sparkline, View.VISIBLE)
+                            rv.setViewVisibility(R.id.hud_sparkline_transition, View.GONE)
+                        }
+                        else -> rv.setViewVisibility(R.id.hud_sparkline_container, View.GONE)
                     }
+                    if (!config.preview && frame.hudEnabled) {
+                        val layoutRes =
+                            if (hudState.columns == 4) R.layout.barberfish_hud_four
+                            else R.layout.barberfish_hud
+                        val intent =
+                            Intent(context, SparklineTapReceiver::class.java).apply {
+                                action = SparklineTapReceiver.ACTION
+                                putExtra(
+                                    SparklineTapReceiver.EXTRA_SURFACE,
+                                    SparklineTapReceiver.SURFACE_HUD,
+                                )
+                            }
+                        val pi =
+                            PendingIntent.getBroadcast(
+                                context,
+                                layoutRes,
+                                intent,
+                                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                            )
+                        rv.setOnClickPendingIntent(R.id.hud_sparkline_container, pi)
+                    }
+                    rv
                 }
                 .collect { rv -> emitter.updateView(rv) }
         }
@@ -608,4 +611,31 @@ internal fun hudStates(
             fourth = SlotState(fourth, cfg.fourthSlot.colorMode),
             profile = profile,
         )
+    }
+
+internal data class HUDRenderInputs(
+    val hudState: HUDState,
+    val frame: SparklineFrame,
+    val design: DataFieldDesignConfig,
+    val transitionKm: Int?,
+)
+
+/**
+ * What the HUD renders, and when: slots, strip and design sampled together on the render tick and
+ * dropped when nothing changed, with a tap's [transitions] merged in after the clock so it shows at
+ * once. A strip with no route has no bitmap, so a steady HUD off route renders nothing new.
+ */
+internal fun hudRenderInputs(
+    hudStates: Flow<HUDState>,
+    frames: Flow<SparklineFrame>,
+    design: Flow<DataFieldDesignConfig>,
+    transitions: Flow<Int?>,
+): Flow<HUDRenderInputs> =
+    combine(
+        combine(hudStates, frames, design) { hudState, frame, d -> Triple(hudState, frame, d) }
+            .onRenderTick()
+            .distinctUntilChanged(),
+        transitions,
+    ) { (hudState, frame, d), transitionKm ->
+        HUDRenderInputs(hudState, frame, d, transitionKm)
     }
