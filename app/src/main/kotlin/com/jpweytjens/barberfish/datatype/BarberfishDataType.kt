@@ -52,15 +52,16 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
         scope.launch {
             val flow =
                 if (config.preview) previewFlow(context, config) else liveFlow(context, config)
-            combine(flow, context.streamDataFieldDesignConfig()) { state, design ->
-                    state to design
-                }
-                .collect { (state, design) ->
-                    emitter.updateView(renderState(state, design, config, context))
-                }
+            renderInputs(flow, context.streamDataFieldDesignConfig()).collect { (state, design) ->
+                emitter.updateView(renderState(state, design, config, context))
+            }
         }
     }
 }
+
+/** The (state, design) pairs a view renders, one per emission of either. */
+internal fun <T, D> renderInputs(states: Flow<T>, design: Flow<D>): Flow<Pair<T, D>> =
+    combine(states, design) { state, d -> state to d }
 
 abstract class BarberfishDataType(extensionId: String, typeId: String) :
     BarberfishBase<FieldState>(extensionId, typeId) {
