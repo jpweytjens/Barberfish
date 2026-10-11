@@ -16,10 +16,11 @@ import com.jpweytjens.barberfish.datatype.shared.ASCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.HeaderSpec
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
+import com.jpweytjens.barberfish.datatype.shared.headerBitmap
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
-import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
@@ -369,15 +370,17 @@ private fun applyHeaderChrome(
         labelLines = sizeConfig.labelMaxLines
     }
     val headerBitmap =
-        renderHeaderBitmap(
-            text = displayLabel,
-            fontSizePx = labelFontSp * density,
-            maxLines = labelLines,
-            availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
-            color = labelArgb,
-            alignment = alignment,
-            lineSpacingMult = sizeConfig.headerLineSpacingMult,
-            translationYPx = sizeConfig.headerTranslationPx,
+        headerBitmap(
+            HeaderSpec(
+                text = displayLabel,
+                fontSizePx = labelFontSp * density,
+                maxLines = labelLines,
+                availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
+                color = labelArgb,
+                alignment = alignment,
+                lineSpacingMult = sizeConfig.headerLineSpacingMult,
+                translationYPx = sizeConfig.headerTranslationPx,
+            )
         )
     rv.setImageViewBitmap(R.id.field_label, headerBitmap)
     // Native header band = max(22dp, text block); centering field_label inside it

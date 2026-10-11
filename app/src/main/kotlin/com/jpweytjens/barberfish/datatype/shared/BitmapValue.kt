@@ -10,6 +10,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
+import androidx.collection.LruCache
 import io.hammerhead.karooext.models.ViewConfig
 import kotlin.math.roundToInt
 
@@ -201,6 +202,31 @@ fun renderValueBitmap(
 }
 
 /**
+ * Everything a header bitmap is drawn from. [renderHeaderBitmap] reads nothing else, so the spec is
+ * also a complete cache key for [headerBitmap].
+ */
+data class HeaderSpec(
+    val text: String,
+    val fontSizePx: Float,
+    val maxLines: Int,
+    val availableWidthPx: Int,
+    val color: Int,
+    val alignment: ViewConfig.Alignment,
+    val lineSpacingMult: Float,
+    val translationYPx: Int = 0,
+)
+
+// A header is the same on every update of a field, so it is drawn once per spec. Sized for every
+// header on screen at once (fields, HUD slots, config previews); an entry is one cell-wide bitmap,
+// about 20-40 KB. Cached bitmaps are shared: never draw into or recycle one.
+private const val HEADER_CACHE_ENTRIES = 48
+private val headerBitmaps = LruCache<HeaderSpec, Bitmap>(HEADER_CACHE_ENTRIES)
+
+/** The header bitmap for [spec], drawn on first use and shared after. */
+fun headerBitmap(spec: HeaderSpec): Bitmap =
+    headerBitmaps[spec] ?: renderHeaderBitmap(spec).also { headerBitmaps.put(spec, it) }
+
+/**
  * Render an all-caps header [text] into an `ARGB_8888` bitmap that reproduces the native header
  * TextView: `lines=[maxLines]`, font padding off, per-layout [lineSpacingMult] (0.6 in 2-col 5-row
  * cells, 0.7 elsewhere). The reservation is the TextView height `lineH + (maxLines − 1) ×
@@ -209,16 +235,15 @@ fun renderValueBitmap(
  * docs/sdk-findings.md § "Native header and value sizing". `density = DENSITY_NONE` so RemoteViews
  * renders 1:1.
  */
-fun renderHeaderBitmap(
-    text: String,
-    fontSizePx: Float,
-    maxLines: Int,
-    availableWidthPx: Int,
-    color: Int,
-    alignment: ViewConfig.Alignment,
-    lineSpacingMult: Float,
-    translationYPx: Int = 0,
-): Bitmap {
+private fun renderHeaderBitmap(spec: HeaderSpec): Bitmap {
+    val text = spec.text
+    val fontSizePx = spec.fontSizePx
+    val maxLines = spec.maxLines
+    val availableWidthPx = spec.availableWidthPx
+    val color = spec.color
+    val alignment = spec.alignment
+    val lineSpacingMult = spec.lineSpacingMult
+    val translationYPx = spec.translationYPx
     val paint =
         TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
