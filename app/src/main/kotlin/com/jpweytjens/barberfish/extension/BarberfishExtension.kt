@@ -383,11 +383,6 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             persistDrawnIdSpans(GradeMapDrawnIdSpans())
                             return@collect
                         }
-                        Timber.d(
-                            "grademap: followed route destination=${route.destination != null} " +
-                                "polylineHash=${route.polyline.hashCode()} " +
-                                "distanceM=${route.distanceM.toInt()}"
-                        )
                         // Reset the latch when the route identity changes.
                         val routeKey = gradeMapRouteKey(route.polyline, route.reversed)
                         if (progressLatch.trackRoute(routeKey)) {
