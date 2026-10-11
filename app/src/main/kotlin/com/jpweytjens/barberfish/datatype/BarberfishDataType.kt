@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype
 
 import android.content.Context
+import android.content.res.Configuration
 import android.widget.RemoteViews
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
@@ -17,6 +18,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -53,20 +55,32 @@ abstract class BarberfishBase<T>(extensionId: String, typeId: String) :
         scope.launch {
             val flow =
                 if (config.preview) previewFlow(context, config) else liveFlow(context, config)
-            renderInputs(flow, context.streamDataFieldDesignConfig()).collect { (state, design) ->
-                emitter.updateView(renderState(state, design, config, context))
-            }
+            renderInputs(flow, context.streamDataFieldDesignConfig()) {
+                    (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                        Configuration.UI_MODE_NIGHT_YES
+                }
+                .collect { (state, design) ->
+                    emitter.updateView(renderState(state, design, config, context))
+                }
         }
     }
 }
 
 /**
  * The (state, design) pairs a view renders: each differs from the one before, so an update that
- * repeats what is on screen builds no RemoteViews. A renderer that falls behind sees only the
- * latest pair, since [combine] already keeps just the newest value of each input.
+ * repeats what is on screen builds no RemoteViews. Night mode is read per update and counts as a
+ * change, since the render reads it too: a steady value still repaints when the theme flips. A
+ * renderer that falls behind sees only the latest pair, since [combine] already keeps just the
+ * newest value of each input.
  */
-internal fun <T, D> renderInputs(states: Flow<T>, design: Flow<D>): Flow<Pair<T, D>> =
-    combine(states, design) { state, d -> state to d }.distinctUntilChanged()
+internal fun <T, D> renderInputs(
+    states: Flow<T>,
+    design: Flow<D>,
+    isNightMode: () -> Boolean,
+): Flow<Pair<T, D>> =
+    combine(states, design) { state, d -> Triple(state, d, isNightMode()) }
+        .distinctUntilChanged()
+        .map { (state, d, _) -> state to d }
 
 abstract class BarberfishDataType(extensionId: String, typeId: String) :
     BarberfishBase<FieldState>(extensionId, typeId) {

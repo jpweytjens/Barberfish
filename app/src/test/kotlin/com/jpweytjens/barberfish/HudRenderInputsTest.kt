@@ -62,7 +62,9 @@ class HudRenderInputsTest {
                     flowOf(SparklineFrame.OFF),
                     flowOf(DataFieldDesignConfig()),
                     flowOf(null),
-                )
+                ) {
+                    false
+                }
                 .toList()
 
         assertEquals(10, renders.size)
@@ -76,7 +78,9 @@ class HudRenderInputsTest {
                     flowOf(SparklineFrame.OFF),
                     flowOf(DataFieldDesignConfig()),
                     flowOf(null),
-                )
+                ) {
+                    false
+                }
                 .toList()
 
         assertEquals(1, renders.size)
@@ -97,10 +101,36 @@ class HudRenderInputsTest {
                     flowOf(SparklineFrame.OFF),
                     flowOf(DataFieldDesignConfig()),
                     taps,
-                )
+                ) {
+                    false
+                }
                 .map { testScheduler.currentTime to it.transitionKm }
                 .toList()
 
         assertEquals(listOf(1000L to null, 2500L to 7, 4500L to null), renders)
+    }
+
+    @Test
+    fun aThemeFlipRepaintsASteadyHud() = runTest {
+        var night = false
+        val states = flow {
+            repeat(40) {
+                if (it == 20) night = true
+                emit(hud(25))
+                delay(250)
+            }
+        }
+        val renders =
+            hudRenderInputs(
+                    states,
+                    flowOf(SparklineFrame.OFF),
+                    flowOf(DataFieldDesignConfig()),
+                    flowOf(null),
+                ) {
+                    night
+                }
+                .toList()
+
+        assertEquals(listOf(false, true), renders.map { it.isNightMode })
     }
 }

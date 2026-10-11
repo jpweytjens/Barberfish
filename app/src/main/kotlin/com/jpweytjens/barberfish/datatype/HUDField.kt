@@ -124,15 +124,16 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     sparklineFlow,
                     context.streamDataFieldDesignConfig(),
                     transitionFlow,
-                )
+                ) {
+                    (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                        Configuration.UI_MODE_NIGHT_YES
+                }
                 .map { inputs ->
                     val hudState = inputs.hudState
                     val frame = inputs.frame
                     val design = inputs.design
                     val transitionKm = inputs.transitionKm
-                    val isNightMode =
-                        (context.resources.configuration.uiMode and
-                            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                    val isNightMode = inputs.isNightMode
                     val showSparklineArea =
                         frame.hudEnabled &&
                             (frame.bitmap != null ||
@@ -617,25 +618,30 @@ internal data class HUDRenderInputs(
     val hudState: HUDState,
     val frame: SparklineFrame,
     val design: DataFieldDesignConfig,
-    val transitionKm: Int?,
+    val isNightMode: Boolean,
+    val transitionKm: Int? = null,
 )
 
 /**
  * What the HUD renders, and when: slots, strip and design sampled together on the render tick and
  * dropped when nothing changed, with a tap's [transitions] merged in after the clock so it shows at
- * once. A strip with no route has no bitmap, so a steady HUD off route renders nothing new.
+ * once. Night mode is read per tick and counts as a change, since the render reads it too. A strip
+ * with no route has no bitmap, so a steady HUD off route renders nothing new.
  */
 internal fun hudRenderInputs(
     hudStates: Flow<HUDState>,
     frames: Flow<SparklineFrame>,
     design: Flow<DataFieldDesignConfig>,
     transitions: Flow<Int?>,
+    isNightMode: () -> Boolean,
 ): Flow<HUDRenderInputs> =
     combine(
-        combine(hudStates, frames, design) { hudState, frame, d -> Triple(hudState, frame, d) }
+        combine(hudStates, frames, design) { hudState, frame, d ->
+                HUDRenderInputs(hudState, frame, d, isNightMode())
+            }
             .onRenderTick()
             .distinctUntilChanged(),
         transitions,
-    ) { (hudState, frame, d), transitionKm ->
-        HUDRenderInputs(hudState, frame, d, transitionKm)
+    ) { inputs, transitionKm ->
+        inputs.copy(transitionKm = transitionKm)
     }

@@ -21,7 +21,7 @@ class RenderInputsTest {
 
     private fun renders(states: Flow<FieldState>, design: Flow<String> = flowOf("design")) =
         runBlocking {
-            renderInputs(states, design).toList()
+            renderInputs(states, design) { false }.toList()
         }
 
     /** A minute of Avg HR at 1 Hz: 60 updates, but the average moves only 5 times. */
@@ -62,7 +62,7 @@ class RenderInputsTest {
     fun aSlowRendererSkipsToTheLatestState() {
         val burst = (0 until 60).map { avgHr(100 + it) }
         val drawn = runBlocking {
-            renderInputs(burst.asFlow(), flowOf("design"))
+            renderInputs(burst.asFlow(), flowOf("design")) { false }
                 .onEach { delay(5) }
                 .toList()
                 .map { it.first }
@@ -70,5 +70,22 @@ class RenderInputsTest {
 
         assertEquals(burst.last(), drawn.last())
         assertTrue("drew ${drawn.size} of 60", drawn.size < burst.size)
+    }
+
+    /** A steady value still repaints when the theme flips, since the render reads night mode. */
+    @Test
+    fun aThemeFlipRendersTheSameStateAgain() {
+        var night = false
+        val states = flow {
+            emit(avgHr(140))
+            night = true
+            emit(avgHr(140))
+            emit(avgHr(140))
+        }
+
+        assertEquals(
+            2,
+            runBlocking { renderInputs(states, flowOf("design")) { night }.toList() }.size,
+        )
     }
 }
