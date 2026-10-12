@@ -71,7 +71,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
             paddingHPx,
             paddingPx,
             paddingHPx,
-            if (sparklineHeightPx > 0) sparklineHeightPx else paddingPx,
+            if (sparklineHeightPx > 0) sparklineHeightPx + paddingPx else paddingPx,
         )
         // Preview corner radius
         if (config.preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
