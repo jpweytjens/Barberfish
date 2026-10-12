@@ -53,7 +53,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         // the survivors, and sizing follows the visible count rather than the configured one.
         val visible = state.visibleColumns()
         val paddingHPx = (4f * density).toInt()
-        // hud_root insets the slot row by paddingHPx per side and the HUD cell is narrower
+        // hud_slot_row is inset by paddingHPx per side and the HUD cell is narrower
         // than the screen, so the colSpan-based fallback width overshoots and the label
         // bitmap gets cropped (scaleType=center). Pass the real slot width instead.
         val slotWidthPx = (config.viewSize.first - 2f * paddingHPx) / visible.size
@@ -64,9 +64,15 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         val layoutRes =
             if (state.columns == 4) R.layout.barberfish_hud_four else R.layout.barberfish_hud
         val rv = RemoteViews(context.packageName, layoutRes)
-        rv.setViewPadding(R.id.hud_root, paddingHPx, paddingPx, paddingHPx, paddingPx)
+        // Padding insets the slot row only, so the sparkline reaches the cell edge.
         // Clip slot row above the sparkline so colored backgrounds don't bleed through
-        rv.setViewPadding(R.id.hud_slot_row, 0, 0, 0, sparklineHeightPx)
+        rv.setViewPadding(
+            R.id.hud_slot_row,
+            paddingHPx,
+            paddingPx,
+            paddingHPx,
+            if (sparklineHeightPx > 0) sparklineHeightPx else paddingPx,
+        )
         // Preview corner radius
         if (config.preview && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             rv.setViewOutlinePreferredRadius(R.id.hud_root, 12f, TypedValue.COMPLEX_UNIT_DIP)
