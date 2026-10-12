@@ -436,12 +436,16 @@ internal fun buildGradeMapSpecs(
         } else {
             emptyList()
         }
+    // Placements and runs both come in route order, so one cursor walks the runs once instead
+    // of a search from the first run per chevron.
+    var runCursor = 0
     val chevrons = chevronPlacements.mapIndexedNotNull { idx, placement ->
+        while (runCursor < runs.size && placement.distanceM >= runs[runCursor].endM * elevToGps) {
+            runCursor++
+        }
         val run =
-            runs.firstOrNull {
-                placement.distanceM >= it.startM * elevToGps &&
-                    placement.distanceM < it.endM * elevToGps
-            } ?: return@mapIndexedNotNull null
+            runs.getOrNull(runCursor)?.takeIf { placement.distanceM >= it.startM * elevToGps }
+                ?: return@mapIndexedNotNull null
         ClimbChevronSpec(
             // Indexed over every placement on the route, so an id stays put when a
             // neighbouring run changes colour or the run list is re-cut.
