@@ -69,7 +69,7 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
         rv.setViewPadding(
             R.id.hud_slot_row,
             paddingHPx,
-            paddingPx,
+            0,
             paddingHPx,
             if (sparklineHeightPx > 0) sparklineHeightPx + paddingPx else paddingPx,
         )
