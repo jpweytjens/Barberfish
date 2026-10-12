@@ -104,12 +104,6 @@ private sealed interface HudSelection {
     data object Strip : HudSelection
 }
 
-// Vertical space reserved inside each HUD preview cell for the sparkline strip below.
-// Matches HUD_SPARKLINE_HEIGHT_DP in HUDField (the live overlay strip). The strip itself
-// here is rendered at 30.dp — the 4dp difference is an unresolved cosmetic mismatch
-// (see audit #24); the reservation matches the live experience so cells size correctly.
-private const val HUD_SPARKLINE_CELL_RESERVATION_DP = 34f
-
 // Total height of the HUD preview container (3 or 4 cells side-by-side + sparkline strip).
 private val HUD_PREVIEW_HEIGHT = 90.dp
 private const val DISABLED_ALPHA = 0.38f
@@ -658,8 +652,13 @@ private fun HUDPreviewCell(
         val density = LocalDensity.current.density
         val widthPx = (maxWidth.value * density).toInt()
         val heightPx = (maxHeight.value * density).toInt()
-        val sparklineMarginPx =
-            if (reserveSparklineSpace) HUD_SPARKLINE_CELL_RESERVATION_DP * density else 0f
+        // Vertical space reserved inside each HUD preview cell for the sparkline strip below,
+        // read from the dimen the live overlay strip is sized with. The strip itself here is
+        // rendered at 30.dp — the 4dp difference is an unresolved cosmetic mismatch
+        // (see audit #24); the reservation matches the live experience so cells size correctly.
+        val sparklineReservationPx =
+            LocalContext.current.resources.getDimensionPixelSize(R.dimen.hud_sparkline_height)
+        val sparklineMarginPx = if (reserveSparklineSpace) sparklineReservationPx.toFloat() else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val design = LocalDataFieldDesign.current
         val sizeConfig =

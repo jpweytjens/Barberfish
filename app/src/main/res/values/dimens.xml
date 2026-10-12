@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Height of the HUD sparkline strip. The layouts size the strip from it and the code
+         reserves the same height below the slots, so both must read it from here. -->
+    <dimen name="hud_sparkline_height">34dp</dimen>
+</resources>
