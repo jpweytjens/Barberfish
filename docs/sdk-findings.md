@@ -159,6 +159,12 @@ match to the pixel.
 So there is no offset to compensate for. Padding or translation added for one only
 moves the field off the cell.
 
+On the map page, a 2 px black band separates the bottom of the data cells from the
+first map row (K3, measured under a 216 px HUD cell). The band lies outside the
+container, and the container clips its contents: a strip translated 2 px down kept
+its bottom edge on the cell's last row, and the band stayed black. A view drawn to
+the cell edge reaches the band but cannot cover it.
+
 The SDK's separate path for non-`RemoteViews` views, `sdkView.createView()`, does not
 apply to extension data fields rendered through `emitter.updateView(rv)`.
 
