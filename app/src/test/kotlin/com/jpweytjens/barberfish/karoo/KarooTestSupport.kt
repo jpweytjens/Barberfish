@@ -1,12 +1,20 @@
 package com.jpweytjens.barberfish.karoo
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
+import android.view.View
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.datastore.preferences.core.edit
+import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.RouteFixtures
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.extension.dataStore
+import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.MapRecorder
 import fi.nikosavola.karooext.testing.decodePolyline
+import fi.nikosavola.karooext.testing.inflate
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.HideSymbols
@@ -14,9 +22,42 @@ import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.ShowPolyline
 import io.hammerhead.karooext.models.ShowSymbols
 import io.hammerhead.karooext.models.Symbol
+import io.hammerhead.karooext.models.ViewConfig
 import kotlinx.coroutines.runBlocking
 
 private const val CASING_SUFFIX = "-casing"
+
+/**
+ * A cell wide enough for a numeric field, matching the one the existing field tests render into.
+ */
+internal val FIELD_CONFIG = ViewConfig(gridSize = 60 to 15, viewSize = 480 to 200, textSize = 30)
+
+/** The stream-state text a field shows when it has no value, or null once it has one. */
+internal fun View.fieldStateText(): String? =
+    findViewById<TextView>(R.id.stream_state_tv)
+        ?.takeIf { it.visibility == View.VISIBLE }
+        ?.text
+        ?.toString()
+
+/** The value bitmap a field has drawn, for pixel comparison between readings. */
+internal fun View.fieldValue(): Bitmap =
+    (findViewById<ImageView>(R.id.field_value).drawable as BitmapDrawable).bitmap
+
+internal fun View.fieldValueVisible(): Boolean =
+    findViewById<ImageView>(R.id.field_value).visibility == View.VISIBLE
+
+internal fun View.sparklineValue(): Bitmap =
+    (findViewById<ImageView>(R.id.sparkline_image).drawable as BitmapDrawable).bitmap
+
+internal fun View.headerVisible(): Boolean =
+    findViewById<View>(R.id.field_header).visibility == View.VISIBLE
+
+/** Starts a view and inflates its first frame, the way the ride app draws one placed field. */
+internal fun FakeKarooHost.renderField(
+    context: Context,
+    typeId: String,
+    config: ViewConfig = FIELD_CONFIG,
+): View = startView(typeId, config).awaitFrame(15_000).inflate(context, config)
 
 /** The extension keeps one process-wide DataStore, which Robolectric reuses across tests. */
 internal fun clearBarberfishSettings(context: Context) {
