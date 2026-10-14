@@ -41,7 +41,7 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
                         heightPx = heightPx,
                         isPreview = isPreview,
                     )
-                    .map { SparklineRender(it.bitmap, showHeader) }
+                    .map { SparklineRender(it.bitmap, showHeader, it.noRoute) }
             }
     }
 
@@ -71,6 +71,7 @@ class ElevationSparklineField(private val karooSystem: KarooSystemService) :
             rv.setViewVisibility(R.id.field_header, View.GONE)
         }
         state.bitmap?.let { rv.setImageViewBitmap(R.id.sparkline_image, it) }
+        applySparklineNoRoute(rv, state.noRoute, config, context)
         if (!config.preview) {
             val intent =
                 Intent(context, SparklineTapReceiver::class.java).apply {
