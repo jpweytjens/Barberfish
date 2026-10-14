@@ -61,6 +61,8 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+        // The fake-Karoo suite waits out real-time settle periods; four JVMs halve its wall time.
+        unitTests.all { it.maxParallelForks = 4 }
     }
 
     lint {
