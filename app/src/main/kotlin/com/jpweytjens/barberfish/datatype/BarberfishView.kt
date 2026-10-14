@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.Build
 import android.util.TypedValue
@@ -274,16 +275,22 @@ private fun makeFieldRemoteViews(
         }
     rv.setImageViewBitmap(R.id.field_value, valueBitmap)
 
-    // Stream state overlay (Searching / NotAvailable / Idle) replaces
-    // field_value. Sized from "Searching…" — widest single-line state.
+    // Stream state overlay (Searching / NotAvailable / Idle) replaces field_value. Every state
+    // shares one size: the largest at which "No GPS signal", the widest state kept on one line,
+    // fits on one line in the overlay's font (fontFamily in the field layouts). A wider state
+    // wraps to the layout's second line.
     if (field.color is FieldColor.StreamState) {
-        val (stateFont, stateMaxLines) =
+        val (stateFont, _) =
             fontSizeForCell(
-                "Searching…",
+                FieldState.noGps().primary,
                 sizeConfig.valueFontSizeBase,
                 cellWidthPx,
                 density,
-                wrapThresholdSp = sizeConfig.wrapThresholdSp,
+                wrapThresholdSp = 0,
+                paint =
+                    Paint().apply {
+                        typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+                    },
             )
         rv.setViewVisibility(R.id.field_value, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
@@ -300,9 +307,6 @@ private fun makeFieldRemoteViews(
         // (6dp), which nudges the centered placeholder up by half that.
         val actualHeaderPx = headerHeightPx(sizeConfig.headerFontSize.value, labelLines, density)
         rv.setViewPadding(R.id.stream_state_tv, 0, actualHeaderPx, 0, (6 * density).toInt())
-        if (stateMaxLines == 2) {
-            rv.setInt(R.id.stream_state_tv, "setMaxLines", 2)
-        }
     } else {
         rv.setViewVisibility(R.id.field_value, View.VISIBLE)
         rv.setViewVisibility(R.id.stream_state_tv, View.GONE)
@@ -360,7 +364,7 @@ private fun applyHeaderChrome(
                 labelAvailableWidthPx,
                 density,
                 wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                typeface = Typeface.DEFAULT,
+                paint = Paint().apply { typeface = Typeface.DEFAULT },
             )
         labelFontSp = sp.toFloat()
         labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
