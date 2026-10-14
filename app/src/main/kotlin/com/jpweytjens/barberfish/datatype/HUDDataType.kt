@@ -109,8 +109,11 @@ abstract class HUDDataType(extensionId: String, typeId: String) :
     }
 }
 
-/** The HUD strip's horizontal inset on each side of the slot row. */
-internal fun hudPaddingHPx(density: Float): Int = (4f * density).toInt()
+/**
+ * The HUD strip's horizontal inset on each side of the slot row. It equals the slot presets'
+ * paddingH, so the outer values sit as far from the screen edge as neighbouring values sit apart.
+ */
+internal fun hudPaddingHPx(density: Float): Int = (2f * density).toInt()
 
 /**
  * Width of one HUD slot in a strip [stripWidthPx] wide holding [slots] slots. The config preview
