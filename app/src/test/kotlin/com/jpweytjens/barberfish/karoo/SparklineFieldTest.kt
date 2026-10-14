@@ -99,12 +99,16 @@ class SparklineFieldTest {
         val view = host.startView("elevation-sparkline", config)
         val climb = view.awaitFrame(20_000).inflate(karoo.app, config).sparklineValue()
 
-        val seen = view.items.size
         RobolectricPump.advanceBy(3.seconds)
         karoo.system.setNavigation(flatRoute().navigating())
         distanceRemaining(4_000.0)
-        val flat = view.awaitFrame(20_000, after = seen).inflate(karoo.app, config).sparklineValue()
 
-        assertFalse("a climb and a flat route must not render the same strip", climb.sameAs(flat))
+        // A redraw of the climb can land before the flat route's frame, so the first new frame
+        // proves nothing; wait for a strip that differs from the climb's.
+        karoo.awaitValue {
+            view.frames.last().inflate(karoo.app, config).sparklineValue().takeUnless {
+                it.sameAs(climb)
+            }
+        }
     }
 }
