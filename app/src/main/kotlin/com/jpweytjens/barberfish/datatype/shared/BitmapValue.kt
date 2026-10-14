@@ -24,6 +24,13 @@ internal fun valuePaint(fontSizePx: Float): Paint =
         letterSpacing = LETTER_SPACING
     }
 
+/** The paint header labels are drawn with, so a width measured with it is the width drawn. */
+internal fun headerPaint(fontSizePx: Float): TextPaint =
+    TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+        textSize = fontSizePx
+    }
+
 /**
  * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow
  * icon (see [renderTwoRowValueBitmap]).
@@ -235,12 +242,7 @@ fun renderHeaderBitmap(
     lineSpacingMult: Float,
     translationYPx: Int = 0,
 ): Bitmap {
-    val paint =
-        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
-            textSize = fontSizePx
-            this.color = color
-        }
+    val paint = headerPaint(fontSizePx).apply { this.color = color }
     val width = availableWidthPx.coerceAtLeast(1)
     val upper = text.uppercase()
     val align =
