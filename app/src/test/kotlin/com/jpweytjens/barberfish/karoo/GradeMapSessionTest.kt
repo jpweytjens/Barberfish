@@ -2,7 +2,6 @@ package com.jpweytjens.barberfish.karoo
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import com.jpweytjens.barberfish.extension.BarberfishExtension
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import io.hammerhead.karooext.models.ShowPolyline
@@ -26,7 +25,7 @@ class GradeMapSessionTest {
     @Before
     fun clean() {
         clearBarberfishSettings(ApplicationProvider.getApplicationContext<Application>())
-        host = karoo.host<BarberfishExtension>()
+        host = karoo.startBarberfish()
     }
 
     @Test

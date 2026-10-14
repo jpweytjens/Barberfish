@@ -10,12 +10,14 @@ import androidx.datastore.preferences.core.edit
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.RouteFixtures
 import com.jpweytjens.barberfish.datatype.shared.LatLng
+import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.dataStore
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.MapRecorder
 import fi.nikosavola.karooext.testing.decodePolyline
 import fi.nikosavola.karooext.testing.inflate
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
+import io.hammerhead.karooext.models.ActiveRideProfile
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.HideSymbols
 import io.hammerhead.karooext.models.OnNavigationState
@@ -58,6 +60,17 @@ internal fun FakeKarooHost.renderField(
     typeId: String,
     config: ViewConfig = FIELD_CONFIG,
 ): View = startView(typeId, config).awaitFrame(15_000).inflate(context, config)
+
+/**
+ * Starts the extension and waits for its profile discovery, the one consumer it holds for its whole
+ * life. Discovery registers after connecting, so a consumer count taken before it lands would never
+ * come back down.
+ */
+internal fun FakeKarooRule.startBarberfish(): FakeKarooHost {
+    val host = host<BarberfishExtension>()
+    awaitValue { true.takeIf { system.consumerParams.any { it is ActiveRideProfile.Params } } }
+    return host
+}
 
 /** The extension keeps one process-wide DataStore, which Robolectric reuses across tests. */
 internal fun clearBarberfishSettings(context: Context) {
@@ -143,7 +156,6 @@ internal fun paintedAfter(vararg sessions: MapRecorder): Pair<Set<String>, Set<S
                 is HidePolyline -> polylines -= effect.id
                 is ShowSymbols -> symbols += effect.symbols.map { it.id }
                 is HideSymbols -> symbols -= effect.symbolIds.toSet()
-                else -> Unit
             }
         }
     return polylines to symbols

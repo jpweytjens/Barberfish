@@ -1,29 +1,25 @@
 package com.jpweytjens.barberfish.karoo
 
 import android.app.Application
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
+import com.jpweytjens.barberfish.extension.HUDScope
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
+import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
-import com.jpweytjens.barberfish.extension.dataStore
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
-import com.jpweytjens.barberfish.extension.saveHUDConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
-import com.jpweytjens.barberfish.extension.streamHudSparklineConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
+import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -32,16 +28,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The DataStore-backed settings streams, their snapshot, and the pre-split migration path. */
+/** The DataStore-backed settings streams and their snapshot. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class SettingsStoreTest {
     @get:Rule val karoo = FakeKarooRule()
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
 
     @Before
     fun clean() = clearBarberfishSettings(ApplicationProvider.getApplicationContext<Application>())
@@ -50,9 +41,11 @@ class SettingsStoreTest {
     fun the_config_snapshot_reflects_a_written_key() {
         val app = karoo.app
         runBlocking {
-            app.saveHUDConfig(
-                HUDConfig(columns = 4, leftSlot = HUDSlotConfig(HUDSlotField.Distance))
-            )
+            app.updateHUDConfig(HUDScope.Shared) {
+                HUDConfig(
+                    slots = HUDSlots(columns = 4, leftSlot = HUDSlotConfig(HUDSlotField.Distance))
+                )
+            }
         }
         val snapshot = runBlocking { app.streamConfigSnapshot().first() }
         assertEquals(4, snapshot.hud.columns)
@@ -70,17 +63,6 @@ class SettingsStoreTest {
         val config = runBlocking { app.streamFieldSparklineConfig().first() }
         assertEquals(SparklineMode.ON, config.hudMode)
         assertEquals(20, config.lookaheadKm)
-    }
-
-    @Test
-    fun a_pre_split_hud_blob_supplies_the_hud_sparkline() {
-        val app = karoo.app
-        val legacy = json.encodeToString(HUDConfig(sparkline = SparklineConfig(lookaheadKm = 20)))
-        runBlocking {
-            app.dataStore.edit { it[stringPreferencesKey("three_column_config")] = legacy }
-        }
-        // No separate sparkline key was ever written, so the value comes from the embedded blob.
-        assertEquals(20, runBlocking { app.streamHudSparklineConfig().first() }.lookaheadKm)
     }
 
     @Test

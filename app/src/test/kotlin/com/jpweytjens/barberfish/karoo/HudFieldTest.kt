@@ -6,9 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.HUDConfig
+import com.jpweytjens.barberfish.extension.HUDScope
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
-import com.jpweytjens.barberfish.extension.saveHUDConfig
+import com.jpweytjens.barberfish.extension.HUDSlots
+import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.inflate
@@ -58,12 +60,19 @@ class HudFieldTest {
     /** Every slot on the same simple stream, so one data point lights the whole strip. */
     private fun distanceSlots(columns: Int) =
         HUDConfig(
-            columns = columns,
-            leftSlot = HUDSlotConfig(field = HUDSlotField.Distance),
-            middleSlot = HUDSlotConfig(field = HUDSlotField.Distance),
-            rightSlot = HUDSlotConfig(field = HUDSlotField.Distance),
-            fourthSlot = HUDSlotConfig(field = HUDSlotField.Distance),
+            slots =
+                HUDSlots(
+                    columns = columns,
+                    leftSlot = HUDSlotConfig(field = HUDSlotField.Distance),
+                    middleSlot = HUDSlotConfig(field = HUDSlotField.Distance),
+                    rightSlot = HUDSlotConfig(field = HUDSlotField.Distance),
+                    fourthSlot = HUDSlotConfig(field = HUDSlotField.Distance),
+                )
         )
+
+    /** No profile is active or Custom, so the HUD on screen is the Shared one. */
+    private suspend fun saveSharedHUD(config: HUDConfig) =
+        karoo.app.updateHUDConfig(HUDScope.Shared) { config }
 
     private fun distance(meters: Double) =
         karoo.system.setDataPoint(
@@ -86,7 +95,7 @@ class HudFieldTest {
 
     @Test
     fun a_three_column_hud_reports_the_three_slot_layout() {
-        runBlocking { karoo.app.saveHUDConfig(distanceSlots(columns = 3)) }
+        runBlocking { saveSharedHUD(distanceSlots(columns = 3)) }
         distance(1_500.0)
         val frame = host.startView("three-column", config).awaitFrame(20_000)
         assertEquals(R.layout.barberfish_hud, frame.layoutId)
@@ -94,7 +103,7 @@ class HudFieldTest {
 
     @Test
     fun a_four_column_hud_reports_the_four_slot_layout() {
-        runBlocking { karoo.app.saveHUDConfig(distanceSlots(columns = 4)) }
+        runBlocking { saveSharedHUD(distanceSlots(columns = 4)) }
         distance(1_500.0)
         val frame = host.startView("three-column", config).awaitFrame(20_000)
         assertEquals(R.layout.barberfish_hud_four, frame.layoutId)
@@ -102,20 +111,20 @@ class HudFieldTest {
 
     @Test
     fun a_column_change_on_the_device_swaps_the_open_layout() {
-        runBlocking { karoo.app.saveHUDConfig(distanceSlots(columns = 3)) }
+        runBlocking { saveSharedHUD(distanceSlots(columns = 3)) }
         distance(1_500.0)
         val view = host.startView("three-column", config)
         assertEquals(R.layout.barberfish_hud, view.awaitFrame(20_000).layoutId)
 
         val seen = view.items.size
         RobolectricPump.advanceBy(2.seconds)
-        runBlocking { karoo.app.saveHUDConfig(distanceSlots(columns = 4)) }
+        runBlocking { saveSharedHUD(distanceSlots(columns = 4)) }
         assertEquals(R.layout.barberfish_hud_four, view.awaitFrame(20_000, after = seen).layoutId)
     }
 
     @Test
     fun the_hud_sparkline_area_appears_once_a_route_is_followed() {
-        runBlocking { karoo.app.saveHUDConfig(distanceSlots(columns = 3)) }
+        runBlocking { saveSharedHUD(distanceSlots(columns = 3)) }
         karoo.system.setNavigation(climbRoute().navigating())
         distance(1_500.0)
         distanceRemaining(4_000.0)
@@ -131,7 +140,7 @@ class HudFieldTest {
 
     @Test
     fun the_hud_sparkline_area_stays_away_without_a_route() {
-        runBlocking { karoo.app.saveHUDConfig(distanceSlots(columns = 3)) }
+        runBlocking { saveSharedHUD(distanceSlots(columns = 3)) }
         karoo.system.setNavigation(OnNavigationState.NavigationState.Idle)
         karoo.system.setStreamState(DataType.Type.DISTANCE_TO_DESTINATION, StreamState.NotAvailable)
         distance(1_500.0)

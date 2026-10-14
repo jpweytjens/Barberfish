@@ -2,7 +2,6 @@ package com.jpweytjens.barberfish.karoo
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.PowerFieldConfig
 import com.jpweytjens.barberfish.extension.PowerSmoothingStream
 import com.jpweytjens.barberfish.extension.savePowerFieldConfig
@@ -44,7 +43,7 @@ class FieldStreamLifecycleTest {
         }
         karoo.system.setUserProfile(FakeKarooSystem.metricProfile())
         RobolectricPump.advanceBy(1.seconds)
-        host = karoo.host<BarberfishExtension>()
+        host = karoo.startBarberfish()
     }
 
     private fun point(typeId: String, vararg values: Pair<String, Double>) =
