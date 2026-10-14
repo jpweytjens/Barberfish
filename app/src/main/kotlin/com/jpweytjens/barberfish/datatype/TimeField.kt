@@ -50,15 +50,15 @@ enum class TimeKind(
     val iconRes: Int,
     val secondaryIconRes: Int? = null,
 ) {
-    TOTAL("time-elapsed", "Elapsed\ntime", R.drawable.ic_time_to_dest),
-    RIDING("time-moving", "Moving\ntime", R.drawable.ic_time_to_dest),
-    PAUSED("time-paused", "Paused\ntime", R.drawable.ic_stopwatch),
+    TOTAL("time-elapsed", "Elapsed\nTime", R.drawable.ic_time_to_dest),
+    RIDING("time-moving", "Moving\nTime", R.drawable.ic_time_to_dest),
+    PAUSED("time-paused", "Paused\nTime", R.drawable.ic_stopwatch),
     TIME_TO_SUNRISE("time-to-sunrise", "Sunrise", R.drawable.ic_sunrise),
     TIME_TO_SUNSET("time-to-sunset", "Sunset", R.drawable.ic_sunset),
     TIME_TO_CIVIL_DAWN("time-to-civil-dawn", "Dawn", R.drawable.ic_sunrise),
     TIME_TO_CIVIL_DUSK("time-to-civil-dusk", "Dusk", R.drawable.ic_sunset),
-    LAP("time-lap", "Lap\ntime", R.drawable.ic_lap, R.drawable.ic_time_to_dest),
-    LAST_LAP("time-last-lap", "LL\ntime", R.drawable.ic_last_lap, R.drawable.ic_time_to_dest),
+    LAP("time-lap", "Lap\nTime", R.drawable.ic_lap, R.drawable.ic_time_to_dest),
+    LAST_LAP("time-last-lap", "LL\nTime", R.drawable.ic_last_lap, R.drawable.ic_time_to_dest),
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
