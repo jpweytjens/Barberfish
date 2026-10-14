@@ -59,6 +59,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        // The fake-Karoo suite waits out real-time settle periods; four JVMs halve its wall time.
+        unitTests.all { it.maxParallelForks = 4 }
+    }
+
     lint {
         // Findings older than the baseline are grandfathered; new warnings fail the build.
         baseline = file("lint-baseline.xml")
@@ -124,6 +130,9 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.karoo.ext.testing.robolectric)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
