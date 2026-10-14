@@ -189,7 +189,8 @@ data class ViewSizeConfig(
                 headerFontSize = 12.sp,
                 labelMaxLines = 1,
                 wrapThresholdSp = 14,
-                valueFontSizeBase = 42,
+                valueFontSizeBase = 49,
+                valueBitmapHeightDp = 36,
             )
 
         // On-device HUD 4-column slots (colSpan=15)
@@ -203,7 +204,7 @@ data class ViewSizeConfig(
                 headerFontSize = 11.sp,
                 labelMaxLines = 1,
                 wrapThresholdSp = 12,
-                valueFontSizeBase = 34,
+                valueFontSizeBase = 36,
             )
 
         // Config-screen preview: same value/header sizing as on-device.
