@@ -42,8 +42,6 @@ fun ViewConfig.toViewSizeConfig(
             colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 17.6f // 33 px, both settings
             colSpan == TWO_COLS ->
                 twoColLabelSp(design.labelSize == LabelSize.LARGE) // 5-row: setting-driven
-            colSpan == THREE_COLS && rowSpan >= FIVE_ROWS -> 12.0f // HUD slot (1/3)
-            colSpan == FOUR_COLS && rowSpan >= FIVE_ROWS -> 11.0f // 4-col HUD slot (1/4)
             else -> 15.5f
         }
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
@@ -52,10 +50,9 @@ fun ViewConfig.toViewSizeConfig(
         when {
             colSpan == ONE_COL -> 22
             colSpan == TWO_COLS -> 18
-            colSpan == THREE_COLS -> 14
             else -> 12
         }
-    val paddingH = if (colSpan <= THREE_COLS) 2.dp else 4.dp
+    val paddingH = 4.dp
     // header_ref minHeight = max(icon-row floor 26 dp, label text band).
     // 2-line band uses native's lineSpacingMultiplier=0.6 for narrow cells.
     val labelBandDp =
