@@ -20,6 +20,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
+import com.jpweytjens.barberfish.datatype.shared.headerPaint
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
@@ -352,19 +353,19 @@ private fun applyHeaderChrome(
         rv.setInt(R.id.header_ref, "setBackgroundColor", PROBE_MARKER_COLOR)
     }
 
-    // HUD slots size labels dynamically from headerFontSize using the default
-    // typeface; regular cells use the per-layout values from sizeConfig.
+    // HUD slots size labels dynamically from headerFontSize, measured as drawn (capitals, in
+    // headerPaint); regular cells use the per-layout values from sizeConfig.
     val labelFontSp: Float
     val labelLines: Int
     if (sizeConfig.colSpan < 30) {
         val (sp, _) =
             fontSizeForCell(
-                displayLabel,
+                displayLabel.uppercase(),
                 sizeConfig.headerFontSize.value.toInt(),
                 labelAvailableWidthPx,
                 density,
                 wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                paint = Paint().apply { typeface = Typeface.DEFAULT },
+                paint = headerPaint(0f),
             )
         labelFontSp = sp.toFloat()
         labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
