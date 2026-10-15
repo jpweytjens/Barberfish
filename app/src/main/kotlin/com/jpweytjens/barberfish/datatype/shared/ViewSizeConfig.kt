@@ -67,7 +67,7 @@ fun ViewConfig.toViewSizeConfig(
     val headerMinHeightDp = maxOf(26, labelBandDp.toInt())
     // Native line-spacing multiplier is 0.6 only in 2-col 5-row cells; the
     // header style default 0.7 applies everywhere else (1-col labels are
-    // single-line, so the value is moot there). HUD slots keep 0.6.
+    // single-line, so the value is moot there). HUD slots use 0.7 in their presets.
     // See docs/sdk-findings.md § "Native header and value sizing".
     val fiveRowTwoCol = colSpan == TWO_COLS && rowSpan < FOUR_ROWS
     val headerLineSpacingMult =
@@ -187,6 +187,7 @@ data class ViewSizeConfig(
                 headerIconSize = 13.dp,
                 headerIconLabelGap = 2.dp,
                 headerFontSize = 13.sp,
+                headerLineSpacingMult = 0.7f,
                 labelMaxLines = 1,
                 wrapThresholdSp = 14,
                 valueFontSizeBase = 42,
@@ -201,6 +202,7 @@ data class ViewSizeConfig(
                 headerIconSize = 12.dp,
                 headerIconLabelGap = 2.dp,
                 headerFontSize = 12.sp,
+                headerLineSpacingMult = 0.7f,
                 labelMaxLines = 1,
                 wrapThresholdSp = 12,
                 valueFontSizeBase = 34,
