@@ -220,12 +220,15 @@ cell bottom. Barberfish reproduces that with a small upward translation per layo
 (see [Per-layout vertical translation](architecture.md#per-layout-vertical-translation)).
 
 A sweep on 2026-10-15 put a native and a Barberfish time field in the same row of
-every two-column layout. Their value baselines matched to the pixel in 2×2, 3×2,
-4×2 and 5×2. Of the one-column cells, 5×1 matched and 3×1 was within 2 px. In 4×1
-the Barberfish value sits 3 px below native. That offset is accepted: the cells
-stack, so no neighbouring baseline shows it, and the one available correction, the
-−3 dp variant, would overshoot to about 2.6 px above. 1×1 and 2×1 were not compared,
-because the native field on those pages did not fill its cell.
+every two-column layout. Their value tops and baselines matched to the pixel in 2×2,
+3×2, 4×2 and 5×2.
+
+One-column pages stack native and Barberfish fields in separate rows, and the
+rideapp gives a graphical field's row a different height from a native one: 143
+against 142 px at 5×1, 174 against 168 px at 4×1, 228 against 216 px at 3×1, and
+468 against 228 px at 2×1 (Karoo 3, Data Boundaries on). Only 5×1, where the heights
+agree, compares like for like, and there the baselines match. The other one-column
+layouts were not compared.
 
 ### Header band geometry
 
