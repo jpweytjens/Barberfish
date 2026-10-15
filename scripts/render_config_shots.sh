@@ -10,21 +10,23 @@
 #   OUTDIR=docs/screenshots scripts/render_config_shots.sh   # write the committed set
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/_karoo.sh
+keep_awake   # a USB drop on doze would cut the instrumentation run
 
 devicedir=/sdcard/Android/data/com.jpweytjens.barberfish/files/config_shots
 outdir=${OUTDIR:-screencaps/shots}
 stage=$(mktemp -d)
 
 ./gradlew assembleDebug assembleDebugAndroidTest
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+A install -r app/build/outputs/apk/debug/app-debug.apk
+A install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 
-adb shell rm -rf "$devicedir"
-adb shell am instrument -w \
+A shell rm -rf "$devicedir"
+A shell am instrument -w \
     -e class com.jpweytjens.barberfish.ConfigShotsRenderTest \
     com.jpweytjens.barberfish.test/androidx.test.runner.AndroidJUnitRunner
 
-adb pull "$devicedir" "$stage/config_shots"
+A pull "$devicedir" "$stage/config_shots"
 mkdir -p "$outdir"
 for f in "$stage"/config_shots/*.png; do
     name=$(basename "${f%.png}")
