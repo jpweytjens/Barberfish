@@ -11,7 +11,8 @@
 #
 # Usage: OUTDIR=screencaps/<run> scripts/walk_layouts.sh [page1 page2 ...]
 #   OUTDIR  where captures land (default: screencaps/)
-#   pages   names for the data pages in order (default: the ten below)
+#   pages   the data pages in order, named as scripts/_page_grid.py reads them (default: the ten
+#           below)
 #
 # Assumes: K3 only (the ride start and end tap K3 positions); the debug APK is installed (the ride
 # end presses its buttons through a debug receiver); and the "Barberfish sweep" profile has the map
@@ -76,20 +77,47 @@ RIDE_UP=1
 # Clear the log so each page's capture reads only the cell sizes logged on this ride.
 A logcat -c
 
+# The pager drops some swipes, more often early in a ride (K3, 2026-10-15), and a dropped swipe
+# can't be told from ticking digits by comparing screens. So the walk reads the page's grid of
+# cells instead (scripts/_page_grid.py, which needs the Data Boundaries set above) and checks it
+# against the name it expects next.
+layout_now() {
+    wake
+    A exec-out screencap -p > "$STAGE/layout.png"
+    python3 scripts/_page_grid.py "$STAGE/layout.png"
+}
+goto_layout() { # goto_layout <expected> <previous> — swipe until the expected page is in front
+    local got i
+    for i in 1 2 3; do
+        swipe_next
+        settle 1.5
+        got=$(layout_now)
+        [[ "$got" == "$1" ]] && return 0
+        # The map has no grid of cells, so recognize a swipe dropped on it by the map itself.
+        if [[ "$2" == map ]] && map_page_like; then got=map; fi
+        if [[ "$got" != "$2" ]]; then
+            echo "  ! expected page $1, found $got" >&2; return 1
+        fi
+        echo "  ... swipe dropped, retrying" >&2
+    done
+    echo "  ! still on $2 after 3 swipes" >&2; return 1
+}
+
 # A new ride opens on whichever page was last shown, and the pager wraps around, so step forward
-# until the map is in front. next_page retries the swipes the pager drops.
-for (( i = 0; i <= ${#pages[@]} + 1; i++ )); do
+# until the map is in front. Twice the page count leaves room for dropped swipes.
+for (( i = 0; i <= 2 * (${#pages[@]} + 1); i++ )); do
     wake
     map_page_like && break
-    next_page
+    swipe_next
+    settle 1.5
 done
 map_page_like || { echo "  ! map page not found" >&2; exit 1; }
 
+previous=map
 for page in "${pages[@]}"; do
     echo "-> $page"
-    wake
-    next_page
-    wake
+    goto_layout "$page" "$previous"
+    previous="$page"
     scripts/capture_layout.sh "$page"
 done
 
