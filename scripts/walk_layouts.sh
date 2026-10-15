@@ -3,8 +3,9 @@
 # scripts/capture_layout.sh, for scripts/measure_alignment.py.
 #
 # From the K3 at rest (no ride running), the walk keeps the device awake, switches it to the dark
-# theme the measurement is tuned for, starts a ride on the sweep profile, finds its map page,
-# steps through the data pages capturing each, then ends and deletes the ride and restores the
+# theme the measurement is tuned for, turns Data Boundaries on (the cell detection needs the
+# borders), starts a ride on the sweep profile, finds its map page, steps through the data pages
+# capturing each, then ends and deletes the ride, turns Data Boundaries off and restores the
 # theme.
 # The ride is ended and the theme restored even when a step fails.
 #
@@ -13,9 +14,8 @@
 #   pages   names for the data pages in order (default: the ten below)
 #
 # Assumes: K3 only (the ride start and end tap K3 positions); the debug APK is installed (the ride
-# end presses its buttons through a debug receiver); the "Barberfish sweep" profile has the map as
-# page 1, then the data pages below; and Data Boundaries is on in the Karoo's data field settings,
-# which the cell detection needs. Set the Label Size and Barberfish design for the run first.
+# end presses its buttons through a debug receiver); and the "Barberfish sweep" profile has the map
+# as page 1, then the data pages below. Set the Label Size and Barberfish design for the run first.
 
 set -Eeuo pipefail
 
@@ -36,12 +36,16 @@ if [[ ${#pages[@]} -eq 0 ]]; then
 fi
 
 RIDE_UP=0
+BOUNDARIES_ON=0
 on_exit() { # end our ride and put the device back, whether the walk finished or failed
     local rc=$?
     set +e
     if (( RIDE_UP )); then
         (( rc )) && echo "  ! walk failed; ending the ride" >&2
         ride_end || echo "  ! could not end the ride: end it on the device" >&2
+    fi
+    if (( BOUNDARIES_ON )); then
+        set_data_boundaries off || echo "  ! could not turn Data Boundaries off: do it on the device" >&2
     fi
     restore_theme
     A shell dumpsys deviceidle enable >/dev/null 2>&1
@@ -61,6 +65,10 @@ save_theme
 A shell cmd uimode night yes >/dev/null 2>&1
 # Barberfish reads the theme when it renders; restart it so the ride's fields come up dark.
 A shell am force-stop com.jpweytjens.barberfish >/dev/null 2>&1
+
+echo "turn Data Boundaries on"
+BOUNDARIES_ON=1
+set_data_boundaries on
 
 echo "start a ride on $PROFILE"
 start_ride "$PROFILE"
