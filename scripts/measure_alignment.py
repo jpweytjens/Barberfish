@@ -115,8 +115,12 @@ TWO_LINE_RATIO = 1.4
 PROBE_R_MIN = 140
 PROBE_G_MAX = 90
 PROBE_B_MIN = 140
-PROBE_MAX_TOP_OFFSET_PX = 8  # probe must start within this many px of cell top
-PROBE_MAX_HEIGHT_PX = 60  # probe must be ≤ this tall (1-line header height)
+# Cell tops are gap midpoints, so a cell's box starts up to half the widest gap below its top
+# (24 px gaps in 1-col 3-row: 12 px).
+PROBE_MAX_TOP_OFFSET_PX = 16  # probe must start within this many px of cell top
+# header_ref is the value's centring anchor, taller than a 1-line header in 2-col cells
+# (61 px at 2-col 4-row, 48 px in 1-col cells).
+PROBE_MAX_HEIGHT_PX = 70  # probe must be ≤ this tall
 
 PAGE_RE = re.compile(r"^(\d+)x(\d+)([nb]?)$")
 
@@ -667,8 +671,8 @@ def find_probe_band(cell_rgb: np.ndarray) -> tuple[int, int] | None:
       so a row of magenta further down is rejected.
     - Be a CONTIGUOUS run from that top (terminated at the first non-magenta
       row). This rejects scattered magenta from zone-coloured backgrounds.
-    - Be ≤ `PROBE_MAX_HEIGHT_PX` tall. A 1-line header at native sp + minHeight
-      maxes out at ~50 px; anything taller is a zone fill or render bug.
+    - Be ≤ `PROBE_MAX_HEIGHT_PX` tall. The anchor is at most 61 px (2-col
+      cells); anything taller is a zone fill or render bug.
     """
     r, g, b = cell_rgb[..., 0], cell_rgb[..., 1], cell_rgb[..., 2]
     mask = (r >= PROBE_R_MIN) & (g <= PROBE_G_MAX) & (b >= PROBE_B_MIN)
