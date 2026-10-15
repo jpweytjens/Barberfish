@@ -60,7 +60,6 @@ on_exit() { # a failed shot still ends the ride and restores the config, then dr
 trap on_exit EXIT
 mkdir -p "$OUTDIR"
 
-KAROO_DFD=io.hammerhead.settingsapp/.dataFieldSettings.DataFieldSettingsActivity
 FONT=/System/Library/Fonts/Supplemental/Arial.ttf
 
 W=480; H=800   # K3 physical size (verified via `wm size`)

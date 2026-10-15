@@ -205,6 +205,26 @@ MAP_PAGE=(docs/screenshots/hud_sparkline.jpg 90x280+18+405 0.5)   # the map butt
 map_page_like() { page_like "${MAP_PAGE[@]}"; }
 goto_map_page() { goto_page_like "${MAP_PAGE[@]}"; }
 
+# ---- Karoo settings ----------------------------------------------------------
+KAROO_DFD=io.hammerhead.settingsapp/.dataFieldSettings.DataFieldSettingsActivity   # Data fields screen
+set_data_boundaries() { # set_data_boundaries on|off — the borders the Karoo draws around data cells
+    # measure_alignment.py finds the cells by these borders, so a layout walk needs them on.
+    local choice xy
+    case "$1" in
+        on) choice=On ;;
+        off) choice=Off ;;
+        *) echo "  ! set_data_boundaries takes on or off, not '$1'" >&2; return 2 ;;
+    esac
+    # Data Boundaries is the first setting on the screen, so a fresh start shows it without scrolling.
+    A shell am force-stop io.hammerhead.settingsapp >/dev/null 2>&1 || true
+    A shell am start -n "$KAROO_DFD" >/dev/null 2>&1
+    settle 2; wake; dump
+    xy=$(ui tap below "Data Boundaries" "$choice") \
+        || { echo "  ! Data Boundaries $choice not found" >&2; return 1; }
+    tap_xy $xy; settle 1
+    A shell input keyevent KEYCODE_HOME
+}
+
 # ---- theme -------------------------------------------------------------------
 SAVED_NIGHT=""
 save_theme() { SAVED_NIGHT=$(A shell cmd uimode night | tr -d '\r'); }
