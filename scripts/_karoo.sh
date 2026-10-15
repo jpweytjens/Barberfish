@@ -116,6 +116,18 @@ profile_front() { # profile_front <name> — home screen, with that profile's ca
     done
     echo "  ! profile $1 not on the home screen" >&2; return 1
 }
+start_ride() { # start_ride <profile> — start a ride on that profile, return once its screen is up
+    profile_front "$1"
+    tap_xy 429 732             # green play FAB on the profile carousel
+    # The ride screen can take well over the old fixed 6 s to come up (K3, 2026-09-25); a page
+    # swipe before it does moves the profile carousel instead. Wait for it to be in front.
+    local i
+    for i in $(seq 1 45); do
+        settle 1
+        if ride_in_front; then settle 3; return 0; fi
+    done
+    echo "  ! ride screen never came up" >&2; return 1
+}
 ride_running() { # a ride screen exists in any task, in front or not
     A shell dumpsys activity activities 2>/dev/null | grep -q -F "rideapp/.views.ride.RideActivity"
 }
@@ -143,6 +155,55 @@ ride_end() { # pause -> finish flag -> confirm -> Delete -> confirm (discard the
     tap text "Delete"; settle 2
     tap_xy 429 732; settle 3            # confirm delete
 }
+
+# ---- ride pages --------------------------------------------------------------
+# "To ride" and a new ride both return to whichever data page the ride was last on, so counting
+# swipes from page 1 lands anywhere. Recognize the page instead by a region that is fixed on it:
+# the Grade / Elapsed time label row on the fields page (RMSE 0.007 on a match, 0.27 or more
+# elsewhere), the column of map buttons on the map page (0.25 to 0.33 on a match, 0.85
+# elsewhere). `magick compare` exits 1 whenever the images differ, so its status is ignored and
+# only the printed distance is read.
+page_like() { # page_like <reference jpg> <crop WxH+X+Y> <max RMSE> — is that crop of the screen a match?
+    local d
+    magick "$1" -crop "$2" +repage "$STAGE/page_ref.png"
+    A exec-out screencap -p > "$STAGE/page_probe.png"
+    magick "$STAGE/page_probe.png" -crop "$2" +repage "$STAGE/page_band.png"
+    d=$(magick compare -metric RMSE "$STAGE/page_band.png" "$STAGE/page_ref.png" null: 2>&1 \
+        | sed 's/.*(\(.*\))/\1/' || true)
+    awk -v d="$d" -v m="$3" 'BEGIN{exit !(d < m)}'
+}
+goto_page_like() { # goto_page_like <reference jpg> <crop WxH+X+Y> <max RMSE> — swipe left until
+    # a crop of the screen matches the same crop of a committed shot.
+    local i
+    tap_xy 240 400; settle 1
+    for i in 1 2 3 4 5 6; do
+        page_like "$1" "$2" "$3" && return 0
+        A shell input swipe 400 400 80 400 250; settle 1.5
+    done
+    echo "  ! page like $1 not found" >&2; return 1
+}
+next_page() { # next_page [settle s] — swipe to the next ride page, retrying a swipe the pager dropped
+    # The pager drops some swipes, more often early in a ride (K3, 2026-10-15). Below the status
+    # bar, a dropped swipe changes only ticking digits (0.6% of the pixels) and a real page change
+    # at least 6.8%, so a change under 2% is a dropped swipe.
+    local i changed band="${W}x$((H - 60))+0+50"
+    A exec-out screencap -p > "$STAGE/page_before.png"
+    for i in 1 2 3; do
+        swipe_next
+        settle "${1:-1.5}"
+        A exec-out screencap -p > "$STAGE/page_after.png"
+        changed=$(magick compare -metric AE -fuzz 20% \
+            \( "$STAGE/page_before.png" -crop "$band" +repage \) \
+            \( "$STAGE/page_after.png" -crop "$band" +repage \) null: 2>&1 | awk '{print $1}' || true)
+        awk -v c="$changed" -v n=$((W * (H - 60))) 'BEGIN{exit !(c / n > 0.02)}' && return 0
+        echo "  ... swipe dropped, retrying" >&2
+    done
+    echo "  ! the page did not change after 3 swipes" >&2; return 1
+}
+
+MAP_PAGE=(docs/screenshots/hud_sparkline.jpg 90x280+18+405 0.5)   # the map buttons' column
+map_page_like() { page_like "${MAP_PAGE[@]}"; }
+goto_map_page() { goto_page_like "${MAP_PAGE[@]}"; }
 
 # ---- theme -------------------------------------------------------------------
 SAVED_NIGHT=""

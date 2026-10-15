@@ -142,16 +142,7 @@ replay_seek() { # replay_seek <fraction 0..1> — tap the scrubber track at that
 ride_start() { # from ride-replay's replay screen: To ride -> start the ride
     dump
     ui has text "To ride" >/dev/null 2>&1 && { tap text "To ride"; settle 3; }
-    profile_front Barberfish
-    tap_xy 429 732             # green play FAB on the profile carousel
-    # The ride screen can take well over the old fixed 6 s to come up (K3, 2026-09-25); a page
-    # swipe before it does moves the profile carousel instead. Wait for it to be in front.
-    local i
-    for i in $(seq 1 45); do
-        settle 1
-        if ride_in_front; then settle 3; return 0; fi
-    done
-    echo "  ! ride screen never came up" >&2; return 1
+    start_ride Barberfish
 }
 ride_front() { # "To ride" only sends the replay to the back, so the screen beneath it comes up:
     # the home screen, or the route list the route was loaded from. Starting the ride screen's
@@ -207,28 +198,6 @@ goto_page() { # goto_page <n> — swipe left to reach data page n (1-based), cou
     local i
     for (( i=1; i<$1; i++ )); do A shell input swipe 400 400 80 400 250; settle 1; done
 }
-goto_page_like() { # goto_page_like <reference jpg> <crop WxH+X+Y> <max RMSE> — swipe left until
-    # a crop of the screen matches the same crop of a committed shot.
-    # "To ride" returns to whichever data page the ride was last on, so counting swipes from
-    # page 1 lands anywhere. Recognize the page instead by a region that is fixed on it: the
-    # Grade / Elapsed time label row on the fields page (RMSE 0.007 on a match, 0.27 or more
-    # elsewhere), the column of map buttons on the map page (0.25 to 0.33 on a match, 0.85
-    # elsewhere). `magick compare` exits 1 whenever the images differ, so its status is ignored
-    # and only the printed distance is read.
-    local i d
-    magick "$1" -crop "$2" +repage "$STAGE/page_ref.png"
-    tap_xy 240 400; settle 1
-    for i in 1 2 3 4 5 6; do
-        A exec-out screencap -p > "$STAGE/page_probe.png"
-        magick "$STAGE/page_probe.png" -crop "$2" +repage "$STAGE/page_band.png"
-        d=$(magick compare -metric RMSE "$STAGE/page_band.png" "$STAGE/page_ref.png" null: 2>&1 \
-            | sed 's/.*(\(.*\))/\1/' || true)
-        if awk -v d="$d" -v m="$3" 'BEGIN{exit !(d < m)}'; then return 0; fi
-        A shell input swipe 400 400 80 400 250; settle 1.5
-    done
-    echo "  ! page like $1 not found" >&2; return 1
-}
-goto_map_page()    { goto_page_like docs/screenshots/hud_sparkline.jpg    90x280+18+405 0.5; }
 goto_fields_page() { goto_page_like docs/screenshots/barberfish_fields.jpg 480x40+0+362  0.2; }
 settle_drawer() { settle "${1:-6}"; }   # the bottom pill auto-hides after a few idle seconds
 map_extensions_toggle() { # flip the puzzle toggle (extension map effects) in the map layers menu
