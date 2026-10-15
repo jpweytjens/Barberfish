@@ -163,11 +163,11 @@ For HUD slots the SDK `textSize` does not apply, since each slot fills only a th
 fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 ```
 
-1. Measure text width at `fontSizeBaseSp` using `Paint.measureText()`.
+1. Measure the text at `fontSizeBaseSp` with the paint it is drawn in: `valuePaint` for values, `headerPaint` in capitals for HUD slot labels.
 2. If it fits in `cellWidthPx` → return `fontSizeBaseSp` unchanged.
 3. Otherwise → scale proportionally: `floor(fontSizeBaseSp × cellWidthPx / measuredWidth)`.
 4. If the scaled result drops below `wrapThresholdSp` → attempt 2-line split at the word boundary
-   nearest the midpoint; size to the longer half.
+   nearest the midpoint; size so the wider half fits.
 
 ### `wrapThresholdSp` per layout
 
@@ -178,18 +178,20 @@ fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 | 20        | HUD 3-col slot | 14                |
 | 15        | HUD 4-col slot | 12                |
 
+HUD slots take theirs from the `HUD_THREE` and `HUD_FOUR` presets. Both sit at or above the slot's header size, so a slot label that does not fit wraps before it shrinks.
+
 ### End-to-end flow
 
 ```
 ViewConfig.textSize  (SDK, sp, layout-aware)
-  │  or textSizeOverride (HUD slots: 42 for 3-col, 32 for 4-col)
+  │  HUD 3/4-col slots: the HUD_THREE / HUD_FOUR presets instead (42 / 34 sp)
   ▼
-ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig()
-ViewSizeConfig.wrapThresholdSp            ← derived from colSpan
+ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig(), or the HUD preset
+ViewSizeConfig.wrapThresholdSp            ← derived from colSpan, or the HUD preset
 
   ▼ at render time, in makeFieldRemoteViews (BarberfishView.kt)
 fontSizeForCell(value, valueFontSizeBase, cellWidthPx, density, wrapThresholdSp)
-  └─► actual sp applied to field_value TextView via RemoteViews.setTextViewTextSize()
+  └─► sp passed to renderValueBitmap, which draws field_value as a bitmap
 ```
 
 `makeFieldRemoteViews` is the only caller of `fontSizeForCell` for values. Every sizing

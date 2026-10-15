@@ -39,9 +39,10 @@ fun fontSizeForCell(
 }
 
 /**
- * Header height (px) for an ibm-plex-sans-condensed label at [headerFontSizeSp] with [lines] lines
- * (lineSpacingMultiplier=0.7), floored at 22 dp. Used as top padding on the value TextView to clear
- * the header zone.
+ * Top padding (px) that places the stream-state placeholder below a header of [lines] lines at
+ * [headerFontSizeSp], floored at 22 dp. The two-line factor 1.7 is fitted to native placeholder
+ * positions (docs/sdk-findings.md § "Placeholders"), not taken from the drawn header; for the
+ * height of the header as drawn, use `headerBandPx`.
  */
 fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
     val paint =
@@ -51,8 +52,7 @@ fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
         }
     val fm = paint.fontMetrics
     val lineHeight = fm.descent - fm.ascent // ascent is negative
-    // lineSpacingMultiplier=0.7 (native dataHeaderTextStyle) affects inter-line
-    // spacing only, not single-line height.
+    // The 0.7 line spacing adds height between lines only, so one line keeps its height.
     val factor = if (lines == 1) 1.0f else 1.7f // 1 + 0.7 for 2 lines
     val textHeight = (factor * lineHeight).toInt()
     val minHeightPx = (22 * density).toInt()
