@@ -32,6 +32,17 @@ internal fun headerPaint(fontSizePx: Float): TextPaint =
     }
 
 /**
+ * Height in px a header label reserves for [maxLines] lines of [paint] at [lineSpacingMult]: the
+ * native header TextView's `lineH + (maxLines − 1) × round(lineH × mult)`, with `lineH` from
+ * `Paint.getFontMetricsInt`. [renderHeaderBitmap] draws into exactly this height.
+ */
+internal fun headerReservedHeightPx(paint: Paint, maxLines: Int, lineSpacingMult: Float): Int {
+    val fm = paint.fontMetricsInt
+    val lineHeight = fm.descent - fm.ascent
+    return lineHeight + (maxLines - 1) * (lineHeight * lineSpacingMult).roundToInt()
+}
+
+/**
  * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow
  * icon (see [renderTwoRowValueBitmap]).
  */
@@ -261,9 +272,7 @@ fun renderHeaderBitmap(
             .setEllipsize(TextUtils.TruncateAt.END)
             .build()
 
-    val fm = paint.fontMetricsInt
-    val lineHeight = fm.descent - fm.ascent
-    val reservedHeight = lineHeight + (maxLines - 1) * (lineHeight * lineSpacingMult).roundToInt()
+    val reservedHeight = headerReservedHeightPx(paint, maxLines, lineSpacingMult)
     val bitmapHeight = maxOf(reservedHeight, layout.height).coerceAtLeast(1)
 
     val bitmap = Bitmap.createBitmap(width, bitmapHeight, Bitmap.Config.ARGB_8888)

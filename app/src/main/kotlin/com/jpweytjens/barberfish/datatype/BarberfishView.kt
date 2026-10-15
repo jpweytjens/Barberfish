@@ -21,6 +21,7 @@ import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.headerPaint
+import com.jpweytjens.barberfish.datatype.shared.headerReservedHeightPx
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
@@ -39,6 +40,9 @@ private const val DEBUG_LAYOUT = false
 // distinguish Barberfish vs native cells on stacked 1-col mixed pages.
 private const val LAYOUT_PROBE_MODE = false
 private const val PROBE_MARKER_COLOR = 0xFFFF00FF.toInt()
+
+// Native one-line header band; field_header's XML minHeight carries the same 22dp as a fallback.
+private const val HEADER_BAND_MIN_DP = 22f
 
 // Horizontal chrome between cellWidthPx and the field_label ImageView that the label
 // bitmap must not span: field_header paddingStart/End (1dp each) + field_label
@@ -151,13 +155,24 @@ fun applySparklineHeaderChrome(
     )
 }
 
-/** Height in px the sparkline field reserves for its header (max of min-height and content). */
-fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int {
-    val headerMinPx = (sizeConfig.headerMinHeightDp * density).toInt()
-    val headerContentPx =
-        headerHeightPx(sizeConfig.headerFontSize.value, sizeConfig.labelMaxLines, density)
-    return maxOf(headerMinPx, headerContentPx)
-}
+/**
+ * Height in px of the header a cell draws: the label's reserved lines, floored at the one-line
+ * band. The same height [applyHeaderChrome] gives `field_header`, so anything laid out below the
+ * header can be sized from it.
+ */
+fun headerBandPx(sizeConfig: ViewSizeConfig, lines: Int, density: Float): Int =
+    maxOf(
+        (HEADER_BAND_MIN_DP * density).toInt(),
+        headerReservedHeightPx(
+            headerPaint(sizeConfig.headerFontSize.value * density),
+            lines,
+            sizeConfig.headerLineSpacingMult,
+        ),
+    )
+
+/** Height in px the sparkline field's header takes above its image. */
+fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int =
+    headerBandPx(sizeConfig, sizeConfig.labelMaxLines, density)
 
 /**
  * Pixel size of a graphical field's image region: the full cell width, and the cell height minus
@@ -387,7 +402,7 @@ private fun applyHeaderChrome(
     rv.setImageViewBitmap(R.id.field_label, headerBitmap)
     // Native header band = max(22dp, text block); centering field_label inside it
     // (field_header gravity=center_vertical) reproduces native's centered header.
-    val headerBandPx = maxOf((22f * density).toInt(), headerBitmap.height)
+    val headerBandPx = maxOf((HEADER_BAND_MIN_DP * density).toInt(), headerBitmap.height)
     rv.setInt(R.id.field_header, "setMinimumHeight", headerBandPx)
 
     // Icons
