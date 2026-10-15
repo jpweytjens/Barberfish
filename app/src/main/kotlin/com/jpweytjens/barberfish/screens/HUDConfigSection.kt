@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
@@ -657,7 +658,7 @@ private fun HUDPreviewCell(
         // rendered at 30.dp — the 4dp difference is an unresolved cosmetic mismatch
         // (see audit #24); the reservation matches the live experience so cells size correctly.
         val sparklineReservationPx =
-            LocalContext.current.resources.getDimensionPixelSize(R.dimen.hud_sparkline_height)
+            LocalResources.current.getDimensionPixelSize(R.dimen.hud_sparkline_height)
         val sparklineMarginPx = if (reserveSparklineSpace) sparklineReservationPx.toFloat() else 0f
         val slotHeightPx = heightPx - sparklineMarginPx.toInt()
         val design = LocalDataFieldDesign.current
