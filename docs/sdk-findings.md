@@ -219,6 +219,14 @@ The value sits slightly above the centre of the band between the header and the
 cell bottom. Barberfish reproduces that with a small upward translation per layout
 (see [Per-layout vertical translation](architecture.md#per-layout-vertical-translation)).
 
+A sweep on 2026-10-15 put a native and a Barberfish time field in the same row of
+every two-column layout. Their value baselines matched to the pixel in 2×2, 3×2,
+4×2 and 5×2. Of the one-column cells, 5×1 matched and 3×1 was within 2 px. In 4×1
+the Barberfish value sits 3 px below native. That offset is accepted: the cells
+stack, so no neighbouring baseline shows it, and the one available correction, the
+−3 dp variant, would overshoot to about 2.6 px above. 1×1 and 2×1 were not compared,
+because the native field on those pages did not fill its cell.
+
 ### Header band geometry
 
 - The header sits at the cell top with no inset and is about 22 dp tall for a
