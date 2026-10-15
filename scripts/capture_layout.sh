@@ -22,25 +22,27 @@ fi
 page="$1"
 # OUTDIR lets a sweep isolate each combo's captures in its own folder; defaults
 # to the flat screencaps/ dir for standalone use.
+cd "$(dirname "$0")/.."
+source scripts/_karoo.sh
 OUTDIR="${OUTDIR:-screencaps}"
 mkdir -p "$OUTDIR"
 
 # 1) View bounds — both native + ours come back together.
-adb shell "dumpsys activity top" \
+A shell "dumpsys activity top" \
     | grep -E "field_root|header_spacer|field_header|baseline_box|baseline_ref|field_value|dataElementRoot|headerLayout|dataTextView" \
     > "$OUTDIR/${page}.dumpsys.txt" || true
 
 # 2) Recent extension log. The always-on line in BarberfishDataType has shape:
 #    "density=... cellH=...dp cellW=...px textSize=...sp gridSize=(...) → headerSp=... typeId=..."
-adb logcat -d -s "Barberfish" \
+A logcat -d -s "Barberfish" \
     | grep -E "textSize=|gridSize=" \
     | tail -40 \
     > "$OUTDIR/${page}.logcat.txt" || true
 
-# 3) Screencap. Use raw adb so we control the filename — swim ss parses any
+# 3) Screencap. Use adb, not swim ss, so we control the filename — swim ss parses any
 #    digit-leading arg (like "1x1") as a duration via its [0-9]* glob and
 #    falls back to a default timestamp.
-adb exec-out screencap -p > "$OUTDIR/${page}.jpg"
+A exec-out screencap -p > "$OUTDIR/${page}.jpg"
 
 echo "captured $page -> $OUTDIR"
 ls -la "$OUTDIR/${page}".* 2>/dev/null || true

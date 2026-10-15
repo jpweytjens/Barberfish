@@ -6,21 +6,23 @@
 # dead binding.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/_karoo.sh
+keep_awake   # a USB drop on doze would cut the instrumentation run
 
 devicedir=/sdcard/Android/data/com.jpweytjens.barberfish/files/previews
 outdir=screencaps/previews
 
 ./gradlew assembleDebug assembleDebugAndroidTest
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+A install -r app/build/outputs/apk/debug/app-debug.apk
+A install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 
-adb shell rm -rf "$devicedir"
-adb shell am instrument -w \
+A shell rm -rf "$devicedir"
+A shell am instrument -w \
     -e class com.jpweytjens.barberfish.AllFieldPreviewsRenderTest \
     com.jpweytjens.barberfish.test/androidx.test.runner.AndroidJUnitRunner
 
 rm -rf "$outdir"
-adb pull "$devicedir" "$outdir"
+A pull "$devicedir" "$outdir"
 
 # Grid of single-cell fields; the full-width HUD strips go in their own
 # single-column montage appended below so they don't break the 4-column grid.
