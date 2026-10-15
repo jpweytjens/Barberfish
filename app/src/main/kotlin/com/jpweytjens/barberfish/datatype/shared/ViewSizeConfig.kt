@@ -188,7 +188,8 @@ data class ViewSizeConfig(
                 headerIconLabelGap = 2.dp,
                 headerFontSize = 13.sp,
                 headerLineSpacingMult = 0.7f,
-                labelMaxLines = 1,
+                // Every slot reserves two label lines, so one- and two-line labels align.
+                labelMaxLines = 2,
                 wrapThresholdSp = 14,
                 valueFontSizeBase = 42,
             )
@@ -203,7 +204,8 @@ data class ViewSizeConfig(
                 headerIconLabelGap = 2.dp,
                 headerFontSize = 12.sp,
                 headerLineSpacingMult = 0.7f,
-                labelMaxLines = 1,
+                // Every slot reserves two label lines, so one- and two-line labels align.
+                labelMaxLines = 2,
                 wrapThresholdSp = 12,
                 valueFontSizeBase = 34,
             )

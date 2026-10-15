@@ -371,7 +371,7 @@ private fun applyHeaderChrome(
     // HUD slots size labels dynamically from headerFontSize, measured as drawn (capitals, in
     // headerPaint); regular cells use the per-layout values from sizeConfig.
     val labelFontSp: Float
-    val labelLines: Int
+    val labelLines = sizeConfig.labelMaxLines
     if (sizeConfig.colSpan < 30) {
         val (sp, _) =
             fontSizeForCell(
@@ -383,10 +383,8 @@ private fun applyHeaderChrome(
                 paint = headerPaint(0f),
             )
         labelFontSp = sp.toFloat()
-        labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
     } else {
         labelFontSp = sizeConfig.headerFontSize.value
-        labelLines = sizeConfig.labelMaxLines
     }
     val headerBitmap =
         renderHeaderBitmap(
