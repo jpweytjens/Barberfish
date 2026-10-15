@@ -182,25 +182,6 @@ goto_page_like() { # goto_page_like <reference jpg> <crop WxH+X+Y> <max RMSE> â€
     done
     echo "  ! page like $1 not found" >&2; return 1
 }
-next_page() { # next_page [settle s] â€” swipe to the next ride page, retrying a swipe the pager dropped
-    # The pager drops some swipes, more often early in a ride (K3, 2026-10-15). Below the status
-    # bar, a dropped swipe changes only ticking digits (0.6% of the pixels) and a real page change
-    # at least 6.8%, so a change under 2% is a dropped swipe.
-    local i changed band="${W}x$((H - 60))+0+50"
-    A exec-out screencap -p > "$STAGE/page_before.png"
-    for i in 1 2 3; do
-        swipe_next
-        settle "${1:-1.5}"
-        A exec-out screencap -p > "$STAGE/page_after.png"
-        changed=$(magick compare -metric AE -fuzz 20% \
-            \( "$STAGE/page_before.png" -crop "$band" +repage \) \
-            \( "$STAGE/page_after.png" -crop "$band" +repage \) null: 2>&1 | awk '{print $1}' || true)
-        awk -v c="$changed" -v n=$((W * (H - 60))) 'BEGIN{exit !(c / n > 0.02)}' && return 0
-        echo "  ... swipe dropped, retrying" >&2
-    done
-    echo "  ! the page did not change after 3 swipes" >&2; return 1
-}
-
 MAP_PAGE=(docs/screenshots/hud_sparkline.jpg 90x280+18+405 0.5)   # the map buttons' column
 map_page_like() { page_like "${MAP_PAGE[@]}"; }
 goto_map_page() { goto_page_like "${MAP_PAGE[@]}"; }
