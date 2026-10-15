@@ -217,7 +217,9 @@ Native renders inside a `ConstraintLayout`, which lets a `wrap_content` value vi
 
 ### `header_ref` + `baseline_box` centering
 
-The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. So that the centering region keeps the same top either way, an invisible `header_ref` `TextView` (`lines=1`, styled like the visible label, `minHeight` set programmatically to match the visible header) anchors the top of `baseline_box` through `layout_below="@id/header_ref"`.
+The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. So that the centering region keeps the same top either way, an invisible `header_ref` `TextView` (`lines=1`, `minHeight` set programmatically) anchors the top of `baseline_box` through `layout_below="@id/header_ref"`.
+
+`header_ref` is shorter than the drawn header in two-line cells (61 px against 73 px in a 2-col 4-row cell), and that is what puts the value in the right place. Native centres a text box with more empty space above its digits than below them, so its digits sit below the box's centre. The value bitmap is tight to the digits, so centring it in a region that starts at the drawn header would land it about 6 px low. The `headerMinHeightDp` formula is tuned so the bitmap lands on native's pixels instead, which it does in every two-column layout (see [Native header and value sizing](sdk-findings.md#native-header-and-value-sizing)). Treat it as a placement constant, not a header height.
 
 Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value` `ImageView` (`Space` would have been the natural choice but is blocked by the allowlist). The 1:1 weights centre the value between header bottom and cell bottom, as native does, and follow the cell when the rideapp shrinks it, with no `cellHeightPx` plumbing.
 

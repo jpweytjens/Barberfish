@@ -358,8 +358,9 @@ private fun applyHeaderChrome(
         else 0f
     val labelAvailableWidthPx = cellWidthPx - iconWidthPx - HEADER_LABEL_CHROME_DP * density
 
-    // header_ref anchors baseline_box's top via layout_below; its minHeight
-    // must match the visible header so the centering region mirrors native's.
+    // header_ref's bottom is the top of baseline_box, the region the value is centred in. Its
+    // height is not the drawn header's: it is tuned so the centred value bitmap lands where native
+    // draws its value (docs/architecture.md, "header_ref + baseline_box centering").
     val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
     rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
 

@@ -53,8 +53,9 @@ fun ViewConfig.toViewSizeConfig(
             else -> 12
         }
     val paddingH = 4.dp
-    // header_ref minHeight = max(icon-row floor 26 dp, label text band).
-    // 2-line band uses native's lineSpacingMultiplier=0.6 for narrow cells.
+    // header_ref minHeight: the top of the value's centring region, tuned against native's value
+    // placement rather than taken from the drawn header (see BarberfishView). Floored at 26 dp,
+    // 1.2 x the label sp for one line, 0.6 of that again for a second.
     val labelBandDp =
         if (labelMaxLines == 1) {
             labelSp * 1.2f
