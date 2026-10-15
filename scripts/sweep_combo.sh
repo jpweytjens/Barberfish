@@ -14,24 +14,19 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+source scripts/_karoo.sh
 
 OUTDIR="${OUTDIR:?set OUTDIR to the combo capture dir, e.g. screencaps/sweeps/2_large_keysoff}"
 
 RIDE=io.hammerhead.rideapp/.views.ride.RideActivity
 
-size=$(adb shell wm size | awk -F'[ x]' '/Physical size/ {print $(NF-1), $NF}')
-W=$(echo "$size" | awk '{print $1}')
-H=$(echo "$size" | awk '{print $2}')
-
-wake() { adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true; }
-# Forward = next page (finger moves left); the only reliable swipe direction.
-swipe_next() { adb shell input swipe $((W * 8 / 10)) $((H / 2)) $((W * 2 / 10)) $((H / 2)) 200; }
+screen_size
 
 echo "reset ride to page 1 (map)"
-adb shell am force-stop io.hammerhead.rideapp
+A shell am force-stop io.hammerhead.rideapp
 sleep 1
 wake
-adb shell am start -n "$RIDE" >/dev/null
+A shell am start -n "$RIDE" >/dev/null
 sleep 3
 
 echo "step to first data page (1x1n)"

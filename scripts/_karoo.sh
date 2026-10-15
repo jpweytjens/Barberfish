@@ -3,11 +3,22 @@
 # drop when it dozes, tap by element text through uiautomator, start and end rides, and switch
 # the theme.
 #
-# The caller sets, before calling any helper:
-#   STAGE   a scratch directory (dumps and probe screencaps land here)
-#   W, H    the screen size in px (K3: 480 x 800)
+# The caller sets, before calling the helpers that need them:
+#   STAGE   a scratch directory, for dump, tap and ride_end (dumps and probe screencaps land here)
+#   W, H    the screen size in px (K3: 480 x 800), or calls screen_size to read it
 # UI defaults to $STAGE/ui.xml. Fixed tap coordinates below are K3 positions.
-UI="${UI:-$STAGE/ui.xml}"
+UI="${UI:-${STAGE:-}/ui.xml}"
+
+screen_size() { # set W and H from the connected device, so swipes work on K2 (landscape) and K3
+    local size
+    size=$(A shell wm size | awk -F'[ x]' '/Physical size/ {print $(NF-1), $NF}')
+    read -r W H <<<"$size"
+    [[ -n "${W:-}" && -n "${H:-}" ]] || { echo "  ! could not read the screen size" >&2; return 1; }
+}
+
+# The ride pager's next page (finger moves left). Forward is the only reliable direction:
+# backward swipes drop on dense pages.
+swipe_next() { A shell input swipe $((W * 8 / 10)) $((H / 2)) $((W * 2 / 10)) $((H / 2)) 200; }
 
 # ---- adb / ui helpers --------------------------------------------------------
 # The Karoo suspends its USB controller when it dozes, re-enumerating on the bus
