@@ -130,9 +130,8 @@ Presets:
 | Preset                    | Use                                                           |
 | ------------------------- | ------------------------------------------------------------- |
 | `ViewSizeConfig.STANDARD` | Default values; overridden by `toViewSizeConfig()` at runtime |
-| `ViewSizeConfig.HUD_THREE`| On-device HUD 3-column slots (colSpan=20)                     |
-| `ViewSizeConfig.HUD_FOUR` | On-device HUD 4-column slots (colSpan=15)                     |
-| `PREVIEW_HUD_THREE/FOUR`  | Config-screen HUD previews (same sizing, `labelMaxLines = 2`) |
+| `ViewSizeConfig.HUD_THREE`| HUD 3-column slots (colSpan=20), live and config preview      |
+| `ViewSizeConfig.HUD_FOUR` | HUD 4-column slots (colSpan=15), live and config preview      |
 
 ---
 

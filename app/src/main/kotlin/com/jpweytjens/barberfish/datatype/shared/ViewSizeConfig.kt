@@ -209,9 +209,5 @@ data class ViewSizeConfig(
                 wrapThresholdSp = 12,
                 valueFontSizeBase = 34,
             )
-
-        // Config-screen preview: same value/header sizing as on-device.
-        val PREVIEW_HUD_THREE = HUD_THREE.copy(labelMaxLines = 2)
-        val PREVIEW_HUD_FOUR = HUD_FOUR.copy(labelMaxLines = 2)
     }
 }

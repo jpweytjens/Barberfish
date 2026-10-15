@@ -634,8 +634,7 @@ private fun HUDPreviewCell(
     columns: Int = 3,
     reserveSparklineSpace: Boolean = true,
 ) {
-    val baseConfig =
-        if (columns == 4) ViewSizeConfig.PREVIEW_HUD_FOUR else ViewSizeConfig.PREVIEW_HUD_THREE
+    val baseConfig = if (columns == 4) ViewSizeConfig.HUD_FOUR else ViewSizeConfig.HUD_THREE
     BoxWithConstraints(
         modifier =
             modifier

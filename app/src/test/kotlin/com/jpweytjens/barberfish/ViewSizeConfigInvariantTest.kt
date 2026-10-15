@@ -39,14 +39,4 @@ class ViewSizeConfigInvariantTest {
     fun hud_four_bitmap_fits_value_font() {
         assertFits("HUD_FOUR", ViewSizeConfig.HUD_FOUR)
     }
-
-    @Test
-    fun preview_hud_three_bitmap_fits_value_font() {
-        assertFits("PREVIEW_HUD_THREE", ViewSizeConfig.PREVIEW_HUD_THREE)
-    }
-
-    @Test
-    fun preview_hud_four_bitmap_fits_value_font() {
-        assertFits("PREVIEW_HUD_FOUR", ViewSizeConfig.PREVIEW_HUD_FOUR)
-    }
 }
