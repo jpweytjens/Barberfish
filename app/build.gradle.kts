@@ -61,8 +61,11 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
-        // The fake-Karoo suite waits out real-time settle periods; four JVMs halve its wall time.
-        unitTests.all { it.maxParallelForks = 4 }
+        // The fake-Karoo suite waits out real-time settle periods, so parallel JVMs cut its wall
+        // time. Half the cores, at most four: a starved JVM misses those waits.
+        unitTests.all {
+            it.maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 4)
+        }
     }
 
     lint {
