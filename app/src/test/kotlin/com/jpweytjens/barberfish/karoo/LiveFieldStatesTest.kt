@@ -11,7 +11,6 @@ import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.inflate
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import fi.nikosavola.karooext.testing.robolectric.RobolectricPump
-import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import kotlin.time.Duration.Companion.seconds
@@ -51,9 +50,6 @@ class LiveFieldStatesTest {
         host = karoo.host<BarberfishExtension>()
     }
 
-    private fun point(typeId: String, vararg values: Pair<String, Double>) =
-        DataPoint(typeId, values.toMap())
-
     private fun render(typeId: String) = host.renderField(karoo.app, typeId)
 
     @Test
@@ -88,13 +84,13 @@ class LiveFieldStatesTest {
         assertEquals("Searching…", searching.fieldStateText())
 
         RobolectricPump.advanceBy(1.seconds)
-        karoo.system.setDataPoint(point(DataType.Type.POWER, DataType.Field.POWER to 210.0))
+        karoo.system.setDataPoint(dataPoint(DataType.Type.POWER, DataType.Field.POWER to 210.0))
         val live = view.awaitRendered(karoo) { it.fieldStateText() == null }
         assertTrue(live.fieldValueVisible())
     }
 
     @Test
-    fun a_plain_value_field_without_a_route_reads_not_available() {
+    fun a_plain_value_field_without_a_source_reads_not_available() {
         karoo.system.setStreamState(DataType.Type.DISTANCE, StreamState.NotAvailable)
         assertEquals("Not available", render("distance").fieldStateText())
     }
@@ -107,39 +103,31 @@ class LiveFieldStatesTest {
         assertEquals("No route", noRoute.fieldStateText())
 
         RobolectricPump.advanceBy(1.seconds)
-        karoo.system.setDataPoint(
-            point(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                DataType.Field.DISTANCE_TO_DESTINATION to 2_500.0,
-                DataType.Field.ON_ROUTE to 0.0,
-            )
-        )
+        karoo.system.setDistanceRemaining(2_500.0, onRoute = false)
         view.awaitRendered(karoo) { it.fieldStateText() == "Off route" }
 
         RobolectricPump.advanceBy(1.seconds)
-        karoo.system.setDataPoint(
-            point(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                DataType.Field.DISTANCE_TO_DESTINATION to 2_500.0,
-                DataType.Field.ON_ROUTE to 1.0,
-            )
-        )
+        karoo.system.setDistanceRemaining(2_500.0)
         val onRoute = view.awaitRendered(karoo) { it.fieldStateText() == null }
         assertTrue(onRoute.fieldValueVisible())
     }
 
     @Test
     fun a_last_lap_field_reports_no_laps_until_the_second_lap() {
-        karoo.system.setDataPoint(point(DataType.Type.LAP_NUMBER, DataType.Field.LAP_NUMBER to 1.0))
         karoo.system.setDataPoint(
-            point(DataType.Type.ELAPSED_TIME_LAST_LAP, DataType.Field.ELAPSED_TIME to 90.0)
+            dataPoint(DataType.Type.LAP_NUMBER, DataType.Field.LAP_NUMBER to 1.0)
+        )
+        karoo.system.setDataPoint(
+            dataPoint(DataType.Type.ELAPSED_TIME_LAST_LAP, DataType.Field.ELAPSED_TIME to 90.0)
         )
         val view = host.startView("time-last-lap", FIELD_CONFIG)
         val first = view.awaitFrame(15_000).inflate(karoo.app, FIELD_CONFIG)
         assertEquals("No laps yet", first.fieldStateText())
 
         RobolectricPump.advanceBy(1.seconds)
-        karoo.system.setDataPoint(point(DataType.Type.LAP_NUMBER, DataType.Field.LAP_NUMBER to 2.0))
+        karoo.system.setDataPoint(
+            dataPoint(DataType.Type.LAP_NUMBER, DataType.Field.LAP_NUMBER to 2.0)
+        )
         val second = view.awaitRendered(karoo) { it.fieldStateText() == null }
         assertTrue(second.fieldValueVisible())
     }
@@ -147,7 +135,7 @@ class LiveFieldStatesTest {
     @Test
     fun a_plain_time_field_shows_its_value_without_a_lap_stream() {
         karoo.system.setDataPoint(
-            point(DataType.Type.RIDE_TIME, DataType.Field.RIDE_TIME to 3661.0)
+            dataPoint(DataType.Type.RIDE_TIME, DataType.Field.RIDE_TIME to 3661.0)
         )
         val view = render("time-elapsed")
         assertEquals(null, view.fieldStateText())

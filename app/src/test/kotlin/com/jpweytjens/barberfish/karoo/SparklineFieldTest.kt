@@ -12,11 +12,9 @@ import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.inflate
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import fi.nikosavola.karooext.testing.robolectric.RobolectricPump
-import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.ViewConfig
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
@@ -38,8 +36,6 @@ class SparklineFieldTest {
 
     private lateinit var host: FakeKarooHost
 
-    private val config = ViewConfig(gridSize = 60 to 30, viewSize = 480 to 200, textSize = 30)
-
     @Before
     fun startExtension() {
         val app = ApplicationProvider.getApplicationContext<Application>()
@@ -51,19 +47,11 @@ class SparklineFieldTest {
         host = karoo.host<BarberfishExtension>()
     }
 
-    private fun distanceRemaining(meters: Double) =
-        karoo.system.setDataPoint(
-            DataPoint(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                mapOf(
-                    DataType.Field.DISTANCE_TO_DESTINATION to meters,
-                    DataType.Field.ON_ROUTE to 1.0,
-                ),
-            )
-        )
-
     private fun render(typeId: String) =
-        host.startView(typeId, config).awaitFrame(20_000).inflate(karoo.app, config)
+        host
+            .startView(typeId, TALL_FIELD_CONFIG)
+            .awaitFrame(20_000)
+            .inflate(karoo.app, TALL_FIELD_CONFIG)
 
     @Test
     fun the_elevation_sparkline_shows_its_header_by_default() {
@@ -87,7 +75,7 @@ class SparklineFieldTest {
     @Test
     fun following_a_route_draws_an_elevation_profile() {
         karoo.system.setNavigation(climbRoute().navigating())
-        distanceRemaining(4_000.0)
+        karoo.system.setDistanceRemaining(4_000.0)
         val bitmap = render("elevation-sparkline").sparklineValue()
         assertTrue(bitmap.width > 0 && bitmap.height > 0)
     }
@@ -95,18 +83,18 @@ class SparklineFieldTest {
     @Test
     fun a_route_change_redraws_the_profile() {
         karoo.system.setNavigation(climbRoute().navigating())
-        distanceRemaining(4_000.0)
-        val view = host.startView("elevation-sparkline", config)
-        val climb = view.awaitFrame(20_000).inflate(karoo.app, config).sparklineValue()
+        karoo.system.setDistanceRemaining(4_000.0)
+        val view = host.startView("elevation-sparkline", TALL_FIELD_CONFIG)
+        val climb = view.awaitFrame(20_000).inflate(karoo.app, TALL_FIELD_CONFIG).sparklineValue()
 
         RobolectricPump.advanceBy(3.seconds)
         karoo.system.setNavigation(flatRoute().navigating())
-        distanceRemaining(4_000.0)
+        karoo.system.setDistanceRemaining(4_000.0)
 
         // A redraw of the climb can land before the flat route's frame, so the first new frame
         // proves nothing; wait for a strip that differs from the climb's.
         karoo.awaitValue {
-            view.frames.last().inflate(karoo.app, config).sparklineValue().takeUnless {
+            view.frames.last().inflate(karoo.app, TALL_FIELD_CONFIG).sparklineValue().takeUnless {
                 it.sameAs(climb)
             }
         }

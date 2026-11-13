@@ -12,10 +12,7 @@ import fi.nikosavola.karooext.testing.ViewRecorder
 import fi.nikosavola.karooext.testing.inflate
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import fi.nikosavola.karooext.testing.robolectric.RobolectricPump
-import io.hammerhead.karooext.models.DataPoint
-import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.Symbol
-import io.hammerhead.karooext.models.ViewConfig
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -36,8 +33,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class SparklinePoiTest {
     @get:Rule val karoo = FakeKarooRule()
-
-    private val config = ViewConfig(gridSize = 60 to 30, viewSize = 480 to 200, textSize = 30)
     private lateinit var host: FakeKarooHost
 
     @Before
@@ -45,15 +40,7 @@ class SparklinePoiTest {
         val app = ApplicationProvider.getApplicationContext<Application>()
         clearBarberfishSettings(app)
         karoo.system.setNavigation(climbRoute().navigating())
-        karoo.system.setDataPoint(
-            DataPoint(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                mapOf(
-                    DataType.Field.DISTANCE_TO_DESTINATION to 4_000.0,
-                    DataType.Field.ON_ROUTE to 1.0,
-                ),
-            )
-        )
+        karoo.system.setDistanceRemaining(4_000.0)
         RobolectricPump.advanceBy(1.seconds)
         host = karoo.host<BarberfishExtension>()
     }
@@ -66,12 +53,12 @@ class SparklinePoiTest {
 
     /** The strip in the field's latest frame. */
     private fun ViewRecorder.strip(): Bitmap =
-        frames.last().inflate(karoo.app, config).sparklineValue()
+        frames.last().inflate(karoo.app, TALL_FIELD_CONFIG).sparklineValue()
 
     /** Opens the field with no saved POIs and returns it with the unmarked strip it draws. */
     private fun openBareStrip(): Pair<ViewRecorder, Bitmap> {
         karoo.system.setGlobalPois(emptyList())
-        val view = host.startView("elevation-sparkline", config)
+        val view = host.startView("elevation-sparkline", TALL_FIELD_CONFIG)
         view.awaitFrame(15_000)
         return view to view.strip()
     }

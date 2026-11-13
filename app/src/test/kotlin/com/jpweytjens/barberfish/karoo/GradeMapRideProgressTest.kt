@@ -6,7 +6,6 @@ import com.jpweytjens.barberfish.extension.BarberfishExtension
 import fi.nikosavola.karooext.testing.MapRecorder
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import fi.nikosavola.karooext.testing.robolectric.RobolectricPump
-import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.HideSymbols
 import kotlin.time.Duration.Companion.seconds
@@ -40,16 +39,7 @@ class GradeMapRideProgressTest {
         return map
     }
 
-    private fun ridden(metres: Double) =
-        karoo.system.setDataPoint(
-            DataPoint(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                mapOf(
-                    DataType.Field.DISTANCE_TO_DESTINATION to 4_000.0 - metres,
-                    DataType.Field.ON_ROUTE to 1.0,
-                ),
-            )
-        )
+    private fun ridden(metres: Double) = karoo.system.setDistanceRemaining(4_000.0 - metres)
 
     private fun MapRecorder.chevronsM() = visibleChevrons().map { metresEast(it.lng) }
 

@@ -9,10 +9,8 @@ import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import fi.nikosavola.karooext.testing.robolectric.RobolectricPump
-import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.ViewConfig
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
@@ -46,9 +44,6 @@ class FieldStreamLifecycleTest {
         host = karoo.startBarberfish()
     }
 
-    private fun point(typeId: String, vararg values: Pair<String, Double>) =
-        DataPoint(typeId, values.toMap())
-
     private fun awaitConsumersReleased(before: Int) {
         karoo.awaitValue { true.takeIf { karoo.system.consumerCount == before } }
     }
@@ -57,7 +52,7 @@ class FieldStreamLifecycleTest {
     fun a_numeric_view_registers_its_sensor_consumer_and_releases_it_on_stop() {
         val before = karoo.system.consumerCount
         val view = host.startView("power", FIELD_CONFIG)
-        karoo.system.setDataPoint(point(DataType.Type.POWER, DataType.Field.POWER to 200.0))
+        karoo.system.setDataPoint(dataPoint(DataType.Type.POWER, DataType.Field.POWER to 200.0))
         view.awaitFrame(15_000)
         assertTrue(
             "the power field should hold a sensor consumer while open",
@@ -72,15 +67,9 @@ class FieldStreamLifecycleTest {
     fun a_combined_view_releases_every_consumer_it_registered() {
         val before = karoo.system.consumerCount
         val view = host.startView("remaining-effort", FIELD_CONFIG)
+        karoo.system.setDistanceRemaining(2_000.0)
         karoo.system.setDataPoint(
-            point(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                DataType.Field.DISTANCE_TO_DESTINATION to 2_000.0,
-                DataType.Field.ON_ROUTE to 1.0,
-            )
-        )
-        karoo.system.setDataPoint(
-            point(
+            dataPoint(
                 DataType.Type.ELEVATION_REMAINING,
                 DataType.Field.ASCENT_REMAINING to 300.0,
             )
@@ -96,15 +85,8 @@ class FieldStreamLifecycleTest {
     fun a_sparkline_view_releases_its_route_consumers_on_stop() {
         karoo.system.setNavigation(climbRoute().navigating())
         val before = karoo.system.consumerCount
-        val config = ViewConfig(gridSize = 60 to 30, viewSize = 480 to 200, textSize = 30)
-        val view = host.startView("elevation-sparkline", config)
-        karoo.system.setDataPoint(
-            point(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                DataType.Field.DISTANCE_TO_DESTINATION to 4_000.0,
-                DataType.Field.ON_ROUTE to 1.0,
-            )
-        )
+        val view = host.startView("elevation-sparkline", TALL_FIELD_CONFIG)
+        karoo.system.setDistanceRemaining(4_000.0)
         view.awaitFrame(20_000)
         assertTrue(karoo.system.consumerCount > before)
 

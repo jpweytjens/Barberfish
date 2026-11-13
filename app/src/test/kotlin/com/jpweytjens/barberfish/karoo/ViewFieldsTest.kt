@@ -1,13 +1,8 @@
 package com.jpweytjens.barberfish.karoo
 
 import android.app.Application
-import android.graphics.Bitmap
-import android.graphics.drawable.BitmapDrawable
 import android.view.View
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
-import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.FakeKarooSystem
@@ -18,7 +13,6 @@ import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
-import io.hammerhead.karooext.models.ViewConfig
 import kotlin.time.Duration.Companion.seconds
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -44,8 +38,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ViewFieldsTest {
     @get:Rule val karoo = FakeKarooRule()
-
-    private val config = ViewConfig(gridSize = 60 to 15, viewSize = 480 to 200, textSize = 30)
     private lateinit var host: FakeKarooHost
 
     @Before
@@ -72,30 +64,21 @@ class ViewFieldsTest {
 
     /** What a field shows once it has its first frame, under its own session. */
     private fun render(typeId: String): View =
-        host.startView(typeId, config).awaitFrame(10_000).inflate(karoo.app, config)
-
-    private fun View.value(): Bitmap =
-        (findViewById<ImageView>(R.id.field_value).drawable as BitmapDrawable).bitmap
-
-    private fun View.stateText(): String? =
-        findViewById<TextView>(R.id.stream_state_tv)
-            ?.takeIf { it.visibility == View.VISIBLE }
-            ?.text
-            ?.toString()
+        host.startView(typeId, FIELD_CONFIG).awaitFrame(10_000).inflate(karoo.app, FIELD_CONFIG)
 
     @Test
     fun distance_reads_the_same_in_km_and_in_miles_for_the_same_ride() {
         setUnits(FakeKarooSystem.metricProfile())
         distance(1_000.0)
-        val km = render("distance").value()
+        val km = render("distance").fieldValue()
 
         setUnits(FakeKarooSystem.imperialProfile())
         distance(1_609.344)
-        val miles = render("distance").value()
+        val miles = render("distance").fieldValue()
         assertTrue("1 km and 1 mi both read 1.0", km.sameAs(miles))
 
         distance(1_000.0)
-        val shortOfAMile = render("distance").value()
+        val shortOfAMile = render("distance").fieldValue()
         assertFalse("0.6 mi must not read like 1.0", km.sameAs(shortOfAMile))
     }
 
@@ -103,13 +86,13 @@ class ViewFieldsTest {
     fun ascent_remaining_is_shown_in_feet_for_an_imperial_rider() {
         setUnits(FakeKarooSystem.metricProfile())
         ascentRemaining(1_000.0)
-        val thousandMetres = render("elevation-remaining").value()
+        val thousandMetres = render("elevation-remaining").fieldValue()
         ascentRemaining(304.8)
-        val metresForTheRoad = render("elevation-remaining").value()
+        val metresForTheRoad = render("elevation-remaining").fieldValue()
 
         setUnits(FakeKarooSystem.imperialProfile())
         ascentRemaining(304.8)
-        val thousandFeet = render("elevation-remaining").value()
+        val thousandFeet = render("elevation-remaining").fieldValue()
 
         assertTrue("304.8 m and 1000 m both read 1000", thousandFeet.sameAs(thousandMetres))
         assertFalse("304.8 m reads 305 in metres", thousandFeet.sameAs(metresForTheRoad))
@@ -119,43 +102,30 @@ class ViewFieldsTest {
     fun a_unit_change_on_the_device_re_renders_the_open_field() {
         setUnits(FakeKarooSystem.metricProfile())
         distance(1_000.0)
-        val view = host.startView("distance", config)
+        val view = host.startView("distance", FIELD_CONFIG)
         val metricFrame = view.awaitFrame(10_000)
-        val kmBitmap = metricFrame.inflate(karoo.app, config).value()
+        val kmBitmap = metricFrame.inflate(karoo.app, FIELD_CONFIG).fieldValue()
 
         RobolectricPump.advanceBy(1.seconds)
         setUnits(FakeKarooSystem.imperialProfile())
 
         // 1000 m is 0.6 mi: not what the metric frame said, and what a fresh imperial field shows.
-        val miBitmap = view.awaitRendered(karoo, config) { !it.value().sameAs(kmBitmap) }.value()
-        assertTrue(miBitmap.sameAs(render("distance").value()))
+        val miBitmap =
+            view
+                .awaitRendered(karoo, FIELD_CONFIG) { !it.fieldValue().sameAs(kmBitmap) }
+                .fieldValue()
+        assertTrue(miBitmap.sameAs(render("distance").fieldValue()))
     }
 
     @Test
     fun remaining_distance_says_why_it_has_no_number() {
         karoo.system.setStreamState(DataType.Type.DISTANCE_TO_DESTINATION, StreamState.NotAvailable)
-        assertEquals("No route", render("distance-remaining").stateText())
+        assertEquals("No route", render("distance-remaining").fieldStateText())
 
-        karoo.system.setDataPoint(
-            DataPoint(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                mapOf(
-                    DataType.Field.DISTANCE_TO_DESTINATION to 2_500.0,
-                    DataType.Field.ON_ROUTE to 0.0,
-                ),
-            )
-        )
-        assertEquals("Off route", render("distance-remaining").stateText())
+        karoo.system.setDistanceRemaining(2_500.0, onRoute = false)
+        assertEquals("Off route", render("distance-remaining").fieldStateText())
 
-        karoo.system.setDataPoint(
-            DataPoint(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                mapOf(
-                    DataType.Field.DISTANCE_TO_DESTINATION to 2_500.0,
-                    DataType.Field.ON_ROUTE to 1.0,
-                ),
-            )
-        )
-        assertEquals(null, render("distance-remaining").stateText())
+        karoo.system.setDistanceRemaining(2_500.0)
+        assertEquals(null, render("distance-remaining").fieldStateText())
     }
 }

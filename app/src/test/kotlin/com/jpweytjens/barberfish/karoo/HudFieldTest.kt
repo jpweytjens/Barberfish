@@ -20,7 +20,6 @@ import io.hammerhead.karooext.models.DataPoint
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.OnNavigationState
 import io.hammerhead.karooext.models.StreamState
-import io.hammerhead.karooext.models.ViewConfig
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -41,8 +40,6 @@ class HudFieldTest {
     @get:Rule val karoo = FakeKarooRule()
 
     private lateinit var host: FakeKarooHost
-
-    private val config = ViewConfig(gridSize = 60 to 30, viewSize = 480 to 200, textSize = 30)
 
     @Before
     fun startExtension() {
@@ -79,17 +76,6 @@ class HudFieldTest {
             DataPoint(DataType.Type.DISTANCE, mapOf(DataType.Field.DISTANCE to meters))
         )
 
-    private fun distanceRemaining(meters: Double) =
-        karoo.system.setDataPoint(
-            DataPoint(
-                DataType.Type.DISTANCE_TO_DESTINATION,
-                mapOf(
-                    DataType.Field.DISTANCE_TO_DESTINATION to meters,
-                    DataType.Field.ON_ROUTE to 1.0,
-                ),
-            )
-        )
-
     private fun container(view: android.view.View) =
         view.findViewById<View>(R.id.hud_sparkline_container)
 
@@ -97,7 +83,7 @@ class HudFieldTest {
     fun a_three_column_hud_reports_the_three_slot_layout() {
         runBlocking { saveSharedHUD(distanceSlots(columns = 3)) }
         distance(1_500.0)
-        val frame = host.startView("three-column", config).awaitFrame(20_000)
+        val frame = host.startView("three-column", TALL_FIELD_CONFIG).awaitFrame(20_000)
         assertEquals(R.layout.barberfish_hud, frame.layoutId)
     }
 
@@ -105,7 +91,7 @@ class HudFieldTest {
     fun a_four_column_hud_reports_the_four_slot_layout() {
         runBlocking { saveSharedHUD(distanceSlots(columns = 4)) }
         distance(1_500.0)
-        val frame = host.startView("three-column", config).awaitFrame(20_000)
+        val frame = host.startView("three-column", TALL_FIELD_CONFIG).awaitFrame(20_000)
         assertEquals(R.layout.barberfish_hud_four, frame.layoutId)
     }
 
@@ -113,7 +99,7 @@ class HudFieldTest {
     fun a_column_change_on_the_device_swaps_the_open_layout() {
         runBlocking { saveSharedHUD(distanceSlots(columns = 3)) }
         distance(1_500.0)
-        val view = host.startView("three-column", config)
+        val view = host.startView("three-column", TALL_FIELD_CONFIG)
         assertEquals(R.layout.barberfish_hud, view.awaitFrame(20_000).layoutId)
 
         RobolectricPump.advanceBy(2.seconds)
@@ -130,10 +116,10 @@ class HudFieldTest {
         runBlocking { saveSharedHUD(distanceSlots(columns = 3)) }
         karoo.system.setNavigation(climbRoute().navigating())
         distance(1_500.0)
-        distanceRemaining(4_000.0)
+        karoo.system.setDistanceRemaining(4_000.0)
 
-        val frame = host.startView("three-column", config).awaitFrame(20_000)
-        val inflated = frame.inflate(karoo.app, config)
+        val frame = host.startView("three-column", TALL_FIELD_CONFIG).awaitFrame(20_000)
+        val inflated = frame.inflate(karoo.app, TALL_FIELD_CONFIG)
         assertEquals(View.VISIBLE, container(inflated).visibility)
         assertEquals(
             View.VISIBLE,
@@ -148,8 +134,8 @@ class HudFieldTest {
         karoo.system.setStreamState(DataType.Type.DISTANCE_TO_DESTINATION, StreamState.NotAvailable)
         distance(1_500.0)
 
-        val frame = host.startView("three-column", config).awaitFrame(20_000)
-        val inflated = frame.inflate(karoo.app, config)
+        val frame = host.startView("three-column", TALL_FIELD_CONFIG).awaitFrame(20_000)
+        val inflated = frame.inflate(karoo.app, TALL_FIELD_CONFIG)
         assertEquals(View.GONE, container(inflated).visibility)
     }
 }

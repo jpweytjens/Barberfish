@@ -50,7 +50,7 @@ class GradeMapOverlayTest {
                 order.indexOf("$fillId-casing") in 0 until order.indexOf(fillId),
             )
         }
-        assertEquals(order.size, fills.size * 2)
+        assertEquals(fills.size * 2, order.size)
 
         val chevrons = map.visibleChevrons()
         assertTrue(chevrons.isNotEmpty())

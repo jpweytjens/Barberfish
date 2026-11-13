@@ -13,12 +13,15 @@ import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.dataStore
 import fi.nikosavola.karooext.testing.FakeKarooHost
+import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.MapRecorder
 import fi.nikosavola.karooext.testing.ViewRecorder
 import fi.nikosavola.karooext.testing.decodePolyline
 import fi.nikosavola.karooext.testing.inflate
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import io.hammerhead.karooext.models.ActiveRideProfile
+import io.hammerhead.karooext.models.DataPoint
+import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.HideSymbols
 import io.hammerhead.karooext.models.OnNavigationState
@@ -30,10 +33,25 @@ import kotlinx.coroutines.runBlocking
 
 private const val CASING_SUFFIX = "-casing"
 
-/**
- * A cell wide enough for a numeric field, matching the one the existing field tests render into.
- */
+/** A cell wide enough for a numeric field. */
 internal val FIELD_CONFIG = ViewConfig(gridSize = 60 to 15, viewSize = 480 to 200, textSize = 30)
+
+/** A double-height cell, the size the sparkline fields and the HUD strip render into. */
+internal val TALL_FIELD_CONFIG =
+    ViewConfig(gridSize = 60 to 30, viewSize = 480 to 200, textSize = 30)
+
+internal fun dataPoint(typeId: String, vararg values: Pair<String, Double>) =
+    DataPoint(typeId, values.toMap())
+
+/** The remaining-distance sample the ride app sends while a route is loaded. */
+internal fun FakeKarooSystem.setDistanceRemaining(meters: Double, onRoute: Boolean = true) =
+    setDataPoint(
+        dataPoint(
+            DataType.Type.DISTANCE_TO_DESTINATION,
+            DataType.Field.DISTANCE_TO_DESTINATION to meters,
+            DataType.Field.ON_ROUTE to if (onRoute) 1.0 else 0.0,
+        )
+    )
 
 /** The stream-state text a field shows when it has no value, or null once it has one. */
 internal fun View.fieldStateText(): String? =
