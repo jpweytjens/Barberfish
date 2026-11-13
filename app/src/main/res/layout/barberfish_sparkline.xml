@@ -7,7 +7,8 @@
     android:layout_height="match_parent"
     android:clipChildren="false">
 
-    <!-- Invisible probe whose height mirrors field_header; anchors the image top. -->
+    <!-- Invisible anchor shared with the numeric layouts, whose header code sets its
+         height. Nothing here is laid out below it: the image sits below field_header. -->
     <TextView
         android:id="@+id/header_ref"
         android:layout_width="match_parent"
@@ -67,5 +68,22 @@
         android:layout_below="@id/field_header"
         android:layout_alignParentBottom="true"
         android:scaleType="fitXY" />
+
+    <!-- "No route" placeholder in place of the image; styled like stream_state_tv in
+         barberfish_field.xml, with native's 6dp streamStateStyle bottom margin as padding. -->
+    <TextView
+        android:id="@+id/sparkline_state_tv"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/field_header"
+        android:layout_alignParentBottom="true"
+        android:paddingBottom="6dp"
+        android:gravity="center"
+        android:fontFamily="ibm-plex-sans-condensed"
+        android:textColor="@android:color/white"
+        android:includeFontPadding="false"
+        android:maxLines="2"
+        android:lineSpacingMultiplier="0.6"
+        android:visibility="gone" />
 
 </RelativeLayout>

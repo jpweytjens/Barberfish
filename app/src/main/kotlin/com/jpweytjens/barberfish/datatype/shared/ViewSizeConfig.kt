@@ -42,8 +42,6 @@ fun ViewConfig.toViewSizeConfig(
             colSpan == TWO_COLS && rowSpan >= FOUR_ROWS -> 17.6f // 33 px, both settings
             colSpan == TWO_COLS ->
                 twoColLabelSp(design.labelSize == LabelSize.LARGE) // 5-row: setting-driven
-            colSpan == THREE_COLS && rowSpan >= FIVE_ROWS -> 12.0f // HUD slot (1/3)
-            colSpan == FOUR_COLS && rowSpan >= FIVE_ROWS -> 11.0f // 4-col HUD slot (1/4)
             else -> 15.5f
         }
     val gapDp = maxOf(2, (labelSp * 0.2f).toInt())
@@ -52,12 +50,12 @@ fun ViewConfig.toViewSizeConfig(
         when {
             colSpan == ONE_COL -> 22
             colSpan == TWO_COLS -> 18
-            colSpan == THREE_COLS -> 14
             else -> 12
         }
-    val paddingH = if (colSpan <= THREE_COLS) 2.dp else 4.dp
-    // header_ref minHeight = max(icon-row floor 26 dp, label text band).
-    // 2-line band uses native's lineSpacingMultiplier=0.6 for narrow cells.
+    val paddingH = 4.dp
+    // header_ref minHeight: the top of the value's centring region, tuned against native's value
+    // placement rather than taken from the drawn header (see BarberfishView). Floored at 26 dp,
+    // 1.2 x the label sp for one line, 0.6 of that again for a second.
     val labelBandDp =
         if (labelMaxLines == 1) {
             labelSp * 1.2f
@@ -67,7 +65,7 @@ fun ViewConfig.toViewSizeConfig(
     val headerMinHeightDp = maxOf(26, labelBandDp.toInt())
     // Native line-spacing multiplier is 0.6 only in 2-col 5-row cells; the
     // header style default 0.7 applies everywhere else (1-col labels are
-    // single-line, so the value is moot there). HUD slots keep 0.6.
+    // single-line, so the value is moot there). HUD slots use 0.7 in their presets.
     // See docs/sdk-findings.md § "Native header and value sizing".
     val fiveRowTwoCol = colSpan == TWO_COLS && rowSpan < FOUR_ROWS
     val headerLineSpacingMult =
@@ -184,12 +182,15 @@ data class ViewSizeConfig(
                 colSpan = THREE_COLS,
                 rowSpan = FIVE_ROWS,
                 paddingH = 2.dp,
-                headerIconSize = 12.dp,
+                headerIconSize = 13.dp,
                 headerIconLabelGap = 2.dp,
-                headerFontSize = 12.sp,
-                labelMaxLines = 1,
+                headerFontSize = 13.sp,
+                headerLineSpacingMult = 0.7f,
+                // Every slot reserves two label lines, so one- and two-line labels align.
+                labelMaxLines = 2,
                 wrapThresholdSp = 14,
-                valueFontSizeBase = 42,
+                valueFontSizeBase = 49,
+                valueBitmapHeightDp = 36,
             )
 
         // On-device HUD 4-column slots (colSpan=15)
@@ -198,16 +199,14 @@ data class ViewSizeConfig(
                 colSpan = FOUR_COLS,
                 rowSpan = FIVE_ROWS,
                 paddingH = 2.dp,
-                headerIconSize = 11.dp,
+                headerIconSize = 12.dp,
                 headerIconLabelGap = 2.dp,
-                headerFontSize = 11.sp,
-                labelMaxLines = 1,
+                headerFontSize = 12.sp,
+                headerLineSpacingMult = 0.7f,
+                // Every slot reserves two label lines, so one- and two-line labels align.
+                labelMaxLines = 2,
                 wrapThresholdSp = 12,
-                valueFontSizeBase = 32,
+                valueFontSizeBase = 36,
             )
-
-        // Config-screen preview: same value/header sizing as on-device.
-        val PREVIEW_HUD_THREE = HUD_THREE.copy(labelMaxLines = 2)
-        val PREVIEW_HUD_FOUR = HUD_FOUR.copy(labelMaxLines = 2)
     }
 }

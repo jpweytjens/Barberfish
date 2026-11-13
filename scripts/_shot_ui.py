@@ -12,6 +12,7 @@ Usage:
     _shot_ui.py XML tap  res    VALUE      # ... whose resource-id == VALUE
     _shot_ui.py XML tap  chevron CARDTEXT  # the Expand/Collapse control on CARDTEXT's row
     _shot_ui.py XML tap  hud-col N         # center of the Nth HUD preview column (1-based)
+    _shot_ui.py XML tap  below HEAD VALUE  # node whose text == VALUE nearest below heading HEAD
     _shot_ui.py XML has  text*  PREFIX     # exit 0 if present, 3 if not (for scroll loops)
     _shot_ui.py XML has  res    VALUE
     _shot_ui.py XML box  text   VALUE      # bounds 'x1 y1 x2 y2' of the matched node
@@ -82,6 +83,16 @@ def chevron(ns, card_text):
     return None
 
 
+def below(ns, heading, text):
+    """The node whose text == text that sits nearest below the node whose text == heading, so a
+    choice like "On" resolves to the setting under that heading, not to another one."""
+    anchor = next((n for n in ns if n["text"] == heading), None)
+    if not anchor:
+        return None
+    under = [n for n in ns if n["text"] == text and n["y1"] >= anchor["y2"]]
+    return min(under, key=lambda n: n["y1"], default=None)
+
+
 def hud_column(ns, idx):
     """Nth cell of the HUD preview strip: the first row of >=3 equal-width cells
     inside the bf:hud:preview container."""
@@ -116,6 +127,8 @@ def main():
             n = chevron(ns, sys.argv[4])
         elif kind == "hud-col":
             n = hud_column(ns, int(sys.argv[4]))
+        elif kind == "below":
+            n = below(ns, sys.argv[4], sys.argv[5])
         else:
             n = match(ns, kind, sys.argv[4])
         if n:

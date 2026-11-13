@@ -4,9 +4,23 @@
 
 HUD:
 - Each Karoo profile can have its own HUD, so every bike shows the numbers that suit it. Thanks to Theolean for the request.
+- Less padding above the row of numbers
+- Smaller touch-ups: messages such as No GPS signal stay on one line in a 3 column HUD, a long distance in Ride Remaining no longer cuts off its icon, and the preview in the settings shows values at the size they have on the device
+
+Easier to read:
+- Numbers are larger: in the 3 and the 4 column HUD, in both rows of Ride Remaining, and in fields, where short values no longer shrink more than the cell requires
+- HUD labels are larger too
+
+Fields:
+- Profile and Overview say No route when no route is loaded, where they used to stay blank
 
 Grade map and Overview:
 - Both now follow a route to a dropped pin or POI, as the HUD profile already did
+
+Battery:
+- With the grade map, the HUD's profile strip or the fourth HUD column turned off, Barberfish no longer reads the data behind them
+- Fields redraw only when what they show has changed
+- The grade map does less work per GPS fix on long routes
 
 Settings reset:
 - If you last changed the HUD's profile strip before 3.1, it returns to its defaults after this update

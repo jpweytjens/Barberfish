@@ -1,9 +1,11 @@
 package com.jpweytjens.barberfish
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import androidx.datastore.preferences.core.edit
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
@@ -12,7 +14,10 @@ import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
+import com.jpweytjens.barberfish.datatype.shared.GRADE_EDGE_OFF
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
+import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -22,14 +27,16 @@ import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.datatype.sparklineImageSize
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
-import com.jpweytjens.barberfish.extension.streamActiveHUDConfig
+import com.jpweytjens.barberfish.extension.dataStore
+import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
-import com.jpweytjens.barberfish.extension.updateActiveHUDConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
 import java.io.File
@@ -78,13 +85,37 @@ class AllFieldPreviewsRenderTest {
     @Test
     fun rendersAllFieldPreviewPngs() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val context = instrumentation.targetContext
+        // Dark theme whatever the device is set to: the renders read night mode from the
+        // context's configuration.
+        val context =
+            instrumentation.targetContext.let {
+                val night =
+                    Configuration(it.resources.configuration).apply {
+                        uiMode =
+                            (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                                Configuration.UI_MODE_NIGHT_YES
+                    }
+                it.createConfigurationContext(night)
+            }
         val karooSystem = KarooSystemService(context)
         val connected = CountDownLatch(1)
         karooSystem.connect { connected.countDown() }
         assertTrue("Karoo system did not connect", connected.await(15, TimeUnit.SECONDS))
 
+        // The docs show the defaults, not the device's settings: render from a cleared store
+        // with only the palettes set, and put the rider's settings back afterwards.
+        val riderSettings = runBlocking { context.dataStore.data.first() }
         try {
+            runBlocking {
+                context.dataStore.edit { it.clear() }
+                context.saveZoneConfig(
+                    ZoneConfig(
+                        hrPalette = ZonePalette.BARBERFISH,
+                        powerPalette = ZonePalette.BARBERFISH,
+                        gradePalette = GradePalette.BARBERFISH,
+                    )
+                )
+            }
             val design = DataFieldDesignConfig()
             val outDir = File(context.getExternalFilesDir(null), "previews").apply { mkdirs() }
             val types = barberfishDataTypes(karooSystem)
@@ -104,25 +135,31 @@ class AllFieldPreviewsRenderTest {
             }
             for (sample in samples) {
                 val config = if (sample.type is HUDDataType) hudConfig else cellConfig
-                writePreviewPng(sample, sample.type.typeId, config, design, context, outDir)
+                writePreviewPng(
+                    sample.withHudColumns(3),
+                    sample.type.typeId,
+                    config,
+                    design,
+                    context,
+                    outDir,
+                )
             }
 
-            // Second HUD render: flip the HUD setting to 4 columns so both variants
-            // land in the contact sheet, then restore the rider's config. The preview shows
-            // the active profile's HUD, so edit that one, not necessarily the Shared HUD.
+            // Second HUD render at 4 columns, so both variants land in the contact sheet.
+            // HUDState carries all four slots whatever the rider's column setting, so each
+            // render sets its own column count instead of reading it from the device.
             val hud = types.filterIsInstance<HUDDataType>().single()
-            val originalHud = runBlocking { context.streamActiveHUDConfig().first() }
-            try {
-                runBlocking {
-                    context.updateActiveHUDConfig { it.copy(slots = it.slots.copy(columns = 4)) }
-                }
-                // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
-                // two HUD renders show different values.
-                val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
-                writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
-            } finally {
-                runBlocking { context.updateActiveHUDConfig { originalHud } }
-            }
+            // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
+            // two HUD renders show different values.
+            val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
+            writePreviewPng(
+                fourCol.withHudColumns(4),
+                "${hud.typeId}-4col",
+                hudConfig,
+                design,
+                context,
+                outDir,
+            )
 
             // Doc renders: the three Grade statuses as single-cell crops for
             // docs/algorithms.md, written to a subdir so the contact-sheet grid
@@ -153,7 +190,9 @@ class AllFieldPreviewsRenderTest {
             // recaptures never move the windows. 3 km in, the default 5 km lookahead
             // frames the Muur and the second climb with their summit POIs.
             val sparkline = types.filterIsInstance<ElevationSparklineField>().single()
-            val sparkCfg = SparklineConfig()
+            // Descents uncolored: the doc renders are about climbs, and on the ridden side a
+            // compressed steep descent otherwise leaves a dimmed sliver of fill.
+            val sparkCfg = SparklineConfig(descentEdge = -GRADE_EDGE_OFF)
             val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
             val elevPoints =
                 visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
@@ -264,6 +303,12 @@ class AllFieldPreviewsRenderTest {
                 outDir,
             )
         } finally {
+            runBlocking {
+                context.dataStore.edit {
+                    it.clear()
+                    it += riderSettings
+                }
+            }
             karooSystem.disconnect()
         }
     }
@@ -284,6 +329,13 @@ class AllFieldPreviewsRenderTest {
     }
 
     private class Sample<T>(val type: BarberfishBase<T>, val state: T)
+
+    /** This sample with a HUD state drawn at [columns] columns; other samples unchanged. */
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> Sample<T>.withHudColumns(columns: Int): Sample<T> {
+        val hudState = state as? HUDState ?: return this
+        return Sample(type, hudState.copy(columns = columns) as T)
+    }
 
     private suspend fun <T> collectSample(
         type: BarberfishBase<T>,

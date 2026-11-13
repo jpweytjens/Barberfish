@@ -10,11 +10,38 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
+import androidx.collection.LruCache
 import io.hammerhead.karooext.models.ViewConfig
 import kotlin.math.roundToInt
 
 private const val MIN_BITMAP_HEIGHT_PX = 30
 private const val LETTER_SPACING = -0.04f
+
+/** The paint value text is drawn with, so a width measured with it is the width drawn. */
+internal fun valuePaint(fontSizePx: Float): Paint =
+    Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("relative", Typeface.NORMAL)
+        textSize = fontSizePx
+        letterSpacing = LETTER_SPACING
+    }
+
+/** The paint header labels are drawn with, so a width measured with it is the width drawn. */
+internal fun headerPaint(fontSizePx: Float): TextPaint =
+    TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+        textSize = fontSizePx
+    }
+
+/**
+ * Height in px a header label reserves for [maxLines] lines of [paint] at [lineSpacingMult]: the
+ * native header TextView's `lineH + (maxLines − 1) × round(lineH × mult)`, with `lineH` from
+ * `Paint.getFontMetricsInt`. [renderHeaderBitmap] draws into exactly this height.
+ */
+internal fun headerReservedHeightPx(paint: Paint, maxLines: Int, lineSpacingMult: Float): Int {
+    val fm = paint.fontMetricsInt
+    val lineHeight = fm.descent - fm.ascent
+    return lineHeight + (maxLines - 1) * (lineHeight * lineSpacingMult).roundToInt()
+}
 
 /**
  * Prefix glued to the climb value in the stacked Ride Remaining field; rendered as the ascent arrow
@@ -40,7 +67,7 @@ fun valueBitmapHeightPx(valueFontBaseSp: Int, density: Float): Int {
 
 // Fraction of a row's band the digits fill, leaving a small vertical margin so the top row
 // doesn't clip against the bitmap's top edge and the rows stay readable.
-private const val TWO_ROW_DIGIT_FILL = 0.86f
+private const val TWO_ROW_DIGIT_FILL = 0.95f
 
 /**
  * Render two stacked value rows into a full-cell-width `ARGB_8888` bitmap. The two rows share the
@@ -70,28 +97,42 @@ fun renderTwoRowValueBitmap(
     val width = cellWidthPx.toInt().coerceAtLeast(1)
     val bandPx = ((bitmapHeightPx - rowGapPx) / 2f).coerceAtLeast(1f)
 
-    fun paintAt(sizePx: Float) =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("relative", Typeface.NORMAL)
-            textSize = sizePx
-            this.color = color
-            letterSpacing = LETTER_SPACING
-        }
+    fun paintAt(sizePx: Float) = valuePaint(sizePx).apply { this.color = color }
 
     val bounds = Rect()
+
+    // A row with an icon is drawn as [icon][gap][number], the [marker] glyph stripped: the icon is
+    // 1.3x the number's height and the gap 0.12x the font. Both the width fit and the drawing
+    // read it from here, so the fit measures what is drawn.
+    class RowUnit(val number: String, val iconPx: Float, val gapPx: Float, val numberPx: Float) {
+        val widthPx = iconPx + gapPx + numberPx
+    }
+    fun rowUnit(text: String, p: Paint): RowUnit {
+        val number = if (text.startsWith(marker)) text.removePrefix(marker) else text
+        val numberBounds = Rect().also { p.getTextBounds(number, 0, number.length, it) }
+        return RowUnit(
+            number,
+            numberBounds.height() * 1.3f,
+            p.textSize * 0.12f,
+            p.measureText(number),
+        )
+    }
+    fun rowWidth(text: String, icon: Bitmap?, p: Paint): Float =
+        if (icon == null) p.measureText(text) else rowUnit(text, p).widthPx
+
     // Height-fit: a digit fills most of one band (margin avoids top/bottom clipping).
     paintAt(100f).getTextBounds("0", 0, 1, bounds)
     var fontPx =
         if (bounds.height() > 0) 100f * (bandPx * TWO_ROW_DIGIT_FILL) / bounds.height() else bandPx
-    // Width-fit: shrink so the wider row fits the cell.
+    // Width-fit: shrink so the wider row, as drawn, fits the cell. Icon and gap scale with the
+    // font, so one factor fits the whole row.
     run {
         val p = paintAt(fontPx)
-        val needed = maxOf(p.measureText(row1), p.measureText(row2))
+        val needed = maxOf(rowWidth(row1, row1Icon, p), rowWidth(row2, row2Icon, p))
         if (needed > width) fontPx *= width / needed
     }
     val paint = paintAt(fontPx)
     val iconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { isFilterBitmap = true }
-    val iconGapPx = fontPx * 0.12f
 
     val bitmap = Bitmap.createBitmap(width, bitmapHeightPx, Bitmap.Config.ARGB_8888)
     bitmap.density = Bitmap.DENSITY_NONE
@@ -119,28 +160,25 @@ fun renderTwoRowValueBitmap(
             canvas.drawText(text, xPos, center - (bounds.top + bounds.bottom) / 2f, paint)
             return
         }
-        val number = if (text.startsWith(marker)) text.removePrefix(marker) else text
         paint.textAlign = Paint.Align.LEFT
-        paint.getTextBounds(number, 0, number.length, bounds)
-        val numW = paint.measureText(number)
-        val iconSize = bounds.height() * 1.3f
-        val unitW = iconSize + iconGapPx + numW
+        val unit = rowUnit(text, paint)
+        paint.getTextBounds(unit.number, 0, unit.number.length, bounds)
         val unitLeft =
             when (alignment) {
                 ViewConfig.Alignment.LEFT -> 0f
-                ViewConfig.Alignment.CENTER -> (width - unitW) / 2f
-                ViewConfig.Alignment.RIGHT -> width - unitW
+                ViewConfig.Alignment.CENTER -> (width - unit.widthPx) / 2f
+                ViewConfig.Alignment.RIGHT -> width - unit.widthPx
             }
-        val iconTop = center - iconSize / 2f
+        val iconTop = center - unit.iconPx / 2f
         canvas.drawBitmap(
             icon,
             null,
-            RectF(unitLeft, iconTop, unitLeft + iconSize, iconTop + iconSize),
+            RectF(unitLeft, iconTop, unitLeft + unit.iconPx, iconTop + unit.iconPx),
             iconPaint,
         )
         canvas.drawText(
-            number,
-            unitLeft + iconSize + iconGapPx,
+            unit.number,
+            unitLeft + unit.iconPx + unit.gapPx,
             center - (bounds.top + bounds.bottom) / 2f,
             paint,
         )
@@ -166,11 +204,8 @@ fun renderValueBitmap(
     alignment: ViewConfig.Alignment,
 ): Bitmap {
     val paint =
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("relative", Typeface.NORMAL)
-            textSize = fontSizePx
+        valuePaint(fontSizePx).apply {
             this.color = color
-            letterSpacing = LETTER_SPACING
             textAlign =
                 when (alignment) {
                     ViewConfig.Alignment.LEFT -> Paint.Align.LEFT
@@ -201,6 +236,31 @@ fun renderValueBitmap(
 }
 
 /**
+ * Everything a header bitmap is drawn from. [renderHeaderBitmap] reads nothing else, so the spec is
+ * also a complete cache key for [headerBitmap].
+ */
+data class HeaderSpec(
+    val text: String,
+    val fontSizePx: Float,
+    val maxLines: Int,
+    val availableWidthPx: Int,
+    val color: Int,
+    val alignment: ViewConfig.Alignment,
+    val lineSpacingMult: Float,
+    val translationYPx: Int = 0,
+)
+
+// A header is the same on every update of a field, so it is drawn once per spec. Sized for every
+// header on screen at once (fields, HUD slots, config previews); an entry is one cell-wide bitmap,
+// about 20-40 KB. Cached bitmaps are shared: never draw into or recycle one.
+private const val HEADER_CACHE_ENTRIES = 48
+private val headerBitmaps = LruCache<HeaderSpec, Bitmap>(HEADER_CACHE_ENTRIES)
+
+/** The header bitmap for [spec], drawn on first use and shared after. */
+fun headerBitmap(spec: HeaderSpec): Bitmap =
+    headerBitmaps[spec] ?: renderHeaderBitmap(spec).also { headerBitmaps.put(spec, it) }
+
+/**
  * Render an all-caps header [text] into an `ARGB_8888` bitmap that reproduces the native header
  * TextView: `lines=[maxLines]`, font padding off, per-layout [lineSpacingMult] (0.6 in 2-col 5-row
  * cells, 0.7 elsewhere). The reservation is the TextView height `lineH + (maxLines − 1) ×
@@ -209,22 +269,16 @@ fun renderValueBitmap(
  * docs/sdk-findings.md § "Native header and value sizing". `density = DENSITY_NONE` so RemoteViews
  * renders 1:1.
  */
-fun renderHeaderBitmap(
-    text: String,
-    fontSizePx: Float,
-    maxLines: Int,
-    availableWidthPx: Int,
-    color: Int,
-    alignment: ViewConfig.Alignment,
-    lineSpacingMult: Float,
-    translationYPx: Int = 0,
-): Bitmap {
-    val paint =
-        TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
-            textSize = fontSizePx
-            this.color = color
-        }
+private fun renderHeaderBitmap(spec: HeaderSpec): Bitmap {
+    val text = spec.text
+    val fontSizePx = spec.fontSizePx
+    val maxLines = spec.maxLines
+    val availableWidthPx = spec.availableWidthPx
+    val color = spec.color
+    val alignment = spec.alignment
+    val lineSpacingMult = spec.lineSpacingMult
+    val translationYPx = spec.translationYPx
+    val paint = headerPaint(fontSizePx).apply { this.color = color }
     val width = availableWidthPx.coerceAtLeast(1)
     val upper = text.uppercase()
     val align =
@@ -243,9 +297,7 @@ fun renderHeaderBitmap(
             .setEllipsize(TextUtils.TruncateAt.END)
             .build()
 
-    val fm = paint.fontMetricsInt
-    val lineHeight = fm.descent - fm.ascent
-    val reservedHeight = lineHeight + (maxLines - 1) * (lineHeight * lineSpacingMult).roundToInt()
+    val reservedHeight = headerReservedHeightPx(paint, maxLines, lineSpacingMult)
     val bitmapHeight = maxOf(reservedHeight, layout.height).coerceAtLeast(1)
 
     val bitmap = Bitmap.createBitmap(width, bitmapHeight, Bitmap.Config.ARGB_8888)

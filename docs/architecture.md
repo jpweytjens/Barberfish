@@ -130,9 +130,8 @@ Presets:
 | Preset                    | Use                                                           |
 | ------------------------- | ------------------------------------------------------------- |
 | `ViewSizeConfig.STANDARD` | Default values; overridden by `toViewSizeConfig()` at runtime |
-| `ViewSizeConfig.HUD_THREE`| On-device HUD 3-column slots (colSpan=20)                     |
-| `ViewSizeConfig.HUD_FOUR` | On-device HUD 4-column slots (colSpan=15)                     |
-| `PREVIEW_HUD_THREE/FOUR`  | Config-screen HUD previews (same sizing, `labelMaxLines = 2`) |
+| `ViewSizeConfig.HUD_THREE`| HUD 3-column slots (colSpan=20), live and config preview      |
+| `ViewSizeConfig.HUD_FOUR` | HUD 4-column slots (colSpan=15), live and config preview      |
 
 ---
 
@@ -153,8 +152,8 @@ For HUD slots the SDK `textSize` does not apply, since each slot fills only a th
 
 | HUD columns | Preset                     | `valueFontSizeBase` |
 | ----------- | -------------------------- | ------------------- |
-| 3-col       | `ViewSizeConfig.HUD_THREE` | 42 sp               |
-| 4-col       | `ViewSizeConfig.HUD_FOUR`  | 32 sp               |
+| 3-col       | `ViewSizeConfig.HUD_THREE` | 49 sp               |
+| 4-col       | `ViewSizeConfig.HUD_FOUR`  | 36 sp               |
 
 ### Dynamic shrinking: `fontSizeForCell`
 
@@ -164,11 +163,11 @@ For HUD slots the SDK `textSize` does not apply, since each slot fills only a th
 fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 ```
 
-1. Measure text width at `fontSizeBaseSp` using `Paint.measureText()`.
+1. Measure the text at `fontSizeBaseSp` with the paint it is drawn in: `valuePaint` for values, `headerPaint` in capitals for HUD slot labels.
 2. If it fits in `cellWidthPx` → return `fontSizeBaseSp` unchanged.
 3. Otherwise → scale proportionally: `floor(fontSizeBaseSp × cellWidthPx / measuredWidth)`.
 4. If the scaled result drops below `wrapThresholdSp` → attempt 2-line split at the word boundary
-   nearest the midpoint; size to the longer half.
+   nearest the midpoint; size so the wider half fits.
 
 ### `wrapThresholdSp` per layout
 
@@ -179,18 +178,20 @@ fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 | 20        | HUD 3-col slot | 14                |
 | 15        | HUD 4-col slot | 12                |
 
+HUD slots take theirs from the `HUD_THREE` and `HUD_FOUR` presets. Both sit at or above the slot's header size, so a slot label that does not fit wraps before it shrinks.
+
 ### End-to-end flow
 
 ```
 ViewConfig.textSize  (SDK, sp, layout-aware)
-  │  or textSizeOverride (HUD slots: 42 for 3-col, 32 for 4-col)
+  │  HUD 3/4-col slots: the HUD_THREE / HUD_FOUR presets instead (49 / 36 sp)
   ▼
-ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig()
-ViewSizeConfig.wrapThresholdSp            ← derived from colSpan
+ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig(), or the HUD preset
+ViewSizeConfig.wrapThresholdSp            ← derived from colSpan, or the HUD preset
 
   ▼ at render time, in makeFieldRemoteViews (BarberfishView.kt)
 fontSizeForCell(value, valueFontSizeBase, cellWidthPx, density, wrapThresholdSp)
-  └─► actual sp applied to field_value TextView via RemoteViews.setTextViewTextSize()
+  └─► sp passed to renderValueBitmap, which draws field_value as a bitmap
 ```
 
 `makeFieldRemoteViews` is the only caller of `fontSizeForCell` for values. Every sizing
@@ -216,7 +217,9 @@ Native renders inside a `ConstraintLayout`, which lets a `wrap_content` value vi
 
 ### `header_ref` + `baseline_box` centering
 
-The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. So that the centering region keeps the same top either way, an invisible `header_ref` `TextView` (`lines=1`, styled like the visible label, `minHeight` set programmatically to match the visible header) anchors the top of `baseline_box` through `layout_below="@id/header_ref"`.
+The visible `field_header` may wrap to two lines and is allowed to overflow downward via `clipChildren=false`. So that the centering region keeps the same top either way, an invisible `header_ref` `TextView` (`lines=1`, `minHeight` set programmatically) anchors the top of `baseline_box` through `layout_below="@id/header_ref"`.
+
+`header_ref` is shorter than the drawn header in two-line cells (61 px against 73 px in a 2-col 4-row cell), and that is what puts the value in the right place. Native centres a text box with more empty space above its digits than below them, so its digits sit below the box's centre. The value bitmap is tight to the digits, so centring it in a region that starts at the drawn header would land it about 6 px low. The `headerMinHeightDp` formula is tuned so the bitmap lands on native's pixels instead, which it does in every two-column layout (see [Native header and value sizing](sdk-findings.md#native-header-and-value-sizing)). Treat it as a placement constant, not a header height.
 
 Inside `baseline_box`, two `weight=1` `TextView` spacers frame the `field_value` `ImageView` (`Space` would have been the natural choice but is blocked by the allowlist). The 1:1 weights centre the value between header bottom and cell bottom, as native does, and follow the cell when the rideapp shrinks it, with no `cellHeightPx` plumbing.
 
