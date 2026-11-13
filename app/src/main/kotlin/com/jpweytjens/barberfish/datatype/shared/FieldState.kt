@@ -21,6 +21,12 @@ data class FieldState(
     // true only for the "No sensor" state: the source sensor is not paired at all. The HUD
     // drops such a slot's column. Searching and idle states keep theirs.
     val noSensor: Boolean = false,
+    // The wind field's arrow: degrees clockwise from up, up being the rider's direction of
+    // travel (0 tailwind, 180 headwind). Null for every other field and for calm.
+    val windArrowDeg: Float? = null,
+    // The Wind HUD slot with Show speed: the ride speed drawn above the wind number. Null
+    // otherwise.
+    val speedRow: String? = null,
 ) {
     companion object {
         fun searching(label: String = "", iconRes: Int? = null) =

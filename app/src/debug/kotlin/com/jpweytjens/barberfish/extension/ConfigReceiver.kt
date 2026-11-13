@@ -18,7 +18,7 @@ import kotlinx.serialization.json.Json
 // shows, as {slots, strip}), zone (palettes), time
 // (formatting), grade_pin (a pinned Grade reading, {"percent": -4.2}; null clears it),
 // field_sparkline (the Profile field, not the HUD strip, which rides with hud), grade_map
-// (the map overlay) — add a
+// (the map overlay), wind_sock (the map sock, {"enabled": true}) — add a
 // config by adding one `when` branch. Never in release.
 //
 //   adb push shot.json /sdcard/Android/data/com.jpweytjens.barberfish/files/bf_config.json
@@ -80,6 +80,7 @@ class ConfigReceiver : BroadcastReceiver() {
             "field_sparkline" ->
                 app.saveFieldSparklineConfig(json.decodeFromString<SparklineConfig>(text))
             "grade_map" -> app.saveGradeMapConfig(json.decodeFromString<GradeMapConfig>(text))
+            "wind_sock" -> app.saveWindSockConfig(json.decodeFromString<WindSockConfig>(text))
         }
     }
 
@@ -91,6 +92,7 @@ class ConfigReceiver : BroadcastReceiver() {
             "grade_pin" -> json.encodeToString(app.streamGradePin().first())
             "field_sparkline" -> json.encodeToString(app.streamFieldSparklineConfig().first())
             "grade_map" -> json.encodeToString(app.streamGradeMapConfig().first())
+            "wind_sock" -> json.encodeToString(app.streamWindSockConfig().first())
             else -> null
         }
 }

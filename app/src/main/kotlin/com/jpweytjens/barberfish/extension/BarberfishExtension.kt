@@ -32,6 +32,7 @@ import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.ValueField
 import com.jpweytjens.barberfish.datatype.ValueKind
+import com.jpweytjens.barberfish.datatype.WindField
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.FollowedRoute
 import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_CASING_ID
@@ -50,9 +51,11 @@ import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.followedRoute
+import com.jpweytjens.barberfish.datatype.shared.forecastClock
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
+import com.jpweytjens.barberfish.datatype.shared.isForecastStale
 import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
 import com.jpweytjens.barberfish.datatype.shared.nativeChevronWindowHalfM
@@ -60,6 +63,9 @@ import com.jpweytjens.barberfish.datatype.shared.polylineAxisProgressM
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
 import com.jpweytjens.barberfish.datatype.shared.whileOn
+import com.jpweytjens.barberfish.datatype.shared.windAt
+import com.jpweytjens.barberfish.datatype.shared.windSockBands
+import com.jpweytjens.barberfish.datatype.shared.windSockSymbol
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.extension.KarooExtension
 import io.hammerhead.karooext.internal.Emitter
@@ -68,15 +74,20 @@ import io.hammerhead.karooext.models.MapEffect
 import io.hammerhead.karooext.models.OnLocationChanged
 import io.hammerhead.karooext.models.OnMapZoomLevel
 import io.hammerhead.karooext.models.StreamState
+import io.hammerhead.karooext.models.Symbol
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
@@ -140,6 +151,7 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
         AvgSpeedField(karooSystem, includePaused = false),
         // Other
         CadenceField(karooSystem),
+        WindField(karooSystem),
         GradeField(karooSystem),
         ElevationSparklineField(karooSystem),
         // Distance & route-remaining
@@ -626,12 +638,50 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     }
                 }
         }
+        val windSockController = WindSockController()
+        val windJob: Job = scope.launch {
+            // A dead generation may have left the sock painted; start clean.
+            windSockController.clear(emitter)
+            windSockSymbols(density).collect { symbol -> windSockController.emit(emitter, symbol) }
+        }
         emitter.setCancellable {
             Timber.d("grademap: startMap cancelled")
             job.cancel()
+            windJob.cancel()
             scope.cancel()
         }
     }
+
+    /**
+     * The map sock's symbol over time, null to hide it. While the sock is off nothing is subscribed
+     * behind it: no Headwind binding, no fixes, zoom or clock.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun windSockSymbols(density: Float): Flow<Symbol.Icon?> =
+        applicationContext
+            .streamWindSockConfig()
+            .map { it.enabled }
+            .distinctUntilChanged()
+            .flatMapLatest { enabled ->
+                if (!enabled) flowOf(null)
+                else
+                    combine(
+                            karooSystem.streamRiderFix(),
+                            karooSystem
+                                .consumerFlow<OnMapZoomLevel>()
+                                .map { it.zoomLevel }
+                                .onStart { emit(SEED_ZOOM) },
+                            applicationContext.streamHeadwindSnapshots(),
+                            forecastClock(),
+                        ) { (fix, course), zoom, snapshot, now ->
+                            val wind = snapshot.windAt(fix, now)
+                            val bands = wind?.let { windSockBands(it.speedMs) } ?: 0
+                            val muted =
+                                isForecastStale(snapshot?.lastSuccessfulFetchEpochSeconds, now)
+                            WindInputs(fix, course, zoom, wind?.fromDeg, bands, muted)
+                        }
+                        .map { it.toSockSymbol(density) }
+            }
 }
 
 // How long progress ticks are held after a route change, while the distance stream may
@@ -746,3 +796,18 @@ private data class ViewportSignature(
     val zoomLevel: Double,
     val latBucket: Long,
 )
+
+// One collected snapshot of the wind sock's four independent inputs.
+private data class WindInputs(
+    val fix: LatLng?,
+    val courseDeg: Double?,
+    val zoom: Double,
+    val windFromDeg: Double?,
+    val bands: Int,
+    val muted: Boolean,
+)
+
+private fun WindInputs.toSockSymbol(density: Float): Symbol.Icon? =
+    if (fix != null && courseDeg != null && windFromDeg != null)
+        windSockSymbol(fix, courseDeg, zoom, density, windFromDeg, bands, muted)
+    else null

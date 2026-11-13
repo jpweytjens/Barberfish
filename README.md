@@ -36,7 +36,7 @@ The [gallery](docs/gallery.md) shows more of Barberfish on the Karoo. The [docum
 
 ## Data fields
 
-39 fields, from power and heart rate to navigation, ETA, and daylight. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
+40 fields, from power and heart rate to navigation, ETA, and daylight. The [data fields](docs/data-fields.md) page lists each field's palette, threshold, format, and smoothing options.
 
 ![Every Barberfish field, rendered as it appears in the Karoo field picker](docs/screenshots/all_fields.png)
 

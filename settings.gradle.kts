@@ -31,6 +31,14 @@ dependencyResolutionManagement {
                 password = localProperties["gpr.key"] as? String ?: System.getenv("TOKEN")
             }
         }
+        // karoo-headwind's client library for its weather service, same credentials
+        maven {
+            url = uri("https://maven.pkg.github.com/timklge/karoo-headwind")
+            credentials {
+                username = localProperties["gpr.user"] as? String ?: System.getenv("USERNAME")
+                password = localProperties["gpr.key"] as? String ?: System.getenv("TOKEN")
+            }
+        }
     }
 }
 

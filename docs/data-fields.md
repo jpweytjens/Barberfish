@@ -48,6 +48,8 @@ of its own, as do [Profile and Overview](elevation-profile.md).
     <tr><td>Avg Speed (Moving)</td><td></td><td>Fixed / Min-max range</td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Cadence</th></tr>
     <tr><td>Cadence</td><td></td><td>Fixed / Min-max range</td><td></td><td>Instant / 3s / 5s / 10s</td></tr>
+    <tr><th colspan="5" align="center">Wind</th></tr>
+    <tr><td>Wind</td><td></td><td>Headwind and tailwind (needs the Headwind extension)</td><td></td><td></td></tr>
     <tr><th colspan="5" align="center">Climbing</th></tr>
     <tr><td>Grade</td><td>Grade</td><td></td><td></td><td>OLS (30 m window)</td></tr>
     <tr><td>Profile</td><td>Grade</td><td></td><td></td><td></td></tr>
@@ -75,6 +77,13 @@ of its own, as do [Profile and Overview](elevation-profile.md).
     <tr><td>Time to civil dusk</td><td></td><td></td><td>Racing / Clock / Segments</td><td></td></tr>
   </tbody>
 </table>
+
+Wind reads the Headwind extension's forecast. Without it the field shows "No
+wind data", and the map windsock (switched on in the Wind card) stays hidden.
+
+As a HUD slot, Wind can also show your speed: turn on Show speed on the slot and
+the speed sits above the arrow and headwind number, with its own smoothing. The
+colour stays on the wind. Without wind data the slot shows plain speed.
 
 ## Duration formats
 

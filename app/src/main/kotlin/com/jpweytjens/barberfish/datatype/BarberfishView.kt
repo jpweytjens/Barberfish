@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Build
 import android.util.TypedValue
@@ -19,14 +20,21 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HeaderSpec
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.WIND_ARROW_GAP_DP
+import com.jpweytjens.barberfish.datatype.shared.WIND_REFERENCE_TEXT
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerBitmap
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.headerPaint
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
+import com.jpweytjens.barberfish.datatype.shared.renderWindArrowValueBitmap
+import com.jpweytjens.barberfish.datatype.shared.speedWindValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
 import com.jpweytjens.barberfish.datatype.shared.toViewSizeConfig
+import com.jpweytjens.barberfish.datatype.shared.valuePaint
+import com.jpweytjens.barberfish.datatype.shared.windArrowArgb
+import com.jpweytjens.barberfish.datatype.shared.windArrowBoxPx
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 import timber.log.Timber
@@ -217,6 +225,9 @@ fun sparklineImageSize(
     return widthPx to heightPx
 }
 
+// Show speed adds one path to the value chain. LongMethod is already baselined for this function;
+// the annotation changes the signature the baseline matches on, so it is suppressed here too.
+@Suppress("CyclomaticComplexMethod", "LongMethod")
 private fun makeFieldRemoteViews(
     field: FieldState,
     displayLabel: String,
@@ -237,11 +248,27 @@ private fun makeFieldRemoteViews(
     // locale can introduce is the decimal separator — safe to normalize to a dot here, the
     // single point every field value (standalone, HUD slot, preview) flows through.
     val valueText = field.primary.replace(',', '.')
+    val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
+    // The wind arrow takes a square box on the left, sized once here for the number's width and
+    // the drawing; the number gets the rest and shrinks only if that is not enough.
+    // The arrow centres on full-size digits, so a shrunk number does not move it either.
+    val windGapPx = (WIND_ARROW_GAP_DP * density).toInt()
+    val fullSizePaint = valuePaint(sizeConfig.valueFontSizeBase * density)
+    val arrowBoxPx =
+        windArrowBoxPx(
+            bitmapHeightPx,
+            cellWidthPx,
+            fullSizePaint.measureText(WIND_REFERENCE_TEXT),
+            windGapPx,
+        )
+    val digitHeightPx = Rect().also { fullSizePaint.getTextBounds("0", 0, 1, it) }.height()
+    val valueWidthPx =
+        if (field.windArrowDeg != null) cellWidthPx - arrowBoxPx - windGapPx else cellWidthPx
     val (fontSp, _) =
         fontSizeForCell(
             valueText,
             sizeConfig.valueFontSizeBase,
-            cellWidthPx,
+            valueWidthPx.coerceAtLeast(1f),
             density,
             wrapThresholdSp = sizeConfig.wrapThresholdSp,
         )
@@ -277,9 +304,35 @@ private fun makeFieldRemoteViews(
             cellWidthPx,
         )
 
-    val bitmapHeightPx = (sizeConfig.valueBitmapHeightDp * density).toInt()
     val valueBitmap =
-        if (field.secondary != null) {
+        if (field.speedRow != null) {
+            // Wind slot with Show speed: speed over the wind.
+            speedWindValueBitmap(
+                field.speedRow,
+                field,
+                valueText,
+                bitmapHeightPx,
+                arrowBoxPx,
+                cellWidthPx,
+                colors,
+                alignment,
+                context,
+            )
+        } else if (field.windArrowDeg != null) {
+            renderWindArrowValueBitmap(
+                angleDeg = field.windArrowDeg,
+                text = valueText,
+                fontSizePx = fontSp * density,
+                bitmapHeightPx = bitmapHeightPx,
+                arrowBoxPx = arrowBoxPx,
+                digitHeightPx = digitHeightPx.toFloat(),
+                cellWidthPx = cellWidthPx,
+                textColor = colors.valueText.toArgb(),
+                arrowColor = colors.windArrowArgb(field.color),
+                alignment = alignment,
+                context = context,
+            )
+        } else if (field.secondary != null) {
             // Two stacked rows share the single-row value height (same footprint as the numeric
             // fields); the renderer splits it into two equal bands and sizes the font to fit. Each
             // row gets an inline icon tinted to the value color: the route glyph before the

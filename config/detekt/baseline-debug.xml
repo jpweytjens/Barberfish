@@ -4,7 +4,7 @@
   <CurrentIssues>
     <ID>ComplexCondition:GradeMapProgress.kt:GradeMapProgress$routeKey == null || !onRoute || distanceToDestinationM == null || routeDistanceM &lt;= 0.0</ID>
     <ID>ComplexCondition:HUDConfigSection.kt:boxWidthPx &lt;= 0 || boxHeightPx &lt;= 0 || !reveal.visible || reveal.counterText != null || !spaceReserved</ID>
-    <ID>ComplexCondition:HUDConfigSection.kt:slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower || slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower || slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.PowerZone || slot.field == HUDSlotField.MaxPower || slot.field == HUDSlotField.HR || slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR || slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.HRMaxPercent || slot.field == HUDSlotField.MaxHR || slot.field == HUDSlotField.HRZone || slot.field == HUDSlotField.Grade || slot.field == HUDSlotField.Cadence</ID>
+    <ID>ComplexCondition:HUDConfigSection.kt:slot.field == HUDSlotField.Power || slot.field == HUDSlotField.AvgPower || slot.field == HUDSlotField.NP || slot.field == HUDSlotField.LapPower || slot.field == HUDSlotField.LastLapPower || slot.field == HUDSlotField.PowerZone || slot.field == HUDSlotField.MaxPower || slot.field == HUDSlotField.HR || slot.field == HUDSlotField.AvgHR || slot.field == HUDSlotField.LapAvgHR || slot.field == HUDSlotField.LastLapAvgHR || slot.field == HUDSlotField.HRMaxPercent || slot.field == HUDSlotField.MaxHR || slot.field == HUDSlotField.HRZone || slot.field == HUDSlotField.Grade || slot.field == HUDSlotField.Wind || slot.field == HUDSlotField.Cadence</ID>
     <ID>CyclomaticComplexMethod:AvgSpeedField.kt:internal fun avgSpeedFieldState: FieldState</ID>
     <ID>CyclomaticComplexMethod:BarberfishExtension.kt:BarberfishExtension$override fun startMap</ID>
     <ID>CyclomaticComplexMethod:BitmapValue.kt:fun renderTwoRowValueBitmap: Bitmap</ID>
@@ -31,7 +31,6 @@
     <ID>LargeClass:MainActivity.kt:MainActivity : ComponentActivity</ID>
     <ID>LongMethod:BarberfishExtension.kt:BarberfishExtension$override fun startMap</ID>
     <ID>LongMethod:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>
-    <ID>LongMethod:BarberfishView.kt:private fun makeFieldRemoteViews: RemoteViews</ID>
     <ID>LongMethod:ETAField.kt:ETAField.Companion$fun streamFlow: Flow&lt;FieldState&gt;</ID>
     <ID>LongMethod:ElevationSparkline.kt:internal fun colDeRatesElevationFixture: List&lt;Pair&lt;Float, Float&gt;&gt;</ID>
     <ID>LongMethod:ElevationSparkline.kt:internal fun renderElevationSparkline: ElevationSparklineResult</ID>
@@ -57,10 +56,10 @@
     <ID>LongMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
     <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun previewStates: List&lt;FieldState&gt;</ID>
     <ID>LongParameterList:AvgHRField.kt:AvgHRField.Companion$fun toFieldState: FieldState</ID>
+    <ID>LongParameterList:BarberfishView.kt:@Suppress("CyclomaticComplexMethod", "LongMethod") private fun makeFieldRemoteViews: RemoteViews</ID>
     <ID>LongParameterList:BarberfishView.kt:fun applySparklineHeaderChrome</ID>
     <ID>LongParameterList:BarberfishView.kt:fun barberfishFieldRemoteViews: RemoteViews</ID>
     <ID>LongParameterList:BarberfishView.kt:private fun applyHeaderChrome: Int</ID>
-    <ID>LongParameterList:BarberfishView.kt:private fun makeFieldRemoteViews: RemoteViews</ID>
     <ID>LongParameterList:BitmapValue.kt:fun renderHeaderBitmap: Bitmap</ID>
     <ID>LongParameterList:BitmapValue.kt:fun renderTwoRowValueBitmap: Bitmap</ID>
     <ID>LongParameterList:BitmapValue.kt:fun renderValueBitmap: Bitmap</ID>
@@ -83,6 +82,7 @@
     <ID>MatchingDeclarationName:BarberfishView.kt:SparklineRender</ID>
     <ID>MatchingDeclarationName:GpsPolyline.kt:LatLng</ID>
     <ID>MatchingDeclarationName:GradeMapTuning.kt:EffectiveGradeMapTuning</ID>
+    <ID>MatchingDeclarationName:SpeedWindBitmap.kt:SpeedWindGeometry</ID>
     <ID>MaxLineLength:BarberfishDataType.kt:BarberfishBase$"density=$density cellH=${cellHeightDp}dp cellW=${cellWidthPx}px textSize=${config.textSize}sp gridSize=${config.gridSize} typeId=$typeId"</ID>
     <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"</ID>
     <ID>MaxLineLength:BarberfishExtension.kt:BarberfishExtension$"grademap: direction name=${route.name} reversed=${route.reversed} gpsFirst=${gpsPts.firstOrNull()} gpsLast=${gpsPts.lastOrNull()} segStart=$segStart elevFirst=${elev.firstOrNull()?.second} elevLast=${elev.lastOrNull()?.second}"</ID>

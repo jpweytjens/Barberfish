@@ -667,7 +667,7 @@ private fun HUDPreviewCell(
         // scale it into this cell, so every size and shrink decision matches the device.
         val liveWidthPx =
             hudSlotWidthPx(
-                    LocalContext.current.resources.displayMetrics.widthPixels,
+                    LocalResources.current.displayMetrics.widthPixels,
                     columns,
                     density,
                 )
@@ -770,6 +770,7 @@ private fun HUDSlotFieldCard(
                     )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
+                HUDSlotField.Wind -> HUDWindCard(slot, onUpdate)
                 HUDSlotField.Distance -> {}
                 HUDSlotField.DistanceRemaining -> {}
                 HUDSlotField.ElevationRemaining -> {}
@@ -793,6 +794,7 @@ private fun HUDSlotFieldCard(
                     slot.field == HUDSlotField.MaxHR ||
                     slot.field == HUDSlotField.HRZone ||
                     slot.field == HUDSlotField.Grade ||
+                    slot.field == HUDSlotField.Wind ||
                     slot.field == HUDSlotField.Cadence
             ) {
                 ZoneColorSlider(
@@ -834,6 +836,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                 if (f.includePaused) "Avg Speed (Total)" else "Avg Speed (Moving)"
             HUDSlotField.Cadence -> "Cadence"
             HUDSlotField.Grade -> "Grade"
+            HUDSlotField.Wind -> "Wind"
             HUDSlotField.Distance -> "Distance"
             HUDSlotField.DistanceRemaining -> "Distance remaining"
             HUDSlotField.ElevationRemaining -> "Ascent remaining"
@@ -884,6 +887,7 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
                             "Avg Speed (Moving)" to HUDSlotField.AvgSpeed(includePaused = false),
                         ),
                     "Cadence" to listOf("Cadence" to HUDSlotField.Cadence),
+                    "Wind" to listOf("Wind" to HUDSlotField.Wind),
                     "Climbing" to listOf("Grade" to HUDSlotField.Grade),
                     "Navigation" to
                         listOf(

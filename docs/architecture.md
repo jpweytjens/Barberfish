@@ -257,3 +257,68 @@ Zone coloring and threshold coloring produce a `FieldColor` sealed variant. `Fie
 `BarberfishView` reads the current system theme from `Configuration.UI_MODE_NIGHT_MASK` and threads an `isNightMode: Boolean` through `toColorConfig`. The flag forwards into `powerZoneColor`, `hrZoneColor`, and `gradeColor`, which pick between the `*ColorsReadableDark` and `*ColorsReadableLight` palette variants so Text-mode fields stay readable on either background.
 
 `colorMode = BACKGROUND` is theme-agnostic: the cell fills with the original brand palette and the overlay text is chosen per cell by [`bestTextOnBackground`](../app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/ZoneColoring.kt), whichever of black or white gives the higher APCA `|Lc|` against that specific fill. The contrast methodology is in [Color palettes](color-palettes.md).
+
+## Wind sock
+
+Barberfish reads wind from the Headwind extension (`karoo-headwind`) through its
+weather service, with the client library that extension publishes
+(`de.timklge.headwind:client`). `streamHeadwindSnapshots` binds to the service
+and emits each snapshot: the cached forecast for the points along the route, in
+SI units, and the times of the last successful and failed downloads.
+
+The map gets a windsock seen from above. Its geometry lives in
+`WindSockGeometry`; the five drawables are generated from the same numbers by
+`scripts/gen_wind_sock_drawables.py`, and `WindSockDrawablesTest` pins the two.
+
+On the map, `WindSockController` keeps one symbol on a mast 66 dp ahead of the
+puck along the course, oriented to the absolute direction the wind blows toward.
+The map rotates symbols with itself, so the same bearing reads relative to the
+rider on a heading-up map and true on a north-up map; the rideapp does not
+expose which mode is active, and absolute is the choice that is right on a map
+in both. Calm hides the symbol.
+
+The `Wind` field gets a plain line arrow, not the sock: the number beside it
+already carries strength, so the glyph carries direction only. `WindArrowGeometry`
+holds its proportions and `renderWindArrowValueBitmap` composes it into the value
+bitmap, rotated by the rider-relative angle about the centre of a square box, in
+the cell's header text colour so colour stays on the number. The box takes what
+the cell leaves once "-29" fits beside it at full size, between half and all of
+the value height: a two-digit reading keeps its full size, and the arrow keeps
+one size per cell however the wind changes. Its centre sits on the centre of the
+digits, or on the gap between the rows when Show speed stacks the ride speed
+above the wind. The number takes the remaining width through the usual
+`fontSizeForCell` shrink.
+Strength on the map follows the airfield rule, one band per 3 knots, five at
+most; calm draws no arrow in the field. Speed arrives in m/s, so the bands need
+no unit, and the field converts the headwind to the profile's km/h or mph like
+any other speed.
+
+The snapshot holds forecast points, not the wind at the rider, so `windAt` works
+that out. Each point's wind is blended linearly between the hourly entries
+around now, then the two points nearest the rider are blended by inverse
+distance. Headwind's own fields blend the same way but treat speed and direction
+as two numbers; `windAt` blends the wind as a vector, so two opposing winds
+cancel instead of reading as a crosswind that blows at neither point. The two
+only part noticeably during a sharp veer. A clock moves the blend on once a
+minute, as often as Headwind recomputes its own.
+
+The field and the sock use the same blend and the same course: the one from
+`streamRiderFix`, held at its last non-null value so it survives a stop. The
+field projects the wind onto that course with `relativeWindDeg` and
+`headwindComponent`, which follow the Headwind extension's own convention;
+`WindProjectionTest` pins them against a port of its formula, so the field
+agrees with that extension's fields on the same course.
+
+No snapshot, or a snapshot without a forecast, reads "No wind data", with
+`noSensor` so a HUD column collapses, even before the first course. That covers
+Headwind missing, not set up, and offline before its first download. With wind
+but no course yet, the field reads "Searching…". When Headwind's last successful
+download is more than two hours old (it downloads hourly), the field keeps its
+reading but greys it, arrow included, and the map sock swaps to a grey copy from
+the same generator (`ic_wind_sock_muted_N`).
+
+App detection lives in the config screen only: `MainActivity` asks the package
+manager for the Headwind package on every resume (the client library's
+`<queries>` entry, merged into ours, makes it visible) and greys the Wind card with an install hint when it is
+absent. The field and the map sock work from the service alone, and read a
+service they cannot bind as no forecast.

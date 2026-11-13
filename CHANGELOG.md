@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+Wind (needs the Headwind extension):
+- A Wind field and HUD slot: the headwind or tailwind speed, colored by the threshold scale, with an arrow showing where the wind blows relative to you
+- A windsock on the map ahead of your position, longer with more wind, switched on in the Wind card
+- The Wind card greys out with an install hint when the Headwind extension is missing
+- The Wind HUD slot can show your speed above the wind: turn on Show speed on the slot, with its own speed smoothing. Thanks to Aryeh95 for the contribution.
+
 ## 5.0
 
 HUD:
