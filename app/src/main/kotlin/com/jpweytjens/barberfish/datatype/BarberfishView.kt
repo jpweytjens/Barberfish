@@ -17,12 +17,13 @@ import com.jpweytjens.barberfish.datatype.shared.ASCENT_MARKER
 import com.jpweytjens.barberfish.datatype.shared.ColorConfig
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.HeaderSpec
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
+import com.jpweytjens.barberfish.datatype.shared.headerBitmap
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.headerPaint
 import com.jpweytjens.barberfish.datatype.shared.headerReservedHeightPx
-import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
@@ -31,8 +32,15 @@ import com.jpweytjens.barberfish.extension.ZoneColorMode
 import io.hammerhead.karooext.models.ViewConfig
 import timber.log.Timber
 
-/** Render state for graphical fields: the bitmap plus whether to draw the header band. */
-data class SparklineRender(val bitmap: Bitmap?, val showHeader: Boolean)
+/**
+ * Render state for graphical fields: the bitmap, whether to draw the header band, and whether to
+ * show the "No route" placeholder in place of the image.
+ */
+data class SparklineRender(
+    val bitmap: Bitmap?,
+    val showHeader: Boolean,
+    val noRoute: Boolean = false,
+)
 
 private const val DEBUG_LAYOUT = false
 
@@ -156,23 +164,50 @@ fun applySparklineHeaderChrome(
 }
 
 /**
- * Height in px of the header a cell draws: the label's reserved lines, floored at the one-line
- * band. The same height [applyHeaderChrome] gives `field_header`, so anything laid out below the
- * header can be sized from it.
+ * Shows or hides the "No route" placeholder (sparkline_state_tv) in place of a graphical field's
+ * image, in the numeric fields' stream-state text, colour and size.
  */
-fun headerBandPx(sizeConfig: ViewSizeConfig, lines: Int, density: Float): Int =
+fun applySparklineNoRoute(rv: RemoteViews, noRoute: Boolean, config: ViewConfig, context: Context) {
+    if (!noRoute) {
+        rv.setViewVisibility(R.id.sparkline_state_tv, View.GONE)
+        rv.setViewVisibility(R.id.sparkline_image, View.VISIBLE)
+        return
+    }
+    val dm = context.resources.displayMetrics
+    val density = dm.density
+    val sizeConfig = config.toViewSizeConfig()
+    val isNightMode =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+    val colors = FieldColor.StreamState.toColorConfig(ZoneColorMode.NONE, isNightMode)
+    val paddingHPx = (sizeConfig.paddingH.value * density).toInt()
+    val cellWidthPx =
+        sizeConfig.cellWidthPxOverride?.let { it - 2 * paddingHPx }
+            ?: (dm.widthPixels.toFloat() * sizeConfig.colSpan / 60f - 2 * paddingHPx)
+    rv.setViewVisibility(R.id.sparkline_image, View.GONE)
+    rv.setViewVisibility(R.id.sparkline_state_tv, View.VISIBLE)
+    rv.setTextViewText(R.id.sparkline_state_tv, FieldState.noRoute().primary)
+    rv.setTextColor(R.id.sparkline_state_tv, colors.valueText.toArgb())
+    rv.setTextViewTextSize(
+        R.id.sparkline_state_tv,
+        TypedValue.COMPLEX_UNIT_SP,
+        streamStateTextSp(sizeConfig, cellWidthPx, density),
+    )
+}
+
+/**
+ * Height in px the sparkline field's header takes above its image: the label's reserved lines,
+ * floored at the one-line band. The same height [applyHeaderChrome] gives `field_header`.
+ */
+fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int =
     maxOf(
         (HEADER_BAND_MIN_DP * density).toInt(),
         headerReservedHeightPx(
             headerPaint(sizeConfig.headerFontSize.value * density),
-            lines,
+            sizeConfig.labelMaxLines,
             sizeConfig.headerLineSpacingMult,
         ),
     )
-
-/** Height in px the sparkline field's header takes above its image. */
-fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int =
-    headerBandPx(sizeConfig, sizeConfig.labelMaxLines, density)
 
 /**
  * Pixel size of a graphical field's image region: the full cell width, and the cell height minus
@@ -296,18 +331,6 @@ private fun makeFieldRemoteViews(
     // fits on one line in the overlay's font (fontFamily in the field layouts). A wider state
     // wraps to the layout's second line.
     if (field.color is FieldColor.StreamState) {
-        val (stateFont, _) =
-            fontSizeForCell(
-                FieldState.noGps().primary,
-                sizeConfig.valueFontSizeBase,
-                cellWidthPx,
-                density,
-                wrapThresholdSp = 0,
-                paint =
-                    Paint().apply {
-                        typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
-                    },
-            )
         rv.setViewVisibility(R.id.field_value, View.GONE)
         rv.setViewVisibility(R.id.stream_state_tv, View.VISIBLE)
         rv.setTextViewText(R.id.stream_state_tv, field.primary)
@@ -315,7 +338,7 @@ private fun makeFieldRemoteViews(
         rv.setTextViewTextSize(
             R.id.stream_state_tv,
             TypedValue.COMPLEX_UNIT_SP,
-            stateFont.coerceAtMost(19).toFloat(),
+            streamStateTextSp(sizeConfig, cellWidthPx, density),
         )
         // Top: the reserved max-lines header band (labelLines is the layout's reserved
         // line count, not the rendered count), matching native's placeholder anchor
@@ -332,11 +355,55 @@ private fun makeFieldRemoteViews(
 }
 
 /**
+ * Text size shared by every stream-state placeholder, numeric and graphical: the largest at which
+ * "No GPS signal" fits on one line in the placeholders' font (fontFamily in the layouts).
+ */
+private fun streamStateTextSp(
+    sizeConfig: ViewSizeConfig,
+    cellWidthPx: Float,
+    density: Float,
+): Float {
+    val (stateFont, _) =
+        fontSizeForCell(
+            FieldState.noGps().primary,
+            sizeConfig.valueFontSizeBase,
+            cellWidthPx,
+            density,
+            wrapThresholdSp = 0,
+            paint =
+                Paint().apply {
+                    typeface = Typeface.create("ibm-plex-sans-condensed", Typeface.NORMAL)
+                },
+        )
+    return stateFont.coerceAtMost(19).toFloat()
+}
+
+/**
  * Applies the Barberfish field header (icon[s] + label) to [rv], sized from [sizeConfig]. Shared by
  * the numeric field layout and the graphical (sparkline) field layout, which use the same header
  * view ids. Returns the layout's reserved label line count, used to anchor the stream-state overlay
  * below the header band.
  */
+/**
+ * Header label size in a HUD slot whose label may span [labelAvailableWidthPx], measured as
+ * [renderHeaderBitmap] draws it: uppercase, in [headerPaint].
+ */
+internal fun hudHeaderFontSp(
+    displayLabel: String,
+    sizeConfig: ViewSizeConfig,
+    labelAvailableWidthPx: Float,
+    density: Float,
+): Int =
+    fontSizeForCell(
+            displayLabel.uppercase(),
+            sizeConfig.headerFontSize.value.toInt(),
+            labelAvailableWidthPx,
+            density,
+            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+            paint = headerPaint(0f),
+        )
+        .first
+
 private fun applyHeaderChrome(
     rv: RemoteViews,
     field: FieldState,
@@ -374,29 +441,23 @@ private fun applyHeaderChrome(
     val labelFontSp: Float
     val labelLines = sizeConfig.labelMaxLines
     if (sizeConfig.colSpan < 30) {
-        val (sp, _) =
-            fontSizeForCell(
-                displayLabel.uppercase(),
-                sizeConfig.headerFontSize.value.toInt(),
-                labelAvailableWidthPx,
-                density,
-                wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                paint = headerPaint(0f),
-            )
-        labelFontSp = sp.toFloat()
+        labelFontSp =
+            hudHeaderFontSp(displayLabel, sizeConfig, labelAvailableWidthPx, density).toFloat()
     } else {
         labelFontSp = sizeConfig.headerFontSize.value
     }
     val headerBitmap =
-        renderHeaderBitmap(
-            text = displayLabel,
-            fontSizePx = labelFontSp * density,
-            maxLines = labelLines,
-            availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
-            color = labelArgb,
-            alignment = alignment,
-            lineSpacingMult = sizeConfig.headerLineSpacingMult,
-            translationYPx = sizeConfig.headerTranslationPx,
+        headerBitmap(
+            HeaderSpec(
+                text = displayLabel,
+                fontSizePx = labelFontSp * density,
+                maxLines = labelLines,
+                availableWidthPx = labelAvailableWidthPx.toInt().coerceAtLeast(1),
+                color = labelArgb,
+                alignment = alignment,
+                lineSpacingMult = sizeConfig.headerLineSpacingMult,
+                translationYPx = sizeConfig.headerTranslationPx,
+            )
         )
     rv.setImageViewBitmap(R.id.field_label, headerBitmap)
     // Native header band = max(22dp, text block); centering field_label inside it

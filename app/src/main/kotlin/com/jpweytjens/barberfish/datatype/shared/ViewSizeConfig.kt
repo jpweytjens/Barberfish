@@ -189,7 +189,8 @@ data class ViewSizeConfig(
                 // Every slot reserves two label lines, so one- and two-line labels align.
                 labelMaxLines = 2,
                 wrapThresholdSp = 14,
-                valueFontSizeBase = 42,
+                valueFontSizeBase = 49,
+                valueBitmapHeightDp = 36,
             )
 
         // On-device HUD 4-column slots (colSpan=15)
@@ -205,7 +206,7 @@ data class ViewSizeConfig(
                 // Every slot reserves two label lines, so one- and two-line labels align.
                 labelMaxLines = 2,
                 wrapThresholdSp = 12,
-                valueFontSizeBase = 34,
+                valueFontSizeBase = 36,
             )
     }
 }

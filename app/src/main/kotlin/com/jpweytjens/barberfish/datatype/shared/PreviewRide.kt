@@ -47,4 +47,8 @@ internal object PreviewRide {
     val toSunriseS = listOf(27407L, 6832L, 2993L)
     val toSunsetS = listOf(9851L, 5327L, 648L)
     val toCivilDuskS = listOf(11711L, 7187L, 2508L)
+
+    // The ride's clock time in seconds since midnight, so arrival times in the preview do not
+    // follow the device clock.
+    const val clockS = 8L * 3600L
 }

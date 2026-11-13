@@ -27,7 +27,16 @@ fun fontSizeForCell(
     fun measureSp(str: String): Int {
         val w = measuring.measureText(str)
         if (w <= cellWidthPx) return fontSizeBaseSp
-        return (fontSizeBaseSp * cellWidthPx / w).toInt().coerceAtLeast(1)
+        var sp = (fontSizeBaseSp * cellWidthPx / w).toInt().coerceAtLeast(1)
+        // Width is not exactly proportional to size (hinted advances round at small sizes), so
+        // confirm the estimate and step down until the text fits.
+        val probe = Paint(paint)
+        while (sp > 1) {
+            probe.textSize = sp * density
+            if (probe.measureText(str) <= cellWidthPx) break
+            sp--
+        }
+        return sp
     }
 
     val singleSp = measureSp(text)
@@ -42,7 +51,7 @@ fun fontSizeForCell(
  * Top padding (px) that places the stream-state placeholder below a header of [lines] lines at
  * [headerFontSizeSp], floored at 22 dp. The two-line factor 1.7 is fitted to native placeholder
  * positions (docs/sdk-findings.md § "Placeholders"), not taken from the drawn header; for the
- * height of the header as drawn, use `headerBandPx`.
+ * height of the header as drawn, use `sparklineHeaderPx`.
  */
 fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
     val paint =

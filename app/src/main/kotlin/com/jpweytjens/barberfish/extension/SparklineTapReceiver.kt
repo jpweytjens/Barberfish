@@ -1,8 +1,10 @@
 package com.jpweytjens.barberfish.extension
 
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -20,6 +22,26 @@ class SparklineTapReceiver : BroadcastReceiver() {
         // Pair<tapTimestamp, nextLookaheadKm>; only the HUD strip listens (transition overlay).
         // Timestamp is always unique (ms), preventing MutableStateFlow deduplication.
         val tapSignal = MutableStateFlow(0L to 10)
+
+        // Views render every second, and each getBroadcast is a call into the system for a token
+        // that never changes, so each (surface, requestCode) builds its intent once.
+        private val tapIntents = ConcurrentHashMap<Pair<String, Int>, PendingIntent>()
+
+        /** The tap intent for [surface]; [requestCode] keeps the HUD's layouts apart. */
+        fun tapIntent(context: Context, surface: String, requestCode: Int): PendingIntent =
+            tapIntents.getOrPut(surface to requestCode) {
+                val intent =
+                    Intent(context, SparklineTapReceiver::class.java).apply {
+                        action = ACTION
+                        putExtra(EXTRA_SURFACE, surface)
+                    }
+                PendingIntent.getBroadcast(
+                    context,
+                    requestCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            }
     }
 
     override fun onReceive(context: Context, intent: Intent) {

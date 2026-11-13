@@ -136,12 +136,28 @@ internal fun extractSubPolyline(
     if (e <= s) return emptyList()
     val out = mutableListOf<LatLng>()
     out += interpolateAt(points, cumDist, s)
-    for (i in points.indices) {
-        val d = cumDist[i]
-        if (d > s && d < e) out += points[i]
+    var i = firstIndexAtOrAfter(cumDist, s)
+    while (i < cumDist.size && cumDist[i] < e) {
+        if (cumDist[i] > s) out += points[i]
+        i++
     }
     out += interpolateAt(points, cumDist, e)
     return out
+}
+
+/**
+ * The first index i ≥ 1 with `cumDist[i] >= distanceM`, or `cumDist.size` if there is none. A
+ * binary search, since cumDist is non-decreasing: route-length work per call would make every
+ * per-piece and per-chevron lookup O(N).
+ */
+private fun firstIndexAtOrAfter(cumDist: DoubleArray, distanceM: Double): Int {
+    var lo = 1
+    var hi = cumDist.size
+    while (lo < hi) {
+        val mid = (lo + hi) ushr 1
+        if (cumDist[mid] < distanceM) lo = mid + 1 else hi = mid
+    }
+    return lo
 }
 
 /**
@@ -152,9 +168,7 @@ internal fun extractSubPolyline(
 internal fun interpolateAt(points: List<LatLng>, cumDist: DoubleArray, distanceM: Double): LatLng {
     if (distanceM <= 0.0) return points.first()
     if (distanceM >= cumDist.last()) return points.last()
-    // cumDist is strictly non-decreasing; find the first index i with cumDist[i] >= distanceM.
-    var i = 1
-    while (i < cumDist.size && cumDist[i] < distanceM) i++
+    val i = firstIndexAtOrAfter(cumDist, distanceM)
     val d0 = cumDist[i - 1]
     val d1 = cumDist[i]
     if (d1 == d0) return points[i]
