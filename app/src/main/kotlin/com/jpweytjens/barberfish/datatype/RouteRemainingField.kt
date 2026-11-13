@@ -37,7 +37,9 @@ class RouteRemainingField(private val karooSystem: KarooSystemService) :
                         heightPx = heightPx,
                         isPreview = isPreview,
                     )
-                    .map { SparklineRender(it, showHeader) }
+                    // The overview has no hidden mode: off preview, a null bitmap means the
+                    // followed route (if any) has no elevation profile to draw.
+                    .map { SparklineRender(it, showHeader, noRoute = it == null && !isPreview) }
             }
     }
 
@@ -67,6 +69,7 @@ class RouteRemainingField(private val karooSystem: KarooSystemService) :
             rv.setViewVisibility(R.id.field_header, View.GONE)
         }
         state.bitmap?.let { rv.setImageViewBitmap(R.id.sparkline_image, it) }
+        applySparklineNoRoute(rv, state.noRoute, config, context)
         return rv
     }
 }

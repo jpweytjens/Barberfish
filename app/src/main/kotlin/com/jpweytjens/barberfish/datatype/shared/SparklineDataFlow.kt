@@ -38,6 +38,9 @@ internal data class SparklineFrame(
     val hudEnabled: Boolean,
     // "Climb n/total" heads-up text shown in the strip before a climb's profile reveals.
     val counterText: String? = null,
+    // No route is being followed. Distinct from a null bitmap, which climbs mode also yields
+    // between climbs.
+    val noRoute: Boolean = false,
 )
 
 /**
@@ -288,6 +291,7 @@ internal fun sparklineBitmapFlow(
             lookaheadKm = sparkCfg.lookaheadKm,
             hudEnabled = showArea,
             counterText = reveal.counterText,
+            noRoute = followed == null && !isPreview,
         )
     }
 }
