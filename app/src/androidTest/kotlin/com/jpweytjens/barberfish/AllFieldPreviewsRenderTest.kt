@@ -1,9 +1,11 @@
 package com.jpweytjens.barberfish
 
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
+import androidx.datastore.preferences.core.edit
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.jpweytjens.barberfish.datatype.BarberfishBase
@@ -12,8 +14,10 @@ import com.jpweytjens.barberfish.datatype.GradeField
 import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
+import com.jpweytjens.barberfish.datatype.shared.GRADE_EDGE_OFF
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -23,10 +27,14 @@ import com.jpweytjens.barberfish.datatype.shared.rvvPoisFixture
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.datatype.sparklineImageSize
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
+import com.jpweytjens.barberfish.extension.dataStore
+import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import io.hammerhead.karooext.KarooSystemService
@@ -77,13 +85,37 @@ class AllFieldPreviewsRenderTest {
     @Test
     fun rendersAllFieldPreviewPngs() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val context = instrumentation.targetContext
+        // Dark theme whatever the device is set to: the renders read night mode from the
+        // context's configuration.
+        val context =
+            instrumentation.targetContext.let {
+                val night =
+                    Configuration(it.resources.configuration).apply {
+                        uiMode =
+                            (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                                Configuration.UI_MODE_NIGHT_YES
+                    }
+                it.createConfigurationContext(night)
+            }
         val karooSystem = KarooSystemService(context)
         val connected = CountDownLatch(1)
         karooSystem.connect { connected.countDown() }
         assertTrue("Karoo system did not connect", connected.await(15, TimeUnit.SECONDS))
 
+        // The docs show the defaults, not the device's settings: render from a cleared store
+        // with only the palettes set, and put the rider's settings back afterwards.
+        val riderSettings = runBlocking { context.dataStore.data.first() }
         try {
+            runBlocking {
+                context.dataStore.edit { it.clear() }
+                context.saveZoneConfig(
+                    ZoneConfig(
+                        hrPalette = ZonePalette.BARBERFISH,
+                        powerPalette = ZonePalette.BARBERFISH,
+                        gradePalette = GradePalette.BARBERFISH,
+                    )
+                )
+            }
             val design = DataFieldDesignConfig()
             val outDir = File(context.getExternalFilesDir(null), "previews").apply { mkdirs() }
             val types = barberfishDataTypes(karooSystem)
@@ -158,7 +190,9 @@ class AllFieldPreviewsRenderTest {
             // recaptures never move the windows. 3 km in, the default 5 km lookahead
             // frames the Muur and the second climb with their summit POIs.
             val sparkline = types.filterIsInstance<ElevationSparklineField>().single()
-            val sparkCfg = SparklineConfig()
+            // Descents uncolored: the doc renders are about climbs, and on the ridden side a
+            // compressed steep descent otherwise leaves a dimmed sliver of fill.
+            val sparkCfg = SparklineConfig(descentEdge = -GRADE_EDGE_OFF)
             val (spWidth, spHeight) = sparklineImageSize(cellConfig, context, sparkCfg.showHeader)
             val elevPoints =
                 visvalingamWhyatt(previewElevationFixture(), sparkCfg.simplification.minAreaM2)
@@ -269,6 +303,12 @@ class AllFieldPreviewsRenderTest {
                 outDir,
             )
         } finally {
+            runBlocking {
+                context.dataStore.edit {
+                    it.clear()
+                    it += riderSettings
+                }
+            }
             karooSystem.disconnect()
         }
     }
