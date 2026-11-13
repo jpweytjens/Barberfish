@@ -219,6 +219,17 @@ The value sits slightly above the centre of the band between the header and the
 cell bottom. Barberfish reproduces that with a small upward translation per layout
 (see [Per-layout vertical translation](architecture.md#per-layout-vertical-translation)).
 
+A sweep on 2026-10-15 put a native and a Barberfish time field in the same row of
+every two-column layout. Their value tops and baselines matched to the pixel in 2×2,
+3×2, 4×2 and 5×2.
+
+One-column pages stack native and Barberfish fields in separate rows, and the
+rideapp gives a graphical field's row a different height from a native one: 143
+against 142 px at 5×1, 174 against 168 px at 4×1, 228 against 216 px at 3×1, and
+468 against 228 px at 2×1 (Karoo 3, Data Boundaries on). Only 5×1, where the heights
+agree, compares like for like, and there the baselines match. The other one-column
+layouts were not compared.
+
 ### Header band geometry
 
 - The header sits at the cell top with no inset and is about 22 dp tall for a

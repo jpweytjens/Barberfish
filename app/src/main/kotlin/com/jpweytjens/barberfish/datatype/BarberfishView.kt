@@ -23,6 +23,7 @@ import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerBitmap
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
 import com.jpweytjens.barberfish.datatype.shared.headerPaint
+import com.jpweytjens.barberfish.datatype.shared.headerReservedHeightPx
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.toColorConfig
@@ -47,6 +48,9 @@ private const val DEBUG_LAYOUT = false
 // distinguish Barberfish vs native cells on stacked 1-col mixed pages.
 private const val LAYOUT_PROBE_MODE = false
 private const val PROBE_MARKER_COLOR = 0xFFFF00FF.toInt()
+
+// Native one-line header band; field_header's XML minHeight carries the same 22dp as a fallback.
+private const val HEADER_BAND_MIN_DP = 22f
 
 // Horizontal chrome between cellWidthPx and the field_label ImageView that the label
 // bitmap must not span: field_header paddingStart/End (1dp each) + field_label
@@ -191,13 +195,19 @@ fun applySparklineNoRoute(rv: RemoteViews, noRoute: Boolean, config: ViewConfig,
     )
 }
 
-/** Height in px the sparkline field reserves for its header (max of min-height and content). */
-fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int {
-    val headerMinPx = (sizeConfig.headerMinHeightDp * density).toInt()
-    val headerContentPx =
-        headerHeightPx(sizeConfig.headerFontSize.value, sizeConfig.labelMaxLines, density)
-    return maxOf(headerMinPx, headerContentPx)
-}
+/**
+ * Height in px the sparkline field's header takes above its image: the label's reserved lines,
+ * floored at the one-line band. The same height [applyHeaderChrome] gives `field_header`.
+ */
+fun sparklineHeaderPx(sizeConfig: ViewSizeConfig, density: Float): Int =
+    maxOf(
+        (HEADER_BAND_MIN_DP * density).toInt(),
+        headerReservedHeightPx(
+            headerPaint(sizeConfig.headerFontSize.value * density),
+            sizeConfig.labelMaxLines,
+            sizeConfig.headerLineSpacingMult,
+        ),
+    )
 
 /**
  * Pixel size of a graphical field's image region: the full cell width, and the cell height minus
@@ -415,8 +425,9 @@ private fun applyHeaderChrome(
         else 0f
     val labelAvailableWidthPx = cellWidthPx - iconWidthPx - HEADER_LABEL_CHROME_DP * density
 
-    // header_ref anchors baseline_box's top via layout_below; its minHeight
-    // must match the visible header so the centering region mirrors native's.
+    // header_ref's bottom is the top of baseline_box, the region the value is centred in. Its
+    // height is not the drawn header's: it is tuned so the centred value bitmap lands where native
+    // draws its value (docs/architecture.md, "header_ref + baseline_box centering").
     val headerMinHeightPx = (sizeConfig.headerMinHeightDp * density).toInt()
     rv.setInt(R.id.header_ref, "setMinimumHeight", headerMinHeightPx)
 
@@ -425,17 +436,15 @@ private fun applyHeaderChrome(
         rv.setInt(R.id.header_ref, "setBackgroundColor", PROBE_MARKER_COLOR)
     }
 
-    // HUD slots size labels dynamically from headerFontSize using the default
-    // typeface; regular cells use the per-layout values from sizeConfig.
+    // HUD slots size labels dynamically from headerFontSize, measured as drawn (capitals, in
+    // headerPaint); regular cells use the per-layout values from sizeConfig.
     val labelFontSp: Float
-    val labelLines: Int
+    val labelLines = sizeConfig.labelMaxLines
     if (sizeConfig.colSpan < 30) {
         labelFontSp =
             hudHeaderFontSp(displayLabel, sizeConfig, labelAvailableWidthPx, density).toFloat()
-        labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
     } else {
         labelFontSp = sizeConfig.headerFontSize.value
-        labelLines = sizeConfig.labelMaxLines
     }
     val headerBitmap =
         headerBitmap(
@@ -453,7 +462,7 @@ private fun applyHeaderChrome(
     rv.setImageViewBitmap(R.id.field_label, headerBitmap)
     // Native header band = max(22dp, text block); centering field_label inside it
     // (field_header gravity=center_vertical) reproduces native's centered header.
-    val headerBandPx = maxOf((22f * density).toInt(), headerBitmap.height)
+    val headerBandPx = maxOf((HEADER_BAND_MIN_DP * density).toInt(), headerBitmap.height)
     rv.setInt(R.id.field_header, "setMinimumHeight", headerBandPx)
 
     // Icons

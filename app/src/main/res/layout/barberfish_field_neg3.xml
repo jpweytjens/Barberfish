@@ -19,8 +19,9 @@
         android:lineSpacingMultiplier="0.6"
         android:visibility="gone" />
 
-    <!-- Invisible probe whose bottom anchors baseline_box. minHeight is set
-         programmatically to mirror the visible field_header. -->
+    <!-- Invisible anchor whose bottom is the top of baseline_box, the region the
+         value is centred in. Its minHeight is set programmatically to a height tuned
+         against native's value placement, not to field_header's height. -->
     <TextView
         android:id="@+id/header_ref"
         android:layout_width="match_parent"

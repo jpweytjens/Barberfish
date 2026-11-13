@@ -8,8 +8,8 @@ import android.graphics.Typeface
  *
  * Sizes [text] to fit [cellWidthPx] starting from [fontSizeBaseSp], using exact glyph measurements
  * via [Paint.measureText]. Falls back to 2-line wrapping when the single-line result would drop
- * below [wrapThresholdSp]; in that case the font is sized to fit the longer half after splitting at
- * the word boundary nearest the midpoint.
+ * below [wrapThresholdSp]; in that case the label splits at the word boundary nearest the midpoint
+ * and the font is sized so the wider half, as drawn, fits.
  *
  * Measures with a copy of [paint] at the base size, so pass the paint the text is drawn with. It
  * defaults to [valuePaint], the value renderers' paint; its own text size is ignored.
@@ -42,15 +42,16 @@ fun fontSizeForCell(
     val singleSp = measureSp(text)
     if (singleSp >= wrapThresholdSp) return Pair(singleSp, 1)
 
-    // Try 2-line: split at word boundary nearest midpoint, size to the longer half.
-    val longerHalf = longerHalfAfterSplit(text) ?: return Pair(singleSp, 1)
-    return Pair(measureSp(longerHalf), 2)
+    // Try 2-line: split at word boundary nearest midpoint, size so both halves fit.
+    val (line1, line2) = splitNearMidpoint(text) ?: return Pair(singleSp, 1)
+    return Pair(minOf(measureSp(line1), measureSp(line2)), 2)
 }
 
 /**
- * Header height (px) for an ibm-plex-sans-condensed label at [headerFontSizeSp] with [lines] lines
- * (lineSpacingMultiplier=0.7), floored at 22 dp. Used as top padding on the value TextView to clear
- * the header zone.
+ * Top padding (px) that places the stream-state placeholder below a header of [lines] lines at
+ * [headerFontSizeSp], floored at 22 dp. The two-line factor 1.7 is fitted to native placeholder
+ * positions (docs/sdk-findings.md § "Placeholders"), not taken from the drawn header; for the
+ * height of the header as drawn, use `sparklineHeaderPx`.
  */
 fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
     val paint =
@@ -60,8 +61,7 @@ fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
         }
     val fm = paint.fontMetrics
     val lineHeight = fm.descent - fm.ascent // ascent is negative
-    // lineSpacingMultiplier=0.7 (native dataHeaderTextStyle) affects inter-line
-    // spacing only, not single-line height.
+    // The 0.7 line spacing adds height between lines only, so one line keeps its height.
     val factor = if (lines == 1) 1.0f else 1.7f // 1 + 0.7 for 2 lines
     val textHeight = (factor * lineHeight).toInt()
     val minHeightPx = (22 * density).toInt()
@@ -69,10 +69,10 @@ fun headerHeightPx(headerFontSizeSp: Float, lines: Int, density: Float): Int {
 }
 
 /**
- * Splits [text] at the space nearest its midpoint and returns the longer of the two halves, or null
- * if there is no space to split on.
+ * Splits [text] at the space nearest its midpoint into its two lines, or null if there is no space
+ * to split on.
  */
-private fun longerHalfAfterSplit(text: String): String? {
+private fun splitNearMidpoint(text: String): Pair<String, String>? {
     val mid = text.length / 2
     val before = text.lastIndexOf(' ', mid)
     val after = text.indexOf(' ', mid)
@@ -83,7 +83,5 @@ private fun longerHalfAfterSplit(text: String): String? {
             after < 0 -> before
             else -> if (mid - before <= after - mid) before else after
         }
-    val line1 = text.substring(0, split)
-    val line2 = text.substring(split + 1)
-    return if (line1.length >= line2.length) line1 else line2
+    return Pair(text.substring(0, split), text.substring(split + 1))
 }
