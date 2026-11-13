@@ -24,7 +24,7 @@
     <ID>CyclomaticComplexMethod:HUDField.kt:HUDField.Companion$fun previewStates: List&lt;HUDState&gt;</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$@OptIn(ExperimentalComposeUiApi::class) @Composable private fun ConfigScreen</ID>
     <ID>CyclomaticComplexMethod:OverviewSparkline.kt:@OptIn(FlowPreview::class) fun overviewBitmapFlow: Flow&lt;Bitmap?&gt;</ID>
-    <ID>CyclomaticComplexMethod:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>CyclomaticComplexMethod:SparklineDataFlow.kt:internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
     <ID>CyclomaticComplexMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun hrZoneColor: Color</ID>
     <ID>CyclomaticComplexMethod:ZoneColoring.kt:fun powerZoneColor: Color</ID>
@@ -54,7 +54,7 @@
     <ID>LongMethod:MainActivity.kt:@Composable internal fun GradeMapCard</ID>
     <ID>LongMethod:MainActivity.kt:MainActivity$@OptIn(ExperimentalComposeUiApi::class) @Composable private fun ConfigScreen</ID>
     <ID>LongMethod:OverviewSparkline.kt:@OptIn(FlowPreview::class) fun overviewBitmapFlow: Flow&lt;Bitmap?&gt;</ID>
-    <ID>LongMethod:SparklineDataFlow.kt:@OptIn(FlowPreview::class) internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
+    <ID>LongMethod:SparklineDataFlow.kt:internal fun sparklineBitmapFlow: Flow&lt;SparklineFrame&gt;</ID>
     <ID>LongMethod:ViewSizeConfig.kt:fun ViewConfig.toViewSizeConfig: ViewSizeConfig</ID>
     <ID>LoopWithTooManyJumpStatements:ElevationSparkline.kt:for</ID>
     <ID>LoopWithTooManyJumpStatements:ElevationSparkline.kt:while</ID>

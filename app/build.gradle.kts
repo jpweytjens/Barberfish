@@ -117,6 +117,7 @@ tasks.register("generateManifest") {
 
 dependencies {
     implementation(libs.hammerhead.karoo.ext)
+    implementation(libs.androidx.collection)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
@@ -124,6 +125,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
