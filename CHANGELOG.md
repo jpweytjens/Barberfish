@@ -4,13 +4,14 @@
 
 HUD:
 - Each Karoo profile can have its own HUD, so every bike shows the numbers that suit it. Thanks to Theolean for the request.
-- The numbers are larger in both the 3 and the 4 column HUD
 - Less padding above the row of numbers
 - Smaller touch-ups: messages such as No GPS signal stay on one line in a 3 column HUD, a long distance in Ride Remaining no longer cuts off its icon, and the preview in the settings shows values at the size they have on the device
 
+Easier to read:
+- Numbers are larger: in the 3 and the 4 column HUD, in both rows of Ride Remaining, and in fields, where short values no longer shrink more than the cell requires
+- HUD labels are larger too
+
 Fields:
-- Values fill more of their cell: short values no longer shrink more than the cell requires
-- The two rows of Ride Remaining are larger
 - Profile and Overview say No route when no route is loaded, where they used to stay blank
 
 Grade map and Overview:
