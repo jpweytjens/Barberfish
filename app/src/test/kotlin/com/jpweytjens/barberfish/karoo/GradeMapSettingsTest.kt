@@ -79,8 +79,9 @@ class GradeMapSettingsTest {
             karoo.app.saveZoneConfig(ZoneConfig(gradePalette = GradePalette.BARBERFISH))
         }
 
+        // A band that is merely hidden mid-redraw has no colour; only a shown one can differ.
         karoo.awaitValue {
-            true.takeIf { map.visibleFills()["barberfish-seg-0"]?.color != before }
+            map.visibleFills()["barberfish-seg-0"]?.color?.takeIf { it != before }
         }
     }
 

@@ -75,13 +75,20 @@ class GradeMapRideProgressTest {
         val before = map.chevronsM()
 
         val mark = map.mark()
-        ridden(600.0)
+        ridden(900.0)
         map.awaitQuiet(quietMs = 500, timeoutMs = 15_000)
         assertEquals(before, map.chevronsM())
         assertTrue(map.items.drop(mark).none { it is HideSymbols })
 
+        // Progress only moves forward, so a later sample that is further back tells the two
+        // outcomes apart: had the 900 m sample counted, the chevrons up to it would be gone for
+        // good, however late it was delivered.
         RobolectricPump.advanceBy(3.seconds)
-        ridden(601.0)
+        ridden(300.0)
         map.await(10_000, mark) { it is HideSymbols }
+        map.awaitQuiet(quietMs = 800, timeoutMs = 15_000)
+
+        assertTrue(map.chevronsM().all { it >= 290.0 })
+        assertTrue(map.chevronsM().any { it < 890.0 })
     }
 }
