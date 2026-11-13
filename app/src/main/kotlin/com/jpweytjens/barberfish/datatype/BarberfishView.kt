@@ -20,6 +20,7 @@ import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.ViewSizeConfig
 import com.jpweytjens.barberfish.datatype.shared.fontSizeForCell
 import com.jpweytjens.barberfish.datatype.shared.headerHeightPx
+import com.jpweytjens.barberfish.datatype.shared.headerPaint
 import com.jpweytjens.barberfish.datatype.shared.renderHeaderBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderTwoRowValueBitmap
 import com.jpweytjens.barberfish.datatype.shared.renderValueBitmap
@@ -321,6 +322,26 @@ private fun makeFieldRemoteViews(
  * view ids. Returns the layout's reserved label line count, used to anchor the stream-state overlay
  * below the header band.
  */
+/**
+ * Header label size in a HUD slot whose label may span [labelAvailableWidthPx], measured as
+ * [renderHeaderBitmap] draws it: uppercase, in [headerPaint].
+ */
+internal fun hudHeaderFontSp(
+    displayLabel: String,
+    sizeConfig: ViewSizeConfig,
+    labelAvailableWidthPx: Float,
+    density: Float,
+): Int =
+    fontSizeForCell(
+            displayLabel.uppercase(),
+            sizeConfig.headerFontSize.value.toInt(),
+            labelAvailableWidthPx,
+            density,
+            wrapThresholdSp = sizeConfig.wrapThresholdSp,
+            paint = headerPaint(0f),
+        )
+        .first
+
 private fun applyHeaderChrome(
     rv: RemoteViews,
     field: FieldState,
@@ -357,16 +378,8 @@ private fun applyHeaderChrome(
     val labelFontSp: Float
     val labelLines: Int
     if (sizeConfig.colSpan < 30) {
-        val (sp, _) =
-            fontSizeForCell(
-                displayLabel,
-                sizeConfig.headerFontSize.value.toInt(),
-                labelAvailableWidthPx,
-                density,
-                wrapThresholdSp = sizeConfig.wrapThresholdSp,
-                paint = Paint().apply { typeface = Typeface.DEFAULT },
-            )
-        labelFontSp = sp.toFloat()
+        labelFontSp =
+            hudHeaderFontSp(displayLabel, sizeConfig, labelAvailableWidthPx, density).toFloat()
         labelLines = 2 // all HUD slots always reserve 2-line height for consistent alignment
     } else {
         labelFontSp = sizeConfig.headerFontSize.value

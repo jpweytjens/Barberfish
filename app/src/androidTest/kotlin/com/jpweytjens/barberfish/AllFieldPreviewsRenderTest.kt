@@ -13,6 +13,7 @@ import com.jpweytjens.barberfish.datatype.HUDDataType
 import com.jpweytjens.barberfish.datatype.RouteRemainingField
 import com.jpweytjens.barberfish.datatype.SparklineRender
 import com.jpweytjens.barberfish.datatype.shared.GradeReading
+import com.jpweytjens.barberfish.datatype.shared.HUDState
 import com.jpweytjens.barberfish.datatype.shared.overviewPreviewBitmap
 import com.jpweytjens.barberfish.datatype.shared.previewElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.remoteViewsToBitmap
@@ -26,10 +27,8 @@ import com.jpweytjens.barberfish.extension.RouteRemainingConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
-import com.jpweytjens.barberfish.extension.streamActiveHUDConfig
 import com.jpweytjens.barberfish.extension.streamGradeFieldConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
-import com.jpweytjens.barberfish.extension.updateActiveHUDConfig
 import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.ViewConfig
 import java.io.File
@@ -104,25 +103,31 @@ class AllFieldPreviewsRenderTest {
             }
             for (sample in samples) {
                 val config = if (sample.type is HUDDataType) hudConfig else cellConfig
-                writePreviewPng(sample, sample.type.typeId, config, design, context, outDir)
+                writePreviewPng(
+                    sample.withHudColumns(3),
+                    sample.type.typeId,
+                    config,
+                    design,
+                    context,
+                    outDir,
+                )
             }
 
-            // Second HUD render: flip the HUD setting to 4 columns so both variants
-            // land in the contact sheet, then restore the rider's config. The preview shows
-            // the active profile's HUD, so edit that one, not necessarily the Shared HUD.
+            // Second HUD render at 4 columns, so both variants land in the contact sheet.
+            // HUDState carries all four slots whatever the rider's column setting, so each
+            // render sets its own column count instead of reading it from the device.
             val hud = types.filterIsInstance<HUDDataType>().single()
-            val originalHud = runBlocking { context.streamActiveHUDConfig().first() }
-            try {
-                runBlocking {
-                    context.updateActiveHUDConfig { it.copy(slots = it.slots.copy(columns = 4)) }
-                }
-                // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
-                // two HUD renders show different values.
-                val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
-                writePreviewPng(fourCol, "${hud.typeId}-4col", hudConfig, design, context, outDir)
-            } finally {
-                runBlocking { context.updateActiveHUDConfig { originalHud } }
-            }
+            // The 3-col strip samples the cycle at drops = 0; land elsewhere so the
+            // two HUD renders show different values.
+            val fourCol = runBlocking { collectSample(hud, drops = 3, hudConfig, context) }
+            writePreviewPng(
+                fourCol.withHudColumns(4),
+                "${hud.typeId}-4col",
+                hudConfig,
+                design,
+                context,
+                outDir,
+            )
 
             // Doc renders: the three Grade statuses as single-cell crops for
             // docs/algorithms.md, written to a subdir so the contact-sheet grid
@@ -284,6 +289,13 @@ class AllFieldPreviewsRenderTest {
     }
 
     private class Sample<T>(val type: BarberfishBase<T>, val state: T)
+
+    /** This sample with a HUD state drawn at [columns] columns; other samples unchanged. */
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> Sample<T>.withHudColumns(columns: Int): Sample<T> {
+        val hudState = state as? HUDState ?: return this
+        return Sample(type, hudState.copy(columns = columns) as T)
+    }
 
     private suspend fun <T> collectSample(
         type: BarberfishBase<T>,

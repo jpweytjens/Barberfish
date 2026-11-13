@@ -153,8 +153,8 @@ For HUD slots the SDK `textSize` does not apply, since each slot fills only a th
 
 | HUD columns | Preset                     | `valueFontSizeBase` |
 | ----------- | -------------------------- | ------------------- |
-| 3-col       | `ViewSizeConfig.HUD_THREE` | 42 sp               |
-| 4-col       | `ViewSizeConfig.HUD_FOUR`  | 34 sp               |
+| 3-col       | `ViewSizeConfig.HUD_THREE` | 49 sp               |
+| 4-col       | `ViewSizeConfig.HUD_FOUR`  | 36 sp               |
 
 ### Dynamic shrinking: `fontSizeForCell`
 
@@ -183,7 +183,7 @@ fontSizeForCell(text, fontSizeBaseSp, cellWidthPx, density, wrapThresholdSp)
 
 ```
 ViewConfig.textSize  (SDK, sp, layout-aware)
-  │  or textSizeOverride (HUD slots: 42 for 3-col, 32 for 4-col)
+  │  or textSizeOverride (HUD slots: 49 for 3-col, 36 for 4-col)
   ▼
 ViewSizeConfig.valueFontSizeBase          ← toViewSizeConfig()
 ViewSizeConfig.wrapThresholdSp            ← derived from colSpan
