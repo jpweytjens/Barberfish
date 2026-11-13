@@ -666,7 +666,7 @@ private fun HUDPreviewCell(
         // scale it into this cell, so every size and shrink decision matches the device.
         val liveWidthPx =
             hudSlotWidthPx(
-                    LocalContext.current.resources.displayMetrics.widthPixels,
+                    LocalResources.current.displayMetrics.widthPixels,
                     columns,
                     density,
                 )
