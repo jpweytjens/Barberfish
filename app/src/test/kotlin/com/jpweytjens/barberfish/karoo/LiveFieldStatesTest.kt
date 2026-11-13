@@ -87,11 +87,9 @@ class LiveFieldStatesTest {
         val searching = view.awaitFrame(15_000).inflate(karoo.app, FIELD_CONFIG)
         assertEquals("Searching…", searching.fieldStateText())
 
-        val seen = view.items.size
         RobolectricPump.advanceBy(1.seconds)
         karoo.system.setDataPoint(point(DataType.Type.POWER, DataType.Field.POWER to 210.0))
-        val live = view.awaitFrame(15_000, after = seen).inflate(karoo.app, FIELD_CONFIG)
-        assertEquals(null, live.fieldStateText())
+        val live = view.awaitRendered(karoo) { it.fieldStateText() == null }
         assertTrue(live.fieldValueVisible())
     }
 
@@ -108,7 +106,6 @@ class LiveFieldStatesTest {
         val noRoute = view.awaitFrame(15_000).inflate(karoo.app, FIELD_CONFIG)
         assertEquals("No route", noRoute.fieldStateText())
 
-        var seen = view.items.size
         RobolectricPump.advanceBy(1.seconds)
         karoo.system.setDataPoint(
             point(
@@ -117,10 +114,8 @@ class LiveFieldStatesTest {
                 DataType.Field.ON_ROUTE to 0.0,
             )
         )
-        val offRoute = view.awaitFrame(15_000, after = seen).inflate(karoo.app, FIELD_CONFIG)
-        assertEquals("Off route", offRoute.fieldStateText())
+        view.awaitRendered(karoo) { it.fieldStateText() == "Off route" }
 
-        seen = view.items.size
         RobolectricPump.advanceBy(1.seconds)
         karoo.system.setDataPoint(
             point(
@@ -129,8 +124,7 @@ class LiveFieldStatesTest {
                 DataType.Field.ON_ROUTE to 1.0,
             )
         )
-        val onRoute = view.awaitFrame(15_000, after = seen).inflate(karoo.app, FIELD_CONFIG)
-        assertEquals(null, onRoute.fieldStateText())
+        val onRoute = view.awaitRendered(karoo) { it.fieldStateText() == null }
         assertTrue(onRoute.fieldValueVisible())
     }
 
@@ -144,11 +138,9 @@ class LiveFieldStatesTest {
         val first = view.awaitFrame(15_000).inflate(karoo.app, FIELD_CONFIG)
         assertEquals("No laps yet", first.fieldStateText())
 
-        val seen = view.items.size
         RobolectricPump.advanceBy(1.seconds)
         karoo.system.setDataPoint(point(DataType.Type.LAP_NUMBER, DataType.Field.LAP_NUMBER to 2.0))
-        val second = view.awaitFrame(15_000, after = seen).inflate(karoo.app, FIELD_CONFIG)
-        assertEquals(null, second.fieldStateText())
+        val second = view.awaitRendered(karoo) { it.fieldStateText() == null }
         assertTrue(second.fieldValueVisible())
     }
 

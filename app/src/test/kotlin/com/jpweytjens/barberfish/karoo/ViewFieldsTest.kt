@@ -124,13 +124,10 @@ class ViewFieldsTest {
         val kmBitmap = metricFrame.inflate(karoo.app, config).value()
 
         RobolectricPump.advanceBy(1.seconds)
-        val seen = view.items.size
         setUnits(FakeKarooSystem.imperialProfile())
-        val imperialFrame = view.awaitFrame(10_000, after = seen)
 
         // 1000 m is 0.6 mi: not what the metric frame said, and what a fresh imperial field shows.
-        val miBitmap = imperialFrame.inflate(karoo.app, config).value()
-        assertFalse(kmBitmap.sameAs(miBitmap))
+        val miBitmap = view.awaitRendered(karoo, config) { !it.value().sameAs(kmBitmap) }.value()
         assertTrue(miBitmap.sameAs(render("distance").value()))
     }
 

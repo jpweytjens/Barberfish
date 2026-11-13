@@ -116,10 +116,13 @@ class HudFieldTest {
         val view = host.startView("three-column", config)
         assertEquals(R.layout.barberfish_hud, view.awaitFrame(20_000).layoutId)
 
-        val seen = view.items.size
         RobolectricPump.advanceBy(2.seconds)
         runBlocking { saveSharedHUD(distanceSlots(columns = 4)) }
-        assertEquals(R.layout.barberfish_hud_four, view.awaitFrame(20_000, after = seen).layoutId)
+        // A redraw of the three-column strip can land before the four-column one, so the first
+        // new frame proves nothing; wait for the layout itself.
+        karoo.awaitValue {
+            view.frames.last().layoutId.takeIf { it == R.layout.barberfish_hud_four }
+        }
     }
 
     @Test

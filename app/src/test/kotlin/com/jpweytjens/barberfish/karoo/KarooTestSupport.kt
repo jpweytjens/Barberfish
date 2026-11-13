@@ -14,6 +14,7 @@ import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.dataStore
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.MapRecorder
+import fi.nikosavola.karooext.testing.ViewRecorder
 import fi.nikosavola.karooext.testing.decodePolyline
 import fi.nikosavola.karooext.testing.inflate
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
@@ -60,6 +61,17 @@ internal fun FakeKarooHost.renderField(
     typeId: String,
     config: ViewConfig = FIELD_CONFIG,
 ): View = startView(typeId, config).awaitFrame(15_000).inflate(context, config)
+
+/**
+ * Waits for an open view to draw a frame that satisfies [expected] and returns it inflated. A
+ * re-emission of the old state can land before the new one, so the first frame after a change
+ * proves nothing.
+ */
+internal fun ViewRecorder.awaitRendered(
+    karoo: FakeKarooRule,
+    config: ViewConfig = FIELD_CONFIG,
+    expected: (View) -> Boolean,
+): View = karoo.awaitValue { frames.last().inflate(karoo.app, config).takeIf(expected) }
 
 /**
  * Starts the extension and waits for its profile discovery, the one consumer it holds for its whole
