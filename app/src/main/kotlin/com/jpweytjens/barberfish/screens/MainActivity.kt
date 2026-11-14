@@ -1156,6 +1156,20 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
+                        SparklineCard(
+                            config = fieldSparklineConfig,
+                            zoneConfig = zoneConfig,
+                            profile = userProfile,
+                            selected = selectedDataField == "PROFILE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "PROFILE") null else "PROFILE"
+                            },
+                            onUpdate = { updated ->
+                                fieldSparklineConfig = updated
+                                lifecycleScope.launch { saveFieldSparklineConfig(updated) }
+                            },
+                        )
 
                         ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
@@ -1203,18 +1217,6 @@ class MainActivity : ComponentActivity() {
                         expanded = mapExpanded,
                         onToggle = { mapExpanded = !mapExpanded },
                     ) {
-                        var sparklineExpanded by remember { mutableStateOf(false) }
-                        SparklineCard(
-                            config = fieldSparklineConfig,
-                            zoneConfig = zoneConfig,
-                            profile = userProfile,
-                            selected = sparklineExpanded,
-                            onSelect = { sparklineExpanded = !sparklineExpanded },
-                            onUpdate = { updated ->
-                                fieldSparklineConfig = updated
-                                lifecycleScope.launch { saveFieldSparklineConfig(updated) }
-                            },
-                        )
                         var gradeMapExpanded by remember { mutableStateOf(false) }
                         GradeMapCard(
                             config = gradeMapConfig,
@@ -1344,7 +1346,7 @@ internal fun GradeMapCard(
                 options = GRADE_MAP_TUNING_OPTIONS,
                 selected = config.syncWithSparkline,
                 onSelect = { onUpdate(config.copy(syncWithSparkline = it)) },
-                help = "Tune the map with the elevation profile, or set it on its own.",
+                help = "Tune the map with the Profile field in Data fields, or set it on its own.",
             )
 
             if (config.syncWithSparkline) {

@@ -1083,6 +1083,7 @@ internal fun SparklineCard(
         title = "PROFILE",
         selected = selected,
         onSelect = onSelect,
+        testTag = "bf:field:elevation-sparkline",
         headerExtra = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 HelperText("Elevation profile shown ahead when a route is loaded.")
