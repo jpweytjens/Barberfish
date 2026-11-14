@@ -313,7 +313,7 @@ class MainActivity : ComponentActivity() {
 
         var fieldsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
-        var climbingExpanded by remember { mutableStateOf(false) }
+        var mapExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var palettesExpanded by remember { mutableStateOf(false) }
         var timeExpanded by remember { mutableStateOf(false) }
@@ -1199,9 +1199,9 @@ class MainActivity : ComponentActivity() {
                     } // end Fields
 
                     CollapsibleSection(
-                        section = ConfigSection.CLIMBING,
-                        expanded = climbingExpanded,
-                        onToggle = { climbingExpanded = !climbingExpanded },
+                        section = ConfigSection.MAP,
+                        expanded = mapExpanded,
+                        onToggle = { mapExpanded = !mapExpanded },
                     ) {
                         var sparklineExpanded by remember { mutableStateOf(false) }
                         SparklineCard(
@@ -1227,7 +1227,7 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch { saveGradeMapConfig(updated) }
                             },
                         )
-                    } // end Climbing
+                    } // end Map
 
                     CollapsibleSection(
                         section = ConfigSection.ETA,
@@ -1594,12 +1594,7 @@ internal enum class ConfigSection(
         "Per-field settings for the standalone fields",
         R.drawable.ic_section_fields,
     ),
-    CLIMBING(
-        "Climbing",
-        "climbing",
-        "The elevation profile and the grade map overlay",
-        R.drawable.ic_grade,
-    ),
+    MAP("Map", "map", "Overlays drawn on the Karoo map", R.drawable.ic_section_map),
     ETA("ETA", "eta", "Time of arrival estimation", R.drawable.ic_finish_flag),
     TIME("Time", "time", "Format for time and duration fields", R.drawable.ic_stopwatch),
     DATA_FIELD_DESIGN(
