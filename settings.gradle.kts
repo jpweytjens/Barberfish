@@ -31,6 +31,12 @@ dependencyResolutionManagement {
                 password = localProperties["gpr.key"] as? String ?: System.getenv("TOKEN")
             }
         }
+
+        // karoo-ext-testing, test-only
+        exclusiveContent {
+            forRepository { maven("https://jitpack.io") }
+            filter { includeGroup("com.github.nikosavola.karoo-ext-testing") }
+        }
     }
 }
 

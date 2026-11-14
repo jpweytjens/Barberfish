@@ -46,3 +46,10 @@ jobs:
           USERNAME: ${{ github.actor }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew --no-daemon lintDebug
+
+      # The release build resolves its own dependency set, so the debug steps above do not cover it.
+      - name: Compile and shrink the release build
+        env:
+          USERNAME: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew --no-daemon minifyReleaseWithR8
