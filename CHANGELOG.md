@@ -22,6 +22,9 @@ Battery:
 - Fields redraw only when what they show has changed
 - The grade map does less work per GPS fix on long routes
 
+Settings:
+- The Climbing section is now Map and holds the Grade Map card. The Profile card moved to Data fields, after Grade
+
 Settings reset:
 - If you last changed the HUD's profile strip before 3.1, it returns to its defaults after this update
 
