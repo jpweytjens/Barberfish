@@ -417,15 +417,27 @@ therefore share their vertices.
 
 ---
 
-## `routeDistance` runs longer than the polyline
+## `routeDistance` is measured on the equatorial radius
 
-On the same route `NavigatingRoute.routeDistance` reported 34,151 m while the
-polyline's cumulative equirectangular length is 34,113.5 m, a ratio of 1.0011. The
-distance field and `DISTANCE_TO_DESTINATION` are on the rideapp's axis; anything
-measured on the polyline is on the other. Rescale by the ratio of the two lengths
-before comparing a distance from one axis with a position on the other;
-thirty-eight metres is more than the tolerance of anything matching a point near
-the end of the route.
+`NavigatingRoute.routeDistance` and `DISTANCE_TO_DESTINATION` count metres on a
+sphere of the WGS84 equatorial radius, 6,378,137 m. Measured on a Karoo 3
+(2026-11-14) with a 48.7 km route: `routeDistance` reported 48,711.16 m and the
+polyline's cumulative length on that radius is 48,710.99 m, 17 cm apart.
+
+A length measured on the mean radius of 6,371,000 m comes out 0.11% short, the
+ratio of the two radii. That is where an earlier reading on a 34 km route came
+from: 34,151 m reported against 34,113.5 m measured, a ratio of 1.0011.
+Barberfish measured polylines on the mean radius until then and now uses the
+equatorial one, so a polyline position and a distance from the Karoo share one
+axis.
+
+A pin route is the exception. It carries no length, so Barberfish reads one off
+the end of its elevation profile, and on an 11 km pin route that profile ended at
+11,039 m while the polyline measured 11,045.6 m. Whether the profile follows a
+coarser line or stops short of the destination is not known. Progress is still
+rescaled by the ratio of the two lengths before it is compared with a position
+on the polyline, which costs nothing on a loaded route and absorbs this gap on a
+pin route.
 
 ---
 

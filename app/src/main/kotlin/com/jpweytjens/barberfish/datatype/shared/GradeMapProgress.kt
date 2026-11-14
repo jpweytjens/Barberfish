@@ -92,11 +92,13 @@ internal fun gradeMapRouteKey(routePolyline: String, reversed: Boolean): Long =
     (routePolyline.hashCode().toLong() shl 1) or (if (reversed) 1L else 0L)
 
 /**
- * Progress on the polyline's own axis. The latch measures progress on the rideapp's route distance
- * axis, which runs a fraction of a per cent longer than the polyline's cumulative length (34,151 m
- * against 34,113.5 m on a 34 km route); every comparison with pieces, visits and chevrons happens
- * on the polyline axis, so the two lengths' ratio is applied here and nowhere else. A missing or
- * zero route distance leaves progress unscaled.
+ * Progress on the polyline's own axis. The latch measures progress against the route's stated
+ * length, and every comparison with pieces, visits and chevrons happens on the polyline, so the two
+ * lengths' ratio is applied here and nowhere else. On a loaded route the two agree (48,711.16 m
+ * against 48,710.99 m on a 48.7 km route) and the ratio changes nothing. A route to a pin has no
+ * stated length and borrows the end of its elevation profile, which ran 6.6 m short of the polyline
+ * on an 11 km route; there the ratio does the work. A missing or zero route distance leaves
+ * progress unscaled.
  */
 internal fun polylineAxisProgressM(
     sdkProgressM: Double,
