@@ -7,16 +7,21 @@ import kotlin.math.sqrt
 
 internal data class LatLng(val lat: Double, val lng: Double)
 
-/** Earth radius in metres (mean). */
-internal const val EARTH_RADIUS_M = 6_371_000.0
+/**
+ * Earth radius in metres: the WGS84 equatorial radius. Distances measured on it agree with the
+ * Karoo's own route distance (48,711.16 m against 48,710.99 m on a 48.7 km route), so polyline
+ * positions and the rider's distance to destination share one axis. Every other Earth-size constant
+ * derives from this one.
+ */
+internal const val EARTH_RADIUS_M = 6_378_137.0
 
 // --- Map viewport geometry ------------------------------------------------------
 //
 // The Karoo map renders 512 px tiles, so ground resolution in metres per pixel is
-// cos(lat) * 40_075_016.686 / (512 * 2^zoom).
+// cos(lat) * circumference / (512 * 2^zoom).
 
 private const val VTM_TILE_SIZE = 512
-private const val EARTH_CIRCUMFERENCE_M = 40_075_016.686
+private const val EARTH_CIRCUMFERENCE_M = 2 * PI * EARTH_RADIUS_M
 
 /** Metres per pixel at [lat] degrees latitude and the given VTM [zoomLevel]. */
 internal fun groundResolution(lat: Double, zoomLevel: Double): Double {

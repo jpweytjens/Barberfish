@@ -54,8 +54,8 @@ class GpsPolylineTest {
         val cum = cumulativeDistancesM(points)
         assertEquals(2, cum.size)
         assertEquals(0.0, cum[0], 0.0)
-        // 1° of latitude ≈ 111_195 m on a 6_371_000 m sphere. Allow ±1%.
-        val expected = 111_195.0
+        // 1° of latitude ≈ 111_319.5 m on a 6_378_137 m sphere. Allow ±1%.
+        val expected = 111_319.5
         assertTrue("got=${cum[1]}", abs(cum[1] - expected) / expected < 0.01)
     }
 

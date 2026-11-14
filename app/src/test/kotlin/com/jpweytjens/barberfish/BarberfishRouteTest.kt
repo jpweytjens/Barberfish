@@ -30,7 +30,7 @@ class BarberfishRouteTest {
         assertTrue(later.all { it.traversal == Traversal.OPPOSITE })
         assertTrue(groups.all { it.occurrences.size == 2 })
         val laterM = later.sumOf { index.cumDist[it.edge + 1] - index.cumDist[it.edge] }
-        assertEquals(3135.0, laterM, 5.0)
+        assertEquals(3138.5, laterM, 5.0)
     }
 
     @Test
@@ -38,15 +38,15 @@ class BarberfishRouteTest {
         val returning =
             index.visits.filter { it.depth == 1 && index.visitsOfUnit(it.unit).size == 2 }
         assertEquals(64, returning.size)
-        assertEquals(30915.0, returning.minOf { it.startM }, 3.0)
+        assertEquals(30950.0, returning.minOf { it.startM }, 3.0)
         assertEquals(index.lengthM, returning.maxOf { it.endM }, 1e-6)
         // The roundabout: outbound and return take different paths, so no return visit covers
         // the gap between the two stretches.
-        assertTrue(returning.none { it.startM > 31428.0 && it.endM < 31492.0 })
+        assertTrue(returning.none { it.startM > 31463.0 && it.endM < 31527.0 })
         val outbound = index.visits.filter { it.depth == 2 }
         assertEquals(64, outbound.size)
         assertEquals(0.0, outbound.minOf { it.startM }, 1e-6)
-        assertEquals(3208.0, outbound.maxOf { it.endM }, 3.0)
+        assertEquals(3212.0, outbound.maxOf { it.endM }, 3.0)
     }
 
     @Test

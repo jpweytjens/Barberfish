@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish
 
+import com.jpweytjens.barberfish.datatype.shared.EARTH_RADIUS_M
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
 import kotlin.math.PI
@@ -9,7 +10,7 @@ import kotlin.math.PI
  * [M_PER_DEG] degrees on both axes, matching the equirectangular distance the code uses.
  */
 internal object RouteFixtures {
-    const val M_PER_DEG = 6_371_000.0 * PI / 180.0
+    const val M_PER_DEG = EARTH_RADIUS_M * PI / 180.0
 
     fun point(xM: Double, yM: Double) = LatLng(lat = yM / M_PER_DEG, lng = xM / M_PER_DEG)
 
