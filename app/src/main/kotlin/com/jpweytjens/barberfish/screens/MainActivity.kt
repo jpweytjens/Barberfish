@@ -313,7 +313,7 @@ class MainActivity : ComponentActivity() {
 
         var fieldsExpanded by remember { mutableStateOf(false) }
         var hudExpanded by remember { mutableStateOf(false) }
-        var climbingExpanded by remember { mutableStateOf(false) }
+        var mapExpanded by remember { mutableStateOf(false) }
         var etaExpanded by remember { mutableStateOf(false) }
         var palettesExpanded by remember { mutableStateOf(false) }
         var timeExpanded by remember { mutableStateOf(false) }
@@ -1156,6 +1156,20 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
+                        SparklineCard(
+                            config = fieldSparklineConfig,
+                            zoneConfig = zoneConfig,
+                            profile = userProfile,
+                            selected = selectedDataField == "PROFILE",
+                            onSelect = {
+                                selectedDataField =
+                                    if (selectedDataField == "PROFILE") null else "PROFILE"
+                            },
+                            onUpdate = { updated ->
+                                fieldSparklineConfig = updated
+                                lifecycleScope.launch { saveFieldSparklineConfig(updated) }
+                            },
+                        )
 
                         ControlLabel("NAVIGATION", modifier = Modifier.padding(top = 8.dp))
                         FieldCard(
@@ -1199,22 +1213,10 @@ class MainActivity : ComponentActivity() {
                     } // end Fields
 
                     CollapsibleSection(
-                        section = ConfigSection.CLIMBING,
-                        expanded = climbingExpanded,
-                        onToggle = { climbingExpanded = !climbingExpanded },
+                        section = ConfigSection.MAP,
+                        expanded = mapExpanded,
+                        onToggle = { mapExpanded = !mapExpanded },
                     ) {
-                        var sparklineExpanded by remember { mutableStateOf(false) }
-                        SparklineCard(
-                            config = fieldSparklineConfig,
-                            zoneConfig = zoneConfig,
-                            profile = userProfile,
-                            selected = sparklineExpanded,
-                            onSelect = { sparklineExpanded = !sparklineExpanded },
-                            onUpdate = { updated ->
-                                fieldSparklineConfig = updated
-                                lifecycleScope.launch { saveFieldSparklineConfig(updated) }
-                            },
-                        )
                         var gradeMapExpanded by remember { mutableStateOf(false) }
                         GradeMapCard(
                             config = gradeMapConfig,
@@ -1227,7 +1229,7 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch { saveGradeMapConfig(updated) }
                             },
                         )
-                    } // end Climbing
+                    } // end Map
 
                     CollapsibleSection(
                         section = ConfigSection.ETA,
@@ -1344,7 +1346,7 @@ internal fun GradeMapCard(
                 options = GRADE_MAP_TUNING_OPTIONS,
                 selected = config.syncWithSparkline,
                 onSelect = { onUpdate(config.copy(syncWithSparkline = it)) },
-                help = "Tune the map with the elevation profile, or set it on its own.",
+                help = "Tune the map with the Profile field in Data fields, or set it on its own.",
             )
 
             if (config.syncWithSparkline) {
@@ -1594,12 +1596,7 @@ internal enum class ConfigSection(
         "Per-field settings for the standalone fields",
         R.drawable.ic_section_fields,
     ),
-    CLIMBING(
-        "Climbing",
-        "climbing",
-        "The elevation profile and the grade map overlay",
-        R.drawable.ic_grade,
-    ),
+    MAP("Map", "map", "Overlays drawn on the Karoo map", R.drawable.ic_section_map),
     ETA("ETA", "eta", "Time of arrival estimation", R.drawable.ic_finish_flag),
     TIME("Time", "time", "Format for time and duration fields", R.drawable.ic_stopwatch),
     DATA_FIELD_DESIGN(

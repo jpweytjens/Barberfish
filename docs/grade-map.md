@@ -17,7 +17,7 @@ On the Molenberg below, the band is orange under the rider, yellow just past the
 
 <img src="screenshots/hud_sparkline.jpg" alt="Map page on the Molenberg, the band orange under the rider, yellow past the next crossing and green beyond" width="320">
 
-Turn it on in the Grade Map card under Climbing in the Barberfish app; it draws whenever you follow a route.
+Turn it on in the Grade Map card under Map in the Barberfish app; it draws whenever you follow a route.
 
 The grade map is in beta. Reports of how it draws on your routes are welcome in [GitHub issues](https://github.com/jpweytjens/barberfish/issues).
 
