@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.datatype.shared.MovingState
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.datatype.shared.gradeBandStops
 import com.jpweytjens.barberfish.datatype.shared.snapGradeEdges
@@ -16,6 +17,7 @@ import com.jpweytjens.barberfish.datatype.shared.zeroStraddlingBand
 import io.hammerhead.karooext.models.DataType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -25,6 +27,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNames
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "barberfish")
+
+// A second file: the ride state is rewritten every second while recording, and must not
+// wake the readers of the settings file.
+private val Context.rideStateStore: DataStore<Preferences> by
+    preferencesDataStore(name = "barberfish_ride")
 
 private val json = Json {
     ignoreUnknownKeys = true
@@ -65,6 +72,18 @@ private val gradeFieldConfigKey = stringPreferencesKey("grade_field_config")
 private val avgPowerFieldConfigKey = stringPreferencesKey("avg_power_field_config")
 private val npFieldConfigKey = stringPreferencesKey("np_field_config")
 private val cadenceFieldConfigKey = stringPreferencesKey("cadence_field_config")
+private val movingStateKey = stringPreferencesKey("moving_state")
+
+suspend fun Context.loadMovingState(): MovingState? =
+    rideStateStore.data.first().config<MovingState?>(movingStateKey, null)
+
+/** Null removes the stored state. */
+suspend fun Context.saveMovingState(state: MovingState?) {
+    rideStateStore.edit {
+        if (state == null) it.remove(movingStateKey)
+        else it[movingStateKey] = json.encodeToString(state)
+    }
+}
 
 // --- HUDSlots ---
 

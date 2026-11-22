@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish.karoo
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import com.jpweytjens.barberfish.datatype.shared.MovingState
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDScope
@@ -11,16 +12,25 @@ import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.dataStore
+import com.jpweytjens.barberfish.extension.loadMovingState
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
+import com.jpweytjens.barberfish.extension.saveMovingState
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -80,5 +90,42 @@ class SettingsStoreTest {
             ZonePalette.ZWIFT,
             runBlocking { app.streamConfigSnapshot().first() }.zone.powerPalette,
         )
+    }
+
+    @Test
+    fun moving_state_round_trips() {
+        val app = karoo.app
+        val state = MovingState(1_000.0, 2_500.0, 3_000.0, 4_000.0)
+        runBlocking { app.saveMovingState(state) }
+        assertEquals(state, runBlocking { app.loadMovingState() })
+    }
+
+    @Test
+    fun saving_null_removes_the_moving_state() {
+        val app = karoo.app
+        runBlocking {
+            app.saveMovingState(MovingState(1.0, 2.0, 3.0, 4.0))
+            app.saveMovingState(null)
+        }
+        assertNull(runBlocking { app.loadMovingState() })
+    }
+
+    @Test
+    fun saving_the_moving_state_does_not_emit_on_the_settings_file() {
+        val app = karoo.app
+        val emissions = AtomicInteger()
+        runBlocking {
+            val collector =
+                launch(start = CoroutineStart.UNDISPATCHED) {
+                    app.dataStore.data.onEach { emissions.incrementAndGet() }.collect {}
+                }
+            // The first emission is the current value, so wait for it before saving.
+            while (emissions.get() < 1) yield()
+            app.saveMovingState(MovingState(1.0, 2.0, 3.0, 4.0))
+            app.saveZoneConfig(ZoneConfig(hrPalette = ZonePalette.WAHOO))
+            while (emissions.get() < 2) yield()
+            collector.cancel()
+        }
+        assertEquals(2, emissions.get())
     }
 }
