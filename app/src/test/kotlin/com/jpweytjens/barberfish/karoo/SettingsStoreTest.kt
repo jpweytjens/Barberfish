@@ -24,10 +24,12 @@ import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -119,13 +121,18 @@ class SettingsStoreTest {
                 launch(start = CoroutineStart.UNDISPATCHED) {
                     app.dataStore.data.onEach { emissions.incrementAndGet() }.collect {}
                 }
-            // The first emission is the current value, so wait for it before saving.
-            while (emissions.get() < 1) yield()
+            // The first emission is the current value.
+            withTimeout(5_000) { while (emissions.get() < 1) yield() }
             app.saveMovingState(MovingState(1.0, 2.0, 3.0, 4.0))
+            // Let a leaked write reach the collector before the control write can merge with it.
+            delay(500)
+            val afterMovingSave = emissions.get()
             app.saveZoneConfig(ZoneConfig(hrPalette = ZonePalette.WAHOO))
-            while (emissions.get() < 2) yield()
+            // The control write proves the collector is live; a bounded wait fails instead of
+            // hangs.
+            withTimeout(5_000) { while (emissions.get() == afterMovingSave) yield() }
             collector.cancel()
+            assertEquals(1, afterMovingSave)
         }
-        assertEquals(2, emissions.get())
     }
 }
