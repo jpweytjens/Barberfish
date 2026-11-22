@@ -394,6 +394,12 @@ a 15 px band, a little wider than the 13 px route line, and the native direction
 chevrons span about 27 px (31 px with their outline), so hiding them takes 17 dp or
 more.
 
+A second look on 2026-11-14 found two sizes of native arrow. Small arrows, about 19 px
+wide, run along the whole route at every zoom. Larger chevrons, 46 px wide with their
+outline, appear only on the stretch just ahead of the rider at zoom 15 and closer. A 7 dp
+band matches the route line, 18 dp hides the small arrows, and hiding the larger chevrons
+takes 25 dp.
+
 Extension polylines have no outline of their own. A casing is a second, wider black
 polyline under the fill, and its order matters: a new layer goes on top of
 everything already in the extension group, while a `ShowPolyline` for an id that

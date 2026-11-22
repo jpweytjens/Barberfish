@@ -33,7 +33,7 @@ Karoo's Climber marks a detected climb in blue whichever way you ride it. The gr
 
 ## How it is drawn
 
-An extension can only draw on top of the Karoo's route line, never in its place, so the band is wider than the line to cover it. When you leave the route, the Karoo's path back gets a band too, in the map's rerouting red, and it clears once you rejoin. The map adds the band piece by piece, so when a route starts, and after a zoom on a long one, the Karoo's line can show through for a second or two.
+An extension can only draw on top of the Karoo's route line, never in its place, so the band is wider than the line to cover it. The Width setting chooses how much wider. When you leave the route, the Karoo's path back gets a band too, in the map's rerouting red, and it clears once you rejoin. The map adds the band piece by piece, so when a route starts, and after a zoom on a long one, the Karoo's line can show through for a second or two.
 
 ## Settings
 
@@ -43,4 +43,5 @@ An extension can only draw on top of the Karoo's route line, never in its place,
 | Tuning | Sync / Independent | Take Emphasis and Simplification from the Profile field, or set them here. |
 | Emphasis | Handles on the palette bar | Grade at which color starts; gentler road draws in the neutral ([Emphasis](algorithms.md#emphasis)). |
 | Simplification | Off / Mild / Medium / Max | Floor on the smallest bump the band keeps ([Simplification](algorithms.md#simplification)). |
+| Width | Narrow / Medium / Wide | Narrow matches the Karoo's route line and draws no chevrons; the tips of the Karoo's own arrows show beside it. Medium covers the line and its small arrows. Wide also covers the larger arrows the Karoo draws just ahead of you. |
 | Chevron spacing | Gradient / Balanced / Changes | Bunch chevrons on the steepest road, where the gradient shifts, or in between. |

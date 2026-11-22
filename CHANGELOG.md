@@ -16,6 +16,7 @@ Fields:
 
 Grade map and Overview:
 - Both now follow a route to a dropped pin or POI, as the HUD profile already did
+- The grade map has a Width setting. Narrow is as thin as the Karoo's route line and leaves out the chevrons, Medium is the width it had, and Wide also covers the larger arrows the Karoo draws just ahead of you. Thanks to alessandrovalenti for the request.
 
 Battery:
 - With the grade map, the HUD's profile strip or the fourth HUD column turned off, Barberfish no longer reads the data behind them
