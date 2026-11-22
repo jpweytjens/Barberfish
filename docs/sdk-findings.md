@@ -390,11 +390,10 @@ line, sparse along it, or offset beside it.
 Measured on a Karoo 3 (2026-09-17) by requesting widths of 30 and 36 and reading the
 drawn band off a screencap: about 55 px and 67 px, the request times the 1.875
 screen density. `ShowPolyline.width` is therefore dp, not pixels. A width of 8 draws
-a 15 px band, a little wider than the 13 px route line, and the native direction
-chevrons span about 27 px (31 px with their outline), so hiding them takes 17 dp or
-more.
+a 15 px band, a little wider than the 13 px route line.
 
-A second look on 2026-11-14 found two sizes of native arrow. Small arrows, about 19 px
+The native direction arrows come in two sizes (measured 2026-11-14, replacing an earlier
+single reading of about 27 px). Small arrows, about 19 px
 wide, run along the whole route at every zoom. Larger chevrons, 46 px wide with their
 outline, appear only on the stretch just ahead of the rider at zoom 15 and closer. A 7 dp
 band matches the route line, 18 dp hides the small arrows, and hiding the larger chevrons

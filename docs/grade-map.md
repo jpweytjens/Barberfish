@@ -33,7 +33,7 @@ Karoo's Climber marks a detected climb in blue whichever way you ride it. The gr
 
 ## How it is drawn
 
-An extension can only draw on top of the Karoo's route line, never in its place, so the band is wider than the line to cover it. The Width setting chooses how much wider. When you leave the route, the Karoo's path back gets a band too, in the map's rerouting red, and it clears once you rejoin. The map adds the band piece by piece, so when a route starts, and after a zoom on a long one, the Karoo's line can show through for a second or two.
+An extension can only draw on top of the Karoo's route line, never in its place, so the band has to cover it. The Width setting chooses whether the band only matches the line or also covers the Karoo's arrows. When you leave the route, the Karoo's path back gets a band too, in the map's rerouting red, and it clears once you rejoin. The map adds the band piece by piece, so when a route starts, and after a zoom on a long one, the Karoo's line can show through for a second or two.
 
 ## Settings
 
