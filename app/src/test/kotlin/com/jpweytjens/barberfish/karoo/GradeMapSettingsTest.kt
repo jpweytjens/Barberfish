@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapWidth
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.saveGradeMapConfig
@@ -68,6 +69,47 @@ class GradeMapSettingsTest {
 
         runBlocking { karoo.app.saveGradeMapConfig(GradeMapConfig(enabled = true)) }
         karoo.awaitValue { map.visibleFills().takeIf { it.isNotEmpty() } }
+    }
+
+    @Test
+    fun the_default_band_is_medium_with_chevrons() {
+        val map = drawnMap()
+        assertTrue(map.visibleFills().values.all { it.width == GradeMapWidth.MEDIUM.fillDp })
+        assertTrue(map.visibleChevrons().isNotEmpty())
+    }
+
+    @Test
+    fun switching_to_narrow_redraws_every_piece_narrow_and_removes_the_chevrons() {
+        val map = drawnMap()
+        assertTrue(map.visibleChevrons().isNotEmpty())
+
+        runBlocking { karoo.app.saveGradeMapConfig(GradeMapConfig(width = GradeMapWidth.NARROW)) }
+
+        karoo.awaitValue {
+            val fills = map.visibleFills().values
+            val casings = map.visiblePolylines().values - fills.toSet()
+            true.takeIf {
+                fills.isNotEmpty() &&
+                    fills.all { it.width == GradeMapWidth.NARROW.fillDp } &&
+                    casings.all { it.width == GradeMapWidth.NARROW.casingDp } &&
+                    map.visibleChevrons().isEmpty()
+            }
+        }
+    }
+
+    @Test
+    fun switching_to_wide_redraws_every_piece_wide_and_keeps_the_chevrons() {
+        val map = drawnMap()
+
+        runBlocking { karoo.app.saveGradeMapConfig(GradeMapConfig(width = GradeMapWidth.WIDE)) }
+
+        karoo.awaitValue {
+            val fills = map.visibleFills().values
+            true.takeIf {
+                fills.isNotEmpty() && fills.all { it.width == GradeMapWidth.WIDE.fillDp }
+            }
+        }
+        assertTrue(map.visibleChevrons().isNotEmpty())
     }
 
     @Test
