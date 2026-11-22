@@ -156,6 +156,37 @@ class GradeMapLayerPlannerTest {
     }
 
     @Test
+    fun a_width_change_re_shows_every_casing_and_fill_in_place() {
+        val planner = GradeMapLayerPlanner()
+        planner.plan(outAndBack, 18, 21)
+        val batches = planner.plan(outAndBack, 7, 10)
+        assertEquals(1, batches.size)
+        assertFalse(batches[0].settleAfter)
+        assertTrue(batches[0].hideIds().isEmpty())
+        val shows = batches[0].effects.filterIsInstance<ShowPolyline>()
+        assertEquals(
+            outAndBack.flatMap { listOf("${it.id}-casing", it.id) }.toSet(),
+            shows.map { it.id }.toSet(),
+        )
+        shows.forEach { assertEquals(it.id, if (it.id.endsWith("-casing")) 10 else 7, it.width) }
+    }
+
+    @Test
+    fun a_casing_only_width_change_re_shows_the_casings() {
+        val planner = GradeMapLayerPlanner()
+        planner.plan(outAndBack, 18, 21)
+        val batches = planner.plan(outAndBack, 18, 22)
+        assertEquals(outAndBack.map { "${it.id}-casing" }, batches.allShowIds())
+    }
+
+    @Test
+    fun the_same_pieces_at_the_same_width_send_nothing() {
+        val planner = GradeMapLayerPlanner()
+        planner.plan(outAndBack, 18, 21)
+        assertTrue(planner.plan(outAndBack, 18, 21).isEmpty())
+    }
+
+    @Test
     fun a_depth_change_restacks_even_with_the_same_ids() {
         val planner = GradeMapLayerPlanner()
         planner.plan(outAndBack, 18, 21)

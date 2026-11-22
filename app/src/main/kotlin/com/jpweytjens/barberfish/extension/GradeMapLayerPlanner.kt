@@ -20,8 +20,9 @@ internal data class LayerBatch(val effects: List<MapEffect>, val settleAfter: Bo
  * order. So a stacking pass hides everything painted, settles, puts every casing down, settles,
  * then shows the fills one depth at a time from the bottom, settling between depths. A plan
  * restacks when an id is new to the map or a painted id's depth changed; otherwise it updates in
- * place, hiding the ids that went away and re-showing the pieces whose geometry or colour changed,
- * with no settle. So a zoom re-cut that moves extents but keeps depths never blanks the band.
+ * place, hiding the ids that went away and re-showing the pieces whose geometry, colour or width
+ * changed, with no settle. So a zoom re-cut that moves extents but keeps depths never blanks the
+ * band.
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine; not thread-safe.
  */
@@ -30,6 +31,11 @@ internal class GradeMapLayerPlanner {
     // is unknown and whose casing and fill both need hiding.
     private var painted: Map<String, GradeMapPolylineSpec?> = emptyMap()
     private var stacked = false
+
+    // Widths of the last plan. A width is not part of a piece, so a change in one repaints
+    // every piece that stays.
+    private var paintedFillWidth = 0
+    private var paintedCasingWidth = 0
 
     fun plan(
         pieces: List<GradeMapPolylineSpec>,
@@ -44,6 +50,8 @@ internal class GradeMapLayerPlanner {
             else updateInPlace(pieces, fillWidth, casingWidth)
         painted = pieces.associateBy { it.id }
         stacked = true
+        paintedFillWidth = fillWidth
+        paintedCasingWidth = casingWidth
         return batches
     }
 
@@ -102,10 +110,16 @@ internal class GradeMapLayerPlanner {
         }
         pieces.forEach { piece ->
             val previous = painted[piece.id] ?: return@forEach
-            if (previous.casingEncoded != piece.casingEncoded) {
+            if (
+                previous.casingEncoded != piece.casingEncoded || casingWidth != paintedCasingWidth
+            ) {
                 effects += casingShow(piece, casingWidth)
             }
-            if (previous.encoded != piece.encoded || previous.colorArgb != piece.colorArgb) {
+            if (
+                previous.encoded != piece.encoded ||
+                    previous.colorArgb != piece.colorArgb ||
+                    fillWidth != paintedFillWidth
+            ) {
                 effects += fillShow(piece, fillWidth)
             }
         }
