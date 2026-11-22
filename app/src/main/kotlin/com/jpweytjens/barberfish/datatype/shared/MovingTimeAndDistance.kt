@@ -1,5 +1,10 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.extension.HUDSlotField
+import com.jpweytjens.barberfish.extension.HUDSlots
+import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import kotlinx.serialization.Serializable
 
 data class MovingTimeAndDistance(val timeMs: Double, val distanceM: Double)
@@ -80,3 +85,34 @@ fun MovingTracker.next(phase: RidePhase, readings: RideReadings?): MovingTracker
 }
 
 fun MovingTracker.onShutdownNotice(): MovingTracker = copy(shuttingDown = true)
+
+private val movingTimeTypeIds =
+    setOf(
+        "avg-speed-moving",
+        "time-moving",
+        "remaining-ride-time",
+        "time-to-destination",
+        "time-of-arrival",
+    )
+
+private fun HUDSlotField.readsMovingTimeOrDistance(): Boolean =
+    when (this) {
+        is HUDSlotField.AvgSpeed -> !includePaused
+        is HUDSlotField.Time -> kind == TimeKind.RIDING
+        is HUDSlotField.ETA -> true
+        else -> false
+    }
+
+/** True when the profile shows a field that reads moving time or distance, on any page. */
+fun showsMovingTimeOrDistance(
+    fieldTypeIds: Set<String>,
+    hud: HUDSlots,
+    speed: SpeedFieldConfig,
+): Boolean {
+    val hudSlots =
+        listOf(hud.leftSlot, hud.middleSlot, hud.rightSlot) +
+            if (hud.columns == 4) listOf(hud.fourthSlot) else emptyList()
+    return fieldTypeIds.any { it in movingTimeTypeIds } ||
+        ("speed" in fieldTypeIds && speed.source == SpeedThresholdSource.AVG_MOVING) ||
+        ("three-column" in fieldTypeIds && hudSlots.any { it.field.readsMovingTimeOrDistance() })
+}
