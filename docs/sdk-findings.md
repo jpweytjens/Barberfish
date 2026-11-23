@@ -38,13 +38,13 @@ The SDK's own descriptions in `DataType.kt` ([karoo-ext on GitHub](https://githu
 
 Observed on a Karoo 3 on 2026-11-22:
 
-- `ELAPSED_TIME` runs whenever the ride records, also without a speed signal. Auto-pause needs a speed reading, so the timer ran for 100 s before the first GPS speed reading, and for 85 s inside a shop while the distance stood still.
+- `ELAPSED_TIME` runs whenever the ride records, also without a speed signal. Auto-pause did not engage without a speed reading, so the timer ran for 100 s before the first GPS speed reading, and for 85 s inside a shop while the distance stood still.
 - `RIDE_TIME` counts the time the Karoo is switched off and `PAUSED_TIME` does not, so `RIDE_TIME = ELAPSED_TIME + PAUSED_TIME` holds only until the first power-off.
-- After a power-off, time and distance resume from the same saved moment, up to 3 s back.
+- After a power-off, time and distance resume from the same earlier moment, up to 3 s back.
 - For about 20 s after boot the streams carry no values.
 - A restored ride comes back paused.
 
-In [#41](https://github.com/jpweytjens/Barberfish/issues/41) a Karoo 3 came back from a power-off with the distance kept and the time restarted near zero, which five power cycles on 2026-11-22 did not reproduce. Moving time is therefore counted by Barberfish itself, in [`MovingTimeAndDistance.kt`](../app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/MovingTimeAndDistance.kt); [Moving time and distance](architecture.md#moving-time-and-distance) describes how.
+In [#41](https://github.com/jpweytjens/Barberfish/issues/41) a Karoo 3 back from a power-off showed 0.66 mi at an average of 2386.1 mph, which is that distance over about one second. Five power cycles on 2026-11-22 did not reproduce it. Moving time is therefore counted by Barberfish itself, in [`MovingTimeAndDistance.kt`](../app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/MovingTimeAndDistance.kt); [Moving time and distance](architecture.md#moving-time-and-distance) describes how.
 
 ---
 
