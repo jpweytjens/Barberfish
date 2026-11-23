@@ -32,7 +32,10 @@ class GradeMapWidthTest {
     }
 
     @Test
-    fun `every casing is wider than its fill`() {
-        GradeMapWidth.entries.forEach { assertTrue(it.name, it.casingDp > it.fillDp) }
+    fun `narrow has no casing and every other casing is wider than its fill`() {
+        assertEquals(0, GradeMapWidth.NARROW.casingDp)
+        (GradeMapWidth.entries - GradeMapWidth.NARROW).forEach {
+            assertTrue(it.name, it.casingDp > it.fillDp)
+        }
     }
 }

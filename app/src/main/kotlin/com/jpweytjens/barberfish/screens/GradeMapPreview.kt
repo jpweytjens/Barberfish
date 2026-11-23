@@ -70,8 +70,11 @@ private const val CHEVRON_HEIGHT_RATIO = 17f / 25f
 // line at a fixed cadence. Shown so the toggle compares the two looks in place.
 private val NATIVE_ROUTE_COLOR = Color(0xFFF0D800)
 private val NATIVE_LINE_WIDTH = (GradeMapWidth.NARROW.fillDp * PREVIEW_WIDTH_SCALE).dp
-private val NATIVE_LINE_CASING_WIDTH = (GradeMapWidth.NARROW.casingDp * PREVIEW_WIDTH_SCALE).dp
+private val NATIVE_LINE_CASING_WIDTH = ((GradeMapWidth.NARROW.fillDp + 3) * PREVIEW_WIDTH_SCALE).dp
 private val NATIVE_CHEVRON_WIDTH = 9.dp
+
+private val GradeMapWidth.previewCasingWidth: Dp
+    get() = if (casingDp == 0) NATIVE_LINE_CASING_WIDTH else (casingDp * PREVIEW_WIDTH_SCALE).dp
 private const val NATIVE_CHEVRON_SPACING_M = PREVIEW_CHEVRON_SPACING_MAX_M
 
 @Composable
@@ -140,18 +143,20 @@ private fun GradeBandPreview(
         // Every cap is pulled in by half its stroke so it lands on the true endpoint, the
         // way the device trims in metres.
         val bandWidth = (config.width.fillDp * PREVIEW_WIDTH_SCALE).dp.toPx()
-        val casingWidth = (config.width.casingDp * PREVIEW_WIDTH_SCALE).dp.toPx()
-        // The band draws above the map's arrows, so under a narrow band only their tips show.
-        if (nativeChevronBmp != null) {
-            nativeChevrons.forEach { ch ->
-                drawChevron(nativeChevronBmp, project(ch.lat, ch.lng), ch.bearingDeg)
-            }
-        }
+        // The narrow band has no casing; the route line's own outline edges it. That outline lies
+        // under the map's arrows, which only the narrow band leaves in view, so the edge goes down
+        // first and the band covers all of the arrows but their tips.
+        val casingWidth = config.width.previewCasingWidth.toPx()
         drawConnected(
             trimEndsPx(routePx, casingWidth / 2f, casingWidth / 2f),
             Color.Black,
             casingWidth,
         )
+        if (nativeChevronBmp != null) {
+            nativeChevrons.forEach { ch ->
+                drawChevron(nativeChevronBmp, project(ch.lat, ch.lng), ch.bearingDeg)
+            }
+        }
         specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
             val px = points.map { project(it.lat, it.lng) }
             val trimmed =

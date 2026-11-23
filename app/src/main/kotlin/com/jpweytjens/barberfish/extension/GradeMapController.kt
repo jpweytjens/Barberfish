@@ -46,7 +46,12 @@ internal class GradeMapController(
                 color = CASING_COLOR,
                 width = casingWidth,
             )
-        if (casingBeneath) {
+        if (casingWidth == 0) {
+            // No casing at this width: take off one an earlier emit put down.
+            (previousIds - newIds).forEach { emitter.onNext(HidePolyline(it)) }
+            if (casingBeneath) emitter.onNext(HidePolyline(casingId))
+            casingBeneath = false
+        } else if (casingBeneath) {
             (previousIds - newIds).forEach { emitter.onNext(HidePolyline(it)) }
             emitter.onNext(casing)
         } else {

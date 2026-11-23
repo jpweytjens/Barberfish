@@ -136,8 +136,7 @@ class GradeMapOverlayTest {
         karoo.awaitValue {
             true.takeIf {
                 map.visiblePolylines()["barberfish-rejoin"]?.width == GradeMapWidth.NARROW.fillDp &&
-                    map.visiblePolylines()["barberfish-rejoin-casing"]?.width ==
-                        GradeMapWidth.NARROW.casingDp &&
+                    !map.visiblePolylines().containsKey("barberfish-rejoin-casing") &&
                     map.visibleSymbols().keys.none { it.startsWith("barberfish-rejoin-chev") }
             }
         }

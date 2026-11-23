@@ -650,10 +650,11 @@ enum class ChevronEmphasis(val alpha: Double, val label: String) {
  * casing adds a black edge so the band stays crisp over any map feature. Narrow sits on the route
  * line and leaves the direction cue to the map's own arrows, whose tips show beside it. Medium
  * hides the route line and the small arrows along it. Wide also hides the larger arrows the map
- * draws just ahead of the rider. Tuned on-device.
+ * draws just ahead of the rider. A casing of 0 is none: the narrow band takes its edge from the
+ * route line's own outline. Tuned on-device.
  */
 enum class GradeMapWidth(val label: String, val fillDp: Int, val casingDp: Int) {
-    NARROW("Narrow", 7, 10),
+    NARROW("Narrow", 7, 0),
     MEDIUM("Medium", 18, 21),
     WIDE("Wide", 25, 28);
 

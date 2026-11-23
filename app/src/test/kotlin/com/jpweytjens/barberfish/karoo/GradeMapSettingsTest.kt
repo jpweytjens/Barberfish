@@ -91,7 +91,7 @@ class GradeMapSettingsTest {
             true.takeIf {
                 fills.isNotEmpty() &&
                     fills.all { it.width == GradeMapWidth.NARROW.fillDp } &&
-                    casings.all { it.width == GradeMapWidth.NARROW.casingDp } &&
+                    casings.isEmpty() &&
                     map.visibleChevrons().isEmpty()
             }
         }
