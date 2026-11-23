@@ -43,5 +43,5 @@ An extension can only draw on top of the Karoo's route line, never in its place,
 | Tuning | Sync / Independent | Take Emphasis and Simplification from the Profile field, or set them here. |
 | Emphasis | Handles on the palette bar | Grade at which color starts; gentler road draws in the neutral ([Emphasis](algorithms.md#emphasis)). |
 | Simplification | Off / Mild / Medium / Max | Floor on the smallest bump the band keeps ([Simplification](algorithms.md#simplification)). |
-| Width | Narrow / Medium / Wide | Narrow matches the Karoo's route line and draws no chevrons; the tips of the Karoo's own arrows show beside it. Medium covers the line and its small arrows. Wide also covers the larger arrows the Karoo draws just ahead of you. |
+| Width | Narrow / Medium / Wide | Narrow is as thin as the Karoo's route line and draws no chevrons: just ahead of you, the Karoo's arrows stick out on both sides. Medium draws its own chevrons and covers most of the Karoo's arrows. Wide covers them fully, at the cost of a wider band. |
 | Chevron spacing | Gradient / Balanced / Changes | Bunch chevrons on the steepest road, where the gradient shifts, or in between. |
