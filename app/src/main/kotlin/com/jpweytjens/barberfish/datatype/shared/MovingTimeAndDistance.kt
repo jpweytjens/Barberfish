@@ -86,7 +86,7 @@ fun MovingTracker.next(phase: RidePhase, readings: RideReadings?): MovingTracker
 
 fun MovingTracker.onShutdownNotice(): MovingTracker = copy(shuttingDown = true)
 
-private val movingTimeTypeIds =
+internal val movingTimeTypeIds =
     setOf(
         "avg-speed-moving",
         "time-moving",
