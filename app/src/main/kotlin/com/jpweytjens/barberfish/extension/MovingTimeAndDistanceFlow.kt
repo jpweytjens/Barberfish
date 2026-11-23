@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -50,9 +49,11 @@ private sealed interface MovingEvent {
  * and shutdown notice. Every one of those is followed by a save of the tracker's state when it
  * differs from the last state [save] stored; a failed save is tried again at the next of them.
  *
- * While [enabled] is false it emits null and takes no step, but ride boundaries in [phases] still
- * apply. While it is true it emits the tracker's pair, which a null in [readings] holds.
+ * While [enabled] is false it emits null, takes no step and does not collect [ticks], but ride
+ * boundaries in [phases] still apply. While it is true it emits the tracker's pair, which a null in
+ * [readings] holds.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("LongParameterList")
 internal fun movingTimeAndDistanceFlow(
     initial: MovingState?,
@@ -72,10 +73,14 @@ internal fun movingTimeAndDistanceFlow(
         tracker = tracker.next(current, if (on) latest else null)
     }
     merge(
-            enabled.map { MovingEvent.Enabled(it) },
+            enabled.flatMapLatest { on ->
+                flow {
+                    emit(MovingEvent.Enabled(on))
+                    if (on) emitAll(ticks.map { MovingEvent.Tick })
+                }
+            },
             phases.map { MovingEvent.Phase(it) },
             readings.map { MovingEvent.Readings(it) },
-            ticks.map { MovingEvent.Tick },
             shutdownNotices.map { MovingEvent.ShutdownNotice },
         )
         .collect { event ->
@@ -134,12 +139,9 @@ internal fun Context.movingTimeAndDistance(
         enabled.whileOn<Boolean, RideReadings?>(isOn = { it }, off = null) {
             karooSystem.rideReadings()
         }
-    // No timer between rides: the ride state listener alone sees the next one start.
-    val ticks =
-        phases
-            .map { it != RidePhase.IDLE }
-            .distinctUntilChanged()
-            .flatMapLatest { active -> if (active) everySecond() else emptyFlow() }
+    // No timer between rides: the ride state listener alone sees the next one start. The flow
+    // runs the timer only while the gate is on, which it never is between rides.
+    val ticks = everySecond()
     return flow {
         val initial =
             try {

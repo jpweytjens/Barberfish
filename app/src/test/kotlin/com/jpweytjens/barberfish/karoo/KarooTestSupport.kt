@@ -94,17 +94,17 @@ internal fun ViewRecorder.awaitRendered(
 
 /**
  * Starts the extension and waits for the consumers it holds for its whole life: one ride profile
- * consumer for profile discovery, and four ride state and two ride profile consumers for the moving
- * time and distance tracking. Discovery registers after connecting and the tracking after loading
- * its stored state, in either order, so a consumer count taken before all seven land would never
- * come back down.
+ * consumer for profile discovery, and three ride state and two ride profile consumers for the
+ * moving time and distance tracking. Discovery registers after connecting and the tracking after
+ * loading its stored state, in either order, so a consumer count taken before all six land would
+ * never come back down.
  */
 internal fun FakeKarooRule.startBarberfish(): FakeKarooHost {
     val host = host<BarberfishExtension>()
     awaitValue {
         val params = system.consumerParams
         true.takeIf {
-            params.count { it is RideState.Params } == 4 &&
+            params.count { it is RideState.Params } == 3 &&
                 params.count { it is ActiveRideProfile.Params } == 3
         }
     }

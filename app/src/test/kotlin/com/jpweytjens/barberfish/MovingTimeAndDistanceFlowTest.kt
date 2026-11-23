@@ -233,6 +233,24 @@ class MovingTimeAndDistanceFlowTest {
         }
 
     @Test
+    fun no_tick_is_taken_while_the_gate_is_off() = ride {
+        phase(RidePhase.RECORDING)
+        assertEquals("ticks before the gate is on", 0, ticks.subscriptionCount.value)
+        enable()
+        assertEquals("ticks while the gate is on", 1, ticks.subscriptionCount.value)
+        enable(false)
+        assertEquals("ticks after the gate went off", 0, ticks.subscriptionCount.value)
+    }
+
+    @Test
+    fun ride_boundaries_apply_while_the_gate_is_off() =
+        ride(initial = MovingState(50_000.0, 300.0, 60_000.0, 300.0)) {
+            phase(RidePhase.RECORDING)
+            phase(RidePhase.IDLE)
+            assertEquals(listOf<MovingState?>(null), saves)
+        }
+
+    @Test
     fun the_end_of_a_ride_saves_null() = ride {
         recording()
         phase(RidePhase.IDLE)
