@@ -60,6 +60,7 @@ class MovingTimeAndDistanceFlowTest {
         val phases = MutableSharedFlow<RidePhase>()
         val readings = MutableSharedFlow<RideReadings?>()
         val ticks = MutableSharedFlow<Unit>()
+        val retries = MutableSharedFlow<Unit>()
         val shutdownNotices = MutableSharedFlow<Unit>()
         val emitted = mutableListOf<MovingTimeAndDistance?>()
 
@@ -83,6 +84,8 @@ class MovingTimeAndDistanceFlowTest {
 
         suspend fun tick(times: Int = 1) = repeat(times) { send { ticks.emit(Unit) } }
 
+        suspend fun retry() = send { retries.emit(Unit) }
+
         suspend fun shutdownNotice() = send { shutdownNotices.emit(Unit) }
 
         private suspend fun send(input: suspend () -> Unit) {
@@ -101,6 +104,7 @@ class MovingTimeAndDistanceFlowTest {
                         phases = run.phases,
                         readings = run.readings,
                         ticks = run.ticks,
+                        retries = run.retries,
                         shutdownNotices = run.shutdownNotices,
                         save = { state ->
                             run.saves += state
@@ -209,12 +213,27 @@ class MovingTimeAndDistanceFlowTest {
     }
 
     @Test
-    fun a_failed_clear_is_retried_on_idle_ticks() = ride {
+    fun a_failed_clear_is_retried_with_the_gate_off() = ride {
         recording()
         failingSaves = 2
         phase(RidePhase.IDLE)
+        enable(false)
         tick(4)
-        assertEquals(listOf(null, null, null), saves.drop(1))
+        assertEquals("ticks are off with the gate", listOf<MovingState?>(null), saves.drop(1))
+        retry()
+        retry()
+        assertEquals(listOf<MovingState?>(null, null, null), saves.drop(1))
+    }
+
+    @Test
+    fun retries_run_only_while_a_save_is_owed() = ride {
+        recording()
+        assertEquals("nothing is owed", 0, retries.subscriptionCount.value)
+        failingSaves = 1
+        phase(RidePhase.IDLE)
+        assertEquals("the clear failed", 1, retries.subscriptionCount.value)
+        retry()
+        assertEquals("the clear is stored", 0, retries.subscriptionCount.value)
     }
 
     @Test

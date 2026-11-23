@@ -19,10 +19,12 @@ import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.merge
 import timber.log.Timber
 
 private const val TICK_MS = 1_000L
+private const val RETRY_MAX_MS = 60_000L
 
 /** One input to the tracker, handled in the order the inputs arrive. */
 private sealed interface MovingEvent {
@@ -41,13 +44,16 @@ private sealed interface MovingEvent {
 
     data object Tick : MovingEvent
 
+    data object Retry : MovingEvent
+
     data object ShutdownNotice : MovingEvent
 }
 
 /**
  * Pure flow logic: one tracker step per element of [ticks], and one at once for every phase change
  * and shutdown notice. Every one of those is followed by a save of the tracker's state when it
- * differs from the last state [save] stored; a failed save is tried again at the next of them.
+ * differs from the last state [save] stored. A failed save is tried again at the next of them and
+ * at every element of [retries], which is collected only while a save is owed, whatever the gate.
  *
  * While [enabled] is false it emits null, takes no step and does not collect [ticks], but ride
  * boundaries in [phases] still apply. While it is true it emits the tracker's pair, which a null in
@@ -61,6 +67,7 @@ internal fun movingTimeAndDistanceFlow(
     phases: Flow<RidePhase>,
     readings: Flow<RideReadings?>,
     ticks: Flow<Unit>,
+    retries: Flow<Unit>,
     shutdownNotices: Flow<Unit>,
     save: suspend (MovingState?) -> Unit,
 ): Flow<MovingTimeAndDistance?> = flow {
@@ -69,16 +76,13 @@ internal fun movingTimeAndDistanceFlow(
     var on = false
     var phase: RidePhase? = null
     var latest: RideReadings? = null
+    val owed = MutableStateFlow(false)
     fun step(current: RidePhase) {
         tracker = tracker.next(current, if (on) latest else null)
     }
     merge(
-            enabled.flatMapLatest { on ->
-                flow {
-                    emit(MovingEvent.Enabled(on))
-                    if (on) emitAll(ticks.map { MovingEvent.Tick })
-                }
-            },
+            ticksWhileOn(enabled, ticks),
+            retriesWhile(owed, retries),
             phases.map { MovingEvent.Phase(it) },
             readings.map { MovingEvent.Readings(it) },
             shutdownNotices.map { MovingEvent.ShutdownNotice },
@@ -92,6 +96,7 @@ internal fun movingTimeAndDistanceFlow(
                     step(event.phase)
                 }
                 MovingEvent.Tick -> phase?.let(::step)
+                MovingEvent.Retry -> Unit
                 MovingEvent.ShutdownNotice -> {
                     tracker = tracker.onShutdownNotice()
                     phase?.let(::step)
@@ -106,10 +111,28 @@ internal fun movingTimeAndDistanceFlow(
                     Timber.w(e, "Could not save the moving time and distance")
                 }
             }
+            owed.value = tracker.state != saved
             emit(if (on) tracker.state?.moving else null)
         }
 }
     .distinctUntilChanged()
+
+/** The gate's changes, each followed by [ticks] for as long as the gate is on. */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun ticksWhileOn(enabled: Flow<Boolean>, ticks: Flow<Unit>): Flow<MovingEvent> =
+    enabled.flatMapLatest { on ->
+        flow {
+            emit(MovingEvent.Enabled(on))
+            if (on) emitAll(ticks.map { MovingEvent.Tick })
+        }
+    }
+
+/** [retries] for as long as a save is [owed]. */
+@OptIn(ExperimentalCoroutinesApi::class)
+private fun retriesWhile(owed: Flow<Boolean>, retries: Flow<Unit>): Flow<MovingEvent> =
+    owed.flatMapLatest {
+        if (it) retries.map { MovingEvent.Retry } else emptyFlow()
+    }
 
 /**
  * The wiring to the Karoo: gate, 1 s tick, storage. A stored state that cannot be read starts the
@@ -140,7 +163,8 @@ internal fun Context.movingTimeAndDistance(
             karooSystem.rideReadings()
         }
     // No timer between rides: the ride state listener alone sees the next one start. The flow
-    // runs the timer only while the gate is on, which it never is between rides.
+    // runs the timer only while the gate is on, which it never is between rides, and the retry
+    // timer only while a save has failed.
     val ticks = everySecond()
     return flow {
         val initial =
@@ -157,6 +181,7 @@ internal fun Context.movingTimeAndDistance(
                 phases = phases,
                 readings = readings,
                 ticks = ticks,
+                retries = backingOff(),
                 shutdownNotices = shutdownNotices,
                 save = save,
             )
@@ -209,5 +234,15 @@ private fun everySecond(): Flow<Unit> = flow {
     while (true) {
         emit(Unit)
         delay(TICK_MS)
+    }
+}
+
+/** After 1 s, then 2 s, 4 s and so on, up to once a minute. */
+private fun backingOff(): Flow<Unit> = flow {
+    var waitMs = TICK_MS
+    while (true) {
+        delay(waitMs)
+        emit(Unit)
+        waitMs = (waitMs * 2).coerceAtMost(RETRY_MAX_MS)
     }
 }

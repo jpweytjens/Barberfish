@@ -19,6 +19,7 @@ import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.loadMovingState
 import com.jpweytjens.barberfish.extension.movingTimeAndDistance
+import com.jpweytjens.barberfish.extension.saveMovingState
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.FakeKarooSystem
@@ -263,6 +264,29 @@ class MovingFieldsTest {
             rideShowing(AVG_SPEED_MOVING, load = { throw IOException("unreadable ride file") })
         record(RECORDING_TIME_MS, RIDE_DISTANCE_M)
         moving.await { it == MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M) }
+    }
+
+    @Test
+    fun a_failed_clear_is_retried_after_the_ride_ended() {
+        karoo.system.setActiveRideProfile(rideProfileWith(AVG_SPEED_MOVING))
+        karoo.system.setRideState(RideState.Recording)
+        // The end of the ride closes the gate and stops the ticks; the clear fails twice.
+        val clears = AtomicInteger()
+        val save: suspend (MovingState?) -> Unit = { state ->
+            if (state == null && clears.incrementAndGet() <= 2) throw IOException("disk full")
+            karoo.app.saveMovingState(state)
+        }
+        scope.launch {
+            karoo.app.movingTimeAndDistance(karooSystem, emptyFlow(), save = save).collect {}
+        }
+        record(RECORDING_TIME_MS, RIDE_DISTANCE_M)
+        awaitStepOn(RECORDING_TIME_MS)
+
+        karoo.system.setRideState(RideState.Idle)
+
+        karoo.awaitValue {
+            true.takeIf { clears.get() == 3 && runBlocking { karoo.app.loadMovingState() } == null }
+        }
     }
 
     @Test
