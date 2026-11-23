@@ -1403,10 +1403,8 @@ internal fun GradeMapCard(
                 selected = config.width,
                 onSelect = { onUpdate(config.copy(width = it)) },
                 help =
-                    "Narrow is as thin as the Karoo's line and draws no chevrons: just ahead " +
-                        "of you, the Karoo's arrows stick out on both sides. Medium draws " +
-                        "its own chevrons and covers most of the Karoo's arrows. Wide covers " +
-                        "them fully, at the cost of a wider band.",
+                    "Narrow leaves the Karoo's arrows in view. Medium covers most of them " +
+                        "with its own chevrons. Wide covers them all.",
             )
 
             // The narrow band draws no chevrons, so their spacing has nothing to act on.
