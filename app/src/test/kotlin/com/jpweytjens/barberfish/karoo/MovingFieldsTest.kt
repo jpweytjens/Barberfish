@@ -387,47 +387,58 @@ class MovingFieldsTest {
     }
 
     /**
-     * Thirty minutes at 20 km/h with 10 km to go, then five minutes at 15 km/h, the recording time
-     * restarting at 1 s in between when [restarted]. [awaitStepOn] waits until each sample has been
-     * taken.
+     * From a standstill, thirty minutes at 20 km/h, then five minutes at 15 km/h, with 10 km to go
+     * throughout and the recording time restarting at 1 s in between when [restarted]. [sample]
+     * feeds each sample with `feed` and waits until it has been taken.
      */
-    private fun rideToAndPast(restarted: Boolean, awaitStepOn: (recordingTimeMs: Double) -> Unit) {
+    private fun rideToAndPast(
+        restarted: Boolean,
+        sample: (recordingTimeMs: Double, feed: () -> Unit) -> Unit,
+    ) {
         val restartMs = if (restarted) 0.0 else RIDE_TIME_MS
         toGo(RIDE_DISTANCE_M)
-        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
-        awaitStepOn(RIDE_TIME_MS)
+        sample(0.0) { record(0.0, 0.0) }
+        sample(RIDE_TIME_MS) { record(RIDE_TIME_MS, RIDE_DISTANCE_M) }
 
         val restartM = RIDE_DISTANCE_M + metresAt(20.0, 1.0)
-        toGo(2 * RIDE_DISTANCE_M - restartM)
-        record(restartMs + 1_000.0, restartM)
-        awaitStepOn(restartMs + 1_000.0)
+        sample(restartMs + 1_000.0) { record(restartMs + 1_000.0, restartM) }
 
         // The speed changes because an estimate that stopped following the rider at the
         // restart would still pass at a constant speed.
         val laterM = restartM + metresAt(15.0, 300.0)
-        toGo(2 * RIDE_DISTANCE_M - laterM)
-        record(restartMs + 301_000.0, laterM, speed = 15.0 / 3.6)
-        awaitStepOn(restartMs + 301_000.0)
+        sample(restartMs + 301_000.0) {
+            record(restartMs + 301_000.0, laterM, speed = 15.0 / 3.6)
+        }
     }
 
     @Test
     fun remaining_ride_time_survives_a_restarted_timer() {
         // The same ride without the restart. There our pair is the Karoo's recording time and
-        // distance, so the field reads either.
+        // distance, so the field reads either. With the distance to go held, a sample changes
+        // the estimate only once its distance and time have both arrived, so each sample waits
+        // for that change. The one second after thirty minutes does not change the shown
+        // estimate and has nothing to wait for; were it missed, the expected value would move
+        // by about 0.1 s.
         val withoutRestart = remainingRideTimeField(flowOf(null))
-        rideToAndPast(restarted = false) { settled(mapOf("field" to withoutRestart)) }
-        val expected = settled(mapOf("field" to withoutRestart)).getValue("field")
+        rideToAndPast(restarted = false) { recordingTimeMs, feed ->
+            val before = withoutRestart.value?.primary
+            feed()
+            if (recordingTimeMs != RIDE_TIME_MS + 1_000.0) {
+                withoutRestart.await { secondsShown(it.primary) != null && it.primary != before }
+            }
+        }
+        val expected = withoutRestart.value?.primary
 
         // The ride starts on the first sample, as above.
-        toGo(RIDE_DISTANCE_M)
-        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        record(0.0, 0.0)
         val moving = rideShowing(REMAINING_RIDE_TIME, HUD)
         val shown =
             mapOf(
                 "field" to remainingRideTimeField(moving),
                 "HUD" to hudSlot(HUDSlotField.ETA(ETAKind.REMAINING_RIDE_TIME), moving),
             )
-        rideToAndPast(restarted = true) { recordingTimeMs ->
+        rideToAndPast(restarted = true) { recordingTimeMs, feed ->
+            feed()
             awaitStepOn(recordingTimeMs)
             settled(shown)
         }
