@@ -156,27 +156,32 @@ class GradeMapLayerPlannerTest {
     }
 
     @Test
-    fun a_width_change_re_shows_every_casing_and_fill_in_place() {
+    fun a_width_change_restacks_at_the_new_widths() {
         val planner = GradeMapLayerPlanner()
         planner.plan(outAndBack, 18, 21)
-        val batches = planner.plan(outAndBack, 7, 10)
-        assertEquals(1, batches.size)
-        assertFalse(batches[0].settleAfter)
-        assertTrue(batches[0].hideIds().isEmpty())
-        val shows = batches[0].effects.filterIsInstance<ShowPolyline>()
-        assertEquals(
-            outAndBack.flatMap { listOf("${it.id}-casing", it.id) }.toSet(),
-            shows.map { it.id }.toSet(),
-        )
-        shows.forEach { assertEquals(it.id, if (it.id.endsWith("-casing")) 10 else 7, it.width) }
+        val batches = planner.plan(outAndBack, 25, 28)
+        // Everything painted is hidden first and the map settles before anything is shown again.
+        assertEquals(outAndBack.flatMap { listOf(it.id, "${it.id}-casing") }, batches[0].hideIds())
+        assertTrue(batches[0].showIds().isEmpty())
+        assertTrue(batches[0].settleAfter)
+        assertEquals(outAndBack.map { "${it.id}-casing" }, batches[1].showIds())
+        val shows = batches.flatMap { it.effects.filterIsInstance<ShowPolyline>() }
+        assertEquals(outAndBack.size * 2, shows.size)
+        shows.forEach { assertEquals(it.id, if (it.id.endsWith("-casing")) 28 else 25, it.width) }
     }
 
     @Test
-    fun a_casing_only_width_change_re_shows_the_casings() {
+    fun a_casing_width_of_zero_takes_the_casings_off_and_shows_only_fills() {
         val planner = GradeMapLayerPlanner()
         planner.plan(outAndBack, 18, 21)
-        val batches = planner.plan(outAndBack, 18, 22)
-        assertEquals(outAndBack.map { "${it.id}-casing" }, batches.allShowIds())
+        val batches = planner.plan(outAndBack, 7, 0)
+        assertTrue(batches[0].hideIds().containsAll(outAndBack.map { "${it.id}-casing" }))
+        assertEquals(outAndBack.map { it.id }.toSet(), batches.allShowIds().toSet())
+        // A later trim re-shows the fill alone.
+        val trimmed = outAndBack.map {
+            if (it.id == outAndBack[0].id) it.copy(encoded = "t", casingEncoded = "tc") else it
+        }
+        assertEquals(listOf(outAndBack[0].id), planner.plan(trimmed, 7, 0).allShowIds())
     }
 
     @Test
