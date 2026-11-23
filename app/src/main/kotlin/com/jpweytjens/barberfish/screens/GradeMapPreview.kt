@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.screens
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,11 +21,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import com.jpweytjens.barberfish.R
+import com.jpweytjens.barberfish.datatype.shared.ChevronPlacement
 import com.jpweytjens.barberfish.datatype.shared.ClimbPreviewFixture
+import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
@@ -34,6 +38,7 @@ import com.jpweytjens.barberfish.datatype.shared.placeChevronsByCadence
 import com.jpweytjens.barberfish.datatype.shared.projectToUnit
 import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapWidth
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import kotlin.math.cos
@@ -51,22 +56,25 @@ import kotlin.math.sin
 private const val PREVIEW_CHEVRON_SPACING_MAX_M = 150.0
 private const val PREVIEW_CHEVRON_SPACING_MIN_M = 70.0
 
-// Band, casing and chevron widths at the card's scale. The device draws 18, 21 and 24 dp
-// over a route line about 7 dp wide; the card's road is 6 dp, so the same proportions are
-// kept and everything is scaled down together. The drawable's 25x17 viewport fixes the
-// chevron's height ratio.
-private val BAND_WIDTH = 8.dp
-private val BAND_CASING_WIDTH = 9.5.dp
+// Band, casing and chevron widths at the card's scale. GradeMapWidth holds the widths the
+// device draws; the card's road is 6 dp, so the same proportions are kept and everything is
+// scaled down together, the medium band landing on 8 dp. The drawable's 25x17 viewport fixes
+// the chevron's height ratio.
+private const val PREVIEW_WIDTH_SCALE = 8f / 18f
+
 private val CHEVRON_WIDTH = 11.dp
 private const val CHEVRON_HEIGHT_RATIO = 17f / 25f
 
-// The Karoo route as drawn when the grade map is off: a yellow line in a black casing about a
-// third of the band's width on the device, with yellow black-outlined chevrons wider than the
+// The Karoo route as drawn when the grade map is off: a yellow line in a black casing, the width
+// the narrow band is tuned to, with yellow black-outlined chevrons wider than the
 // line at a fixed cadence. Shown so the toggle compares the two looks in place.
 private val NATIVE_ROUTE_COLOR = Color(0xFFF0D800)
-private val NATIVE_LINE_WIDTH = 4.dp
-private val NATIVE_LINE_CASING_WIDTH = 5.5.dp
+private val NATIVE_LINE_WIDTH = (GradeMapWidth.NARROW.fillDp * PREVIEW_WIDTH_SCALE).dp
+private val NATIVE_LINE_CASING_WIDTH = ((GradeMapWidth.NARROW.fillDp + 3) * PREVIEW_WIDTH_SCALE).dp
 private val NATIVE_CHEVRON_WIDTH = 9.dp
+
+private val GradeMapWidth.previewCasingWidth: Dp
+    get() = if (casingDp == 0) NATIVE_LINE_CASING_WIDTH else (casingDp * PREVIEW_WIDTH_SCALE).dp
 private const val NATIVE_CHEVRON_SPACING_M = PREVIEW_CHEVRON_SPACING_MAX_M
 
 @Composable
@@ -96,7 +104,7 @@ private fun GradeBandPreview(
                 palette = gradePalette,
                 readable = false,
                 tuning = eff,
-                includeChevrons = true,
+                includeChevrons = config.width.drawsChevrons,
                 chevronBlend = config.chevronBlend,
                 chevronSpacingMaxM = PREVIEW_CHEVRON_SPACING_MAX_M,
                 chevronSpacingMinM = PREVIEW_CHEVRON_SPACING_MIN_M,
@@ -107,17 +115,14 @@ private fun GradeBandPreview(
     val bounds = ClimbPreviewFixture.bounds
     val aspect = remember { mercatorBoundsAspect(bounds).toFloat() }
 
-    // Rasterise the palette's chevron once, at the card's chevron size.
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val chevW = with(density) { CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
-    val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
-    val chevronBmp: ImageBitmap? =
-        remember(gradePalette, chevW, chevH) {
-            ContextCompat.getDrawable(context, gradeChevronDrawable(gradePalette))
-                ?.toBitmap(width = chevW, height = chevH)
-                ?.asImageBitmap()
-        }
+    val chevronBmp = rememberChevronBitmap(gradeChevronDrawable(gradePalette), CHEVRON_WIDTH)
+
+    // A band that draws no chevrons leaves the map's own arrows as the direction cue.
+    val nativeChevrons =
+        if (config.width.drawsChevrons) emptyList() else rememberNativeChevrons(routePoints)
+    val nativeChevronBmp =
+        if (config.width.drawsChevrons) null
+        else rememberChevronBitmap(R.drawable.ic_climber_chevron_f0d800, NATIVE_CHEVRON_WIDTH)
 
     Canvas(modifier.fillMaxWidth().aspectRatio(aspect)) {
         drawSyntheticMap()
@@ -137,13 +142,21 @@ private fun GradeBandPreview(
         // no native line at all: casing first, the coloured runs on it, chevrons on top.
         // Every cap is pulled in by half its stroke so it lands on the true endpoint, the
         // way the device trims in metres.
-        val bandWidth = BAND_WIDTH.toPx()
-        val casingWidth = BAND_CASING_WIDTH.toPx()
+        val bandWidth = (config.width.fillDp * PREVIEW_WIDTH_SCALE).dp.toPx()
+        // The narrow band has no casing; the route line's own outline edges it. That outline lies
+        // under the map's arrows, which only the narrow band leaves in view, so the edge goes down
+        // first and the band covers all of the arrows but their tips.
+        val casingWidth = config.width.previewCasingWidth.toPx()
         drawConnected(
             trimEndsPx(routePx, casingWidth / 2f, casingWidth / 2f),
             Color.Black,
             casingWidth,
         )
+        if (nativeChevronBmp != null) {
+            nativeChevrons.forEach { ch ->
+                drawChevron(nativeChevronBmp, project(ch.lat, ch.lng), ch.bearingDeg)
+            }
+        }
         specs.polylines.zip(segmentPoints).forEach { (spec, points) ->
             val px = points.map { project(it.lat, it.lng) }
             val trimmed =
@@ -163,38 +176,47 @@ private fun GradeBandPreview(
     }
 }
 
+/** The map's own arrows along [routePoints], at their fixed cadence. */
+@Composable
+private fun rememberNativeChevrons(routePoints: List<LatLng>): List<ChevronPlacement> =
+    remember(routePoints) {
+        placeChevronsByCadence(
+            gps = routePoints,
+            cumDist = cumulativeDistancesM(routePoints),
+            gradeAtM = { 0.0 },
+            changeAtM = { 0.0 },
+            alpha = 0.0,
+            gradeFullPct = 1.0,
+            changeFullPctPerM = 1.0,
+            spacingMaxM = NATIVE_CHEVRON_SPACING_M,
+            spacingMinM = NATIVE_CHEVRON_SPACING_M,
+            collisionRadiusM = 0.0,
+            windowHalfM = 0.0,
+        )
+    }
+
+/** Rasterises a chevron drawable once, [width] wide at the card's scale. */
+@Composable
+private fun rememberChevronBitmap(@DrawableRes drawable: Int, width: Dp): ImageBitmap? {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val chevW = with(density) { width.toPx() }.roundToInt().coerceAtLeast(1)
+    val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
+    return remember(drawable, chevW, chevH) {
+        ContextCompat.getDrawable(context, drawable)
+            ?.toBitmap(width = chevW, height = chevH)
+            ?.asImageBitmap()
+    }
+}
+
 @Composable
 private fun NativeRoutePreview(modifier: Modifier) {
     val routePoints = remember { decodeGpsPolyline(ClimbPreviewFixture.routePolyline) }
-    val chevrons =
-        remember(routePoints) {
-            placeChevronsByCadence(
-                gps = routePoints,
-                cumDist = cumulativeDistancesM(routePoints),
-                gradeAtM = { 0.0 },
-                changeAtM = { 0.0 },
-                alpha = 0.0,
-                gradeFullPct = 1.0,
-                changeFullPctPerM = 1.0,
-                spacingMaxM = NATIVE_CHEVRON_SPACING_M,
-                spacingMinM = NATIVE_CHEVRON_SPACING_M,
-                collisionRadiusM = 0.0,
-                windowHalfM = 0.0,
-            )
-        }
+    val chevrons = rememberNativeChevrons(routePoints)
     val bounds = ClimbPreviewFixture.bounds
     val aspect = remember { mercatorBoundsAspect(bounds).toFloat() }
-
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val chevW = with(density) { NATIVE_CHEVRON_WIDTH.toPx() }.roundToInt().coerceAtLeast(1)
-    val chevH = (chevW * CHEVRON_HEIGHT_RATIO).roundToInt().coerceAtLeast(1)
-    val chevronBmp: ImageBitmap? =
-        remember(chevW, chevH) {
-            ContextCompat.getDrawable(context, R.drawable.ic_climber_chevron_f0d800)
-                ?.toBitmap(width = chevW, height = chevH)
-                ?.asImageBitmap()
-        }
+    val chevronBmp =
+        rememberChevronBitmap(R.drawable.ic_climber_chevron_f0d800, NATIVE_CHEVRON_WIDTH)
 
     Canvas(modifier.fillMaxWidth().aspectRatio(aspect)) {
         drawSyntheticMap()

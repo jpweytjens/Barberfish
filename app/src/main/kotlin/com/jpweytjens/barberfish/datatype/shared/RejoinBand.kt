@@ -33,6 +33,7 @@ internal fun buildRejoinSpecs(
     chevronMinSpacingM: Double,
     capTrimM: Double = 0.0,
     casingCapTrimM: Double = 0.0,
+    includeChevrons: Boolean = true,
 ): RejoinSpecs {
     val gps = decodeGpsPolyline(rejoinPolyline)
     if (gps.size < 2) return RejoinSpecs(null, "", emptyList())
@@ -58,29 +59,31 @@ internal fun buildRejoinSpecs(
             null
         }
     val chevrons =
-        placeChevronsByCadence(
-                gps = gps,
-                cumDist = cumDist,
-                gradeAtM = { 0.0 },
-                changeAtM = { 0.0 },
-                alpha = 0.0,
-                gradeFullPct = 1.0,
-                changeFullPctPerM = 1.0,
-                spacingMaxM = chevronSpacingM,
-                spacingMinM = chevronSpacingM,
-                collisionRadiusM = chevronMinSpacingM,
-                windowHalfM = 0.0,
-            )
-            .mapIndexed { index, p ->
-                ClimbChevronSpec(
-                    id = gradeMapRejoinChevronId(index),
-                    lat = p.lat,
-                    lng = p.lng,
-                    bearingDeg = p.bearingDeg,
-                    colorArgb = colorArgb,
-                    distanceM = p.distanceM,
+        if (!includeChevrons) emptyList()
+        else
+            placeChevronsByCadence(
+                    gps = gps,
+                    cumDist = cumDist,
+                    gradeAtM = { 0.0 },
+                    changeAtM = { 0.0 },
+                    alpha = 0.0,
+                    gradeFullPct = 1.0,
+                    changeFullPctPerM = 1.0,
+                    spacingMaxM = chevronSpacingM,
+                    spacingMinM = chevronSpacingM,
+                    collisionRadiusM = chevronMinSpacingM,
+                    windowHalfM = 0.0,
                 )
-            }
+                .mapIndexed { index, p ->
+                    ClimbChevronSpec(
+                        id = gradeMapRejoinChevronId(index),
+                        lat = p.lat,
+                        lng = p.lng,
+                        bearingDeg = p.bearingDeg,
+                        colorArgb = colorArgb,
+                        distanceM = p.distanceM,
+                    )
+                }
     return RejoinSpecs(
         fill = fill,
         casing = if (casingPoints.size >= 2) encodeGpsPolyline(casingPoints) else rejoinPolyline,

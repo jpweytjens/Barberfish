@@ -101,6 +101,35 @@ class GradeMapControllerTest {
     }
 
     @Test
+    fun a_later_emit_carries_the_new_widths() {
+        val controller = controller()
+        val fake = FakeEmitter()
+        val specs = listOf(GradeMapPolylineSpec("a", "xyz", red))
+        controller.emit(fake, specs)
+        fake.events.clear()
+        runBlocking { controller.emit(fake, route, specs, 7, 10) }
+        val shows = fake.events.filterIsInstance<ShowPolyline>()
+        assertEquals(listOf(casingId to 10, "a" to 7), shows.map { it.id to it.width })
+    }
+
+    @Test
+    fun a_casing_width_of_zero_takes_the_casing_off_and_a_later_width_puts_it_back_beneath() {
+        val controller = controller()
+        val fake = FakeEmitter()
+        val specs = listOf(GradeMapPolylineSpec("a", "xyz", red))
+        controller.emit(fake, specs)
+        fake.events.clear()
+        runBlocking { controller.emit(fake, route, specs, 7, 0) }
+        assertEquals(listOf(casingId), fake.hideIds())
+        assertEquals(listOf("a"), fake.showIds())
+        fake.events.clear()
+        runBlocking { controller.emit(fake, route, specs, 18, 21) }
+        // The fill is hidden so the casing goes beneath it again.
+        assertEquals(listOf("a"), fake.hideIds())
+        assertEquals(listOf(casingId, "a"), fake.showIds())
+    }
+
+    @Test
     fun assumeStale_first_emit_hides_the_whole_range_before_the_casing() {
         val controller = controller()
         val fake = FakeEmitter()

@@ -4,9 +4,13 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.RouteFixtures
 import com.jpweytjens.barberfish.extension.BarberfishExtension
+import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapWidth
+import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import fi.nikosavola.karooext.testing.encodePolyline
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import io.hammerhead.karooext.models.OnNavigationState
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -107,6 +111,35 @@ class GradeMapOverlayTest {
             }
         }
         assertTrue(map.visibleFills().isNotEmpty())
+    }
+
+    @Test
+    fun the_way_back_follows_the_width_setting_and_loses_its_chevrons_at_narrow() {
+        val rejoin =
+            encodePolyline(
+                listOf(RouteFixtures.point(1_500.0, 300.0), RouteFixtures.point(1_500.0, 0.0)).map {
+                    it.lat to it.lng
+                }
+            )
+        karoo.system.setNavigation(climbRoute().navigating(rejoin, rejoinDistance = 300.0))
+        val map = karoo.host<BarberfishExtension>().startMap()
+        karoo.awaitValue {
+            map.visibleSymbols().keys.firstOrNull { it.startsWith("barberfish-rejoin-chev") }
+        }
+        assertEquals(
+            GradeMapWidth.MEDIUM.fillDp,
+            map.visiblePolylines().getValue("barberfish-rejoin").width,
+        )
+
+        runBlocking { karoo.app.saveGradeMapConfig(GradeMapConfig(width = GradeMapWidth.NARROW)) }
+
+        karoo.awaitValue {
+            true.takeIf {
+                map.visiblePolylines()["barberfish-rejoin"]?.width == GradeMapWidth.NARROW.fillDp &&
+                    !map.visiblePolylines().containsKey("barberfish-rejoin-casing") &&
+                    map.visibleSymbols().keys.none { it.startsWith("barberfish-rejoin-chev") }
+            }
+        }
     }
 
     @Test

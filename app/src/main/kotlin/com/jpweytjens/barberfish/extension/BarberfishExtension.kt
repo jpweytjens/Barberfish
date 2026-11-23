@@ -83,12 +83,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-// Grade band widths, in dp as the map takes them. The fill hides the native route line and its
-// direction chevrons, which overhang the line by about half its width each side; the casing
-// adds a black edge so the band stays crisp over any map feature. Tuned on-device.
-private const val GRADE_BAND_WIDTH_DP = 18
-private const val GRADE_BAND_CASING_WIDTH_DP = 21
-
 // Chevron cadence: on-device-tunable placeholders driving placeChevronsByCadence's
 // intensity blend of grade magnitude and grade change.
 private const val CHEVRON_SPACING_MAX_PX = 130.0 // sparse ceiling (intensity 0)
@@ -254,6 +248,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     GradeMapConfigInputs(
                         enabled = gradeMapCfg.enabled,
                         chevronBlend = gradeMapCfg.chevronBlend,
+                        width = gradeMapCfg.width,
                         palette = zoneCfg.gradePalette,
                         tuning = eff,
                         route = navEvent.state.followedRoute(),
@@ -305,8 +300,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     d.viewRadiusM,
                 )
                 val pieces = d.specs.polylines.filter { d.visibility.pieceDrawable(it.visitKey) }
-                val batches =
-                    layerPlanner.plan(pieces, GRADE_BAND_WIDTH_DP, GRADE_BAND_CASING_WIDTH_DP)
+                val batches = layerPlanner.plan(pieces, d.width.fillDp, d.width.casingDp)
                 Timber.d(
                     "grademap: draw ${pieces.size}/${d.specs.polylines.size} pieces in " +
                         "${batches.size} batches, " +
@@ -491,14 +485,14 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 decodeGpsPolyline(route.polyline).firstOrNull()?.lat ?: viewport.lat
                             val capTrimM =
                                 lineCapTrimM(
-                                    GRADE_BAND_WIDTH_DP,
+                                    inputs.width.fillDp,
                                     density,
                                     routeLat,
                                     viewport.zoomLevel,
                                 )
                             val casingCapTrimM =
                                 lineCapTrimM(
-                                    GRADE_BAND_CASING_WIDTH_DP,
+                                    inputs.width.casingDp,
                                     density,
                                     routeLat,
                                     viewport.zoomLevel,
@@ -510,7 +504,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                     palette = inputs.palette,
                                     readable = false,
                                     tuning = inputs.tuning,
-                                    includeChevrons = true,
+                                    includeChevrons = inputs.width.drawsChevrons,
                                     chevronBlend = inputs.chevronBlend,
                                     chevronGradeFullPct = CHEVRON_GRADE_FULL_PCT,
                                     chevronChangeWindowM = CHEVRON_CHANGE_WINDOW_M,
@@ -573,6 +567,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                         chevronMinSpacingM = chevronCollision,
                                         capTrimM = capTrimM,
                                         casingCapTrimM = casingCapTrimM,
+                                        includeChevrons = inputs.width.drawsChevrons,
                                     )
                                 }
                             val newSpans =
@@ -601,6 +596,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                         CHEVRON_LOOKAHEAD_PX * metresPerPixel(viewport.zoomLevel),
                                     sdkRouteDistanceM = route.distanceM,
                                     iconRes = gradeChevronDrawable(inputs.palette),
+                                    width = inputs.width,
                                 )
                             drawing = current
                             drawRoute(current)
@@ -609,8 +605,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                     emitter,
                                     casingEncoded = rejoinSpecs.casing,
                                     specs = listOfNotNull(rejoinSpecs.fill),
-                                    fillWidth = GRADE_BAND_WIDTH_DP,
-                                    casingWidth = GRADE_BAND_CASING_WIDTH_DP,
+                                    fillWidth = inputs.width.fillDp,
+                                    casingWidth = inputs.width.casingDp,
                                 )
                                 rejoinChevronController.emit(
                                     emitter,
@@ -672,11 +668,13 @@ private class RouteDrawing(
     // The rideapp's route length, for rescaling latch progress onto the polyline axis.
     val sdkRouteDistanceM: Double,
     @DrawableRes val iconRes: Int,
+    val width: GradeMapWidth,
 )
 
 internal data class GradeMapConfigInputs(
     val enabled: Boolean,
     val chevronBlend: Double,
+    val width: GradeMapWidth,
     val palette: GradePalette,
     // Sparkline-sync is resolved upstream, so everything downstream — the rebuild signature
     // and the specs themselves — reads one already-effective tuning.
@@ -687,6 +685,7 @@ internal data class GradeMapConfigInputs(
         GradeMapConfigSignature(
             enabled = enabled,
             chevronBlend = chevronBlend,
+            width = width,
             palette = palette,
             simplification = tuning.simplification,
             skipBands = tuning.skipBands,
@@ -711,6 +710,7 @@ internal data class GradeMapConfigInputs(
 internal data class GradeMapConfigSignature(
     val enabled: Boolean,
     val chevronBlend: Double,
+    val width: GradeMapWidth,
     val palette: GradePalette,
     val simplification: ElevationSimplification,
     val skipBands: Int,

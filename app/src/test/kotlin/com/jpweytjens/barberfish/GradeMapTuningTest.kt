@@ -10,6 +10,7 @@ import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeMapConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfigInputs
+import com.jpweytjens.barberfish.extension.GradeMapWidth
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import io.hammerhead.karooext.models.OnNavigationState
@@ -142,6 +143,7 @@ class GradeMapTuningTest {
         GradeMapConfigInputs(
             enabled = true,
             chevronBlend = 0.5,
+            width = GradeMapWidth.MEDIUM,
             palette = GradePalette.KAROO,
             tuning =
                 EffectiveGradeMapTuning(
@@ -158,6 +160,13 @@ class GradeMapTuningTest {
         val a = inputsWithEdges(climbEdge = 5.0, descentEdge = null)
         val b = inputsWithEdges(climbEdge = 6.0, descentEdge = null)
         assertNotEquals(a.signature(), b.signature())
+    }
+
+    @Test
+    fun `map rebuild signature differs when only the width changes`() {
+        val medium = inputsWithEdges(climbEdge = 5.0, descentEdge = null)
+        val narrow = medium.copy(width = GradeMapWidth.NARROW)
+        assertNotEquals(medium.signature(), narrow.signature())
     }
 
     @Test
@@ -178,6 +187,7 @@ class GradeMapTuningTest {
             GradeMapConfigInputs(
                     enabled = map.enabled,
                     chevronBlend = map.chevronBlend,
+                    width = map.width,
                     palette = palette,
                     tuning = resolveGradeMapTuning(map, sparkline, palette),
                     route = null,

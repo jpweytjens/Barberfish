@@ -40,6 +40,21 @@ class RejoinBandTest {
     }
 
     @Test
+    fun without_chevrons_the_fill_and_casing_remain() {
+        val specs =
+            buildRejoinSpecs(
+                rejoinPolyline = path,
+                colorArgb = red,
+                chevronSpacingM = 200.0,
+                chevronMinSpacingM = 20.0,
+                includeChevrons = false,
+            )
+        assertTrue(specs.chevrons.isEmpty())
+        assertTrue(specs.fill != null)
+        assertTrue(specs.casing.isNotEmpty())
+    }
+
+    @Test
     fun chevrons_sit_at_a_constant_cadence_with_their_own_ids() {
         val specs =
             buildRejoinSpecs(
