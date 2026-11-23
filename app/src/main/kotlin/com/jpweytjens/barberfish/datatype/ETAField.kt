@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.AvgSpeedPrior
 import com.jpweytjens.barberfish.datatype.shared.ETAInput
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.computeRidingETA
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
@@ -24,6 +25,8 @@ import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.runningFold
@@ -45,6 +48,7 @@ private data class RawETA(
 class ETAField(
     private val karooSystem: KarooSystemService,
     private val kind: ETAKind,
+    private val moving: Flow<MovingTimeAndDistance?>,
 ) : BarberfishDataType("barberfish", kind.typeId) {
 
     override fun liveFlow(context: Context): Flow<FieldState> =
@@ -55,7 +59,7 @@ class ETAField(
                 etaCfg to timeCfg
             }
             .flatMapLatest { (etaCfg, timeCfg) ->
-                streamFlow(karooSystem, kind, etaCfg, timeCfg.format)
+                streamFlow(karooSystem, kind, etaCfg, timeCfg.format, moving)
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
@@ -73,40 +77,61 @@ class ETAField(
             kind: ETAKind,
             etaCfg: ETAConfig,
             format: TimeFormat,
+            moving: Flow<MovingTimeAndDistance?>,
         ): Flow<FieldState> {
             val prior = AvgSpeedPrior(speedKph = etaCfg.priorSpeedKph)
 
-            val rawFlow =
-                combine(
-                    karooSystem.streamDataFlow(DataType.Type.DISTANCE).map {
-                        extractRawDouble(it, DataType.Field.DISTANCE)
-                    },
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map {
-                        extractRawDouble(it, DataType.Field.ELAPSED_TIME)
-                    },
+            // Distance ridden and the time it took: our moving distance and moving time, or the
+            // Karoo's DISTANCE and ELAPSED_TIME while the pair is null. The Karoo streams for
+            // them exist only while it is null.
+            fun rawFlow(ours: Boolean): Flow<RawETA> {
+                val ridden =
+                    if (ours) {
+                        moving.filterNotNull().map { it.distanceM to it.timeMs }
+                    } else {
+                        combine(
+                            karooSystem.streamDataFlow(DataType.Type.DISTANCE).map {
+                                extractRawDouble(it, DataType.Field.DISTANCE)
+                            },
+                            karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map {
+                                extractRawDouble(it, DataType.Field.ELAPSED_TIME)
+                            },
+                        ) { distM, elapsedMs ->
+                            distM to elapsedMs
+                        }
+                    }
+                return combine(
+                    ridden,
                     karooSystem.streamDataFlow(DataType.Type.DISTANCE_TO_DESTINATION).map {
                         extractDistToDest(it)
                     },
                     karooSystem.streamDataFlow(DataType.Type.PAUSED_TIME).map {
                         extractRawDouble(it, DataType.Field.PAUSED_TIME)
                     },
-                ) { distM, elapsedMs, distToDest, pausedMs ->
+                ) { (distM, elapsedMs), distToDest, pausedMs ->
                     RawETA(distM, elapsedMs, distToDest, pausedMs)
                 }
+            }
 
-            return rawFlow
-                .runningFold(Triple(initETAState(prior), null as ETAInput?, null as RawETA?)) {
-                    (state, _, _),
-                    raw ->
-                    val input =
-                        ETAInput(
-                            distanceRiddenM = raw.distRiddenM,
-                            elapsedTimeMs = raw.elapsedMs,
-                            distanceToDestM = raw.distToDestM ?: 0.0,
-                            pausedTimeMs = raw.pausedMs,
-                            prior = prior,
-                        )
-                    Triple(updateETAState(input, state), input, raw)
+            // The speed estimate folds over steps in distance and time, and a step between two
+            // sources is meaningless, so the fold starts again whenever the source changes.
+            return moving
+                .map { it != null }
+                .distinctUntilChanged()
+                .flatMapLatest { ours ->
+                    rawFlow(ours).runningFold(
+                        Triple(initETAState(prior), null as ETAInput?, null as RawETA?)
+                    ) { (state, _, _), raw ->
+                        val input =
+                            ETAInput(
+                                distanceRiddenM = raw.distRiddenM,
+                                elapsedTimeMs = raw.elapsedMs,
+                                distanceToDestM = raw.distToDestM ?: 0.0,
+                                pausedTimeMs = raw.pausedMs,
+                                prior = prior,
+                            )
+                        Triple(updateETAState(input, state), input, raw)
+                    }
                 }
                 .map { (state, input, raw) ->
                     if (raw == null || raw.distToDestM == null || input == null) {

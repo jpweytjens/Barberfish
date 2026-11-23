@@ -437,7 +437,13 @@ class HUDField(
                         etaCfg to timeCfg
                     }
                     .flatMapLatest { (etaCfg, timeCfg) ->
-                        ETAField.streamFlow(karooSystem, slot.field.kind, etaCfg, timeCfg.format)
+                        ETAField.streamFlow(
+                            karooSystem,
+                            slot.field.kind,
+                            etaCfg,
+                            timeCfg.format,
+                            moving,
+                        )
                     }
         }.catch { e ->
             // Isolate a slot failure: degrade it to Not available rather than let the

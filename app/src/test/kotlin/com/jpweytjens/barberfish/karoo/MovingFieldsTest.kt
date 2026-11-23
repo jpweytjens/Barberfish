@@ -1,6 +1,8 @@
 package com.jpweytjens.barberfish.karoo
 
 import com.jpweytjens.barberfish.datatype.AvgSpeedField
+import com.jpweytjens.barberfish.datatype.ETAField
+import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
@@ -25,14 +27,17 @@ import io.hammerhead.karooext.models.RideProfile
 import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
 import java.util.concurrent.Executors
+import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.runBlocking
@@ -52,6 +57,14 @@ private const val HUD = "three-column"
 /** 10 000 m in 1 800 s of recording time: 20.0 km/h. */
 private const val RIDE_TIME_MS = 1_800_000.0
 private const val RIDE_DISTANCE_M = 10_000.0
+
+private val REMAINING_RIDE_TIME = ETAKind.REMAINING_RIDE_TIME.typeId
+
+/** How long the fields must show the same values to count as settled. */
+private const val SETTLED_NS = 300_000_000L
+
+/** Metres covered at [kph] in [seconds]. */
+private fun metresAt(kph: Double, seconds: Double) = kph / 3.6 * seconds
 
 /**
  * The fields that read our moving time and distance, fed by the extension's own wiring from the
@@ -163,8 +176,14 @@ class MovingFieldsTest {
     /** What the HUD's left slot shows, with every slot set to Avg Speed (moving). */
     private fun avgSpeedMovingHUDSlot(
         moving: Flow<MovingTimeAndDistance?>
+    ): StateFlow<FieldState?> = hudSlot(HUDSlotField.AvgSpeed(includePaused = false), moving)
+
+    /** What the HUD's left slot shows, with every slot set to [field]. */
+    private fun hudSlot(
+        field: HUDSlotField,
+        moving: Flow<MovingTimeAndDistance?>,
     ): StateFlow<FieldState?> {
-        val slot = HUDSlotConfig(field = HUDSlotField.AvgSpeed(includePaused = false))
+        val slot = HUDSlotConfig(field = field)
         runBlocking {
             karoo.app.updateHUDConfig(HUDScope.Shared) {
                 it.copy(slots = HUDSlots(leftSlot = slot, middleSlot = slot, rightSlot = slot))
@@ -239,5 +258,180 @@ class MovingFieldsTest {
         record(1_000.0, RIDE_DISTANCE_M, speed = 6.0)
         awaitStepOn(1_000.0)
         assertEquals(above, speed.value?.color)
+    }
+
+    // --- Remaining Ride Time ---
+
+    /** What the Remaining Ride Time field shows, placed on its own. */
+    private fun remainingRideTimeField(
+        moving: Flow<MovingTimeAndDistance?>
+    ): StateFlow<FieldState?> =
+        latest(ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME, moving).liveFlow(karoo.app))
+
+    /** A route with [remainingM] to go, and no paused time. */
+    private fun toGo(remainingM: Double) {
+        karoo.system.setDataPoint(
+            dataPoint(DataType.Type.PAUSED_TIME, DataType.Field.PAUSED_TIME to 0.0)
+        )
+        karoo.system.setDistanceRemaining(remainingM)
+    }
+
+    /**
+     * What [shown] read once none has changed for a while and [done] holds, or as they stand when
+     * the wait runs out. Two runs agree before a sample reaches either, so agreement alone does not
+     * mean both have taken it.
+     */
+    private fun settled(
+        shown: Map<String, StateFlow<FieldState?>>,
+        done: (Map<String, String?>) -> Boolean = { true },
+    ): Map<String, String?> {
+        fun now() = shown.mapValues { it.value.value?.primary }
+        var last: Map<String, String?>? = null
+        var since = System.nanoTime()
+        runCatching {
+            karoo.awaitValue {
+                val now = now()
+                if (now != last) {
+                    last = now
+                    since = System.nanoTime()
+                }
+                true.takeIf { System.nanoTime() - since > SETTLED_NS && done(now) }
+            }
+        }
+        return now()
+    }
+
+    /**
+     * Fails unless each of [shown] reads within [toleranceS] of [expected], naming each that does
+     * not.
+     */
+    private fun assertWithin(
+        toleranceS: Long,
+        expected: () -> String?,
+        shown: Map<String, StateFlow<FieldState?>>,
+    ) {
+        fun off(read: Map<String, String?>): Map<String, String?> {
+            val want = secondsShown(expected())
+            return read.filterValues { got ->
+                val gotS = secondsShown(got)
+                want == null || gotS == null || abs(gotS - want) > toleranceS
+            }
+        }
+        val read = settled(shown) { off(it).isEmpty() }
+        assertEquals(
+            "expected ${expected()} within $toleranceS s",
+            emptyMap<String, String?>(),
+            off(read),
+        )
+    }
+
+    /** Seconds in a time shown in the default Racing format, as 1h2'03" or 24'00". */
+    private fun secondsShown(shown: String?): Long? =
+        Regex("""(?:(\d+)h)?(\d+)'(\d+)"""").matchEntire(shown ?: "")?.destructured?.let { (h, m, s)
+            ->
+            (h.toLongOrNull() ?: 0L) * 3600 + m.toLong() * 60 + s.toLong()
+        }
+
+    /** Waits until this field shows a time. */
+    private fun StateFlow<FieldState?>.awaitTime() = await { secondsShown(it.primary) != null }
+
+    @Test
+    fun the_estimate_restarts_when_our_pair_arrives() {
+        toGo(RIDE_DISTANCE_M)
+        // The Karoo's recording time restarted at 1 s; our pair, once it arrives, holds the ride.
+        record(1_000.0, RIDE_DISTANCE_M)
+        val moving = MutableStateFlow<MovingTimeAndDistance?>(null)
+        val switched = remainingRideTimeField(moving)
+        switched.awaitTime()
+        val ridden = MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        val ours = MutableStateFlow<MovingTimeAndDistance?>(ridden)
+        val fromTheStart = remainingRideTimeField(ours)
+
+        moving.value = ridden
+        assertWithin(1, { fromTheStart.value?.primary }, mapOf("field" to switched))
+        for (minute in 1..5) {
+            val pair =
+                MovingTimeAndDistance(
+                    RIDE_TIME_MS + minute * 60_000.0,
+                    RIDE_DISTANCE_M + metresAt(20.0, minute * 60.0),
+                )
+            toGo(2 * RIDE_DISTANCE_M - pair.distanceM)
+            moving.value = pair
+            ours.value = pair
+            assertWithin(1, { fromTheStart.value?.primary }, mapOf("field" to switched))
+        }
+    }
+
+    @Test
+    fun the_estimate_restarts_when_our_pair_goes_away() {
+        toGo(RIDE_DISTANCE_M)
+        val moving =
+            MutableStateFlow<MovingTimeAndDistance?>(
+                MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M)
+            )
+        val switched = remainingRideTimeField(moving)
+        switched.awaitTime()
+
+        // The Karoo's recording time restarted at 1 s; from here the field reads it.
+        record(1_000.0, RIDE_DISTANCE_M)
+        val fromThatMoment = remainingRideTimeField(flowOf(null))
+        fromThatMoment.awaitTime()
+        moving.value = null
+        assertWithin(1, { fromThatMoment.value?.primary }, mapOf("field" to switched))
+        for (minute in 1..5) {
+            val distanceM = RIDE_DISTANCE_M + metresAt(20.0, minute * 60.0)
+            toGo(2 * RIDE_DISTANCE_M - distanceM)
+            record(1_000.0 + minute * 60_000.0, distanceM)
+            assertWithin(1, { fromThatMoment.value?.primary }, mapOf("field" to switched))
+        }
+    }
+
+    /**
+     * Thirty minutes at 20 km/h with 10 km to go, then five minutes at 15 km/h, the recording time
+     * restarting at 1 s in between when [restarted]. [awaitStepOn] waits until each sample has been
+     * taken.
+     */
+    private fun rideToAndPast(restarted: Boolean, awaitStepOn: (recordingTimeMs: Double) -> Unit) {
+        val restartMs = if (restarted) 0.0 else RIDE_TIME_MS
+        toGo(RIDE_DISTANCE_M)
+        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        awaitStepOn(RIDE_TIME_MS)
+
+        val restartM = RIDE_DISTANCE_M + metresAt(20.0, 1.0)
+        toGo(2 * RIDE_DISTANCE_M - restartM)
+        record(restartMs + 1_000.0, restartM)
+        awaitStepOn(restartMs + 1_000.0)
+
+        // The speed changes because an estimate that stopped following the rider at the
+        // restart would still pass at a constant speed.
+        val laterM = restartM + metresAt(15.0, 300.0)
+        toGo(2 * RIDE_DISTANCE_M - laterM)
+        record(restartMs + 301_000.0, laterM, speed = 15.0 / 3.6)
+        awaitStepOn(restartMs + 301_000.0)
+    }
+
+    @Test
+    fun remaining_ride_time_survives_a_restarted_timer() {
+        // The same ride without the restart. There our pair is the Karoo's recording time and
+        // distance, so the field reads either.
+        val withoutRestart = remainingRideTimeField(flowOf(null))
+        rideToAndPast(restarted = false) { settled(mapOf("field" to withoutRestart)) }
+        val expected = settled(mapOf("field" to withoutRestart)).getValue("field")
+
+        // The ride starts on the first sample, as above.
+        toGo(RIDE_DISTANCE_M)
+        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        val moving = rideShowing(REMAINING_RIDE_TIME, HUD)
+        val shown =
+            mapOf(
+                "field" to remainingRideTimeField(moving),
+                "HUD" to hudSlot(HUDSlotField.ETA(ETAKind.REMAINING_RIDE_TIME), moving),
+            )
+        rideToAndPast(restarted = true) { recordingTimeMs ->
+            awaitStepOn(recordingTimeMs)
+            settled(shown)
+        }
+        moving.await { it.timeMs == RIDE_TIME_MS + 300_000.0 }
+        assertWithin(60, { expected }, shown)
     }
 }
