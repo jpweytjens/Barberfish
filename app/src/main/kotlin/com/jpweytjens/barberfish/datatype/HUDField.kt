@@ -412,7 +412,7 @@ class HUDField(
             is HUDSlotField.Time ->
                 if (slot.field.kind == TimeKind.LAST_LAP) {
                     combine(
-                        TimeField.secondsFlow(karooSystem, slot.field.kind),
+                        TimeField.secondsFlow(karooSystem, slot.field.kind, moving),
                         karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER).map {
                             lapNumberFrom(it)
                         },
@@ -425,7 +425,7 @@ class HUDField(
                     }
                 } else {
                     combine(
-                        TimeField.secondsFlow(karooSystem, slot.field.kind),
+                        TimeField.secondsFlow(karooSystem, slot.field.kind, moving),
                         context.streamTimeConfig(),
                         TimeField.liveIconFlow(karooSystem, slot.field.kind),
                     ) { seconds, cfg, liveIcon ->

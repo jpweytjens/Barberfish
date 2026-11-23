@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -62,8 +63,11 @@ enum class TimeKind(
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class TimeField(private val karooSystem: KarooSystemService, private val kind: TimeKind) :
-    BarberfishDataType("barberfish", kind.typeId) {
+class TimeField(
+    private val karooSystem: KarooSystemService,
+    private val kind: TimeKind,
+    private val moving: Flow<MovingTimeAndDistance?>,
+) : BarberfishDataType("barberfish", kind.typeId) {
 
     companion object {
         // Per-kind durations from the shared preview ride so the family stays
@@ -113,7 +117,13 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                 karooSystem.streamRideState().map { it !is RideState.Idle }
             else flowOf(true)
 
-        fun secondsFlow(karooSystem: KarooSystemService, kind: TimeKind): Flow<Long> =
+        // Moving Time is our moving time, or the recording time (ELAPSED_TIME) while the pair is
+        // null; the Karoo stream is subscribed only then. Every other kind ignores the pair.
+        fun secondsFlow(
+            karooSystem: KarooSystemService,
+            kind: TimeKind,
+            moving: Flow<MovingTimeAndDistance?>,
+        ): Flow<Long> =
             when (kind) {
                 TimeKind.TOTAL ->
                     karooSystem.streamDataFlow(DataType.Type.RIDE_TIME).map {
@@ -124,8 +134,12 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
                         extractSeconds(it, DataType.Field.PAUSED_TIME)
                     }
                 TimeKind.RIDING ->
-                    karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map {
-                        extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                    moving.flatMapLatest { pair ->
+                        if (pair == null)
+                            karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map {
+                                extractSeconds(it, DataType.Field.ELAPSED_TIME)
+                            }
+                        else flowOf(ConvertType.TIME.apply(pair.timeMs).toLong())
                     }
                 TimeKind.TIME_TO_SUNRISE ->
                     karooSystem.streamDataFlow(DataType.Type.TIME_TO_SUNRISE).map {
@@ -158,7 +172,7 @@ class TimeField(private val karooSystem: KarooSystemService, private val kind: T
     }
 
     override fun liveFlow(context: Context): Flow<FieldState> {
-        val secondsFlow = secondsFlow(karooSystem, kind)
+        val secondsFlow = secondsFlow(karooSystem, kind, moving)
         val liveIconFlow = liveIconFlow(karooSystem, kind)
         if (kind == TimeKind.LAST_LAP) {
             val lapNumberFlow =

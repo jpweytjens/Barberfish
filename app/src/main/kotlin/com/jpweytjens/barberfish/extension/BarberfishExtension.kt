@@ -162,18 +162,18 @@ fun barberfishDataTypes(
         EffortField(karooSystem),
         RouteRemainingField(karooSystem),
         // Time
-        TimeField(karooSystem, TimeKind.TOTAL),
-        TimeField(karooSystem, TimeKind.RIDING),
-        TimeField(karooSystem, TimeKind.PAUSED),
-        TimeField(karooSystem, TimeKind.LAP),
-        TimeField(karooSystem, TimeKind.LAST_LAP),
+        TimeField(karooSystem, TimeKind.TOTAL, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.RIDING, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.PAUSED, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.LAP, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.LAST_LAP, movingTimeAndDistance),
         ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME, movingTimeAndDistance),
         ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION, movingTimeAndDistance),
         ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL, movingTimeAndDistance),
-        TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
-        TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
-        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
-        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK),
+        TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.TIME_TO_SUNSET, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK, movingTimeAndDistance),
     )
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {

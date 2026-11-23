@@ -5,6 +5,8 @@ import com.jpweytjens.barberfish.datatype.ETAField
 import com.jpweytjens.barberfish.datatype.ETAKind
 import com.jpweytjens.barberfish.datatype.HUDField
 import com.jpweytjens.barberfish.datatype.SpeedField
+import com.jpweytjens.barberfish.datatype.TimeField
+import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
@@ -59,6 +61,8 @@ private const val RIDE_TIME_MS = 1_800_000.0
 private const val RIDE_DISTANCE_M = 10_000.0
 
 private val REMAINING_RIDE_TIME = ETAKind.REMAINING_RIDE_TIME.typeId
+private val TIME_MOVING = TimeKind.RIDING.typeId
+private val TIME_ELAPSED = TimeKind.TOTAL.typeId
 
 /** How long the fields must show the same values to count as settled. */
 private const val SETTLED_NS = 300_000_000L
@@ -444,5 +448,48 @@ class MovingFieldsTest {
         }
         moving.await { it.timeMs == RIDE_TIME_MS + 300_000.0 }
         assertWithin(60, { expected }, shown)
+    }
+
+    // --- Moving Time ---
+
+    /** What the Time field of [kind] shows, placed on its own. */
+    private fun timeField(kind: TimeKind, moving: Flow<MovingTimeAndDistance?>) =
+        latest(TimeField(karooSystem, kind, moving).liveFlow(karoo.app))
+
+    private fun timeShownBy(kind: TimeKind, moving: Flow<MovingTimeAndDistance?>) =
+        mapOf(
+            "field" to timeField(kind, moving),
+            "HUD" to hudSlot(HUDSlotField.Time(kind), moving),
+        )
+
+    @Test
+    fun moving_time_survives_a_restarted_timer() {
+        val moving = rideShowing(TIME_MOVING, HUD)
+        val shown = timeShownBy(TimeKind.RIDING, moving)
+        record(1_800_000.0, 10_000.0)
+        moving.await { it.timeMs == 1_800_000.0 }
+        // The recording time restarts, then runs 60 s on from the restart.
+        record(1_000.0, 10_100.0)
+        awaitStepOn(1_000.0)
+        record(61_000.0, 10_500.0)
+        awaitStepOn(61_000.0)
+        moving.await { it.timeMs == 1_860_000.0 }
+        shown.values.forEach { states -> states.await { it.primary == "31'00\"" } }
+        assertShows("31'00\"", shown)
+    }
+
+    @Test
+    fun elapsed_time_field_is_unchanged() {
+        // Moving Time is on the page too, so the pair exists and the field could read it.
+        val moving = rideShowing(TIME_ELAPSED, TIME_MOVING, HUD)
+        val shown = timeShownBy(TimeKind.TOTAL, moving)
+        // Total time, recording time and our moving time all render differently.
+        karoo.system.setDataPoint(
+            dataPoint(DataType.Type.RIDE_TIME, DataType.Field.RIDE_TIME to 3_600_000.0)
+        )
+        record(1_500_000.0, 8_000.0)
+        moving.await { it.timeMs == 1_500_000.0 }
+        shown.values.forEach { states -> states.await { it.primary == "1h0'00\"" } }
+        assertShows("1h0'00\"", shown)
     }
 }
