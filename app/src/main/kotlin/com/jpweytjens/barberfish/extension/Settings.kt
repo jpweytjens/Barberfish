@@ -670,6 +670,24 @@ enum class ChevronEmphasis(val alpha: Double, val label: String) {
     }
 }
 
+/**
+ * How wide the grade band is drawn, as fill and casing widths in dp as the map takes them. The
+ * casing adds a black edge so the band stays crisp over any map feature. Narrow sits on the route
+ * line and leaves the direction cue to the map's own arrows, whose tips show beside it. Medium
+ * hides the route line and the small arrows along it. Wide also hides the larger arrows the map
+ * draws just ahead of the rider. A casing of 0 is none: the narrow band takes its edge from the
+ * route line's own outline. Tuned on-device.
+ */
+enum class GradeMapWidth(val label: String, val fillDp: Int, val casingDp: Int) {
+    NARROW("Narrow", 7, 0),
+    MEDIUM("Medium", 18, 21),
+    WIDE("Wide", 25, 28);
+
+    /** Grade chevrons are wider than the narrow band, so it draws none. */
+    val drawsChevrons: Boolean
+        get() = this != NARROW
+}
+
 // --- GradeMapConfig ---
 
 @Serializable
@@ -688,6 +706,7 @@ data class GradeMapConfig(
     val descentEdge: Double? = null,
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
     val chevronBlend: Double = 0.5, // grade↔change cadence blend; ChevronEmphasis.nearest maps it
+    val width: GradeMapWidth = GradeMapWidth.MEDIUM,
 ) {
     /**
      * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,

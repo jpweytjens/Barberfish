@@ -19,9 +19,10 @@ internal data class LayerBatch(val effects: List<MapEffect>, val settleAfter: Bo
  * a show for an id it holds updates that layer in place. A batch is not processed in emission
  * order. So a stacking pass hides everything painted, settles, puts every casing down, settles,
  * then shows the fills one depth at a time from the bottom, settling between depths. A plan
- * restacks when an id is new to the map or a painted id's depth changed; otherwise it updates in
- * place, hiding the ids that went away and re-showing the pieces whose geometry or colour changed,
- * with no settle. So a zoom re-cut that moves extents but keeps depths never blanks the band.
+ * restacks when an id is new to the map, a painted id's depth changed or a width changed; otherwise
+ * it updates in place, hiding the ids that went away and re-showing the pieces whose geometry or
+ * colour changed, with no settle. A casing width of 0 means no casing: none is shown. So a zoom
+ * re-cut that moves extents but keeps depths never blanks the band.
  *
  * Single-consumer usage from inside the `KarooExtension.startMap` coroutine; not thread-safe.
  */
@@ -31,6 +32,11 @@ internal class GradeMapLayerPlanner {
     private var painted: Map<String, GradeMapPolylineSpec?> = emptyMap()
     private var stacked = false
 
+    // Widths of the last plan. A width is not part of a piece, so a change in one restacks: the
+    // hide and the settles keep a show from an earlier plan from landing after the new one.
+    private var paintedFillWidth = 0
+    private var paintedCasingWidth = 0
+
     fun plan(
         pieces: List<GradeMapPolylineSpec>,
         fillWidth: Int,
@@ -38,12 +44,16 @@ internal class GradeMapLayerPlanner {
     ): List<LayerBatch> {
         val structural =
             !stacked ||
+                fillWidth != paintedFillWidth ||
+                casingWidth != paintedCasingWidth ||
                 pieces.any { piece -> painted[piece.id]?.let { it.depth == piece.depth } != true }
         val batches =
             if (structural) restack(pieces, fillWidth, casingWidth)
             else updateInPlace(pieces, fillWidth, casingWidth)
         painted = pieces.associateBy { it.id }
         stacked = true
+        paintedFillWidth = fillWidth
+        paintedCasingWidth = casingWidth
         return batches
     }
 
@@ -75,7 +85,7 @@ internal class GradeMapLayerPlanner {
         // anything is stacked, so an upgrade mid-ride does not leave it painted.
         val hides = hideAllPainted(includeLegacy = !stacked)
         if (hides.isNotEmpty()) batches += LayerBatch(hides, settleAfter = true)
-        if (pieces.isNotEmpty()) {
+        if (pieces.isNotEmpty() && casingWidth > 0) {
             batches += LayerBatch(pieces.map { casingShow(it, casingWidth) }, settleAfter = true)
         }
         val byDepth = pieces.groupBy { it.depth }.toSortedMap().values.toList()
@@ -102,7 +112,7 @@ internal class GradeMapLayerPlanner {
         }
         pieces.forEach { piece ->
             val previous = painted[piece.id] ?: return@forEach
-            if (previous.casingEncoded != piece.casingEncoded) {
+            if (casingWidth > 0 && previous.casingEncoded != piece.casingEncoded) {
                 effects += casingShow(piece, casingWidth)
             }
             if (previous.encoded != piece.encoded || previous.colorArgb != piece.colorArgb) {

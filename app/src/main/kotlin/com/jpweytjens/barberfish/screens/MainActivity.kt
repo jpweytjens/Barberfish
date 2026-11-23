@@ -150,6 +150,7 @@ import com.jpweytjens.barberfish.extension.EffortFieldConfig
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
 import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.GradeMapWidth
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.HRFieldConfig
 import com.jpweytjens.barberfish.extension.HRFieldKind
@@ -1397,12 +1398,25 @@ internal fun GradeMapCard(
             }
 
             ChoiceRow(
-                label = "CHEVRON SPACING",
-                options = ChevronEmphasis.entries.map { it to it.label },
-                selected = ChevronEmphasis.nearest(config.chevronBlend),
-                onSelect = { onUpdate(config.copy(chevronBlend = it.alpha)) },
-                help = "Bunch chevrons on the steepest ramps, or where the gradient shifts.",
+                label = "WIDTH",
+                options = GradeMapWidth.entries.map { it to it.label },
+                selected = config.width,
+                onSelect = { onUpdate(config.copy(width = it)) },
+                help =
+                    "Narrow leaves the Karoo's arrows in view. Medium covers most of them " +
+                        "with its own chevrons. Wide covers them all.",
             )
+
+            // The narrow band draws no chevrons, so their spacing has nothing to act on.
+            if (config.width.drawsChevrons) {
+                ChoiceRow(
+                    label = "CHEVRON SPACING",
+                    options = ChevronEmphasis.entries.map { it to it.label },
+                    selected = ChevronEmphasis.nearest(config.chevronBlend),
+                    onSelect = { onUpdate(config.copy(chevronBlend = it.alpha)) },
+                    help = "Bunch chevrons on the steepest ramps, or where the gradient shifts.",
+                )
+            }
         }
     }
 }

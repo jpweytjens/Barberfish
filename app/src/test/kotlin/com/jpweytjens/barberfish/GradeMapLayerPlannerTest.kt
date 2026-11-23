@@ -156,6 +156,42 @@ class GradeMapLayerPlannerTest {
     }
 
     @Test
+    fun a_width_change_restacks_at_the_new_widths() {
+        val planner = GradeMapLayerPlanner()
+        planner.plan(outAndBack, 18, 21)
+        val batches = planner.plan(outAndBack, 25, 28)
+        // Everything painted is hidden first and the map settles before anything is shown again.
+        assertEquals(outAndBack.flatMap { listOf(it.id, "${it.id}-casing") }, batches[0].hideIds())
+        assertTrue(batches[0].showIds().isEmpty())
+        assertTrue(batches[0].settleAfter)
+        assertEquals(outAndBack.map { "${it.id}-casing" }, batches[1].showIds())
+        val shows = batches.flatMap { it.effects.filterIsInstance<ShowPolyline>() }
+        assertEquals(outAndBack.size * 2, shows.size)
+        shows.forEach { assertEquals(it.id, if (it.id.endsWith("-casing")) 28 else 25, it.width) }
+    }
+
+    @Test
+    fun a_casing_width_of_zero_takes_the_casings_off_and_shows_only_fills() {
+        val planner = GradeMapLayerPlanner()
+        planner.plan(outAndBack, 18, 21)
+        val batches = planner.plan(outAndBack, 7, 0)
+        assertTrue(batches[0].hideIds().containsAll(outAndBack.map { "${it.id}-casing" }))
+        assertEquals(outAndBack.map { it.id }.toSet(), batches.allShowIds().toSet())
+        // A later trim re-shows the fill alone.
+        val trimmed = outAndBack.map {
+            if (it.id == outAndBack[0].id) it.copy(encoded = "t", casingEncoded = "tc") else it
+        }
+        assertEquals(listOf(outAndBack[0].id), planner.plan(trimmed, 7, 0).allShowIds())
+    }
+
+    @Test
+    fun the_same_pieces_at_the_same_width_send_nothing() {
+        val planner = GradeMapLayerPlanner()
+        planner.plan(outAndBack, 18, 21)
+        assertTrue(planner.plan(outAndBack, 18, 21).isEmpty())
+    }
+
+    @Test
     fun a_depth_change_restacks_even_with_the_same_ids() {
         val planner = GradeMapLayerPlanner()
         planner.plan(outAndBack, 18, 21)
