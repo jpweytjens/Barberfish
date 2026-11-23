@@ -2,11 +2,19 @@ package com.jpweytjens.barberfish
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import com.jpweytjens.barberfish.datatype.HUDField
+import com.jpweytjens.barberfish.datatype.SpeedField
 import com.jpweytjens.barberfish.datatype.shared.MovingState
 import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.RidePhase
 import com.jpweytjens.barberfish.datatype.shared.RideReadings
 import com.jpweytjens.barberfish.datatype.shared.movingTimeTypeIds
+import com.jpweytjens.barberfish.datatype.shared.showsMovingTimeOrDistance
+import com.jpweytjens.barberfish.extension.HUDSlotConfig
+import com.jpweytjens.barberfish.extension.HUDSlotField
+import com.jpweytjens.barberfish.extension.HUDSlots
+import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
 import com.jpweytjens.barberfish.extension.movingTimeAndDistanceFlow
 import com.jpweytjens.barberfish.karoo.clearBarberfishSettings
@@ -33,6 +41,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -266,14 +275,19 @@ class MovingTimeAndDistanceFlowTest {
 
     @Test
     fun every_id_the_gate_reads_is_a_registered_field() {
-        val registered =
-            barberfishDataTypes(KarooSystemService(karoo.app), MutableStateFlow(null))
-                .map { it.typeId }
-                .toSet()
-        // "speed" and "three-column" are matched in the gate itself, next to the colour and slot
-        // checks they need.
-        val gateIds = movingTimeTypeIds + "speed" + "three-column"
-        assertEquals(emptySet<String>(), gateIds - registered)
+        val types = barberfishDataTypes(KarooSystemService(karoo.app), MutableStateFlow(null))
+        val registered = types.map { it.typeId }.toSet()
+        assertEquals(emptySet<String>(), movingTimeTypeIds - registered)
+
+        // The gate matches the Speed field and the HUD by their own ids, next to the colour and
+        // slot checks they need, so ask it with the ids the fields register.
+        val speedId = types.filterIsInstance<SpeedField>().single().typeId
+        val hudId = types.filterIsInstance<HUDField>().single().typeId
+        val movingSpeed = SpeedFieldConfig(source = SpeedThresholdSource.AVG_MOVING)
+        val movingHud =
+            HUDSlots(leftSlot = HUDSlotConfig(field = HUDSlotField.AvgSpeed(includePaused = false)))
+        assertTrue(showsMovingTimeOrDistance(setOf(speedId), HUDSlots(), movingSpeed))
+        assertTrue(showsMovingTimeOrDistance(setOf(hudId), movingHud, SpeedFieldConfig()))
     }
 
     @Test
