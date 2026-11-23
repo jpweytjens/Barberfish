@@ -19,7 +19,6 @@ import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.loadMovingState
 import com.jpweytjens.barberfish.extension.movingTimeAndDistance
-import com.jpweytjens.barberfish.extension.saveMovingState
 import com.jpweytjens.barberfish.extension.saveSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.FakeKarooSystem
@@ -66,7 +65,7 @@ private const val AVG_SPEED_MOVING = "avg-speed-moving"
 private const val HUD = "three-column"
 
 /** 10 000 m in 1 800 s of recording time: 20.0 km/h. */
-private const val RIDE_TIME_MS = 1_800_000.0
+private const val RECORDING_TIME_MS = 1_800_000.0
 private const val RIDE_DISTANCE_M = 10_000.0
 
 private val REMAINING_RIDE_TIME = ETAKind.REMAINING_RIDE_TIME.typeId
@@ -97,7 +96,6 @@ class MovingFieldsTest {
     @Before
     fun connect() {
         clearBarberfishSettings(karoo.app)
-        runBlocking { karoo.app.saveMovingState(null) }
         karoo.system.setUserProfile(FakeKarooSystem.metricProfile())
         karooSystem = KarooSystemService(karoo.app)
         karooSystem.connect()
@@ -219,8 +217,8 @@ class MovingFieldsTest {
         val moving = rideShowing(AVG_SPEED_MOVING, HUD)
         val shown =
             mapOf("field" to avgSpeedMovingField(moving), "HUD" to avgSpeedMovingHUDSlot(moving))
-        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
-        moving.await { it == MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M) }
+        record(RECORDING_TIME_MS, RIDE_DISTANCE_M)
+        moving.await { it == MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M) }
         shown.values.forEach { states -> states.await { it.primary == "20.0" } }
         return shown
     }
@@ -238,8 +236,8 @@ class MovingFieldsTest {
     @Test
     fun avg_speed_moving_holds_without_a_speed_signal() {
         val shown = rideAt20Kph()
-        record(RIDE_TIME_MS + 85_000.0, RIDE_DISTANCE_M, speed = null)
-        awaitStepOn(RIDE_TIME_MS + 85_000.0)
+        record(RECORDING_TIME_MS + 85_000.0, RIDE_DISTANCE_M, speed = null)
+        awaitStepOn(RECORDING_TIME_MS + 85_000.0)
         assertShows("20.0", shown)
     }
 
@@ -249,8 +247,11 @@ class MovingFieldsTest {
         val shown =
             mapOf("field" to avgSpeedMovingField(moving), "HUD" to avgSpeedMovingHUDSlot(moving))
         // 9 000 m in 1 800 s of recording time.
-        record(RIDE_TIME_MS, 9_000.0)
+        record(RECORDING_TIME_MS, 9_000.0)
         shown.values.forEach { states -> states.await { it.primary == "18.0" } }
+        // The Karoo's recording time restarts at 1 s: only its pair reads 9 000 m in 1 s.
+        record(1_000.0, 9_000.0)
+        shown.values.forEach { states -> states.await { it.primary == "32400.0" } }
         assertNull(moving.value)
     }
 
@@ -260,8 +261,8 @@ class MovingFieldsTest {
     fun an_unreadable_stored_state_starts_from_the_readings() {
         val moving =
             rideShowing(AVG_SPEED_MOVING, load = { throw IOException("unreadable ride file") })
-        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
-        moving.await { it == MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M) }
+        record(RECORDING_TIME_MS, RIDE_DISTANCE_M)
+        moving.await { it == MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M) }
     }
 
     @Test
@@ -276,13 +277,13 @@ class MovingFieldsTest {
         val pairs = scope.async {
             karoo.app.movingTimeAndDistance(karooSystem, emptyFlow(), save = save).toList()
         }
-        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        record(RECORDING_TIME_MS, RIDE_DISTANCE_M)
         karoo.awaitValue { true.takeIf { saves.get() == 1 } }
-        record(RIDE_TIME_MS + 60_000.0, RIDE_DISTANCE_M + 300.0)
+        record(RECORDING_TIME_MS + 60_000.0, RIDE_DISTANCE_M + 300.0)
 
         val emitted = runBlocking { withTimeout(15_000) { pairs.await() } }
         assertEquals(
-            MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M),
+            MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M),
             emitted.last { it != null },
         )
         assertNull(emitted.last())
@@ -301,8 +302,8 @@ class MovingFieldsTest {
         val speed = latest(SpeedField(karooSystem, moving).liveFlow(karoo.app))
         // 21.6 km/h against a 20.0 km/h average: inside the band above it, so both a lost
         // warm-up and a wrong average change the colour.
-        record(RIDE_TIME_MS, RIDE_DISTANCE_M, speed = 6.0)
-        moving.await { it == MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M) }
+        record(RECORDING_TIME_MS, RIDE_DISTANCE_M, speed = 6.0)
+        moving.await { it == MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M) }
         val above = speed.await { it.primary == "21.6" && it.color != FieldColor.Default }.color
 
         record(1_000.0, RIDE_DISTANCE_M, speed = 6.0)
@@ -393,7 +394,7 @@ class MovingFieldsTest {
         val moving = MutableStateFlow<MovingTimeAndDistance?>(null)
         val switched = remainingRideTimeField(moving)
         switched.awaitTime()
-        val ridden = MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        val ridden = MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M)
         val ours = MutableStateFlow<MovingTimeAndDistance?>(ridden)
         val fromTheStart = remainingRideTimeField(ours)
 
@@ -402,7 +403,7 @@ class MovingFieldsTest {
         for (minute in 1..5) {
             val pair =
                 MovingTimeAndDistance(
-                    RIDE_TIME_MS + minute * 60_000.0,
+                    RECORDING_TIME_MS + minute * 60_000.0,
                     RIDE_DISTANCE_M + metresAt(20.0, minute * 60.0),
                 )
             toGo(2 * RIDE_DISTANCE_M - pair.distanceM)
@@ -417,7 +418,7 @@ class MovingFieldsTest {
         toGo(RIDE_DISTANCE_M)
         val moving =
             MutableStateFlow<MovingTimeAndDistance?>(
-                MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M)
+                MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M)
             )
         val switched = remainingRideTimeField(moving)
         switched.awaitTime()
@@ -441,7 +442,7 @@ class MovingFieldsTest {
         toGo(RIDE_DISTANCE_M)
         // The Karoo's recording time restarted at 1 s; our pair holds the ride.
         record(1_000.0, RIDE_DISTANCE_M)
-        val ridden = MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        val ridden = MovingTimeAndDistance(RECORDING_TIME_MS, RIDE_DISTANCE_M)
         val fromOurs = remainingRideTimeField(flowOf(ridden)).awaitTime().primary
         val fromTheKaroo = remainingRideTimeField(flowOf(null)).awaitTime().primary
         assertNotEquals(fromOurs, fromTheKaroo)
@@ -479,10 +480,10 @@ class MovingFieldsTest {
         restarted: Boolean,
         sample: (recordingTimeMs: Double, feed: () -> Unit) -> Unit,
     ) {
-        val restartMs = if (restarted) 0.0 else RIDE_TIME_MS
+        val restartMs = if (restarted) 0.0 else RECORDING_TIME_MS
         toGo(RIDE_DISTANCE_M)
         sample(0.0) { record(0.0, 0.0) }
-        sample(RIDE_TIME_MS) { record(RIDE_TIME_MS, RIDE_DISTANCE_M) }
+        sample(RECORDING_TIME_MS) { record(RECORDING_TIME_MS, RIDE_DISTANCE_M) }
 
         val restartM = RIDE_DISTANCE_M + metresAt(20.0, 1.0)
         sample(restartMs + 1_000.0) { record(restartMs + 1_000.0, restartM) }
@@ -507,7 +508,7 @@ class MovingFieldsTest {
         rideToAndPast(restarted = false) { recordingTimeMs, feed ->
             val before = withoutRestart.value?.primary
             feed()
-            if (recordingTimeMs != RIDE_TIME_MS + 1_000.0) {
+            if (recordingTimeMs != RECORDING_TIME_MS + 1_000.0) {
                 withoutRestart.await { secondsShown(it.primary) != null && it.primary != before }
             }
         }
@@ -526,7 +527,7 @@ class MovingFieldsTest {
             awaitStepOn(recordingTimeMs)
             settled(shown)
         }
-        moving.await { it.timeMs == RIDE_TIME_MS + 300_000.0 }
+        moving.await { it.timeMs == RECORDING_TIME_MS + 300_000.0 }
         assertWithin(60, { expected }, shown)
     }
 

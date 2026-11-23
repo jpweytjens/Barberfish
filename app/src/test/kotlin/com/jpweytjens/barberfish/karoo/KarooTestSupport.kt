@@ -12,6 +12,7 @@ import com.jpweytjens.barberfish.RouteFixtures
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.dataStore
+import com.jpweytjens.barberfish.extension.saveMovingState
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.MapRecorder
@@ -111,9 +112,15 @@ internal fun FakeKarooRule.startBarberfish(): FakeKarooHost {
     return host
 }
 
-/** The extension keeps one process-wide DataStore, which Robolectric reuses across tests. */
+/**
+ * The extension keeps process-wide DataStores, for the settings and for the ride state, which
+ * Robolectric reuses across tests.
+ */
 internal fun clearBarberfishSettings(context: Context) {
-    runBlocking { context.dataStore.edit { it.clear() } }
+    runBlocking {
+        context.dataStore.edit { it.clear() }
+        context.saveMovingState(null)
+    }
 }
 
 /** Routes run east along the equator, so longitude maps straight to metres from the start. */
