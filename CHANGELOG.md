@@ -22,6 +22,9 @@ Battery:
 - Fields redraw only when what they show has changed
 - The grade map does less work per GPS fix on long routes
 
+Fixes:
+- Avg Speed (moving) no longer shows an impossible value, such as 2386 mph, after the Karoo is switched off and on mid-ride (#39, #41). Barberfish now counts its own moving time, which also stops the average sinking while you stand indoors without a speed signal. ETA and the Speed color against the moving average use it too. Moving Time can therefore differ from the Karoo's own ride timer after a restart or a stretch without signal; that is intended. Thanks to bhcohen for the reports.
+
 Settings:
 - The Climbing section is now Map and holds the Grade Map card. The Profile card moved to Data fields, after Grade
 

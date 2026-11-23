@@ -18,7 +18,7 @@
     <string name="time_elapsed_name">Elapsed Time</string>
     <string name="time_elapsed_description">Total elapsed time</string>
     <string name="time_moving_name">Moving Time</string>
-    <string name="time_moving_description">Time spent moving (elapsed minus paused)</string>
+    <string name="time_moving_description">Time recording with speed or distance measured</string>
     <string name="time_paused_name">Paused Time</string>
     <string name="time_paused_description">Total paused time</string>
     <string name="remaining_ride_time_name">Remaining Ride Time</string>
