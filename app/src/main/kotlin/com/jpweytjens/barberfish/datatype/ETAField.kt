@@ -26,9 +26,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.runningFold
 
 enum class ETAKind(val typeId: String, val label: String, val iconRes: Int) {
@@ -114,25 +116,29 @@ class ETAField(
             }
 
             // The speed estimate folds over steps in distance and time, and a step between two
-            // sources is meaningless, so the fold starts again whenever the source changes.
+            // sources is meaningless, so the fold starts again whenever the source changes. The
+            // seed is shown once, at the start: at a switch the field holds its last value until
+            // the new source has a result.
+            val seed = Triple(initETAState(prior), null as ETAInput?, null as RawETA?)
             return moving
                 .map { it != null }
                 .distinctUntilChanged()
                 .flatMapLatest { ours ->
-                    rawFlow(ours).runningFold(
-                        Triple(initETAState(prior), null as ETAInput?, null as RawETA?)
-                    ) { (state, _, _), raw ->
-                        val input =
-                            ETAInput(
-                                distanceRiddenM = raw.distRiddenM,
-                                elapsedTimeMs = raw.elapsedMs,
-                                distanceToDestM = raw.distToDestM ?: 0.0,
-                                pausedTimeMs = raw.pausedMs,
-                                prior = prior,
-                            )
-                        Triple(updateETAState(input, state), input, raw)
-                    }
+                    rawFlow(ours)
+                        .runningFold(seed) { (state, _, _), raw ->
+                            val input =
+                                ETAInput(
+                                    distanceRiddenM = raw.distRiddenM,
+                                    elapsedTimeMs = raw.elapsedMs,
+                                    distanceToDestM = raw.distToDestM ?: 0.0,
+                                    pausedTimeMs = raw.pausedMs,
+                                    prior = prior,
+                                )
+                            Triple(updateETAState(input, state), input, raw)
+                        }
+                        .drop(1)
                 }
+                .onStart { emit(seed) }
                 .map { (state, input, raw) ->
                     if (raw == null || raw.distToDestM == null || input == null) {
                         return@map FieldState.noRoute(kind.label, kind.iconRes)

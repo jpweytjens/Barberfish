@@ -30,6 +30,7 @@ import io.hammerhead.karooext.models.RideProfile
 import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
 import java.io.IOException
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
@@ -47,10 +48,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
@@ -431,6 +434,40 @@ class MovingFieldsTest {
             record(1_000.0 + minute * 60_000.0, distanceM)
             assertWithin(1, { fromThatMoment.value?.primary }, mapOf("field" to switched))
         }
+    }
+
+    @Test
+    fun a_switch_of_source_keeps_the_estimate_shown() {
+        toGo(RIDE_DISTANCE_M)
+        // The Karoo's recording time restarted at 1 s; our pair holds the ride.
+        record(1_000.0, RIDE_DISTANCE_M)
+        val ridden = MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        val fromOurs = remainingRideTimeField(flowOf(ridden)).awaitTime().primary
+        val fromTheKaroo = remainingRideTimeField(flowOf(null)).awaitTime().primary
+        assertNotEquals(fromOurs, fromTheKaroo)
+
+        // Every state the field draws, in order.
+        val moving = MutableStateFlow<MovingTimeAndDistance?>(null)
+        val states = CopyOnWriteArrayList<FieldState>()
+        scope.launch {
+            ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME, moving).liveFlow(karoo.app).collect {
+                states += it
+            }
+        }
+        fun awaitShown(primary: String?) = karoo.awaitValue {
+            true.takeIf { states.lastOrNull()?.primary == primary }
+        }
+        awaitShown(fromTheKaroo)
+        moving.value = ridden
+        awaitShown(fromOurs)
+        moving.value = null
+        awaitShown(fromTheKaroo)
+
+        val noRoute = FieldState.noRoute(ETAKind.REMAINING_RIDE_TIME.label)
+        assertEquals(
+            emptyList<String>(),
+            states.drop(1).map { it.primary }.filter { it == noRoute.primary },
+        )
     }
 
     /**
