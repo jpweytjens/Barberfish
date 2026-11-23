@@ -483,12 +483,19 @@ class MovingFieldsTest {
         // Moving Time is on the page too, so the pair exists and the field could read it.
         val moving = rideShowing(TIME_ELAPSED, TIME_MOVING, HUD)
         val shown = timeShownBy(TimeKind.TOTAL, moving)
-        // Total time, recording time and our moving time all render differently.
+        // The recording time restarts, so the three sources end on different readings:
+        // total time 3 600 s (1h0'00"), our moving time 1 860 s (31'00") and the Karoo's
+        // recording time 61 s (1'01").
         karoo.system.setDataPoint(
             dataPoint(DataType.Type.RIDE_TIME, DataType.Field.RIDE_TIME to 3_600_000.0)
         )
-        record(1_500_000.0, 8_000.0)
-        moving.await { it.timeMs == 1_500_000.0 }
+        record(1_800_000.0, 10_000.0)
+        moving.await { it.timeMs == 1_800_000.0 }
+        record(1_000.0, 10_100.0)
+        awaitStepOn(1_000.0)
+        record(61_000.0, 10_500.0)
+        awaitStepOn(61_000.0)
+        moving.await { it.timeMs == 1_860_000.0 }
         shown.values.forEach { states -> states.await { it.primary == "1h0'00\"" } }
         assertShows("1h0'00\"", shown)
     }
