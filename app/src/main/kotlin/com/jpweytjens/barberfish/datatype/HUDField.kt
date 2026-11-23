@@ -8,6 +8,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
@@ -68,8 +69,10 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class HUDField(private val karooSystem: KarooSystemService) :
-    HUDDataType("barberfish", "three-column") {
+class HUDField(
+    private val karooSystem: KarooSystemService,
+    private val moving: Flow<MovingTimeAndDistance?>,
+) : HUDDataType("barberfish", "three-column") {
 
     @OptIn(FlowPreview::class)
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
@@ -404,6 +407,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     slot.avgSpeedConfig,
                     profile,
                     slot.field.includePaused,
+                    moving,
                 )
             is HUDSlotField.Time ->
                 if (slot.field.kind == TimeKind.LAST_LAP) {

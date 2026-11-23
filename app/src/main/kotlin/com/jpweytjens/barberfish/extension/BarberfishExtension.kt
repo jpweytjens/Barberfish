@@ -124,14 +124,12 @@ private const val CHEVRON_LOOKAHEAD_PX = 800.0
 
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
-// movingTimeAndDistance is read by no field yet; the fields that need it take it next.
-@Suppress("UnusedParameter")
 fun barberfishDataTypes(
     karooSystem: KarooSystemService,
     movingTimeAndDistance: StateFlow<MovingTimeAndDistance?>,
 ): List<BarberfishBase<*>> =
     listOf(
-        HUDField(karooSystem),
+        HUDField(karooSystem, movingTimeAndDistance),
         // Power
         PowerField(karooSystem),
         AvgPowerField(karooSystem),
@@ -149,9 +147,9 @@ fun barberfishDataTypes(
         MaxHRField(karooSystem),
         HRZoneField(karooSystem),
         // Speed
-        SpeedField(karooSystem),
-        AvgSpeedField(karooSystem, includePaused = true),
-        AvgSpeedField(karooSystem, includePaused = false),
+        SpeedField(karooSystem, movingTimeAndDistance),
+        AvgSpeedField(karooSystem, includePaused = true, movingTimeAndDistance),
+        AvgSpeedField(karooSystem, includePaused = false, movingTimeAndDistance),
         // Other
         CadenceField(karooSystem),
         GradeField(karooSystem),

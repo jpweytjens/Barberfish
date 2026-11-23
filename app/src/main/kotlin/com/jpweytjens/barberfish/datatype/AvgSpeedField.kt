@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
@@ -21,6 +22,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 internal fun avgSpeedFieldState(
@@ -91,6 +93,7 @@ internal fun avgSpeedFieldState(
 class AvgSpeedField(
     private val karooSystem: KarooSystemService,
     private val includePaused: Boolean,
+    private val moving: Flow<MovingTimeAndDistance?>,
 ) : BarberfishDataType("barberfish", if (includePaused) "avg-speed-total" else "avg-speed-moving") {
 
     override fun liveFlow(context: Context): Flow<FieldState> =
@@ -100,7 +103,7 @@ class AvgSpeedField(
                 cfg to profile
             }
             .flatMapLatest { (cfg, profile) ->
-                streamFlow(karooSystem, cfg, profile, includePaused)
+                streamFlow(karooSystem, cfg, profile, includePaused, moving)
             }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
@@ -114,11 +117,26 @@ class AvgSpeedField(
             }
 
     companion object {
-        // Raw average speed in m/s, derived from DISTANCE / elapsed time. Total-vs-moving
-        // is controlled by includePaused (RIDE_TIME vs ELAPSED_TIME). Returns 0.0 until
-        // the time field has accumulated at least one second. Shared between AvgSpeedField
-        // and SpeedField (which uses it as a dynamic threshold source).
+        // Raw average speed in m/s. Total is DISTANCE / RIDE_TIME. Moving is our moving
+        // distance / moving time, or DISTANCE / ELAPSED_TIME while the pair is null; the
+        // Karoo streams for it exist only while it is null. Returns 0.0 until the time has
+        // accumulated at least one second. Shared between AvgSpeedField and SpeedField
+        // (which uses it as a dynamic threshold source).
         fun avgSpeedRawMsFlow(
+            karooSystem: KarooSystemService,
+            includePaused: Boolean,
+            moving: Flow<MovingTimeAndDistance?>,
+        ): Flow<Double> =
+            if (includePaused) {
+                karooAvgSpeedRawMsFlow(karooSystem, includePaused = true)
+            } else {
+                moving.flatMapLatest { pair ->
+                    if (pair == null) karooAvgSpeedRawMsFlow(karooSystem, includePaused = false)
+                    else flowOf(averageSpeed(pair.distanceM, pair.timeMs))
+                }
+            }
+
+        private fun karooAvgSpeedRawMsFlow(
             karooSystem: KarooSystemService,
             includePaused: Boolean,
         ): Flow<Double> {
@@ -138,9 +156,13 @@ class AvgSpeedField(
                     (state as? StreamState.Streaming)?.dataPoint?.values?.get(timeField) ?: 0.0
                 }
             return combine(distanceFlow, timeFlow) { distanceM: Double, timeMs: Double ->
-                val seconds = ConvertType.TIME.apply(timeMs)
-                if (seconds > 0) distanceM / seconds else 0.0
+                averageSpeed(distanceM, timeMs)
             }
+        }
+
+        private fun averageSpeed(distanceM: Double, timeMs: Double): Double {
+            val seconds = ConvertType.TIME.apply(timeMs)
+            return if (seconds > 0) distanceM / seconds else 0.0
         }
 
         fun streamFlow(
@@ -148,8 +170,9 @@ class AvgSpeedField(
             cfg: AvgSpeedConfig,
             profile: UserProfile,
             includePaused: Boolean,
+            moving: Flow<MovingTimeAndDistance?>,
         ): Flow<FieldState> =
-            avgSpeedRawMsFlow(karooSystem, includePaused).map { rawMs ->
+            avgSpeedRawMsFlow(karooSystem, includePaused, moving).map { rawMs ->
                 avgSpeedFieldState(rawMs, cfg, profile, includePaused)
             }
 
