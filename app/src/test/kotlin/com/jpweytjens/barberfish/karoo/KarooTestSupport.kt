@@ -25,6 +25,7 @@ import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.HideSymbols
 import io.hammerhead.karooext.models.OnNavigationState
+import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.ShowPolyline
 import io.hammerhead.karooext.models.ShowSymbols
 import io.hammerhead.karooext.models.Symbol
@@ -92,13 +93,21 @@ internal fun ViewRecorder.awaitRendered(
 ): View = karoo.awaitValue { frames.last().inflate(karoo.app, config).takeIf(expected) }
 
 /**
- * Starts the extension and waits for its profile discovery, the one consumer it holds for its whole
- * life. Discovery registers after connecting, so a consumer count taken before it lands would never
+ * Starts the extension and waits for the consumers it holds for its whole life: one ride profile
+ * consumer for profile discovery, and four ride state and two ride profile consumers for the moving
+ * time and distance tracking. Discovery registers after connecting and the tracking after loading
+ * its stored state, in either order, so a consumer count taken before all seven land would never
  * come back down.
  */
 internal fun FakeKarooRule.startBarberfish(): FakeKarooHost {
     val host = host<BarberfishExtension>()
-    awaitValue { true.takeIf { system.consumerParams.any { it is ActiveRideProfile.Params } } }
+    awaitValue {
+        val params = system.consumerParams
+        true.takeIf {
+            params.count { it is RideState.Params } == 4 &&
+                params.count { it is ActiveRideProfile.Params } == 3
+        }
+    }
     return host
 }
 
