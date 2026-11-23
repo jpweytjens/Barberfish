@@ -19,6 +19,7 @@ import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
@@ -105,11 +106,17 @@ internal fun movingTimeAndDistanceFlow(
 }
     .distinctUntilChanged()
 
-/** The wiring to the Karoo: gate, 1 s tick, storage. */
+/**
+ * The wiring to the Karoo: gate, 1 s tick, storage. A stored state that cannot be read starts the
+ * tracking from none. Any other failure ends it: the pair stays null and the fields read the
+ * Karoo's own values, as the extension hosts every field and must not crash.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 internal fun Context.movingTimeAndDistance(
     karooSystem: KarooSystemService,
     shutdownNotices: Flow<Unit>,
+    load: suspend () -> MovingState? = { loadMovingState() },
+    save: suspend (MovingState?) -> Unit = { saveMovingState(it) },
 ): Flow<MovingTimeAndDistance?> {
     val phases = karooSystem.streamRideState().map { it.phase() }
     val shown =
@@ -134,18 +141,29 @@ internal fun Context.movingTimeAndDistance(
             .distinctUntilChanged()
             .flatMapLatest { active -> if (active) everySecond() else emptyFlow() }
     return flow {
+        val initial =
+            try {
+                load()
+            } catch (e: IOException) {
+                Timber.w(e, "Could not read the stored moving time and distance")
+                null
+            }
         emitAll(
             movingTimeAndDistanceFlow(
-                initial = loadMovingState(),
+                initial = initial,
                 enabled = enabled,
                 phases = phases,
                 readings = readings,
                 ticks = ticks,
                 shutdownNotices = shutdownNotices,
-                save = { saveMovingState(it) },
+                save = save,
             )
         )
     }
+        .catch { e ->
+            Timber.e(e, "Moving time and distance stopped")
+            emit(null)
+        }
 }
 
 private fun RideState.phase(): RidePhase =

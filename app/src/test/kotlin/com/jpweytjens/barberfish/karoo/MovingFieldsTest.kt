@@ -9,6 +9,7 @@ import com.jpweytjens.barberfish.datatype.TimeField
 import com.jpweytjens.barberfish.datatype.TimeKind
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.MovingState
 import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.extension.HUDScope
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
@@ -28,11 +29,14 @@ import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.RideProfile
 import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.StreamState
+import java.io.IOException
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +46,9 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -129,12 +135,15 @@ class MovingFieldsTest {
 
     /**
      * Starts a recording ride on a profile showing [typeIds] and returns our pair for it, from the
-     * wiring the extension runs.
+     * wiring the extension runs, which reads its stored state with [load].
      */
-    private fun rideShowing(vararg typeIds: String): StateFlow<MovingTimeAndDistance?> {
+    private fun rideShowing(
+        vararg typeIds: String,
+        load: suspend () -> MovingState? = { karoo.app.loadMovingState() },
+    ): StateFlow<MovingTimeAndDistance?> {
         karoo.system.setActiveRideProfile(rideProfileWith(*typeIds))
         karoo.system.setRideState(RideState.Recording)
-        return latest(karoo.app.movingTimeAndDistance(karooSystem, emptyFlow()))
+        return latest(karoo.app.movingTimeAndDistance(karooSystem, emptyFlow(), load = load))
     }
 
     /**
@@ -240,6 +249,40 @@ class MovingFieldsTest {
         record(RIDE_TIME_MS, 9_000.0)
         shown.values.forEach { states -> states.await { it.primary == "18.0" } }
         assertNull(moving.value)
+    }
+
+    // --- Failures of the tracking ---
+
+    @Test
+    fun an_unreadable_stored_state_starts_from_the_readings() {
+        val moving =
+            rideShowing(AVG_SPEED_MOVING, load = { throw IOException("unreadable ride file") })
+        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        moving.await { it == MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M) }
+    }
+
+    @Test
+    fun a_failure_in_the_tracking_ends_in_no_pair() {
+        karoo.system.setActiveRideProfile(rideProfileWith(AVG_SPEED_MOVING))
+        karoo.system.setRideState(RideState.Recording)
+        // The first save stores the pair, the second fails with what no save should throw.
+        val saves = AtomicInteger()
+        val save: suspend (MovingState?) -> Unit = {
+            check(saves.incrementAndGet() == 1) { "not a storage failure" }
+        }
+        val pairs = scope.async {
+            karoo.app.movingTimeAndDistance(karooSystem, emptyFlow(), save = save).toList()
+        }
+        record(RIDE_TIME_MS, RIDE_DISTANCE_M)
+        karoo.awaitValue { true.takeIf { saves.get() == 1 } }
+        record(RIDE_TIME_MS + 60_000.0, RIDE_DISTANCE_M + 300.0)
+
+        val emitted = runBlocking { withTimeout(15_000) { pairs.await() } }
+        assertEquals(
+            MovingTimeAndDistance(RIDE_TIME_MS, RIDE_DISTANCE_M),
+            emitted.last { it != null },
+        )
+        assertNull(emitted.last())
     }
 
     // --- Speed colour ---

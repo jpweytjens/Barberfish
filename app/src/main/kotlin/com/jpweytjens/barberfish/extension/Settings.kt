@@ -2,9 +2,11 @@ package com.jpweytjens.barberfish.extension
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.jpweytjens.barberfish.datatype.ETAKind
@@ -29,9 +31,13 @@ import kotlinx.serialization.json.JsonNames
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "barberfish")
 
 // A second file: the ride state is rewritten every second while recording, and must not
-// wake the readers of the settings file.
+// wake the readers of the settings file. A corrupt file is replaced by an empty one: it holds
+// only the state of the current ride.
 private val Context.rideStateStore: DataStore<Preferences> by
-    preferencesDataStore(name = "barberfish_ride")
+    preferencesDataStore(
+        name = "barberfish_ride",
+        corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+    )
 
 private val json = Json {
     ignoreUnknownKeys = true

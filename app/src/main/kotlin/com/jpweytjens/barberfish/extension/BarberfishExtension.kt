@@ -195,7 +195,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             }
         }
 
-    /** Our moving time and distance for the ride, null while no field on the profile reads it. */
+    /**
+     * Our moving time and distance for the ride. Null between rides, while no field on the profile
+     * reads it, until the first reading of a ride, and for the life of the service once the
+     * tracking has failed.
+     */
     val movingTimeAndDistance: StateFlow<MovingTimeAndDistance?> by lazy {
         applicationContext
             .movingTimeAndDistance(karooSystem, shutdownNotices)
