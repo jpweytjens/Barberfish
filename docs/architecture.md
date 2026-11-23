@@ -123,7 +123,7 @@ These fields read the pair:
 
 Distance, Elapsed Time, Paused Time, the lap times and Avg Speed (total) keep reading the Karoo's streams, so Distance stays equal to the Karoo's and to the FIT file.
 
-Two limits are accepted. Time is not counted while the Karoo has neither a speed reading nor moving distance, even if the rider was in fact riding. And since the streams carry no ride identifier, a ride that ends and a new one that starts while the extension is not running look like one ride.
+Two limits are accepted. Time is not counted while the Karoo has neither a speed reading nor moving distance, even if the rider was in fact riding. An indoor session with no speed sensor and no smart trainer is the plain case: Moving Time stays at zero for the whole ride, while Elapsed Time keeps counting. And since the streams carry no ride identifier, a ride that ends and a new one that starts while the extension is not running look like one ride.
 
 ---
 
