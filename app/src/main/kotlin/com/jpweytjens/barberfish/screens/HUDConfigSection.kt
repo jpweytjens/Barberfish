@@ -790,7 +790,7 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.HRMaxPercent -> {}
                 HUDSlotField.MaxHR -> {}
                 HUDSlotField.HRZone -> {}
-                HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
+                HUDSlotField.Speed -> HUDSpeedCard(slot, profile, onUpdate)
                 is HUDSlotField.AvgSpeed ->
                     AvgSpeedThresholdControls(
                         config = slot.avgSpeedThreshold,
@@ -947,7 +947,11 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
 }
 
 @Composable
-private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+private fun HUDSpeedCard(
+    slot: HUDSlotConfig,
+    profile: UserProfile,
+    onUpdate: (HUDSlotConfig) -> Unit,
+) {
     ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
@@ -955,6 +959,11 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
         label = { it.label },
         onSelected = { onUpdate(slot.copy(speedSmoothing = it)) },
         thumbIcon = R.drawable.ic_col_speed,
+    )
+    SpeedThresholdControls(
+        config = slot.speedThreshold,
+        profile = profile,
+        onConfigChange = { onUpdate(slot.copy(speedThreshold = it)) },
     )
 }
 

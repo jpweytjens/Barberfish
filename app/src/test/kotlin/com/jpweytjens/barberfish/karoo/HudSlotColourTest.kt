@@ -12,6 +12,8 @@ import com.jpweytjens.barberfish.extension.HUDScope
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.HUDSlots
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.FakeKarooHost
@@ -92,5 +94,31 @@ class HudSlotColourTest {
         assertFalse("colour mode None should not match Text", coloured.sameAs(plain))
         val colouredAgain = leftValue(slot.copy(colorMode = ZoneColorMode.TEXT))
         assertTrue("the same slot must draw the same value", coloured.sameAs(colouredAgain))
+    }
+
+    @Test
+    fun a_speed_slot_colours_against_its_threshold() {
+        // 36 km/h, well above a 30 km/h target.
+        point(DataType.Type.SPEED, DataType.Field.SPEED, 10.0)
+        val slot = HUDSlotConfig(field = HUDSlotField.Speed)
+        val coloured =
+            leftValue(slot.copy(speedThreshold = SpeedThresholdConfig(thresholdKph = 30.0)))
+        val plain = leftValue(slot.copy(speedThreshold = SpeedThresholdConfig(thresholdKph = 0.0)))
+        assertFalse("a threshold should colour the speed", coloured.sameAs(plain))
+    }
+
+    @Test
+    fun a_speed_slot_colours_against_the_running_average() {
+        // 18 km/h, well below the 30 km/h average, six minutes into the ride.
+        point(DataType.Type.SPEED, DataType.Field.SPEED, 5.0)
+        val slot = HUDSlotConfig(field = HUDSlotField.Speed)
+        val coloured =
+            leftValue(
+                slot.copy(
+                    speedThreshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING)
+                )
+            )
+        val plain = leftValue(slot)
+        assertFalse("the average should colour the speed", coloured.sameAs(plain))
     }
 }

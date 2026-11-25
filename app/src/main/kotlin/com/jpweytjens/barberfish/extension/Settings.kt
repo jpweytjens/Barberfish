@@ -131,6 +131,7 @@ data class HUDSlotConfig(
     val field: HUDSlotField = HUDSlotField.Power,
     val powerSmoothing: PowerSmoothingStream = PowerSmoothingStream.S3,
     val speedSmoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0,
+    val speedThreshold: SpeedThresholdConfig = SpeedThresholdConfig(),
     val cadenceSmoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0,
     val avgSpeedThreshold: AvgSpeedThresholdConfig = AvgSpeedThresholdConfig(),
     val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),

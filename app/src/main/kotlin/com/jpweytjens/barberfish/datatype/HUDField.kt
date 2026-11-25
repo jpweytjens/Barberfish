@@ -243,9 +243,11 @@ class HUDField(private val karooSystem: KarooSystemService) :
     ): Flow<FieldState> =
         when (slot.field) {
             HUDSlotField.Speed ->
-                karooSystem.streamDataFlow(slot.speedSmoothing.typeId).map {
-                    SpeedField.toFieldState(it, profile, slot.speedSmoothing)
-                }
+                SpeedField.streamFlow(
+                    karooSystem,
+                    SpeedFieldConfig(slot.speedSmoothing, slot.speedThreshold, slot.colorMode),
+                    profile,
+                )
             HUDSlotField.HR ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map {
                     HRField.toFieldState(it, profile, zones, slot.colorMode)
@@ -461,7 +463,14 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     HUDSlotField.HR ->
                         HRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                     HUDSlotField.Speed ->
-                        SpeedField.previewStates(SpeedFieldConfig(slotCfg.speedSmoothing), profile)
+                        SpeedField.previewStates(
+                            SpeedFieldConfig(
+                                slotCfg.speedSmoothing,
+                                slotCfg.speedThreshold,
+                                slotCfg.colorMode,
+                            ),
+                            profile,
+                        )
                     HUDSlotField.Cadence ->
                         CadenceField.previewStates(
                             CadenceFieldConfig(slotCfg.cadenceSmoothing, slotCfg.cadenceThreshold)
