@@ -26,6 +26,19 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
+private const val WARMUP_MS = 30_000.0
+
+// The running average as a speed threshold in display units, or 0.0 (coloring off) during warmup.
+// Warmup gate: ELAPSED_TIME (moving time) >= 30 s. ELAPSED_TIME excludes paused
+// time, so 30 s cumulative motion means the rider has actually moved — handles both
+// "first move" and "warmup elapsed" with one stateless check. Used regardless of
+// whether the source is total or moving avg.
+internal fun averageThreshold(
+    averageRawMs: Double,
+    movingMs: Double,
+    profile: UserProfile,
+): Double = if (movingMs >= WARMUP_MS) ConvertType.SPEED.apply(averageRawMs, profile) else 0.0
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class SpeedField(private val karooSystem: KarooSystemService) :
     BarberfishDataType("barberfish", "speed") {
@@ -34,7 +47,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
                 cfg to profile
             }
-            .flatMapLatest { (cfg, profile) -> coloredFlow(cfg, profile) }
+            .flatMapLatest { (cfg, profile) -> streamFlow(karooSystem, cfg, profile) }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
@@ -42,65 +55,48 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             }
             .flatMapLatest { (cfg, profile) -> cyclePreview(previewStates(cfg, profile)) }
 
-    private fun coloredFlow(cfg: SpeedFieldConfig, profile: UserProfile): Flow<FieldState> {
-        val liveFlow = karooSystem.streamDataFlow(cfg.smoothing.typeId)
-        return when (cfg.source) {
-            SpeedThresholdSource.FIXED -> {
-                val threshDisplay = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile)
-                liveFlow.map { state ->
-                    toFieldState(
-                        state,
-                        profile,
-                        cfg.smoothing,
-                        threshDisplay,
-                        cfg.rangePercentBelow,
-                        cfg.rangePercentAbove,
-                        cfg.colorMode,
-                    )
+    companion object {
+        // The live speed colored against its config's threshold. Shared between SpeedField and
+        // the HUD's speed slot.
+        fun streamFlow(
+            karooSystem: KarooSystemService,
+            config: SpeedFieldConfig,
+            profile: UserProfile,
+        ): Flow<FieldState> {
+            val liveFlow = karooSystem.streamDataFlow(config.smoothing.typeId)
+            val threshold = config.threshold
+            fun fieldState(state: StreamState, threshDisplay: Double) =
+                toFieldState(
+                    state,
+                    profile,
+                    config.smoothing,
+                    threshDisplay,
+                    threshold.rangePercentBelow,
+                    threshold.rangePercentAbove,
+                    config.colorMode,
+                )
+            return when (threshold.source) {
+                SpeedThresholdSource.FIXED -> {
+                    val threshDisplay = ConvertType.SPEED.toDisplay(threshold.thresholdKph, profile)
+                    liveFlow.map { state -> fieldState(state, threshDisplay) }
+                }
+                SpeedThresholdSource.AVG_TOTAL,
+                SpeedThresholdSource.AVG_MOVING -> {
+                    val includePaused = threshold.source == SpeedThresholdSource.AVG_TOTAL
+                    val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused)
+                    val movingFlow =
+                        karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
+                            (state as? StreamState.Streaming)
+                                ?.dataPoint
+                                ?.values
+                                ?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
+                        }
+                    combine(liveFlow, avgFlow, movingFlow) { state, avgRawMs, movingMs ->
+                        fieldState(state, averageThreshold(avgRawMs, movingMs, profile))
+                    }
                 }
             }
-            SpeedThresholdSource.AVG_TOTAL ->
-                avgColoredFlow(liveFlow, cfg, profile, includePaused = true)
-            SpeedThresholdSource.AVG_MOVING ->
-                avgColoredFlow(liveFlow, cfg, profile, includePaused = false)
         }
-    }
-
-    private fun avgColoredFlow(
-        liveFlow: Flow<StreamState>,
-        cfg: SpeedFieldConfig,
-        profile: UserProfile,
-        includePaused: Boolean,
-    ): Flow<FieldState> {
-        val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused)
-        // Warmup gate: ELAPSED_TIME (moving time) >= 30 s. ELAPSED_TIME excludes paused
-        // time, so 30 s cumulative motion means the rider has actually moved — handles both
-        // "first move" and "warmup elapsed" with one stateless check. Used regardless of
-        // whether the source is total or moving avg.
-        val elapsedFlow =
-            karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
-                (state as? StreamState.Streaming)
-                    ?.dataPoint
-                    ?.values
-                    ?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
-            }
-        return combine(liveFlow, avgFlow, elapsedFlow) { state, avgRawMs, elapsedMs ->
-            val threshDisplay =
-                if (elapsedMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
-            toFieldState(
-                state,
-                profile,
-                cfg.smoothing,
-                threshDisplay,
-                cfg.rangePercentBelow,
-                cfg.rangePercentAbove,
-                cfg.colorMode,
-            )
-        }
-    }
-
-    companion object {
-        private const val WARMUP_MS = 30_000.0
 
         fun toFieldState(
             state: StreamState,
@@ -145,9 +141,9 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             // preview. The warmup gate is intentionally NOT applied here — it would
             // suppress all coloring and defeat the point of the preview.
             val centerKph =
-                when (cfg.source) {
+                when (cfg.threshold.source) {
                     SpeedThresholdSource.FIXED ->
-                        if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
+                        if (cfg.threshold.thresholdKph > 0.0) cfg.threshold.thresholdKph else 25.0
                     SpeedThresholdSource.AVG_TOTAL,
                     SpeedThresholdSource.AVG_MOVING -> 25.0
                 }
@@ -157,14 +153,17 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 val rawMs = centerKph * (1.0 + pct) / 3.6
                 val converted = ConvertType.SPEED.apply(rawMs, profile)
                 val color =
-                    if (cfg.source == SpeedThresholdSource.FIXED && cfg.thresholdKph <= 0.0) {
+                    if (
+                        cfg.threshold.source == SpeedThresholdSource.FIXED &&
+                            cfg.threshold.thresholdKph <= 0.0
+                    ) {
                         FieldColor.Default
                     } else {
                         targetThresholdColor(
                             converted = converted,
                             threshDisplay = threshDisplay,
-                            rangePercentBelow = cfg.rangePercentBelow,
-                            rangePercentAbove = cfg.rangePercentAbove,
+                            rangePercentBelow = cfg.threshold.rangePercentBelow,
+                            rangePercentAbove = cfg.threshold.rangePercentAbove,
                         )
                     }
                 FieldState(

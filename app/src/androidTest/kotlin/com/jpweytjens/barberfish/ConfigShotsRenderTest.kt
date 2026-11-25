@@ -50,7 +50,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
-import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.TimeConfig
 import com.jpweytjens.barberfish.extension.ZoneColorMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
@@ -451,7 +451,7 @@ class ConfigShotsRenderTest {
     fun thresholdControls() {
         setShotContent {
             SpeedThresholdControls(
-                config = SpeedFieldConfig(thresholdKph = 30.0),
+                config = SpeedThresholdConfig(thresholdKph = 30.0),
                 profile = shotProfile,
                 onConfigChange = {},
             )

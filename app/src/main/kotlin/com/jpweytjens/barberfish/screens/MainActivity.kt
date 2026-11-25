@@ -175,6 +175,7 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -974,11 +975,11 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                             SpeedThresholdControls(
-                                config = speedFieldConfig,
+                                config = speedFieldConfig.threshold,
                                 profile = userProfile,
                                 onConfigChange = { cfg ->
-                                    speedFieldConfig = cfg
-                                    lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
+                                    speedFieldConfig = speedFieldConfig.copy(threshold = cfg)
+                                    lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
                                 },
                             )
                         }
@@ -2318,9 +2319,9 @@ private val SPEED_THRESHOLD_SOURCE_OPTIONS =
 
 @Composable
 internal fun SpeedThresholdControls(
-    config: SpeedFieldConfig,
+    config: SpeedThresholdConfig,
     profile: UserProfile,
-    onConfigChange: (SpeedFieldConfig) -> Unit,
+    onConfigChange: (SpeedThresholdConfig) -> Unit,
 ) {
     ControlLabel("THRESHOLD SOURCE")
     SegmentedRow(

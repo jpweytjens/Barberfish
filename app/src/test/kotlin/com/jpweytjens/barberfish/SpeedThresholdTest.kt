@@ -1,18 +1,27 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.SpeedField
+import com.jpweytjens.barberfish.datatype.averageThreshold
+import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ZoneColorMode
+import io.hammerhead.karooext.models.DataPoint
+import io.hammerhead.karooext.models.StreamState
 import io.hammerhead.karooext.models.UserProfile
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SpeedThresholdTest {
+
+    // Decodes the way the settings store does: unknown keys are skipped.
+    private val lenientJson = Json { ignoreUnknownKeys = true }
 
     private val metricProfile =
         UserProfile(
@@ -91,8 +100,7 @@ class SpeedThresholdTest {
         val cfg =
             SpeedFieldConfig(
                 smoothing = SpeedSmoothingStream.S3,
-                source = SpeedThresholdSource.FIXED,
-                thresholdKph = 0.0,
+                threshold = SpeedThresholdConfig(thresholdKph = 0.0),
             )
         val states = SpeedField.previewStates(cfg, metricProfile)
         assertTrue(states.isNotEmpty())
@@ -104,8 +112,7 @@ class SpeedThresholdTest {
         val cfg =
             SpeedFieldConfig(
                 smoothing = SpeedSmoothingStream.S3,
-                source = SpeedThresholdSource.FIXED,
-                thresholdKph = 30.0,
+                threshold = SpeedThresholdConfig(thresholdKph = 30.0),
             )
         val states = SpeedField.previewStates(cfg, metricProfile)
         val thresholds = states.mapNotNull { it.color as? FieldColor.Threshold }
@@ -123,7 +130,7 @@ class SpeedThresholdTest {
         val cfg =
             SpeedFieldConfig(
                 smoothing = SpeedSmoothingStream.S3,
-                source = SpeedThresholdSource.AVG_TOTAL,
+                threshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_TOTAL),
             )
         val states = SpeedField.previewStates(cfg, metricProfile)
         assertTrue(states.all { it.color is FieldColor.Threshold })
@@ -134,7 +141,7 @@ class SpeedThresholdTest {
         val cfg =
             SpeedFieldConfig(
                 smoothing = SpeedSmoothingStream.S3,
-                source = SpeedThresholdSource.AVG_MOVING,
+                threshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING),
             )
         val states = SpeedField.previewStates(cfg, metricProfile)
         assertTrue(states.all { it.color is FieldColor.Threshold })
@@ -145,12 +152,65 @@ class SpeedThresholdTest {
         val cfg =
             SpeedFieldConfig(
                 smoothing = SpeedSmoothingStream.S3,
-                source = SpeedThresholdSource.FIXED,
-                thresholdKph = 30.0,
+                threshold = SpeedThresholdConfig(thresholdKph = 30.0),
                 colorMode = ZoneColorMode.BACKGROUND,
             )
         val states = SpeedField.previewStates(cfg, metricProfile)
         assertTrue(states.isNotEmpty())
         assertTrue(states.all { it.colorMode == ZoneColorMode.BACKGROUND })
+    }
+
+    // --- averageThreshold: the running average as a threshold, gated on moving time ---
+
+    @Test
+    fun average_threshold_is_off_before_thirty_seconds_moving() {
+        assertEquals(0.0, averageThreshold(7.0, 29_999.0, metricProfile), 0.0)
+    }
+
+    @Test
+    fun average_threshold_is_the_average_after_warmup() {
+        assertEquals(25.2, averageThreshold(7.0, 30_000.0, metricProfile), 0.001)
+    }
+
+    // --- units: the stored km/h threshold meets a display value in mph ---
+
+    @Test
+    fun imperial_threshold_at_target_is_neutral() {
+        val imperial =
+            metricProfile.copy(
+                preferredUnit =
+                    metricProfile.preferredUnit.copy(
+                        distance = UserProfile.PreferredUnit.UnitType.IMPERIAL
+                    )
+            )
+        val smoothing = SpeedSmoothingStream.S0
+        val state =
+            StreamState.Streaming(
+                DataPoint(smoothing.typeId, mapOf(smoothing.fieldId to 30.0 / 3.6))
+            )
+        val field =
+            SpeedField.toFieldState(
+                state,
+                imperial,
+                smoothing,
+                threshDisplay = ConvertType.SPEED.toDisplay(30.0, imperial),
+            )
+        assertEquals(0f, (field.color as FieldColor.Threshold).factor, 0.001f)
+    }
+
+    // --- saved settings: the flat shape from before the threshold was split out ---
+
+    @Test
+    fun old_flat_config_keeps_smoothing_and_colour_mode() {
+        val old =
+            """{"smoothing":"S5","source":"AVG_TOTAL","thresholdKph":30.0,"colorMode":"BACKGROUND"}"""
+        val decoded = lenientJson.decodeFromString<SpeedFieldConfig>(old)
+        assertEquals(
+            SpeedFieldConfig(
+                smoothing = SpeedSmoothingStream.S5,
+                colorMode = ZoneColorMode.BACKGROUND,
+            ),
+            decoded,
+        )
     }
 }
