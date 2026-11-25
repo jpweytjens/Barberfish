@@ -22,6 +22,11 @@ android {
         versionCode = 14
         versionName = "4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // The road matching engine is native code. Package it for the two processor types the
+        // Karoos run, and not for the emulator types it also ships. Lint asks for x86_64 for
+        // ChromeOS, where a Karoo extension never runs.
+        //noinspection ChromeOsAbiSupport
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         // Update channel: the Karoo polls this manifest for new versions.
         // Beta builds override it via MANIFEST_URL to point at the betafish repo.
         manifestPlaceholders["manifestUrl"] = System.getenv("MANIFEST_URL")
@@ -134,6 +139,9 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
+    implementation(libs.valhalla.mobile)
+    implementation(libs.valhalla.models)
+    implementation(libs.valhalla.models.config)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
