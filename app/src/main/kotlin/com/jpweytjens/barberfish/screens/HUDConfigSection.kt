@@ -763,9 +763,9 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
                 is HUDSlotField.AvgSpeed ->
                     AvgSpeedThresholdControls(
-                        config = slot.avgSpeedConfig,
+                        config = slot.avgSpeedThreshold,
                         profile = profile,
-                        onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
+                        onConfigChange = { onUpdate(slot.copy(avgSpeedThreshold = it)) },
                     )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)

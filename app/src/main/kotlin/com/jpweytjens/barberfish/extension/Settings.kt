@@ -132,7 +132,7 @@ data class HUDSlotConfig(
     val powerSmoothing: PowerSmoothingStream = PowerSmoothingStream.S3,
     val speedSmoothing: SpeedSmoothingStream = SpeedSmoothingStream.S0,
     val cadenceSmoothing: CadenceSmoothingStream = CadenceSmoothingStream.S0,
-    val avgSpeedConfig: AvgSpeedConfig = AvgSpeedConfig(),
+    val avgSpeedThreshold: AvgSpeedThresholdConfig = AvgSpeedThresholdConfig(),
     val cadenceThreshold: CadenceThresholdConfig = CadenceThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
     val zoneDisplayMode: ZoneDisplayMode = ZoneDisplayMode.FLOAT,
@@ -586,7 +586,7 @@ fun Context.streamSpeedFieldConfig(): Flow<SpeedFieldConfig> =
 suspend fun Context.saveSpeedFieldConfig(config: SpeedFieldConfig) =
     saveConfig(speedFieldConfigKey, config)
 
-// --- AvgSpeedConfig ---
+// --- AvgSpeedFieldConfig ---
 
 // All speed values stored in km/h; converted to the user's preferred unit at display time.
 // TARGET mode: thresholdKph = 0.0 means disabled.
@@ -599,23 +599,28 @@ enum class ThresholdMode {
 }
 
 @Serializable
-data class AvgSpeedConfig(
+data class AvgSpeedThresholdConfig(
     val mode: ThresholdMode = ThresholdMode.TARGET,
     val thresholdKph: Double = 0.0,
     val rangePercentAbove: Double = 10.0,
     val rangePercentBelow: Double = 10.0,
     val minKph: Double? = null,
     val maxKph: Double? = null,
+)
+
+@Serializable
+data class AvgSpeedFieldConfig(
+    val threshold: AvgSpeedThresholdConfig = AvgSpeedThresholdConfig(),
     val colorMode: ZoneColorMode = ZoneColorMode.TEXT,
 )
 
-fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedConfig> =
+fun Context.streamAvgSpeedConfig(includePaused: Boolean): Flow<AvgSpeedFieldConfig> =
     streamConfig(
         if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey,
-        AvgSpeedConfig(),
+        AvgSpeedFieldConfig(),
     )
 
-suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedConfig) =
+suspend fun Context.saveAvgSpeedConfig(includePaused: Boolean, config: AvgSpeedFieldConfig) =
     saveConfig(
         if (includePaused) avgSpeedTotalConfigKey else avgSpeedMovingConfigKey,
         config,
@@ -997,8 +1002,8 @@ data class ConfigSnapshot(
     val powerZoneField: PowerZoneFieldConfig,
     val maxPowerField: MaxPowerFieldConfig,
     val gradeField: GradeFieldConfig,
-    val avgSpeedTotal: AvgSpeedConfig,
-    val avgSpeedMoving: AvgSpeedConfig,
+    val avgSpeedTotal: AvgSpeedFieldConfig,
+    val avgSpeedMoving: AvgSpeedFieldConfig,
     val time: TimeConfig,
     val eta: ETAConfig,
     val effortField: EffortFieldConfig,
@@ -1036,8 +1041,8 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 powerZoneField = prefs.config(powerZoneFieldConfigKey, PowerZoneFieldConfig()),
                 maxPowerField = prefs.config(maxPowerFieldConfigKey, MaxPowerFieldConfig()),
                 gradeField = prefs.config(gradeFieldConfigKey, GradeFieldConfig()),
-                avgSpeedTotal = prefs.config(avgSpeedTotalConfigKey, AvgSpeedConfig()),
-                avgSpeedMoving = prefs.config(avgSpeedMovingConfigKey, AvgSpeedConfig()),
+                avgSpeedTotal = prefs.config(avgSpeedTotalConfigKey, AvgSpeedFieldConfig()),
+                avgSpeedMoving = prefs.config(avgSpeedMovingConfigKey, AvgSpeedFieldConfig()),
                 time = prefs.config(timeConfigKey, TimeConfig()),
                 eta = prefs.config(etaConfigKey, ETAConfig()),
                 effortField = prefs.config(effortFieldConfigKey, EffortFieldConfig()),

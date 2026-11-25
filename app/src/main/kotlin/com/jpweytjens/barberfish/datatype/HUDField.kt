@@ -15,6 +15,7 @@ import com.jpweytjens.barberfish.datatype.shared.onRenderTick
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.datatype.shared.whileOn
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
+import com.jpweytjens.barberfish.extension.AvgSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
@@ -401,7 +402,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(
                     karooSystem,
-                    slot.avgSpeedConfig,
+                    AvgSpeedFieldConfig(slot.avgSpeedThreshold, slot.colorMode),
                     profile,
                     slot.field.includePaused,
                 )
@@ -467,7 +468,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         )
                     is HUDSlotField.AvgSpeed ->
                         AvgSpeedField.previewStates(
-                            slotCfg.avgSpeedConfig,
+                            AvgSpeedFieldConfig(slotCfg.avgSpeedThreshold, slotCfg.colorMode),
                             profile,
                             field.includePaused,
                         )
