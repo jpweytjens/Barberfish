@@ -322,6 +322,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         riderFix ?: d.index.gps.first(),
                         d.viewRadiusM,
                         d.chevronLookaheadM,
+                        d.specs.chevronRoad,
                     ),
                     d.iconRes,
                 )

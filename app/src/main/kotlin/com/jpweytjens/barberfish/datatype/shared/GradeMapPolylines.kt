@@ -70,6 +70,8 @@ internal data class GradeMapSpecs(
     val chevrons: List<ClimbChevronSpec>,
     val segmentIdSpan: Int = 0,
     val chevronIdSpan: Int = 0,
+    /** Set when the band follows a matched road: moves a drawn chevron onto it. */
+    val chevronRoad: ChevronRoad? = null,
 )
 
 /** Axis-aligned viewport bounding box in lat/lng. */
@@ -316,6 +318,7 @@ internal fun buildGradeMapSpecs(
     reversed: Boolean = false,
     metresPerPixel: Double = 0.0,
     routeIndex: RouteIndex? = null,
+    matchedRoadLine: MatchedRoadLine? = null,
 ): GradeMapSpecs {
     if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
         return GradeMapSpecs(emptyList(), emptyList())
@@ -324,6 +327,9 @@ internal fun buildGradeMapSpecs(
     val gps = if (reversed) decoded.asReversed() else decoded
     if (gps.size < 2) return GradeMapSpecs(emptyList(), emptyList())
     val cumDist = cumulativeDistancesM(gps)
+    // A matched line belongs to one route line. One built for another route is dropped here,
+    // where it would be used, so it can never move this route's band.
+    val road = matchedRoadLine?.takeIf { it.points == decoded }
     val rawElev = decodeElevationPolyline(routeElevationPolyline)
     if (rawElev.isEmpty()) return GradeMapSpecs(emptyList(), emptyList())
     val elevPoints =
@@ -384,8 +390,13 @@ internal fun buildGradeMapSpecs(
             drawnExtent(piece.startM, piece.endM, atRouteStart, atRouteEnd, capTrimM)
         val (casingStart, casingEnd) =
             drawnExtent(piece.startM, piece.endM, atRouteStart, atRouteEnd, casingCapTrimM)
-        val sub = extractSubPolyline(gps, cumDist, drawStart, drawEnd)
-        val casingSub = extractSubPolyline(gps, cumDist, casingStart, casingEnd)
+        // The one step a matched road changes: turning a piece's distances into coordinates.
+        val sub =
+            road?.pointsBetween(drawStart, drawEnd, reversed)
+                ?: extractSubPolyline(gps, cumDist, drawStart, drawEnd)
+        val casingSub =
+            road?.pointsBetween(casingStart, casingEnd, reversed)
+                ?: extractSubPolyline(gps, cumDist, casingStart, casingEnd)
         if (sub.size >= 2 && casingSub.size >= 2) {
             polylines +=
                 GradeMapPolylineSpec(
@@ -468,5 +479,6 @@ internal fun buildGradeMapSpecs(
         chevrons = filteredChevrons,
         segmentIdSpan = pieces.size,
         chevronIdSpan = chevronPlacements.size,
+        chevronRoad = road?.let { ChevronRoad(it, chevronWindowHalfM, reversed) },
     )
 }
