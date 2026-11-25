@@ -17,6 +17,7 @@ Fields:
 Grade map and Overview:
 - Both now follow a route to a dropped pin or POI, as the HUD profile already did
 - The grade map has a Width setting. Narrow is as thin as the Karoo's route line and leaves the arrows to the Karoo, Medium is the width it had, and Wide also covers the larger arrows the Karoo draws just ahead of you. Thanks to alessandrovalenti for the request.
+- The grade map can follow the road through bends and hairpins, where it used to cut the corner. Turn on Follow the road in the Grade Map card. It uses the offline maps on your Karoo, so Android asks for access to photos and media, which is where those maps are stored
 
 Battery:
 - With the grade map, the HUD's profile strip or the fourth HUD column turned off, Barberfish no longer reads the data behind them

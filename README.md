@@ -58,6 +58,8 @@ Tested back to firmware 1.618.2377.20 on Karoo 3 and 1.613.2351.12 on Karoo 2. N
 
 Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Design settings do not. [Match Barberfish to your Karoo](docs/matching-karoo.md) shows how to mirror them.
 
+Barberfish asks for one permission, and only if you turn on the grade map's [Follow the road](docs/grade-map.md#following-the-road) setting: access to photos and media, which is where the Karoo stores its offline maps.
+
 ## Installation
 
 1. On your phone, download the latest [barberfish.apk](https://github.com/jpweytjens/barberfish/releases/latest/download/barberfish.apk).
@@ -76,6 +78,7 @@ New features reach [Betafish](https://github.com/jpweytjens/Betafish), the beta 
 - [awesome-karoo](https://github.com/timklge/awesome-karoo): a curated list of Karoo extensions and resources
 - [Hammerhead Visual Data Field System](https://www.figma.com/design/Adr23SlulPNE2RBu1VI28C/%3CH%3E-Visual-Data-Field-System?node-id=1-64&p=f): the Figma design guide used to match the native Karoo look and feel
 - [Edward Tufte](https://www.edwardtufte.com/): the sparkline behind the elevation profile
+- [Valhalla](https://github.com/valhalla/valhalla) and [valhalla-mobile](https://github.com/Rallista/valhalla-mobile): the routing engine that finds the road under a route, for the grade map
 - The Karoo community on [Reddit](https://www.reddit.com/r/Karoo/) and the [Hammerhead forums](https://support.hammerhead.io/hc/en-us/community/topics): feedback and suggestions
 
 ## Contributing
@@ -88,4 +91,4 @@ Bug reports, feature requests and pull requests are welcome on [GitHub](https://
 
 ## License
 
-Released under the [Apache License 2.0](LICENSE).
+Released under the [Apache License 2.0](LICENSE). The app also packages Valhalla and valhalla-mobile, under the MIT License; their notices are in [THIRD_PARTY_NOTICES.txt](app/src/main/assets/THIRD_PARTY_NOTICES.txt).

@@ -45,3 +45,12 @@ An extension can only draw on top of the Karoo's route line, never in its place,
 | Simplification | Off / Mild / Medium / Max | Floor on the smallest bump the band keeps ([Simplification](algorithms.md#simplification)). |
 | Width | Narrow / Medium / Wide | Narrow is as thin as the Karoo's route line and draws no chevrons: just ahead of you, the Karoo's arrows stick out on both sides. Medium draws its own chevrons and covers most of the Karoo's arrows. Wide covers them fully, at the cost of a wider band. |
 | Chevron spacing | Gradient / Balanced / Changes | Bunch chevrons on the steepest road, where the gradient shifts, or in between. |
+| Follow the road | Off / On | Draw the band along the road through bends, where the Karoo has offline maps ([Following the road](#following-the-road)). |
+
+## Following the road
+
+The route line the Karoo hands to an extension has a point every 40 m or so, joined by straight lines. In a hairpin those straight lines cut the corner, so the band leaves the road the map shows and, at the Narrow width, leaves the Karoo's own line with it. With Follow the road on, the band is drawn along the road itself, and its chevrons sit on it.
+
+The road comes from the offline maps on the Karoo, the same ones it navigates with, and is looked up on the device. The band starts on the straight lines and moves onto the road a few seconds later, first around you and then along the rest of the route. Where no offline map is downloaded, or the route leaves the roads the map knows, the band keeps its straight lines for that stretch. Colors, grades and distances are the same either way.
+
+Turning the setting on makes Android ask for access to photos and media. That is the name Android gives to the shared storage where the Karoo keeps its offline maps; Barberfish reads the maps there and nothing else. If you decline, the setting stays off. Follow the road is off by default.
