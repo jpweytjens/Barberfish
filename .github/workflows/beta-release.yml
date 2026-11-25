@@ -92,6 +92,14 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
 
+      # The build strips the road matching engine's library only when the NDK is installed;
+      # unstripped, the release is over ten times its size and the build refuses it.
+      - name: Install the NDK
+        run: |
+          NDK_VERSION=$(sed -n 's/.*ndkVersion = "\(.*\)".*/\1/p' app/build.gradle.kts)
+          test -n "$NDK_VERSION"
+          sdkmanager --install "ndk;$NDK_VERSION"
+
       - name: Run unit tests
         env:
           USERNAME: ${{ github.actor }}
