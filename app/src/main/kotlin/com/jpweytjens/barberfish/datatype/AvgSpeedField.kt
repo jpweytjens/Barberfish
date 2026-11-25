@@ -3,9 +3,9 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
+import com.jpweytjens.barberfish.datatype.shared.minMaxThresholdColor
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.AvgSpeedConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
@@ -39,44 +39,14 @@ internal fun avgSpeedFieldState(
                     rangePercentBelow = cfg.rangePercentBelow,
                     rangePercentAbove = cfg.rangePercentAbove,
                 )
-            ThresholdMode.MIN_MAX -> {
-                val min = cfg.minKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
-                val max = cfg.maxKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
-                if (min == null && max == null) {
-                    FieldColor.Default
-                } else {
-                    val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
-                    val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
-                    val hasSafeZone = min != null && max != null
-                    when {
-                        min != null && converted < min -> {
-                            val outsideFactor =
-                                ((min - converted) / bandBelow).coerceIn(0.0, 1.0).toFloat()
-                            FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                        }
-                        max != null && converted > max -> {
-                            val outsideFactor =
-                                ((converted - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
-                            FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                        }
-                        else -> {
-                            val nearMin =
-                                if (min != null && bandBelow > 0.0)
-                                    (1.0 - (converted - min) / bandBelow)
-                                        .coerceIn(0.0, 1.0)
-                                        .toFloat()
-                                else 0f
-                            val nearMax =
-                                if (max != null && bandAbove > 0.0)
-                                    (1.0 - (max - converted) / bandAbove)
-                                        .coerceIn(0.0, 1.0)
-                                        .toFloat()
-                                else 0f
-                            FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
-                        }
-                    }
-                }
-            }
+            ThresholdMode.MIN_MAX ->
+                minMaxThresholdColor(
+                    value = converted,
+                    min = cfg.minKph?.let { ConvertType.SPEED.toDisplay(it, profile) },
+                    max = cfg.maxKph?.let { ConvertType.SPEED.toDisplay(it, profile) },
+                    rangePercentBelow = cfg.rangePercentBelow,
+                    rangePercentAbove = cfg.rangePercentAbove,
+                )
         }
     return FieldState(
         primary = "%.1f".format(Locale.ROOT, converted),
