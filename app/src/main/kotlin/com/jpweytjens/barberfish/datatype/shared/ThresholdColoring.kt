@@ -1,5 +1,7 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import kotlin.math.sign
+
 // Target-style threshold coloring: fade from neutral at the threshold to a fully colored
 // edge at +/- rangePercent% of the threshold. Both inputs are expected in the same display
 // unit (caller does any unit conversion). A non-positive threshold disables coloring.
@@ -11,11 +13,12 @@ internal fun targetThresholdColor(
 ): FieldColor {
     if (threshDisplay <= 0.0) return FieldColor.Default
     val rangePercent = if (converted >= threshDisplay) rangePercentAbove else rangePercentBelow
+    val offsetPercent = (converted - threshDisplay) / threshDisplay * 100.0
+    // A range of 0 % or less leaves no fade: fully colored on either side, neutral on the target.
     val factor =
-        ((converted - threshDisplay) / threshDisplay * 100.0 / rangePercent)
-            .coerceIn(-1.0, 1.0)
-            .toFloat()
-    return FieldColor.Threshold(factor)
+        if (rangePercent > 0.0) (offsetPercent / rangePercent).coerceIn(-1.0, 1.0)
+        else sign(offsetPercent)
+    return FieldColor.Threshold(factor.toFloat())
 }
 
 // Min/max threshold coloring: inside [min, max] the color warms toward the nearer bound, outside
@@ -51,7 +54,7 @@ internal fun minMaxThresholdColor(
 
 // The width of the fade at a bound: rangePercent% of the bound, 0 without one.
 private fun band(bound: Double?, rangePercent: Double): Double =
-    bound?.let { it * rangePercent / 100.0 } ?: 0.0
+    bound?.let { it * rangePercent.coerceAtLeast(0.0) / 100.0 } ?: 0.0
 
 // 1 at the bound, falling to 0 a full band inside it; 0 when the bound or its band is absent.
 private fun borderProximity(distanceInside: Double?, band: Double): Float =

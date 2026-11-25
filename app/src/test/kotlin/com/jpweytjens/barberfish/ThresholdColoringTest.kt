@@ -2,6 +2,7 @@ package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.minMaxThresholdColor
+import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -54,5 +55,34 @@ class ThresholdColoringTest {
     fun zero_range_below_min_is_fully_outside() {
         val danger = color(82.0, rangePercent = 0.0) as FieldColor.DangerZone
         assertEquals(1f, danger.outsideFactor, 0f)
+    }
+
+    @Test
+    fun negative_range_below_min_is_fully_outside() {
+        val danger = color(82.0, rangePercent = -10.0) as FieldColor.DangerZone
+        assertEquals(1f, danger.outsideFactor, 0f)
+    }
+
+    // --- target rule: a range of 0 % or less leaves no fade, only the two sides ---
+
+    private fun targetFactor(value: Double, rangePercent: Double) =
+        (targetThresholdColor(value, 30.0, rangePercent, rangePercent) as FieldColor.Threshold)
+            .factor
+
+    @Test
+    fun zero_range_at_the_target_is_neutral() {
+        assertEquals(0f, targetFactor(30.0, 0.0), 0f)
+    }
+
+    @Test
+    fun zero_range_off_the_target_is_fully_coloured() {
+        assertEquals(1f, targetFactor(30.1, 0.0), 0f)
+        assertEquals(-1f, targetFactor(29.9, 0.0), 0f)
+    }
+
+    @Test
+    fun negative_range_does_not_swap_the_sides() {
+        assertEquals(1f, targetFactor(31.0, -10.0), 0f)
+        assertEquals(-1f, targetFactor(29.0, -10.0), 0f)
     }
 }
