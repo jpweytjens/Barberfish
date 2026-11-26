@@ -278,9 +278,11 @@ class GradeMapFollowRoadTest {
         val seen = CopyOnWriteArrayList<RoadFollowStatus>()
         val watching = CoroutineScope(Dispatchers.Unconfined)
         watching.launch { roadFollowStatus.collect { seen += it } }
-        val before = karoo.system.consumerCount
         gate = CountDownLatch(1)
         save(KarooFilesConfig(true))
+        // With the switch on the service reads navigation for the rejoin line, map page or not.
+        awaitTrue { karoo.system.consumerParams.any { it is OnNavigationState.Params } }
+        val before = karoo.system.consumerCount
         karoo.system.setNavigation(climbRoute().navigating())
         val map = host.startMap()
         // The old route's match is still running when the map page closes.

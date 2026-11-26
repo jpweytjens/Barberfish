@@ -74,6 +74,7 @@ import io.hammerhead.karooext.models.StreamState
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -81,10 +82,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import timber.log.Timber
 
 // Chevron cadence: on-device-tunable placeholders driving placeChevronsByCadence's
@@ -191,6 +195,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     }
                 }
             }
+            if (rejoinJob?.isActive != true) {
+                rejoinJob = roadScope.launch {
+                    rejoinWanted().distinctUntilChanged().collect { rejoinFollower.follow(it) }
+                }
+            }
         }
     }
 
@@ -198,9 +207,49 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
     // so a map page reopened on the same route keeps the road already matched (a piece takes
     // seconds), and matching carries on while the map page is closed.
     private val roadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // One engine at a time: both followers take this one lock around every match.
+    private val oneMatch = Mutex()
     private val roadFollower by lazy {
-        RoadFollower(roadMatcherFactory(applicationContext), roadScope, roadWanted())
+        RoadFollower(
+            roadMatcherFactory(applicationContext),
+            roadScope,
+            roadWanted(),
+            oneMatch = oneMatch,
+        )
     }
+
+    // The process's one writer of [rejoinRoad].
+    private val rejoinFollower by lazy {
+        RejoinFollower(roadMatcherFactory(applicationContext), roadScope, oneMatch)
+    }
+    private var rejoinJob: Job? = null
+
+    // The one statement of when the rejoin line is matched: while the rider is off a loaded route
+    // and Barberfish may read the Karoo's files, grade map on or off. Navigation is read only
+    // while files may be read, so with the switch off the service holds no consumer for it.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun rejoinWanted(): Flow<RejoinTarget?> =
+        applicationContext.streamKarooFilesConfig().flatMapLatest { files ->
+            if (!applicationContext.mayReadKarooFiles(files)) {
+                flowOf(null)
+            } else {
+                karooSystem.streamNavigationState().map { nav ->
+                    nav.state
+                        .followedRoute()
+                        ?.takeIf { it.destination == null }
+                        ?.let { route ->
+                            route.rejoinPolyline?.let {
+                                RejoinTarget(
+                                    rejoinPolyline = it,
+                                    route = RouteLine(route.polyline, route.reversed),
+                                    routeElevationPolyline = route.elevationPolyline,
+                                )
+                            }
+                        }
+                }
+            }
+        }
 
     // The one statement of when a road is followed: the route being ridden, while the grade map
     // is on and Barberfish may read the Karoo's files. The follower reads it in the service's own
@@ -219,6 +268,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
 
     override fun onDestroy() {
         roadFollower.stop()
+        rejoinFollower.stop()
         roadScope.cancel()
         discoveryScope.cancel()
         karooSystem.disconnect()
