@@ -133,6 +133,25 @@ class RoadFollowerTest {
     }
 
     @Test
+    fun a_road_that_cannot_be_read_costs_its_piece_and_nothing_else() = runTest {
+        val broken =
+            object : AbstractList<LatLng>() {
+                override val size = 5
+
+                override fun get(index: Int): LatLng = error("unreadable road")
+            }
+        val matcher = FakeMatcher { call, points ->
+            if (call == 0) MatchedRoad(broken) else MatchedRoad(points)
+        }
+        val follower = follower(matcher)
+        follower.follow(routeA, false, 0.0)
+        runCurrent()
+        assertEquals(3, matcher.calls.size)
+        assertEquals(1200 - 200, follower.line.value!!.followingChords)
+        assertEquals(RoadFollowStatus.FOLLOWING, status.value)
+    }
+
+    @Test
     fun no_answer_at_all_ends_as_no_map() = runTest {
         val matcher = FakeMatcher { _, _ -> null }
         val follower = follower(matcher)

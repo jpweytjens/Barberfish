@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.extension
 
 import com.jpweytjens.barberfish.datatype.shared.MatchPiece
+import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.datatype.shared.alignChords
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
+import timber.log.Timber
 
 /** What matching has given the route being followed. */
 internal enum class RoadFollowStatus {
@@ -108,6 +110,29 @@ internal class RoadFollower(
             current === token
         }
 
+    /**
+     * [line] with [piece]'s chords laid onto [road]. The whole matched stretch is laid onto the
+     * road and only the piece's own chords are kept: the overlap is there to let the match settle,
+     * not to be drawn.
+     */
+    // Suppressed: this runs in the service's process, which hosts every field. A road that
+    // cannot be laid out, whatever the reason, must cost its piece and nothing else.
+    @Suppress("TooGenericExceptionCaught")
+    private fun withPiece(
+        line: MatchedRoadLine,
+        cumDist: DoubleArray,
+        piece: MatchPiece,
+        road: MatchedRoad,
+    ): MatchedRoadLine =
+        try {
+            val chords = alignChords(line.points, cumDist, piece.points, road)
+            val skipped = piece.chords.first - piece.points.first
+            line.with(piece.chords.first, chords.subList(skipped, skipped + piece.chords.count()))
+        } catch (e: RuntimeException) {
+            Timber.w(e, "could not lay a matched piece onto its road")
+            line
+        }
+
     private suspend fun matchPieces(token: Any, route: RouteLine, riderM: Double) {
         val points = decodeGpsPolyline(route.polyline)
         val cumDist = cumulativeDistancesM(points)
@@ -123,17 +148,7 @@ internal class RoadFollower(
             val road = oneMatch.withLock {
                 matcher.match(points.subList(piece.points.first, piece.points.last + 1))
             }
-            if (road != null) {
-                // Lay the whole matched stretch onto the road, then keep the piece's own
-                // chords: the overlap is there to let the match settle, not to be drawn.
-                val chords = alignChords(points, cumDist, piece.points, road)
-                val skipped = piece.chords.first - piece.points.first
-                mine =
-                    mine.with(
-                        piece.chords.first,
-                        chords.subList(skipped, skipped + piece.chords.count()),
-                    )
-            }
+            if (road != null) mine = withPiece(mine, cumDist, piece, road)
             val following = mine.followingChords > 0
             val live =
                 publish(
