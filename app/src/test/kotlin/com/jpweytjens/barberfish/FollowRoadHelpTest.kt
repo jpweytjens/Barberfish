@@ -7,15 +7,13 @@ import org.junit.Test
 
 /** The help line under FOLLOW THE ROAD, word for word. */
 class FollowRoadHelpTest {
-    private val off =
-        "Draws the band along the road in bends, from the Karoo's offline maps. " +
-            "Android will ask for access to photos and media: that is where the maps are stored."
-    private val waiting = "The band follows the road where the Karoo has offline maps."
-    private val following = "Following the road."
-    private val noMap = "No offline map for this area; bends are cut straight here."
+    private val explanation = "Closely takes the road's shape from the Karoo's offline maps."
+    private val willAsk =
+        "$explanation Android will ask for access to photos and media, where the maps are stored."
+    private val noMap = "No offline map for this route, so the band follows it loosely."
     private val storage =
-        "Storage access is off. Allow it for Barberfish in the Karoo's app settings."
-    private val unavailable = "Not available on this Karoo."
+        "Storage access is off: allow it for Barberfish in the Karoo's app settings."
+    private val unavailable = "Closely is not available on this Karoo."
 
     private fun help(
         on: Boolean = true,
@@ -25,29 +23,31 @@ class FollowRoadHelpTest {
     ) = followRoadHelp(on, supported, storageGranted, status)
 
     @Test
-    fun off_explains_what_it_does_and_what_android_will_ask() {
-        assertEquals(off, help(on = false))
-        assertEquals(off, help(on = false, storageGranted = false))
-        assertEquals(off, help(on = false, status = RoadFollowStatus.FOLLOWING))
+    fun with_access_the_explanation_is_the_same_on_loosely_and_closely() {
+        assertEquals(explanation, help(on = false))
+        assertEquals(explanation, help(on = true, status = RoadFollowStatus.IDLE))
+        assertEquals(explanation, help(on = true, status = RoadFollowStatus.FOLLOWING))
     }
 
     @Test
-    fun on_with_nothing_matched_yet_says_where_it_will_follow() {
-        assertEquals(waiting, help(status = RoadFollowStatus.IDLE))
+    fun on_loosely_without_access_it_adds_what_android_will_ask() {
+        RoadFollowStatus.entries.forEach {
+            assertEquals(willAsk, help(on = false, storageGranted = false, status = it))
+        }
     }
 
     @Test
-    fun on_with_a_road_says_it_is_following() {
-        assertEquals(following, help(status = RoadFollowStatus.FOLLOWING))
+    fun on_loosely_a_route_without_a_map_is_not_reported() {
+        assertEquals(explanation, help(on = false, status = RoadFollowStatus.NO_MAP))
     }
 
     @Test
-    fun on_with_no_road_anywhere_says_there_is_no_offline_map() {
+    fun on_closely_with_no_road_anywhere_says_there_is_no_offline_map() {
         assertEquals(noMap, help(status = RoadFollowStatus.NO_MAP))
     }
 
     @Test
-    fun on_without_storage_access_says_where_to_allow_it() {
+    fun on_closely_without_storage_access_says_where_to_allow_it() {
         assertEquals(storage, help(storageGranted = false))
     }
 

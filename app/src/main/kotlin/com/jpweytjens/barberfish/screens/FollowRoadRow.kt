@@ -23,7 +23,16 @@ import java.io.IOException
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-/** The help line under FOLLOW THE ROAD. The first case that holds wins. */
+private val FOLLOW_ROAD_OPTIONS = listOf(false to "Loosely", true to "Closely")
+
+private const val FOLLOW_ROAD_EXPLANATION =
+    "Closely takes the road's shape from the Karoo's offline maps."
+
+/**
+ * The help line under FOLLOW THE ROAD. The first case that holds wins. It explains Closely, adds
+ * what Android will ask while access is not yet granted, and gives way to what is wrong when
+ * Closely is chosen and cannot work.
+ */
 internal fun followRoadHelp(
     on: Boolean,
     supported: Boolean,
@@ -31,17 +40,15 @@ internal fun followRoadHelp(
     status: RoadFollowStatus,
 ): String =
     when {
-        !supported -> "Not available on this Karoo."
-        !on ->
-            "Draws the band along the road in bends, from the Karoo's offline maps. " +
-                "Android will ask for access to photos and media: that is where the maps " +
-                "are stored."
+        !supported -> "Closely is not available on this Karoo."
+        on && !storageGranted ->
+            "Storage access is off: allow it for Barberfish in the Karoo's app settings."
+        on && status == RoadFollowStatus.NO_MAP ->
+            "No offline map for this route, so the band follows it loosely."
         !storageGranted ->
-            "Storage access is off. Allow it for Barberfish in the Karoo's app settings."
-        status == RoadFollowStatus.FOLLOWING -> "Following the road."
-        status == RoadFollowStatus.NO_MAP ->
-            "No offline map for this area; bends are cut straight here."
-        else -> "The band follows the road where the Karoo has offline maps."
+            "$FOLLOW_ROAD_EXPLANATION Android will ask for access to photos and media, " +
+                "where the maps are stored."
+        else -> FOLLOW_ROAD_EXPLANATION
     }
 
 /**
@@ -61,9 +68,9 @@ internal suspend fun turnFollowRoadOn(
 }
 
 /**
- * The FOLLOW THE ROAD toggle. [onUpdate] stores a change without waiting, as every other row does;
- * [save] returns once the change is on disk, which turning the setting on needs before it opens the
- * permission dialog.
+ * The FOLLOW THE ROAD row, Loosely or Closely. [onUpdate] stores a change without waiting, as every
+ * other row does; [save] returns once the change is on disk, which turning the setting on needs
+ * before it opens the permission dialog.
  */
 @Composable
 internal fun FollowRoadRow(
@@ -95,10 +102,11 @@ internal fun FollowRoadRow(
                 } ?: false
             if (!storageGranted && canAskAgain) onUpdate(latest.copy(followRoad = false))
         }
-    BoolToggleRow(
+    ChoiceRow(
         label = "FOLLOW THE ROAD",
-        value = supported && config.followRoad,
-        onChange = { on ->
+        options = FOLLOW_ROAD_OPTIONS,
+        selected = supported && config.followRoad,
+        onSelect = { on ->
             when {
                 !supported || turningOn -> Unit
                 !on -> onUpdate(config.copy(followRoad = false))
