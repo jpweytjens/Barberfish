@@ -115,7 +115,10 @@ val maxReleaseApkBytes = 20L * 1024 * 1024
 tasks.matching { it.name == "packageRelease" }.configureEach {
     val apk = layout.buildDirectory.file("outputs/apk/release/app-release.apk")
     doLast {
-        val bytes = apk.get().asFile.length()
+        val file = apk.get().asFile
+        // A file that is not there has length 0, which would pass.
+        if (!file.exists()) throw GradleException("Release size check: $file was not built.")
+        val bytes = file.length()
         if (bytes > maxReleaseApkBytes) {
             throw GradleException(
                 "app-release.apk is ${bytes / (1024 * 1024)} MB, over the 20 MB limit. The " +
