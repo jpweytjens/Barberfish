@@ -74,7 +74,7 @@ internal class RejoinFollower(
             if (job == null && target != null) {
                 job = scope.launch {
                     wanted.collect { request ->
-                        request.target?.let { publish(request, match(it)) }
+                        request.target?.let { publish(request, match(request, it)) }
                     }
                 }
             }
@@ -95,9 +95,12 @@ internal class RejoinFollower(
     private fun publish(request: Wanted, road: RejoinRoad?) =
         synchronized(lock) { if (wanted.value === request) published.value = road }
 
-    private suspend fun match(target: RejoinTarget): RejoinRoad? {
+    private suspend fun match(request: Wanted, target: RejoinTarget): RejoinRoad? {
         val points = pointsToMatch(target) ?: return null
-        val road = oneMatch.withLock { matcher.match(points) }
+        // A line replaced while it waited for the engine is not matched: only the newest is.
+        val road = oneMatch.withLock {
+            if (wanted.value === request) matcher.match(points) else null
+        }
         return road?.let { guarded { checked(target, points, it) } }
     }
 

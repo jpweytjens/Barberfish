@@ -164,6 +164,23 @@ class RejoinFollowerTest {
     }
 
     @Test
+    fun a_line_replaced_while_it_waits_for_the_engine_is_not_matched() = runTest {
+        val oneMatch = Mutex()
+        val matcher = FakeMatcher()
+        val follower = RejoinFollower(matcher, backgroundScope, oneMatch, published)
+        // A route piece holds the engine while A, B and C arrive.
+        oneMatch.lock()
+        follower.follow(targetA)
+        runCurrent()
+        follower.follow(targetB)
+        follower.follow(targetC)
+        oneMatch.unlock()
+        runCurrent()
+        assertEquals(listOf(decodeGpsPolyline(lineC)), matcher.calls)
+        assertEquals(lineC, published.value?.rejoinPolyline)
+    }
+
+    @Test
     fun a_stale_result_is_never_published() = runTest {
         lateinit var follower: RejoinFollower
         val matcher = FakeMatcher { call, points ->
