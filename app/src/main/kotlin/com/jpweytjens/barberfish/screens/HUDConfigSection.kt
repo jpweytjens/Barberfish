@@ -722,6 +722,36 @@ private fun SparklineModeToggle(mode: SparklineMode, onSelect: (SparklineMode) -
     )
 }
 
+/** Whether a slot holding this field can be coloured, and so offers the None/Text/Fill choice. */
+private val HUDSlotField.hasColorMode: Boolean
+    get() =
+        when (this) {
+            HUDSlotField.Power,
+            HUDSlotField.AvgPower,
+            HUDSlotField.NP,
+            HUDSlotField.LapPower,
+            HUDSlotField.LastLapPower,
+            HUDSlotField.PowerZone,
+            HUDSlotField.MaxPower,
+            HUDSlotField.HR,
+            HUDSlotField.AvgHR,
+            HUDSlotField.LapAvgHR,
+            HUDSlotField.LastLapAvgHR,
+            HUDSlotField.HRMaxPercent,
+            HUDSlotField.MaxHR,
+            HUDSlotField.HRZone,
+            HUDSlotField.Grade,
+            HUDSlotField.Cadence,
+            HUDSlotField.Speed,
+            is HUDSlotField.AvgSpeed -> true
+            HUDSlotField.Distance,
+            HUDSlotField.DistanceRemaining,
+            HUDSlotField.ElevationRemaining,
+            HUDSlotField.DescentRemaining,
+            is HUDSlotField.Time,
+            is HUDSlotField.ETA -> false
+        }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HUDSlotFieldCard(
@@ -760,12 +790,12 @@ private fun HUDSlotFieldCard(
                 HUDSlotField.HRMaxPercent -> {}
                 HUDSlotField.MaxHR -> {}
                 HUDSlotField.HRZone -> {}
-                HUDSlotField.Speed -> HUDSpeedCard(slot, onUpdate)
+                HUDSlotField.Speed -> HUDSpeedCard(slot, profile, onUpdate)
                 is HUDSlotField.AvgSpeed ->
                     AvgSpeedThresholdControls(
-                        config = slot.avgSpeedConfig,
+                        config = slot.avgSpeedThreshold,
                         profile = profile,
-                        onConfigChange = { onUpdate(slot.copy(avgSpeedConfig = it)) },
+                        onConfigChange = { onUpdate(slot.copy(avgSpeedThreshold = it)) },
                     )
                 HUDSlotField.Cadence -> HUDCadenceCard(slot, onUpdate)
                 HUDSlotField.Grade -> HUDGradeCard(slot, onUpdate)
@@ -776,24 +806,7 @@ private fun HUDSlotFieldCard(
                 is HUDSlotField.Time -> {}
                 is HUDSlotField.ETA -> {}
             }
-            if (
-                slot.field == HUDSlotField.Power ||
-                    slot.field == HUDSlotField.AvgPower ||
-                    slot.field == HUDSlotField.NP ||
-                    slot.field == HUDSlotField.LapPower ||
-                    slot.field == HUDSlotField.LastLapPower ||
-                    slot.field == HUDSlotField.PowerZone ||
-                    slot.field == HUDSlotField.MaxPower ||
-                    slot.field == HUDSlotField.HR ||
-                    slot.field == HUDSlotField.AvgHR ||
-                    slot.field == HUDSlotField.LapAvgHR ||
-                    slot.field == HUDSlotField.LastLapAvgHR ||
-                    slot.field == HUDSlotField.HRMaxPercent ||
-                    slot.field == HUDSlotField.MaxHR ||
-                    slot.field == HUDSlotField.HRZone ||
-                    slot.field == HUDSlotField.Grade ||
-                    slot.field == HUDSlotField.Cadence
-            ) {
+            if (slot.field.hasColorMode) {
                 ZoneColorSlider(
                     selected = slot.colorMode,
                     onSelected = { onUpdate(slot.copy(colorMode = it)) },
@@ -934,7 +947,11 @@ private fun HUDFieldTypeDropdown(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) 
 }
 
 @Composable
-private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit) {
+private fun HUDSpeedCard(
+    slot: HUDSlotConfig,
+    profile: UserProfile,
+    onUpdate: (HUDSlotConfig) -> Unit,
+) {
     ControlLabel("SMOOTHING")
     SmoothingSlider(
         options = SpeedSmoothingStream.entries,
@@ -942,6 +959,11 @@ private fun HUDSpeedCard(slot: HUDSlotConfig, onUpdate: (HUDSlotConfig) -> Unit)
         label = { it.label },
         onSelected = { onUpdate(slot.copy(speedSmoothing = it)) },
         thumbIcon = R.drawable.ic_col_speed,
+    )
+    SpeedThresholdControls(
+        config = slot.speedThreshold,
+        profile = profile,
+        onConfigChange = { onUpdate(slot.copy(speedThreshold = it)) },
     )
 }
 

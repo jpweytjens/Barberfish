@@ -139,7 +139,8 @@ import com.jpweytjens.barberfish.datatype.shared.resolveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.withDesign
 import com.jpweytjens.barberfish.datatype.sparklineHeaderPx
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
-import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.AvgSpeedFieldConfig
+import com.jpweytjens.barberfish.extension.AvgSpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
@@ -175,6 +176,7 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
 import com.jpweytjens.barberfish.extension.SpeedSmoothingStream
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.TimeConfig
@@ -284,8 +286,8 @@ class MainActivity : ComponentActivity() {
         var powerZoneFieldConfig by remember { mutableStateOf(PowerZoneFieldConfig()) }
         var maxPowerFieldConfig by remember { mutableStateOf(MaxPowerFieldConfig()) }
         var gradeFieldConfig by remember { mutableStateOf(GradeFieldConfig()) }
-        var avgTotalConfig by remember { mutableStateOf(AvgSpeedConfig()) }
-        var avgMovingConfig by remember { mutableStateOf(AvgSpeedConfig()) }
+        var avgTotalConfig by remember { mutableStateOf(AvgSpeedFieldConfig()) }
+        var avgMovingConfig by remember { mutableStateOf(AvgSpeedFieldConfig()) }
         var timeConfig by remember { mutableStateOf(TimeConfig()) }
         var etaConfig by remember { mutableStateOf(ETAConfig()) }
         var effortFieldConfig by remember { mutableStateOf(EffortFieldConfig()) }
@@ -974,11 +976,11 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                             SpeedThresholdControls(
-                                config = speedFieldConfig,
+                                config = speedFieldConfig.threshold,
                                 profile = userProfile,
                                 onConfigChange = { cfg ->
-                                    speedFieldConfig = cfg
-                                    lifecycleScope.launch { saveSpeedFieldConfig(cfg) }
+                                    speedFieldConfig = speedFieldConfig.copy(threshold = cfg)
+                                    lifecycleScope.launch { saveSpeedFieldConfig(speedFieldConfig) }
                                 },
                             )
                         }
@@ -1015,12 +1017,12 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                             AvgSpeedThresholdControls(
-                                config = avgTotalConfig,
+                                config = avgTotalConfig.threshold,
                                 profile = userProfile,
                                 onConfigChange = { cfg ->
-                                    avgTotalConfig = cfg
+                                    avgTotalConfig = avgTotalConfig.copy(threshold = cfg)
                                     lifecycleScope.launch {
-                                        saveAvgSpeedConfig(includePaused = true, cfg)
+                                        saveAvgSpeedConfig(includePaused = true, avgTotalConfig)
                                     }
                                 },
                             )
@@ -1058,12 +1060,12 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                             AvgSpeedThresholdControls(
-                                config = avgMovingConfig,
+                                config = avgMovingConfig.threshold,
                                 profile = userProfile,
                                 onConfigChange = { cfg ->
-                                    avgMovingConfig = cfg
+                                    avgMovingConfig = avgMovingConfig.copy(threshold = cfg)
                                     lifecycleScope.launch {
-                                        saveAvgSpeedConfig(includePaused = false, cfg)
+                                        saveAvgSpeedConfig(includePaused = false, avgMovingConfig)
                                     }
                                 },
                             )
@@ -2318,9 +2320,9 @@ private val SPEED_THRESHOLD_SOURCE_OPTIONS =
 
 @Composable
 internal fun SpeedThresholdControls(
-    config: SpeedFieldConfig,
+    config: SpeedThresholdConfig,
     profile: UserProfile,
-    onConfigChange: (SpeedFieldConfig) -> Unit,
+    onConfigChange: (SpeedThresholdConfig) -> Unit,
 ) {
     ControlLabel("THRESHOLD SOURCE")
     SegmentedRow(
@@ -2348,9 +2350,9 @@ internal fun SpeedThresholdControls(
 
 @Composable
 internal fun AvgSpeedThresholdControls(
-    config: AvgSpeedConfig,
+    config: AvgSpeedThresholdConfig,
     profile: UserProfile,
-    onConfigChange: (AvgSpeedConfig) -> Unit,
+    onConfigChange: (AvgSpeedThresholdConfig) -> Unit,
 ) {
     ThresholdModeRow(mode = config.mode, onSelect = { onConfigChange(config.copy(mode = it)) })
     val speedUnit = ConvertType.SPEED.unit(profile)

@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -51,7 +52,8 @@ class MovingTimeAndDistanceGateTest {
 
     @Test
     fun speed_coloured_against_the_moving_average_turns_it_on() {
-        val coloured = speed.copy(source = SpeedThresholdSource.AVG_MOVING)
+        val coloured =
+            speed.copy(threshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING))
         assertTrue(shows(setOf("speed"), speed = coloured))
     }
 
@@ -82,7 +84,15 @@ class MovingTimeAndDistanceGateTest {
 
     @Test
     fun speed_with_a_fixed_threshold_is_off() {
-        assertFalse(shows(setOf("speed"), speed = speed.copy(source = SpeedThresholdSource.FIXED)))
+        assertFalse(
+            shows(
+                setOf("speed"),
+                speed =
+                    speed.copy(
+                        threshold = SpeedThresholdConfig(source = SpeedThresholdSource.FIXED)
+                    ),
+            )
+        )
     }
 
     @Test
@@ -104,9 +114,20 @@ class MovingTimeAndDistanceGateTest {
 
     @Test
     fun a_hud_speed_slot_is_off() {
-        val coloured = speed.copy(source = SpeedThresholdSource.AVG_MOVING)
+        val coloured =
+            speed.copy(threshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING))
         assertFalse(
             shows(setOf("three-column"), hud = hudWith(HUDSlotField.Speed), speed = coloured)
         )
+    }
+
+    @Test
+    fun a_hud_speed_slot_coloured_against_the_moving_average_turns_it_on() {
+        val slot =
+            HUDSlotConfig(
+                field = HUDSlotField.Speed,
+                speedThreshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING),
+            )
+        assertTrue(shows(setOf("three-column"), hud = HUDSlots(leftSlot = slot)))
     }
 }

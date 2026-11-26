@@ -17,7 +17,7 @@ On a data page the rows are shorter and the page has room of its own, so turn th
 
 ## Slots
 
-A slot holds power, heart rate, speed, cadence, grade, distance, time, or ETA, in the variants each comes in, from 3s Power to Lap Avg HR. Tap a column in the preview to pick its field and set its smoothing, zone coloring, and format, the same options as the standalone field ([every field and its options](data-fields.md)), kept per slot. Tap the strip to set the profile's mode and shape.
+A slot holds power, heart rate, speed, cadence, grade, distance, time, or ETA, in the variants each comes in, from 3s Power to Lap Avg HR. Tap a column in the preview to pick its field and set its smoothing, zone coloring, thresholds, and format, the same options as the standalone field ([every field and its options](data-fields.md)), kept per slot. Tap the strip to set the profile's mode and shape.
 
 <img src="screenshots/hud_config.jpg" alt="HUD config with a 4-column live preview and the Power column selected, its data field, smoothing, and zone color options below" width="480">
 

@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.datatype.shared.onRenderTick
 import com.jpweytjens.barberfish.datatype.shared.sparklineBitmapFlow
 import com.jpweytjens.barberfish.datatype.shared.whileOn
 import com.jpweytjens.barberfish.extension.AvgPowerFieldConfig
+import com.jpweytjens.barberfish.extension.AvgSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.DataFieldDesignConfig
 import com.jpweytjens.barberfish.extension.GradeFieldConfig
@@ -245,9 +246,12 @@ class HUDField(
     ): Flow<FieldState> =
         when (slot.field) {
             HUDSlotField.Speed ->
-                karooSystem.streamDataFlow(slot.speedSmoothing.typeId).map {
-                    SpeedField.toFieldState(it, profile, slot.speedSmoothing)
-                }
+                SpeedField.streamFlow(
+                    karooSystem,
+                    SpeedFieldConfig(slot.speedSmoothing, slot.speedThreshold, slot.colorMode),
+                    profile,
+                    moving,
+                )
             HUDSlotField.HR ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map {
                     HRField.toFieldState(it, profile, zones, slot.colorMode)
@@ -404,7 +408,7 @@ class HUDField(
             is HUDSlotField.AvgSpeed ->
                 AvgSpeedField.streamFlow(
                     karooSystem,
-                    slot.avgSpeedConfig,
+                    AvgSpeedFieldConfig(slot.avgSpeedThreshold, slot.colorMode),
                     profile,
                     slot.field.includePaused,
                     moving,
@@ -470,14 +474,21 @@ class HUDField(
                     HUDSlotField.HR ->
                         HRField.previewStates(HRFieldConfig(slotCfg.colorMode), profile, zones)
                     HUDSlotField.Speed ->
-                        SpeedField.previewStates(SpeedFieldConfig(slotCfg.speedSmoothing), profile)
+                        SpeedField.previewStates(
+                            SpeedFieldConfig(
+                                slotCfg.speedSmoothing,
+                                slotCfg.speedThreshold,
+                                slotCfg.colorMode,
+                            ),
+                            profile,
+                        )
                     HUDSlotField.Cadence ->
                         CadenceField.previewStates(
                             CadenceFieldConfig(slotCfg.cadenceSmoothing, slotCfg.cadenceThreshold)
                         )
                     is HUDSlotField.AvgSpeed ->
                         AvgSpeedField.previewStates(
-                            slotCfg.avgSpeedConfig,
+                            AvgSpeedFieldConfig(slotCfg.avgSpeedThreshold, slotCfg.colorMode),
                             profile,
                             field.includePaused,
                         )

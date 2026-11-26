@@ -5,6 +5,8 @@
 HUD:
 - Each Karoo profile can have its own HUD, so every bike shows the numbers that suit it. Thanks to Theolean for the request.
 - Less padding above the row of numbers
+- Speed in the HUD can be colored against a target or your average speed, as the Speed field already could
+- Speed and Avg Speed in the HUD let you choose between no color, colored text and a colored fill
 - Smaller touch-ups: messages such as No GPS signal stay on one line in a 3 column HUD, a long distance in Ride Remaining no longer cuts off its icon, and the preview in the settings shows values at the size they have on the device
 
 Easier to read:
@@ -32,6 +34,7 @@ Settings:
 
 Settings reset:
 - If you last changed the HUD's profile strip before 3.1, it returns to its defaults after this update
+- Thresholds set on the Speed and Avg Speed fields, and on Avg Speed in the HUD, are switched off by this update and need setting again. Smoothing and color choices are kept
 
 ## 4.0
 

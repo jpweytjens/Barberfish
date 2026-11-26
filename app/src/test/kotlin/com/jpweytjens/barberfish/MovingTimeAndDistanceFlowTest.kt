@@ -14,6 +14,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.barberfishDataTypes
 import com.jpweytjens.barberfish.extension.movingTimeAndDistanceFlow
@@ -320,7 +321,10 @@ class MovingTimeAndDistanceFlowTest {
         // slot checks they need, so ask it with the ids the fields register.
         val speedId = types.filterIsInstance<SpeedField>().single().typeId
         val hudId = types.filterIsInstance<HUDField>().single().typeId
-        val movingSpeed = SpeedFieldConfig(source = SpeedThresholdSource.AVG_MOVING)
+        val movingSpeed =
+            SpeedFieldConfig(
+                threshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING)
+            )
         val movingHud =
             HUDSlots(leftSlot = HUDSlotConfig(field = HUDSlotField.AvgSpeed(includePaused = false)))
         assertTrue(showsMovingTimeOrDistance(setOf(speedId), HUDSlots(), movingSpeed))

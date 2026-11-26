@@ -3,12 +3,12 @@ package com.jpweytjens.barberfish.datatype
 import android.content.Context
 import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
-import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
+import com.jpweytjens.barberfish.datatype.shared.minMaxThresholdColor
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
-import com.jpweytjens.barberfish.extension.AvgSpeedConfig
+import com.jpweytjens.barberfish.extension.AvgSpeedFieldConfig
 import com.jpweytjens.barberfish.extension.ThresholdMode
 import com.jpweytjens.barberfish.extension.streamAvgSpeedConfig
 import com.jpweytjens.barberfish.extension.streamDataFlow
@@ -27,58 +27,29 @@ import kotlinx.coroutines.flow.map
 
 internal fun avgSpeedFieldState(
     rawMs: Double,
-    cfg: AvgSpeedConfig,
+    cfg: AvgSpeedFieldConfig,
     profile: UserProfile,
     includePaused: Boolean,
 ): FieldState {
     val converted = ConvertType.SPEED.apply(rawMs, profile)
     val color =
-        when (cfg.mode) {
+        when (cfg.threshold.mode) {
             ThresholdMode.TARGET ->
                 targetThresholdColor(
                     converted = converted,
-                    threshDisplay = ConvertType.SPEED.toDisplay(cfg.thresholdKph, profile),
-                    rangePercentBelow = cfg.rangePercentBelow,
-                    rangePercentAbove = cfg.rangePercentAbove,
+                    threshDisplay =
+                        ConvertType.SPEED.toDisplay(cfg.threshold.thresholdKph, profile),
+                    rangePercentBelow = cfg.threshold.rangePercentBelow,
+                    rangePercentAbove = cfg.threshold.rangePercentAbove,
                 )
-            ThresholdMode.MIN_MAX -> {
-                val min = cfg.minKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
-                val max = cfg.maxKph?.let { ConvertType.SPEED.toDisplay(it, profile) }
-                if (min == null && max == null) {
-                    FieldColor.Default
-                } else {
-                    val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
-                    val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
-                    val hasSafeZone = min != null && max != null
-                    when {
-                        min != null && converted < min -> {
-                            val outsideFactor =
-                                ((min - converted) / bandBelow).coerceIn(0.0, 1.0).toFloat()
-                            FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                        }
-                        max != null && converted > max -> {
-                            val outsideFactor =
-                                ((converted - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
-                            FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                        }
-                        else -> {
-                            val nearMin =
-                                if (min != null && bandBelow > 0.0)
-                                    (1.0 - (converted - min) / bandBelow)
-                                        .coerceIn(0.0, 1.0)
-                                        .toFloat()
-                                else 0f
-                            val nearMax =
-                                if (max != null && bandAbove > 0.0)
-                                    (1.0 - (max - converted) / bandAbove)
-                                        .coerceIn(0.0, 1.0)
-                                        .toFloat()
-                                else 0f
-                            FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
-                        }
-                    }
-                }
-            }
+            ThresholdMode.MIN_MAX ->
+                minMaxThresholdColor(
+                    value = converted,
+                    min = cfg.threshold.minKph?.let { ConvertType.SPEED.toDisplay(it, profile) },
+                    max = cfg.threshold.maxKph?.let { ConvertType.SPEED.toDisplay(it, profile) },
+                    rangePercentBelow = cfg.threshold.rangePercentBelow,
+                    rangePercentAbove = cfg.threshold.rangePercentAbove,
+                )
         }
     return FieldState(
         primary = "%.1f".format(Locale.ROOT, converted),
@@ -167,7 +138,7 @@ class AvgSpeedField(
 
         fun streamFlow(
             karooSystem: KarooSystemService,
-            cfg: AvgSpeedConfig,
+            cfg: AvgSpeedFieldConfig,
             profile: UserProfile,
             includePaused: Boolean,
             moving: Flow<MovingTimeAndDistance?>,
@@ -177,18 +148,19 @@ class AvgSpeedField(
             }
 
         fun previewStates(
-            cfg: AvgSpeedConfig,
+            cfg: AvgSpeedFieldConfig,
             profile: UserProfile,
             includePaused: Boolean,
         ): List<FieldState> {
             // Generate values around the configured threshold so color transitions are visible.
             // Offsets are percentages of the threshold; the range params are typically 10%.
             val centerKph =
-                when (cfg.mode) {
-                    ThresholdMode.TARGET -> if (cfg.thresholdKph > 0.0) cfg.thresholdKph else 25.0
+                when (cfg.threshold.mode) {
+                    ThresholdMode.TARGET ->
+                        if (cfg.threshold.thresholdKph > 0.0) cfg.threshold.thresholdKph else 25.0
                     ThresholdMode.MIN_MAX -> {
-                        val min = cfg.minKph
-                        val max = cfg.maxKph
+                        val min = cfg.threshold.minKph
+                        val max = cfg.threshold.maxKph
                         when {
                             min != null && max != null -> (min + max) / 2.0
                             min != null -> min

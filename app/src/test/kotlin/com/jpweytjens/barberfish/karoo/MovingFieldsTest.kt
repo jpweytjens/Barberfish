@@ -16,6 +16,7 @@ import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
+import com.jpweytjens.barberfish.extension.SpeedThresholdConfig
 import com.jpweytjens.barberfish.extension.SpeedThresholdSource
 import com.jpweytjens.barberfish.extension.loadMovingState
 import com.jpweytjens.barberfish.extension.movingTimeAndDistance
@@ -319,7 +320,9 @@ class MovingFieldsTest {
     fun the_speed_colour_reads_the_moving_average() {
         runBlocking {
             karoo.app.saveSpeedFieldConfig(
-                SpeedFieldConfig(source = SpeedThresholdSource.AVG_MOVING)
+                SpeedFieldConfig(
+                    threshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING)
+                )
             )
         }
         val moving = rideShowing("speed")

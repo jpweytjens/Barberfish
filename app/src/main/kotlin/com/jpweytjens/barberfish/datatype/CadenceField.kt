@@ -6,6 +6,8 @@ import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.PreviewRide
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
+import com.jpweytjens.barberfish.datatype.shared.minMaxThresholdColor
+import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.CadenceFieldConfig
 import com.jpweytjens.barberfish.extension.CadenceSmoothingStream
 import com.jpweytjens.barberfish.extension.CadenceThresholdConfig
@@ -23,51 +25,21 @@ import kotlinx.coroutines.flow.map
 
 internal fun cadenceFieldColor(rpm: Double, cfg: CadenceThresholdConfig): FieldColor =
     when (cfg.mode) {
-        ThresholdMode.TARGET -> {
-            if (cfg.thresholdRpm <= 0.0) {
-                FieldColor.Default
-            } else {
-                val rangePercent =
-                    if (rpm >= cfg.thresholdRpm) cfg.rangePercentAbove else cfg.rangePercentBelow
-                val factor =
-                    ((rpm - cfg.thresholdRpm) / cfg.thresholdRpm * 100.0 / rangePercent)
-                        .coerceIn(-1.0, 1.0)
-                        .toFloat()
-                FieldColor.Threshold(factor)
-            }
-        }
-        ThresholdMode.MIN_MAX -> {
-            val min = cfg.minRpm
-            val max = cfg.maxRpm
-            if (min == null && max == null) {
-                FieldColor.Default
-            } else {
-                val bandBelow = min?.let { it * cfg.rangePercentBelow / 100.0 } ?: 0.0
-                val bandAbove = max?.let { it * cfg.rangePercentAbove / 100.0 } ?: 0.0
-                val hasSafeZone = min != null && max != null
-                when {
-                    min != null && rpm < min -> {
-                        val outsideFactor = ((min - rpm) / bandBelow).coerceIn(0.0, 1.0).toFloat()
-                        FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                    }
-                    max != null && rpm > max -> {
-                        val outsideFactor = ((rpm - max) / bandAbove).coerceIn(0.0, 1.0).toFloat()
-                        FieldColor.DangerZone(outsideFactor, 1f, hasSafeZone)
-                    }
-                    else -> {
-                        val nearMin =
-                            if (min != null && bandBelow > 0.0)
-                                (1.0 - (rpm - min) / bandBelow).coerceIn(0.0, 1.0).toFloat()
-                            else 0f
-                        val nearMax =
-                            if (max != null && bandAbove > 0.0)
-                                (1.0 - (max - rpm) / bandAbove).coerceIn(0.0, 1.0).toFloat()
-                            else 0f
-                        FieldColor.DangerZone(0f, maxOf(nearMin, nearMax), hasSafeZone)
-                    }
-                }
-            }
-        }
+        ThresholdMode.TARGET ->
+            targetThresholdColor(
+                converted = rpm,
+                threshDisplay = cfg.thresholdRpm,
+                rangePercentBelow = cfg.rangePercentBelow,
+                rangePercentAbove = cfg.rangePercentAbove,
+            )
+        ThresholdMode.MIN_MAX ->
+            minMaxThresholdColor(
+                value = rpm,
+                min = cfg.minRpm,
+                max = cfg.maxRpm,
+                rangePercentBelow = cfg.rangePercentBelow,
+                rangePercentAbove = cfg.rangePercentAbove,
+            )
     }
 
 @OptIn(ExperimentalCoroutinesApi::class)

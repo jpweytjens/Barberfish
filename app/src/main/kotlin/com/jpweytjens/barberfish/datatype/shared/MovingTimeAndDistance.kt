@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.datatype.shared
 
 import com.jpweytjens.barberfish.datatype.TimeKind
+import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.HUDSlots
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
@@ -95,10 +96,11 @@ internal val movingTimeTypeIds =
         "time-of-arrival",
     )
 
-private fun HUDSlotField.readsMovingTimeOrDistance(): Boolean =
-    when (this) {
-        is HUDSlotField.AvgSpeed -> !includePaused
-        is HUDSlotField.Time -> kind == TimeKind.RIDING
+private fun HUDSlotConfig.readsMovingTimeOrDistance(): Boolean =
+    when (val field = field) {
+        HUDSlotField.Speed -> speedThreshold.source == SpeedThresholdSource.AVG_MOVING
+        is HUDSlotField.AvgSpeed -> !field.includePaused
+        is HUDSlotField.Time -> field.kind == TimeKind.RIDING
         is HUDSlotField.ETA -> true
         else -> false
     }
@@ -113,6 +115,6 @@ fun showsMovingTimeOrDistance(
         listOf(hud.leftSlot, hud.middleSlot, hud.rightSlot) +
             if (hud.columns == 4) listOf(hud.fourthSlot) else emptyList()
     return fieldTypeIds.any { it in movingTimeTypeIds } ||
-        ("speed" in fieldTypeIds && speed.source == SpeedThresholdSource.AVG_MOVING) ||
-        ("three-column" in fieldTypeIds && hudSlots.any { it.field.readsMovingTimeOrDistance() })
+        ("speed" in fieldTypeIds && speed.threshold.source == SpeedThresholdSource.AVG_MOVING) ||
+        ("three-column" in fieldTypeIds && hudSlots.any { it.readsMovingTimeOrDistance() })
 }
