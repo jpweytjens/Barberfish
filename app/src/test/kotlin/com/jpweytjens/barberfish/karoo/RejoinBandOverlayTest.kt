@@ -52,6 +52,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowBuild
 
 /**
  * The rejoin band on the map. Rejoin lines run due south onto the climb route; their road lies 3 m
@@ -309,6 +310,60 @@ class RejoinBandOverlayTest {
         awaitTrue {
             map.rejoinPieces().isNotEmpty() && "barberfish-rejoin" !in map.visiblePolylines()
         }
+    }
+
+    // --- the Karoo files switch, end to end ---
+
+    // Today's solid band: its fill, the route's casing width and colour, no graded piece.
+    private fun MapRecorder.showsTheSolidBand(): Boolean {
+        val casing = visiblePolylines()["barberfish-rejoin-casing"]
+        return "barberfish-rejoin" in visiblePolylines() &&
+            rejoinPieces().isEmpty() &&
+            casing?.width == GradeMapWidth.MEDIUM.casingDp &&
+            casing.color == 0xFF000000.toInt()
+    }
+
+    // Asserts the band is solid and that no graded piece was ever shown.
+    private fun MapRecorder.assertOnlyEverSolid() {
+        awaitSolid()
+        assertTrue(showsTheSolidBand())
+        val shownPieces =
+            items.filterIsInstance<ShowPolyline>().map { it.id }.filter(::isRejoinPiece)
+        assertEquals(emptyList<String>(), shownPieces)
+    }
+
+    @Test
+    fun turning_the_switch_off_returns_the_band_to_solid_red() {
+        save(KarooFilesConfig(true))
+        karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
+        val map = host.startMap()
+        map.awaitGraded()
+
+        save(KarooFilesConfig(false))
+
+        awaitTrue { map.showsTheSolidBand() }
+    }
+
+    @Test
+    fun without_storage_access_the_band_is_solid_red() {
+        shadowOf(karoo.app).denyPermissions(*ROAD_DATA_PERMISSIONS)
+        save(KarooFilesConfig(true))
+        karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
+        val map = host.startMap()
+
+        map.assertOnlyEverSolid()
+        assertFalse(rejoinAsked.get())
+    }
+
+    @Test
+    fun on_an_unsupported_device_the_band_is_solid_red() {
+        ShadowBuild.setSupportedAbis(arrayOf("x86_64"))
+        save(KarooFilesConfig(true))
+        karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
+        val map = host.startMap()
+
+        map.assertOnlyEverSolid()
+        assertFalse(rejoinAsked.get())
     }
 
     // --- across a restart ---
