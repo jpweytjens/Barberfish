@@ -214,6 +214,26 @@ class MatchedRoadLineTest {
     }
 
     @Test
+    fun a_closer_return_pass_does_not_take_the_outward_points() {
+        // The line goes out and back along y = 0. The road goes out 2 m to the north and comes
+        // back 1 m to the south, so every outward point is nearer to the return pass.
+        val p = RouteFixtures.outAndBack(legM = 200.0, stepM = 50.0)
+        val out = (0..4).map { point(it * 50.0, 2.0) }
+        val back = (4 downTo 0).map { point(it * 50.0, -1.0) }
+        val chords = align(p, out + back)
+        assertEquals(List(8) { true }, chords.map { it != null })
+        for (j in 0..2) {
+            chords[j]!!.points.forEach { assertEquals(2.0, it.lat * RouteFixtures.M_PER_DEG, 0.01) }
+            assertEquals(50.0, chords[j]!!.cumDist.last(), 0.01)
+        }
+        for (j in 5..7) {
+            chords[j]!!.points.forEach {
+                assertEquals(-1.0, it.lat * RouteFixtures.M_PER_DEG, 0.01)
+            }
+        }
+    }
+
+    @Test
     fun a_repeated_point_and_an_empty_road_are_straight() {
         val repeated = listOf(line4[0], line4[1], line4[1], line4[2], line4[3])
         val chords = align(repeated, bend)
