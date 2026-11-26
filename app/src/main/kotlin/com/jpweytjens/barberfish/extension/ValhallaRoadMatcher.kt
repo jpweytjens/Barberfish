@@ -7,18 +7,23 @@ import android.os.Build
 import android.os.Environment
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
+import com.jpweytjens.barberfish.datatype.shared.ROAD_HEIGHT_INTERVAL_M
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
+import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.roadHeights
 import com.valhalla.valhalla.Valhalla
 import com.valhalla.valhalla.config.ValhallaConfigFactory
 import java.io.File
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -34,7 +39,7 @@ private const val ROAD_SHAPE_PRECISION = 6
 // The processor types the engine is packaged for (see abiFilters in the build file).
 private val ROAD_MATCHING_ABIS = setOf("arm64-v8a", "armeabi-v7a")
 
-/** The request for the road under [points]: the shape and nothing else. */
+/** The request for the road under [points]: the shape, and a height every 30 m. */
 internal fun roadMatchRequest(points: List<LatLng>): String = buildJsonObject {
     putJsonArray("shape") {
         points.forEach {
@@ -52,21 +57,33 @@ internal fun roadMatchRequest(points: List<LatLng>): String = buildJsonObject {
         put("action", "include")
         putJsonArray("attributes") { add("shape") }
     }
+    put("elevation_interval", ROAD_HEIGHT_INTERVAL_M)
 }
     .toString()
 
-/** The points in the engine's answer, or null when it carries no shape. */
-internal fun roadMatchShape(response: String): List<LatLng>? {
-    val shape =
-        try {
-            (Json.parseToJsonElement(response) as? JsonObject)?.get("shape") as? JsonPrimitive
-        } catch (_: SerializationException) {
-            null
-        }
-    return shape
+private fun parseAnswer(response: String): JsonObject? =
+    try {
+        Json.parseToJsonElement(response) as? JsonObject
+    } catch (_: SerializationException) {
+        null
+    }
+
+private fun JsonObject.shapePoints(): List<LatLng>? =
+    (get("shape") as? JsonPrimitive)
         ?.takeIf { it.isString && it.content.isNotEmpty() }
         ?.let { decodeGpsPolyline(it.content, ROAD_SHAPE_PRECISION) }
-}
+
+private fun JsonObject.elevationValues(): List<Double>? =
+    (get("elevation") as? JsonArray)?.map {
+        (it as? JsonPrimitive)?.takeIf { number -> !number.isString }?.doubleOrNull ?: return null
+    }
+
+/** The points in the engine's answer, or null when it carries no shape. */
+internal fun roadMatchShape(response: String): List<LatLng>? = parseAnswer(response)?.shapePoints()
+
+/** The heights in the engine's answer, or null when it has none or they are not all numbers. */
+internal fun roadMatchElevation(response: String): List<Double>? =
+    parseAnswer(response)?.elevationValues()
 
 /** True when this device can load the engine: it runs one of the packaged ARM types. */
 internal fun roadMatchingSupported(abis: Array<String> = Build.SUPPORTED_ABIS): Boolean = abis.any {
@@ -117,7 +134,15 @@ internal class ValhallaRoadMatcher(
     override fun match(points: List<LatLng>): MatchedRoad? {
         if (points.size < 2 || !usable()) return null
         return try {
-            roadMatchShape(engine(tilesDir, roadMatchRequest(points)))?.let { MatchedRoad(it) }
+            val answer = parseAnswer(engine(tilesDir, roadMatchRequest(points)))
+            answer?.shapePoints()?.let { shape ->
+                MatchedRoad(
+                    shape,
+                    answer.elevationValues()?.let {
+                        roadHeights(it, cumulativeDistancesM(shape).last())
+                    },
+                )
+            }
         } catch (e: Exception) {
             Timber.w(e, "road match failed")
             null

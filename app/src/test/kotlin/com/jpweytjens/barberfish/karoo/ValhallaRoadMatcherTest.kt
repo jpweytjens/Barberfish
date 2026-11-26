@@ -4,7 +4,10 @@ import android.app.Application
 import android.content.pm.PackageManager
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.datatype.shared.LatLng
+import com.jpweytjens.barberfish.datatype.shared.ROAD_HEIGHT_INTERVAL_M
+import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.karooHeightM
 import com.jpweytjens.barberfish.extension.ROAD_DATA_PERMISSIONS
 import com.jpweytjens.barberfish.extension.ValhallaRoadMatcher
 import com.jpweytjens.barberfish.extension.hasRoadDataAccess
@@ -54,6 +57,30 @@ class ValhallaRoadMatcherTest {
         assertEquals(listOf(folder.root.path to roadMatchRequest(line)), calls)
         assertEquals(2, matched!!.points.size)
         assertEquals(road[0].lat, matched.points[0].lat, 1e-6)
+    }
+
+    @Test
+    fun an_answer_with_elevation_gives_heights_on_the_shapes_own_length() {
+        grantStorage()
+        // One sample every 30 m plus one at the road's end.
+        val length = cumulativeDistancesM(road).last()
+        val sampleCount = (length / ROAD_HEIGHT_INTERVAL_M).toInt() + 2
+        val reported = List(sampleCount) { -400.0 }
+        val elevated =
+            """{"shape":"${encodeGpsPolyline(road, precision = 6)}","elevation":$reported}"""
+        val heights = matcher(engine = { _, _ -> elevated }).match(line)!!.heights!!
+        assertEquals(sampleCount, heights.size)
+        assertEquals(0f, heights.first().first, 0f)
+        assertEquals(length.toFloat(), heights.last().first, 1e-2f)
+        heights.forEach { assertEquals(karooHeightM(-400.0).toFloat(), it.second, 1e-3f) }
+    }
+
+    @Test
+    fun an_answer_without_elevation_gives_the_shape_and_no_heights() {
+        grantStorage()
+        val matched = matcher().match(line)!!
+        assertEquals(2, matched.points.size)
+        assertNull(matched.heights)
     }
 
     @Test

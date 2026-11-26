@@ -2,10 +2,12 @@ package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
+import com.jpweytjens.barberfish.extension.roadMatchElevation
 import com.jpweytjens.barberfish.extension.roadMatchRequest
 import com.jpweytjens.barberfish.extension.roadMatchShape
 import com.jpweytjens.barberfish.extension.roadMatchingSupported
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -23,7 +25,11 @@ class RoadMatchRequestTest {
     @Test
     fun the_request_asks_for_the_shape_and_nothing_else() {
         val request = Json.parseToJsonElement(roadMatchRequest(points)).jsonObject
-        assertEquals(setOf("shape", "costing", "shape_match", "filters"), request.keys)
+        assertEquals(
+            setOf("shape", "costing", "shape_match", "filters", "elevation_interval"),
+            request.keys,
+        )
+        assertEquals(30, request["elevation_interval"]!!.jsonPrimitive.int)
         assertEquals(
             Json.parseToJsonElement("""{"action":"include","attributes":["shape"]}"""),
             request["filters"],
@@ -54,6 +60,21 @@ class RoadMatchRequestTest {
         assertNull(roadMatchShape("""{"shape":""}"""))
         assertNull(roadMatchShape("""{"shape":7}"""))
         assertNull(roadMatchShape("[]"))
+    }
+
+    @Test
+    fun the_answers_elevation_is_read_as_numbers() {
+        val answer = """{"shape":"","elevation":[-400,-399.75]}"""
+        assertEquals(listOf(-400.0, -399.75), roadMatchElevation(answer))
+    }
+
+    @Test
+    fun an_answer_without_elevation_is_null() {
+        assertNull(roadMatchElevation("""{"shape":"abc"}"""))
+        assertNull(roadMatchElevation("""{"elevation":[1,"x"]}"""))
+        assertNull(roadMatchElevation("""{"elevation":7}"""))
+        assertNull(roadMatchElevation("not json"))
+        assertNull(roadMatchElevation("[]"))
     }
 
     @Test
