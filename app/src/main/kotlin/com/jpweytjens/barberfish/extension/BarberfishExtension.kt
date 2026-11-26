@@ -488,7 +488,10 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             // The map page only ever starts the road being followed. Stopping is
                             // the follower's own, from the settings and the navigation state, so
                             // it also happens with no map page open. Matching begins at the rider.
-                            if (inputs.followRoad) {
+                            // Without storage access every piece would come back empty and the
+                            // route would end as "no offline map"; not starting leaves it to
+                            // the first redraw after access is granted.
+                            if (inputs.followRoad && applicationContext.hasRoadDataAccess()) {
                                 roadFollower.follow(
                                     route.polyline,
                                     route.reversed,

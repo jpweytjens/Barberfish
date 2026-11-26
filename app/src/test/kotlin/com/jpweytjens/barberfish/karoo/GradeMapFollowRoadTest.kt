@@ -8,6 +8,7 @@ import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.ROAD_DATA_PERMISSIONS
 import com.jpweytjens.barberfish.extension.RoadFollowStatus
 import com.jpweytjens.barberfish.extension.roadFollowStatus
 import com.jpweytjens.barberfish.extension.saveGradeMapConfig
@@ -35,6 +36,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -66,6 +68,7 @@ class GradeMapFollowRoadTest {
         clearBarberfishSettings(ApplicationProvider.getApplicationContext<Application>())
         roadFollowStatus.value = RoadFollowStatus.IDLE
         BarberfishExtension.roadMatcherFactory = { north3 }
+        shadowOf(karoo.app).grantPermissions(*ROAD_DATA_PERMISSIONS)
         host = karoo.startBarberfish()
     }
 
@@ -129,6 +132,26 @@ class GradeMapFollowRoadTest {
         assertEquals(0, calls.get())
         assertTrue(map.onChords())
         assertEquals(RoadFollowStatus.IDLE, roadFollowStatus.value)
+    }
+
+    @Test
+    fun without_storage_access_nothing_is_matched_until_it_is_granted() {
+        shadowOf(karoo.app).denyPermissions(*ROAD_DATA_PERMISSIONS)
+        save(GradeMapConfig(followRoad = true))
+        karoo.system.setNavigation(climbRoute().navigating())
+        val map = host.startMap()
+        map.awaitDrawn(karoo)
+
+        // Not started, so not ended as "no offline map" either.
+        assertEquals(0, calls.get())
+        assertTrue(map.onChords())
+        assertEquals(RoadFollowStatus.IDLE, roadFollowStatus.value)
+
+        // Granted without a restart of the process: the next redraw starts following.
+        shadowOf(karoo.app).grantPermissions(*ROAD_DATA_PERMISSIONS)
+        karoo.system.setMapZoom(18.0)
+
+        awaitTrue { map.onRoad() }
     }
 
     @Test
