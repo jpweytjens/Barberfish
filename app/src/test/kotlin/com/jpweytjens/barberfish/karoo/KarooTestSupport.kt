@@ -12,6 +12,7 @@ import com.jpweytjens.barberfish.RouteFixtures
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.dataStore
+import com.jpweytjens.barberfish.extension.saveMovingState
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.MapRecorder
@@ -25,6 +26,7 @@ import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.HidePolyline
 import io.hammerhead.karooext.models.HideSymbols
 import io.hammerhead.karooext.models.OnNavigationState
+import io.hammerhead.karooext.models.RideState
 import io.hammerhead.karooext.models.ShowPolyline
 import io.hammerhead.karooext.models.ShowSymbols
 import io.hammerhead.karooext.models.Symbol
@@ -92,19 +94,33 @@ internal fun ViewRecorder.awaitRendered(
 ): View = karoo.awaitValue { frames.last().inflate(karoo.app, config).takeIf(expected) }
 
 /**
- * Starts the extension and waits for its profile discovery, the one consumer it holds for its whole
- * life. Discovery registers after connecting, so a consumer count taken before it lands would never
- * come back down.
+ * Starts the extension and waits for the consumers it holds for its whole life: one ride profile
+ * consumer for profile discovery, and three ride state and two ride profile consumers for the
+ * moving time and distance tracking. Discovery registers after connecting and the tracking after
+ * loading its stored state, in either order, so a consumer count taken before all six land would
+ * never come back down.
  */
 internal fun FakeKarooRule.startBarberfish(): FakeKarooHost {
     val host = host<BarberfishExtension>()
-    awaitValue { true.takeIf { system.consumerParams.any { it is ActiveRideProfile.Params } } }
+    awaitValue {
+        val params = system.consumerParams
+        true.takeIf {
+            params.count { it is RideState.Params } == 3 &&
+                params.count { it is ActiveRideProfile.Params } == 3
+        }
+    }
     return host
 }
 
-/** The extension keeps one process-wide DataStore, which Robolectric reuses across tests. */
+/**
+ * The extension keeps process-wide DataStores, for the settings and for the ride state, which
+ * Robolectric reuses across tests.
+ */
 internal fun clearBarberfishSettings(context: Context) {
-    runBlocking { context.dataStore.edit { it.clear() } }
+    runBlocking {
+        context.dataStore.edit { it.clear() }
+        context.saveMovingState(null)
+    }
 }
 
 /** Routes run east along the equator, so longitude maps straight to metres from the start. */

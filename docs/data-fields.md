@@ -109,4 +109,4 @@ The source picker is what sets Speed apart: Fixed compares against the target yo
 
 ## Average speed variants
 
-Average speed comes in two variants: Total and Moving. Total includes paused time, useful for ultra-distance events and [ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) checkpoint speeds. Moving excludes paused time.
+Average speed comes in two variants: Total and Moving. Total includes paused time, useful for ultra-distance events and [ACP randonneuring](https://www.audax-club-parisien.com/en/welcomepage/) checkpoint speeds. Moving divides by moving time: recording time during which the Karoo measured speed or distance, so paused time and time standing without a speed signal are left out. Barberfish counts it itself, which keeps the average right after the Karoo is switched off and on mid-ride; Moving Time and the ETA fields use the same count.

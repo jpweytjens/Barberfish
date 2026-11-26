@@ -1,5 +1,9 @@
 package com.jpweytjens.barberfish.extension
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.BuildConfig
@@ -39,6 +43,7 @@ import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.LatLng
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
@@ -74,12 +79,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
@@ -109,9 +118,12 @@ private const val CHEVRON_LOOKAHEAD_PX = 800.0
 
 // Order matches extension_info.xml — keep in sync when adding fields.
 // Top-level so the instrumented preview-render harness can iterate every field.
-fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>> =
+fun barberfishDataTypes(
+    karooSystem: KarooSystemService,
+    movingTimeAndDistance: StateFlow<MovingTimeAndDistance?>,
+): List<BarberfishBase<*>> =
     listOf(
-        HUDField(karooSystem),
+        HUDField(karooSystem, movingTimeAndDistance),
         // Power
         PowerField(karooSystem),
         AvgPowerField(karooSystem),
@@ -129,9 +141,9 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
         MaxHRField(karooSystem),
         HRZoneField(karooSystem),
         // Speed
-        SpeedField(karooSystem),
-        AvgSpeedField(karooSystem, includePaused = true),
-        AvgSpeedField(karooSystem, includePaused = false),
+        SpeedField(karooSystem, movingTimeAndDistance),
+        AvgSpeedField(karooSystem, includePaused = true, movingTimeAndDistance),
+        AvgSpeedField(karooSystem, includePaused = false, movingTimeAndDistance),
         // Other
         CadenceField(karooSystem),
         GradeField(karooSystem),
@@ -144,34 +156,55 @@ fun barberfishDataTypes(karooSystem: KarooSystemService): List<BarberfishBase<*>
         EffortField(karooSystem),
         RouteRemainingField(karooSystem),
         // Time
-        TimeField(karooSystem, TimeKind.TOTAL),
-        TimeField(karooSystem, TimeKind.RIDING),
-        TimeField(karooSystem, TimeKind.PAUSED),
-        TimeField(karooSystem, TimeKind.LAP),
-        TimeField(karooSystem, TimeKind.LAST_LAP),
-        ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME),
-        ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION),
-        ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL),
-        TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE),
-        TimeField(karooSystem, TimeKind.TIME_TO_SUNSET),
-        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN),
-        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK),
+        TimeField(karooSystem, TimeKind.TOTAL, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.RIDING, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.PAUSED, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.LAP, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.LAST_LAP, movingTimeAndDistance),
+        ETAField(karooSystem, ETAKind.REMAINING_RIDE_TIME, movingTimeAndDistance),
+        ETAField(karooSystem, ETAKind.TIME_TO_DESTINATION, movingTimeAndDistance),
+        ETAField(karooSystem, ETAKind.TIME_OF_ARRIVAL, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.TIME_TO_SUNRISE, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.TIME_TO_SUNSET, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DAWN, movingTimeAndDistance),
+        TimeField(karooSystem, TimeKind.TIME_TO_CIVIL_DUSK, movingTimeAndDistance),
     )
 
 class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAME) {
 
     private lateinit var karooSystem: KarooSystemService
 
-    override val types by lazy { barberfishDataTypes(karooSystem) }
+    override val types by lazy { barberfishDataTypes(karooSystem, movingTimeAndDistance) }
 
     // Records every profile the Karoo reports as active, for the per-profile HUD. Lives as long
     // as the service, so swiping through the home-screen carousel discovers every profile.
     private val discoveryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var discoveryJob: Job? = null
 
+    private val shutdownNotices = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val shutdownReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                shutdownNotices.tryEmit(Unit)
+            }
+        }
+
+    /**
+     * Our moving time and distance for the ride. Null between rides, while no field on the profile
+     * reads it, until the first reading of a ride, and for the life of the service once the
+     * tracking has failed.
+     */
+    val movingTimeAndDistance: StateFlow<MovingTimeAndDistance?> by lazy {
+        applicationContext
+            .movingTimeAndDistance(karooSystem, shutdownNotices)
+            .stateIn(discoveryScope, SharingStarted.Eagerly, null)
+    }
+
     override fun onCreate() {
         super.onCreate()
         karooSystem = KarooSystemService(applicationContext)
+        registerReceiver(shutdownReceiver, IntentFilter(Intent.ACTION_SHUTDOWN))
+        movingTimeAndDistance // starts the tracking for the life of the service
         karooSystem.connect {
             Timber.d("Karoo system connected")
             if (discoveryJob?.isActive != true) {
@@ -191,6 +224,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
     }
 
     override fun onDestroy() {
+        unregisterReceiver(shutdownReceiver)
         discoveryScope.cancel()
         karooSystem.disconnect()
         super.onDestroy()

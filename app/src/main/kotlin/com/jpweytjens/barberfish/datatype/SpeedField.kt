@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
@@ -24,11 +25,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SpeedField(private val karooSystem: KarooSystemService) :
-    BarberfishDataType("barberfish", "speed") {
+class SpeedField(
+    private val karooSystem: KarooSystemService,
+    private val moving: Flow<MovingTimeAndDistance?>,
+) : BarberfishDataType("barberfish", "speed") {
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
@@ -72,11 +76,11 @@ class SpeedField(private val karooSystem: KarooSystemService) :
         profile: UserProfile,
         includePaused: Boolean,
     ): Flow<FieldState> {
-        val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused)
-        // Warmup gate: ELAPSED_TIME (moving time) >= 30 s. ELAPSED_TIME excludes paused
-        // time, so 30 s cumulative motion means the rider has actually moved — handles both
-        // "first move" and "warmup elapsed" with one stateless check. Used regardless of
-        // whether the source is total or moving avg.
+        val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused, moving)
+        // Warmup gate: 30 s of recording time (ELAPSED_TIME), or of our moving time when the
+        // source is the moving average and the pair exists. Neither counts paused time, so
+        // 30 s means the rider has actually moved — handles both "first move" and "warmup
+        // elapsed" with one stateless check.
         val elapsedFlow =
             karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
                 (state as? StreamState.Streaming)
@@ -84,9 +88,17 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                     ?.values
                     ?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
             }
-        return combine(liveFlow, avgFlow, elapsedFlow) { state, avgRawMs, elapsedMs ->
+        val warmupTimeFlow =
+            if (includePaused) {
+                elapsedFlow
+            } else {
+                moving.flatMapLatest { pair ->
+                    if (pair == null) elapsedFlow else flowOf(pair.timeMs)
+                }
+            }
+        return combine(liveFlow, avgFlow, warmupTimeFlow) { state, avgRawMs, warmupTimeMs ->
             val threshDisplay =
-                if (elapsedMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
+                if (warmupTimeMs >= WARMUP_MS) ConvertType.SPEED.apply(avgRawMs, profile) else 0.0
             toFieldState(
                 state,
                 profile,
