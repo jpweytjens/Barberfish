@@ -8,6 +8,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldState
 import com.jpweytjens.barberfish.datatype.shared.HUDState
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.SlotState
 import com.jpweytjens.barberfish.datatype.shared.SparklineFrame
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
@@ -69,8 +70,10 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class HUDField(private val karooSystem: KarooSystemService) :
-    HUDDataType("barberfish", "three-column") {
+class HUDField(
+    private val karooSystem: KarooSystemService,
+    private val moving: Flow<MovingTimeAndDistance?>,
+) : HUDDataType("barberfish", "three-column") {
 
     @OptIn(FlowPreview::class)
     override fun startView(context: Context, config: ViewConfig, emitter: ViewEmitter) {
@@ -247,6 +250,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     karooSystem,
                     SpeedFieldConfig(slot.speedSmoothing, slot.speedThreshold, slot.colorMode),
                     profile,
+                    moving,
                 )
             HUDSlotField.HR ->
                 karooSystem.streamDataFlow(DataType.Type.HEART_RATE).map {
@@ -407,11 +411,12 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     AvgSpeedFieldConfig(slot.avgSpeedThreshold, slot.colorMode),
                     profile,
                     slot.field.includePaused,
+                    moving,
                 )
             is HUDSlotField.Time ->
                 if (slot.field.kind == TimeKind.LAST_LAP) {
                     combine(
-                        TimeField.secondsFlow(karooSystem, slot.field.kind),
+                        TimeField.secondsFlow(karooSystem, slot.field.kind, moving),
                         karooSystem.streamDataFlow(DataType.Type.LAP_NUMBER).map {
                             lapNumberFrom(it)
                         },
@@ -424,7 +429,7 @@ class HUDField(private val karooSystem: KarooSystemService) :
                     }
                 } else {
                     combine(
-                        TimeField.secondsFlow(karooSystem, slot.field.kind),
+                        TimeField.secondsFlow(karooSystem, slot.field.kind, moving),
                         context.streamTimeConfig(),
                         TimeField.liveIconFlow(karooSystem, slot.field.kind),
                     ) { seconds, cfg, liveIcon ->
@@ -436,7 +441,13 @@ class HUDField(private val karooSystem: KarooSystemService) :
                         etaCfg to timeCfg
                     }
                     .flatMapLatest { (etaCfg, timeCfg) ->
-                        ETAField.streamFlow(karooSystem, slot.field.kind, etaCfg, timeCfg.format)
+                        ETAField.streamFlow(
+                            karooSystem,
+                            slot.field.kind,
+                            etaCfg,
+                            timeCfg.format,
+                            moving,
+                        )
                     }
         }.catch { e ->
             // Isolate a slot failure: degrade it to Not available rather than let the

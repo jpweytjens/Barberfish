@@ -45,6 +45,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -118,7 +119,7 @@ class AllFieldPreviewsRenderTest {
             }
             val design = DataFieldDesignConfig()
             val outDir = File(context.getExternalFilesDir(null), "previews").apply { mkdirs() }
-            val types = barberfishDataTypes(karooSystem)
+            val types = barberfishDataTypes(karooSystem, MutableStateFlow(null))
             // Preview flows cycle through the shared PreviewRide fixture at 1 Hz.
             // Sampling every field at the same cycle position keeps the sheet
             // coherent: index 4 is the ride's steep climb, so power, HR, cadence,

@@ -25,6 +25,10 @@ Battery:
 - Fields redraw only when what they show has changed
 - The grade map does less work per GPS fix on long routes
 
+Fixes:
+- Avg Speed (moving) no longer shows an impossible value, such as 2386 mph, after the Karoo is switched off and on mid-ride. Thanks to bhcohen for the reports.
+- Moving Time no longer runs while you stand still without a speed signal, so it can differ from the Karoo's ride timer. Avg Speed (moving) and ETA follow it
+
 Settings:
 - The Climbing section is now Map and holds the Grade Map card. The Profile card moved to Data fields, after Grade
 

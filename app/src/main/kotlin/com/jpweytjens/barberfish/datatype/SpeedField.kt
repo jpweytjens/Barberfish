@@ -5,6 +5,7 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.datatype.shared.ConvertType
 import com.jpweytjens.barberfish.datatype.shared.FieldColor
 import com.jpweytjens.barberfish.datatype.shared.FieldState
+import com.jpweytjens.barberfish.datatype.shared.MovingTimeAndDistance
 import com.jpweytjens.barberfish.datatype.shared.cyclePreview
 import com.jpweytjens.barberfish.datatype.shared.targetThresholdColor
 import com.jpweytjens.barberfish.extension.SpeedFieldConfig
@@ -24,30 +25,33 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 private const val WARMUP_MS = 30_000.0
 
 // The running average as a speed threshold in display units, or 0.0 (coloring off) during warmup.
-// Warmup gate: ELAPSED_TIME (moving time) >= 30 s. ELAPSED_TIME excludes paused
-// time, so 30 s cumulative motion means the rider has actually moved — handles both
-// "first move" and "warmup elapsed" with one stateless check. Used regardless of
-// whether the source is total or moving avg.
+// Warmup gate: 30 s of recording time (ELAPSED_TIME), or of our moving time when the
+// source is the moving average and the pair exists. Neither counts paused time, so
+// 30 s means the rider has actually moved — handles both "first move" and "warmup
+// elapsed" with one stateless check.
 internal fun averageThreshold(
     averageRawMs: Double,
-    movingMs: Double,
+    warmupTimeMs: Double,
     profile: UserProfile,
-): Double = if (movingMs >= WARMUP_MS) ConvertType.SPEED.apply(averageRawMs, profile) else 0.0
+): Double = if (warmupTimeMs >= WARMUP_MS) ConvertType.SPEED.apply(averageRawMs, profile) else 0.0
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SpeedField(private val karooSystem: KarooSystemService) :
-    BarberfishDataType("barberfish", "speed") {
+class SpeedField(
+    private val karooSystem: KarooSystemService,
+    private val moving: Flow<MovingTimeAndDistance?>,
+) : BarberfishDataType("barberfish", "speed") {
 
     override fun liveFlow(context: Context): Flow<FieldState> =
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
                 cfg to profile
             }
-            .flatMapLatest { (cfg, profile) -> streamFlow(karooSystem, cfg, profile) }
+            .flatMapLatest { (cfg, profile) -> streamFlow(karooSystem, cfg, profile, moving) }
 
     override fun previewFlow(context: Context): Flow<FieldState> =
         combine(context.streamSpeedFieldConfig(), karooSystem.streamUserProfile()) { cfg, profile ->
@@ -62,6 +66,7 @@ class SpeedField(private val karooSystem: KarooSystemService) :
             karooSystem: KarooSystemService,
             config: SpeedFieldConfig,
             profile: UserProfile,
+            moving: Flow<MovingTimeAndDistance?>,
         ): Flow<FieldState> {
             val liveFlow = karooSystem.streamDataFlow(config.smoothing.typeId)
             val threshold = config.threshold
@@ -83,16 +88,25 @@ class SpeedField(private val karooSystem: KarooSystemService) :
                 SpeedThresholdSource.AVG_TOTAL,
                 SpeedThresholdSource.AVG_MOVING -> {
                     val includePaused = threshold.source == SpeedThresholdSource.AVG_TOTAL
-                    val avgFlow = AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused)
-                    val movingFlow =
+                    val avgFlow =
+                        AvgSpeedField.avgSpeedRawMsFlow(karooSystem, includePaused, moving)
+                    val elapsedFlow =
                         karooSystem.streamDataFlow(DataType.Type.ELAPSED_TIME).map { state ->
                             (state as? StreamState.Streaming)
                                 ?.dataPoint
                                 ?.values
                                 ?.get(DataType.Field.ELAPSED_TIME) ?: 0.0
                         }
-                    combine(liveFlow, avgFlow, movingFlow) { state, avgRawMs, movingMs ->
-                        fieldState(state, averageThreshold(avgRawMs, movingMs, profile))
+                    val warmupTimeFlow =
+                        if (includePaused) {
+                            elapsedFlow
+                        } else {
+                            moving.flatMapLatest { pair ->
+                                if (pair == null) elapsedFlow else flowOf(pair.timeMs)
+                            }
+                        }
+                    combine(liveFlow, avgFlow, warmupTimeFlow) { state, avgRawMs, warmupTimeMs ->
+                        fieldState(state, averageThreshold(avgRawMs, warmupTimeMs, profile))
                     }
                 }
             }
