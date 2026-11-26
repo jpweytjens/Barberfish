@@ -1,7 +1,6 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
@@ -54,13 +53,13 @@ class RoadFollowerTest {
 
     // Records what it is asked; [answer] gets the call's number (from 0) and its points.
     private class FakeMatcher(
-        val answer: (call: Int, points: List<LatLng>) -> MatchedRoad? = { _, points ->
-            MatchedRoad(points)
+        val answer: (call: Int, points: List<LatLng>) -> List<LatLng>? = { _, points ->
+            points
         }
     ) : RoadMatcher {
         val calls = mutableListOf<List<LatLng>>()
 
-        override fun match(points: List<LatLng>): MatchedRoad? {
+        override fun match(points: List<LatLng>): List<LatLng>? {
             calls += points
             return answer(calls.size - 1, points)
         }
@@ -113,8 +112,7 @@ class RoadFollowerTest {
 
     @Test
     fun overlap_chords_are_not_kept() = runTest {
-        val follower =
-            follower(FakeMatcher { call, points -> MatchedRoad(points).takeIf { call == 0 } })
+        val follower = follower(FakeMatcher { call, points -> points.takeIf { call == 0 } })
         follower.follow(routeA, false, 20_000.0)
         runCurrent()
         // The first piece was sent with 300 m extra at both ends and keeps its 10 km only.
@@ -124,7 +122,7 @@ class RoadFollowerTest {
 
     @Test
     fun a_piece_without_an_answer_leaves_the_others() = runTest {
-        val matcher = FakeMatcher { call, points -> MatchedRoad(points).takeIf { call != 1 } }
+        val matcher = FakeMatcher { call, points -> points.takeIf { call != 1 } }
         val follower = follower(matcher)
         follower.follow(routeA, false, 20_000.0)
         runCurrent()
@@ -141,7 +139,7 @@ class RoadFollowerTest {
                 override fun get(index: Int): LatLng = error("unreadable road")
             }
         val matcher = FakeMatcher { call, points ->
-            if (call == 0) MatchedRoad(broken) else MatchedRoad(points)
+            if (call == 0) broken else points
         }
         val follower = follower(matcher)
         follower.follow(routeA, false, 0.0)
@@ -164,7 +162,7 @@ class RoadFollowerTest {
 
     @Test
     fun a_road_nowhere_near_the_route_ends_as_no_map() = runTest {
-        val follower = follower(FakeMatcher { _, _ -> MatchedRoad(pointsB) })
+        val follower = follower(FakeMatcher { _, _ -> pointsB })
         follower.follow(routeA, false, 0.0)
         runCurrent()
         assertNull(follower.line.value)
@@ -176,7 +174,7 @@ class RoadFollowerTest {
         lateinit var follower: RoadFollower
         val matcher = FakeMatcher { call, points ->
             if (call == 0) follower.follow(routeB, false, 0.0)
-            MatchedRoad(points)
+            points
         }
         follower = follower(matcher)
         follower.follow(routeA, false, 0.0)
@@ -192,7 +190,7 @@ class RoadFollowerTest {
     fun a_stop_after_the_match_returned_publishes_nothing() = runTest {
         lateinit var follower: RoadFollower
         val matcher = FakeMatcher { _, points ->
-            MatchedRoad(TripwireList(points) { follower.stop() })
+            TripwireList(points) { follower.stop() }
         }
         follower = follower(matcher)
         follower.follow(routeA, false, 0.0)
@@ -207,9 +205,9 @@ class RoadFollowerTest {
         lateinit var follower: RoadFollower
         val matcher = FakeMatcher { call, points ->
             if (call == 0) {
-                MatchedRoad(TripwireList(points) { follower.follow(routeB, false, 0.0) })
+                TripwireList(points) { follower.follow(routeB, false, 0.0) }
             } else {
-                MatchedRoad(points)
+                points
             }
         }
         follower = follower(matcher)
@@ -233,7 +231,7 @@ class RoadFollowerTest {
                 follower.follow(shortB, false, 0.0)
                 null
             } else {
-                MatchedRoad(points)
+                points
             }
         }
         follower = follower(matcher)
@@ -267,7 +265,7 @@ class RoadFollowerTest {
     }
 
     private object FakeMatcherThreadSafe : RoadMatcher {
-        override fun match(points: List<LatLng>) = MatchedRoad(points)
+        override fun match(points: List<LatLng>) = points
     }
 
     // The watch.
@@ -294,7 +292,7 @@ class RoadFollowerTest {
         val wanted = MutableStateFlow<RouteLine?>(RouteLine(routeA, false))
         val matcher = FakeMatcher { call, points ->
             if (call == 0) wanted.value = null
-            MatchedRoad(points)
+            points
         }
         val follower = follower(matcher, wanted)
         follower.follow(routeA, false, 0.0)

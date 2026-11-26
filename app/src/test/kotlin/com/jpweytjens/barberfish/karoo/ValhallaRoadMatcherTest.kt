@@ -52,8 +52,8 @@ class ValhallaRoadMatcherTest {
         grantStorage()
         val matched = matcher().match(line)
         assertEquals(listOf(folder.root.path to roadMatchRequest(line)), calls)
-        assertEquals(2, matched!!.points.size)
-        assertEquals(road[0].lat, matched.points[0].lat, 1e-6)
+        assertEquals(2, matched!!.size)
+        assertEquals(road[0].lat, matched[0].lat, 1e-6)
     }
 
     @Test

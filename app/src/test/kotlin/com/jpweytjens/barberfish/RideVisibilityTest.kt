@@ -5,7 +5,6 @@ import com.jpweytjens.barberfish.datatype.shared.ChevronRoad
 import com.jpweytjens.barberfish.datatype.shared.ChordRoad
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
@@ -333,8 +332,7 @@ class RideVisibilityTest {
         val cum = cumulativeDistancesM(route)
         val north = route.map { it.copy(lat = it.lat + 3.0 / RouteFixtures.M_PER_DEG) }
         val line =
-            MatchedRoadLine(route, cum)
-                .with(0, alignChords(route, cum, route.indices, MatchedRoad(north)))
+            MatchedRoadLine(route, cum).with(0, alignChords(route, cum, route.indices, north))
         assertEquals(route.size - 1, line.followingChords)
         val candidates = (25..1005 step 35).map { chevron(index, it.toDouble()) }
         val visibility = RideVisibility(index)

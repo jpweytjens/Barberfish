@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.RouteFixtures
 import com.jpweytjens.barberfish.RouteFixtures.M_PER_DEG
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.GradeMapConfig
@@ -58,7 +57,7 @@ class GradeMapFollowRoadTest {
     private val north3 = RoadMatcher { points ->
         calls.incrementAndGet()
         gate.await(20, TimeUnit.SECONDS)
-        if (answers) MatchedRoad(points.map { it.copy(lat = it.lat + 3.0 / M_PER_DEG) }) else null
+        if (answers) points.map { it.copy(lat = it.lat + 3.0 / M_PER_DEG) } else null
     }
 
     private lateinit var host: FakeKarooHost

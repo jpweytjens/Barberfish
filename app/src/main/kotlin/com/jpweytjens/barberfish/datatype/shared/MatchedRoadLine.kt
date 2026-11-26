@@ -81,11 +81,11 @@ internal fun alignChords(
     points: List<LatLng>,
     cumDist: DoubleArray,
     pointRange: IntRange,
-    road: MatchedRoad,
+    road: List<LatLng>,
 ): List<ChordRoad?> {
     val chordCount = maxOf(pointRange.last - pointRange.first, 0)
-    if (chordCount == 0 || road.points.size < 2) return List(chordCount) { null }
-    val onRoad = Road(road.points)
+    if (chordCount == 0 || road.size < 2) return List(chordCount) { null }
+    val onRoad = Road(road)
     // Arc position on the road of each point that lies on it; NaN for one that does not.
     val arcs = DoubleArray(chordCount + 1) { Double.NaN }
     var anchorArc = 0.0

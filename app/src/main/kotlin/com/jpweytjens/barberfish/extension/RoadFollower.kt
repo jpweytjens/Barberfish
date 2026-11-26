@@ -1,7 +1,7 @@
 package com.jpweytjens.barberfish.extension
 
+import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.MatchPiece
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.datatype.shared.alignChords
@@ -122,7 +122,7 @@ internal class RoadFollower(
         line: MatchedRoadLine,
         cumDist: DoubleArray,
         piece: MatchPiece,
-        road: MatchedRoad,
+        road: List<LatLng>,
     ): MatchedRoadLine =
         try {
             val chords = alignChords(line.points, cumDist, piece.points, road)

@@ -3,7 +3,6 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.RouteFixtures.point
 import com.jpweytjens.barberfish.datatype.shared.ChordRoad
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.alignChords
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
@@ -34,7 +33,7 @@ class MatchedRoadLineTest {
         MatchedRoadLine(points, cumulativeDistancesM(points))
 
     private fun align(points: List<LatLng>, road: List<LatLng>) =
-        alignChords(points, cumulativeDistancesM(points), points.indices, MatchedRoad(road))
+        alignChords(points, cumulativeDistancesM(points), points.indices, road)
 
     private fun bendLine() = unmatched(line4).with(0, align(line4, bend))
 

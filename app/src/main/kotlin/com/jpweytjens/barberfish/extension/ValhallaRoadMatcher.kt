@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.valhalla.valhalla.Valhalla
@@ -114,10 +113,10 @@ internal class ValhallaRoadMatcher(
     // Suppressed: the engine is native code behind a third-party wrapper. Whatever it throws,
     // and a library that fails to load, must leave the band on its chords, not end the service.
     @Suppress("TooGenericExceptionCaught")
-    override fun match(points: List<LatLng>): MatchedRoad? {
+    override fun match(points: List<LatLng>): List<LatLng>? {
         if (points.size < 2 || !usable()) return null
         return try {
-            roadMatchShape(engine(tilesDir, roadMatchRequest(points)))?.let { MatchedRoad(it) }
+            roadMatchShape(engine(tilesDir, roadMatchRequest(points)))
         } catch (e: Exception) {
             Timber.w(e, "road match failed")
             null

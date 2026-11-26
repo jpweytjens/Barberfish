@@ -7,7 +7,6 @@ import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.alignChords
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
@@ -52,7 +51,7 @@ class GradeMapRoadSpecsTest {
     private fun onRoad(points: List<LatLng>): MatchedRoadLine {
         val cum = cumulativeDistancesM(points)
         return MatchedRoadLine(points, cum)
-            .with(0, alignChords(points, cum, points.indices, MatchedRoad(north(points, 3.0))))
+            .with(0, alignChords(points, cum, points.indices, north(points, 3.0)))
     }
 
     private fun specsFor(line: MatchedRoadLine?, reversed: Boolean = false): GradeMapSpecs =
@@ -158,9 +157,7 @@ class GradeMapRoadSpecsTest {
                 point(300.0, 0.0),
             )
         val cum = cumulativeDistancesM(line)
-        val road =
-            MatchedRoadLine(line, cum)
-                .with(0, alignChords(line, cum, line.indices, MatchedRoad(bend)))
+        val road = MatchedRoadLine(line, cum).with(0, alignChords(line, cum, line.indices, bend))
         val at = point(125.0, 0.0)
         val moved =
             ChevronRoad(road, windowHalfM = 10.0, reversed = false)
