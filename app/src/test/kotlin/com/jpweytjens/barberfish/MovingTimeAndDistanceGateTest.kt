@@ -120,4 +120,14 @@ class MovingTimeAndDistanceGateTest {
             shows(setOf("three-column"), hud = hudWith(HUDSlotField.Speed), speed = coloured)
         )
     }
+
+    @Test
+    fun a_hud_speed_slot_coloured_against_the_moving_average_turns_it_on() {
+        val slot =
+            HUDSlotConfig(
+                field = HUDSlotField.Speed,
+                speedThreshold = SpeedThresholdConfig(source = SpeedThresholdSource.AVG_MOVING),
+            )
+        assertTrue(shows(setOf("three-column"), hud = HUDSlots(leftSlot = slot)))
+    }
 }

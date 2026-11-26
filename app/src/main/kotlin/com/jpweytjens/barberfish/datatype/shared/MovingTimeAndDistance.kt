@@ -98,6 +98,7 @@ internal val movingTimeTypeIds =
 
 private fun HUDSlotConfig.readsMovingTimeOrDistance(): Boolean =
     when (val field = field) {
+        HUDSlotField.Speed -> speedThreshold.source == SpeedThresholdSource.AVG_MOVING
         is HUDSlotField.AvgSpeed -> !field.includePaused
         is HUDSlotField.Time -> field.kind == TimeKind.RIDING
         is HUDSlotField.ETA -> true
