@@ -1,5 +1,6 @@
 package com.jpweytjens.barberfish.extension
 
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.BuildConfig
@@ -39,8 +40,10 @@ import com.jpweytjens.barberfish.datatype.shared.GRADE_MAP_REJOIN_ID
 import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.LatLng
+import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
+import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRejoinSpecs
@@ -74,6 +77,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -190,7 +194,31 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
         }
     }
 
+    // Matches the followed route to the road for the grade map. Lives as long as the service,
+    // so a map page reopened on the same route keeps the road already matched (a piece takes
+    // seconds), and matching carries on while the map page is closed.
+    private val roadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val roadFollower by lazy {
+        RoadFollower(roadMatcherFactory(applicationContext), roadScope, roadWanted())
+    }
+
+    // The one statement of when a road is followed: the route being ridden, while the grade map
+    // is on and set to follow the road. The follower reads it in the service's own scope and
+    // stops when it names anything else, with a map page open or not.
+    private fun roadWanted(): Flow<RouteLine?> =
+        combine(
+            applicationContext.streamGradeMapConfig(),
+            karooSystem.streamNavigationState(),
+        ) { config, nav ->
+            nav.state
+                .followedRoute()
+                ?.takeIf { config.enabled && config.followRoad }
+                ?.let { RouteLine(it.polyline, it.reversed) }
+        }
+
     override fun onDestroy() {
+        roadFollower.stop()
+        roadScope.cancel()
         discoveryScope.cancel()
         karooSystem.disconnect()
         super.onDestroy()
@@ -241,7 +269,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     applicationContext.streamFieldSparklineConfig(),
                     applicationContext.streamZoneConfig(),
                     karooSystem.streamNavigationState(),
-                ) { gradeMapCfg, sparklineCfg, zoneCfg, navEvent ->
+                    roadFollower.line,
+                ) { gradeMapCfg, sparklineCfg, zoneCfg, navEvent, road ->
                     // Resolve sparkline-sync here so the signature() below hashes the
                     // effective tuning and a sparkline edit triggers a rebuild while synced.
                     val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
@@ -252,6 +281,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         palette = zoneCfg.gradePalette,
                         tuning = eff,
                         route = navEvent.state.followedRoute(),
+                        followRoad = gradeMapCfg.followRoad,
+                        road = road,
                     )
                 }
             // Branch B: zoom + location (changes on every GPS tick / map interaction).
@@ -322,6 +353,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         riderFix ?: d.index.gps.first(),
                         d.viewRadiusM,
                         d.chevronLookaheadM,
+                        d.specs.chevronRoad,
                     ),
                     d.iconRes,
                 )
@@ -453,6 +485,23 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                             )
                                         }
                                     }
+                            // The map page only ever starts the road being followed. Stopping is
+                            // the follower's own, from the settings and the navigation state, so
+                            // it also happens with no map page open. Matching begins at the rider.
+                            // Without storage access every piece would come back empty and the
+                            // route would end as "no offline map"; not starting leaves it to
+                            // the first redraw after access is granted.
+                            if (inputs.followRoad && applicationContext.hasRoadDataAccess()) {
+                                roadFollower.follow(
+                                    route.polyline,
+                                    route.reversed,
+                                    polylineAxisProgressM(
+                                        progressLatch.progressM,
+                                        route.distanceM,
+                                        index.lengthM,
+                                    ),
+                                )
+                            }
                             val ride = visibility ?: RideVisibility(index).also { visibility = it }
                             // Spacing/window are zoom-driven; latitude only scales the cos(lat)
                             // term. Before the first GPS fix viewport.lat is 0.0 (equator) — the
@@ -521,6 +570,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                     reversed = route.reversed,
                                     metresPerPixel = metresPerPixel(viewport.zoomLevel),
                                     routeIndex = index,
+                                    matchedRoadLine = inputs.road.takeIf { inputs.followRoad },
                                 )
                             Timber.d(
                                 "grademap: ${specs.polylines.size} polylines, ${specs.chevrons.size} chevrons (blend=${inputs.chevronBlend} window±${chevronWindow.toInt()}m collision=${chevronCollision.toInt()}m zoom=${viewport.zoomLevel} loc=${viewport.lat},${viewport.lng} bounds=$bounds palette=${inputs.palette} simpl=${inputs.tuning.simplification} climbEdge=${inputs.tuning.climbEdge} descentEdge=${inputs.tuning.descentEdge})"
@@ -628,6 +678,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             scope.cancel()
         }
     }
+
+    internal companion object {
+        /** What matches a line to the road. Tests put a fake here; the engine needs a Karoo. */
+        internal var roadMatcherFactory: (Context) -> RoadMatcher = { ValhallaRoadMatcher(it) }
+    }
 }
 
 // How long progress ticks are held after a route change, while the distance stream may
@@ -680,9 +735,16 @@ internal data class GradeMapConfigInputs(
     // and the specs themselves — reads one already-effective tuning.
     val tuning: EffectiveGradeMapTuning,
     val route: FollowedRoute?,
+    val followRoad: Boolean = false,
+    // The road matched so far for the followed route. A new snapshot per matched piece.
+    val road: MatchedRoadLine? = null,
 ) {
     internal fun signature(): GradeMapConfigSignature =
         GradeMapConfigSignature(
+            followRoad = followRoad,
+            // Compared by identity: each matched piece gives a new snapshot, and that is what
+            // has to redraw the band.
+            road = road.takeIf { followRoad },
             enabled = enabled,
             chevronBlend = chevronBlend,
             width = width,
@@ -722,6 +784,8 @@ internal data class GradeMapConfigSignature(
     val rejoinBucket: Int,
     val rejoinHash: Int,
     val isDestination: Boolean,
+    val followRoad: Boolean,
+    val road: MatchedRoadLine?,
 )
 
 private data class ViewportInputs(

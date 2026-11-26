@@ -14,6 +14,10 @@ val localProperties = Properties().apply {
 android {
     namespace = "com.jpweytjens.barberfish"
     compileSdk = 37
+    // Barberfish builds no native code of its own; the NDK is here to strip the road matching
+    // engine's library (see the release size check below). The release workflows read this
+    // line to install the same version.
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.jpweytjens.barberfish"
@@ -22,6 +26,11 @@ android {
         versionCode = 14
         versionName = "4.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // The road matching engine is native code. Package it for the two processor types the
+        // Karoos run, and not for the emulator types it also ships. Lint asks for x86_64 for
+        // ChromeOS, where a Karoo extension never runs.
+        //noinspection ChromeOsAbiSupport
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         // Update channel: the Karoo polls this manifest for new versions.
         // Beta builds override it via MANIFEST_URL to point at the betafish repo.
         manifestPlaceholders["manifestUrl"] = System.getenv("MANIFEST_URL")
@@ -98,6 +107,28 @@ detekt {
     baseline = rootProject.file("config/detekt/baseline.xml")
 }
 
+// The road matching engine is over 100 MB per processor type with its debug information and
+// under 8 MB without. The Android build strips that information only when the NDK is installed,
+// and says nothing when it is not. Fail a release that came out unstripped.
+val maxReleaseApkBytes = 20L * 1024 * 1024
+
+tasks.matching { it.name == "packageRelease" }.configureEach {
+    val apk = layout.buildDirectory.file("outputs/apk/release/app-release.apk")
+    doLast {
+        val file = apk.get().asFile
+        // A file that is not there has length 0, which would pass.
+        if (!file.exists()) throw GradleException("Release size check: $file was not built.")
+        val bytes = file.length()
+        if (bytes > maxReleaseApkBytes) {
+            throw GradleException(
+                "app-release.apk is ${bytes / (1024 * 1024)} MB, over the 20 MB limit. The " +
+                    "native libraries were not stripped: the NDK (android.ndkVersion in " +
+                    "app/build.gradle.kts) is probably not installed on this machine."
+            )
+        }
+    }
+}
+
 tasks.register("generateManifest") {
     description = "Generates manifest.json with current version information"
     group = "build"
@@ -134,6 +165,9 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)
     implementation(libs.timber)
+    implementation(libs.valhalla.mobile)
+    implementation(libs.valhalla.models)
+    implementation(libs.valhalla.models.config)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)

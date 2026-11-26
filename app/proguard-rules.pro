@@ -22,3 +22,6 @@
 
 -keep class io.hammerhead.sampleext.extension.** { *; }
 -keep class io.hammerhead.karooext.** { *; }
+
+# The road matching engine: its native code looks these classes up by name.
+-keep class com.valhalla.** { *; }

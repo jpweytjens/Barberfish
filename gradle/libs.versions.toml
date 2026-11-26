@@ -20,6 +20,9 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version = "2025.09.01" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 timber = { module = "com.jakewharton.timber:timber", version = "5.0.1" }
+valhalla-mobile = { module = "io.github.rallista:valhalla-mobile", version = "0.6.6" }
+valhalla-models = { module = "io.github.rallista:valhalla-models", version = "0.6.0" }
+valhalla-models-config = { module = "io.github.rallista:valhalla-models-config", version = "0.6.0" }
 robolectric = { module = "org.robolectric:robolectric", version = "4.17" }
 androidx-test-core = { module = "androidx.test:core", version = "1.7.0" }
 karoo-ext-testing-robolectric = { module = "com.github.nikosavola.karoo-ext-testing:karoo-ext-testing-robolectric", version = "699d67fb94" }

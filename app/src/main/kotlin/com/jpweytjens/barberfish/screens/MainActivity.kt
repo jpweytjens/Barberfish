@@ -1229,6 +1229,10 @@ class MainActivity : ComponentActivity() {
                                 gradeMapConfig = updated
                                 lifecycleScope.launch { saveGradeMapConfig(updated) }
                             },
+                            save = { updated ->
+                                gradeMapConfig = updated
+                                saveGradeMapConfig(updated)
+                            },
                         )
                     } // end Map
 
@@ -1318,6 +1322,8 @@ internal fun GradeMapCard(
     selected: Boolean,
     onSelect: () -> Unit,
     onUpdate: (GradeMapConfig) -> Unit,
+    // Stores a config and returns once it is on disk, where [onUpdate] only starts the save.
+    save: suspend (GradeMapConfig) -> Unit,
 ) {
     ExpandableCard(
         title = "GRADE MAP",
@@ -1417,6 +1423,8 @@ internal fun GradeMapCard(
                     help = "Bunch chevrons on the steepest ramps, or where the gradient shifts.",
                 )
             }
+
+            FollowRoadRow(config = config, onUpdate = onUpdate, save = save)
         }
     }
 }

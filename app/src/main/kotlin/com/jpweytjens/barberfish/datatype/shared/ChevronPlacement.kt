@@ -73,6 +73,31 @@ private fun bearingDeg(from: LatLng, to: LatLng): Float {
 }
 
 /**
+ * What moving a chevron onto the road needs, kept together from the build to the draw. Chevrons are
+ * placed and chosen on the handed-over line; only one that is drawn is moved, so the road changes
+ * where a mark sits and never which marks there are.
+ */
+internal class ChevronRoad(
+    private val road: MatchedRoadLine,
+    private val windowHalfM: Double,
+    private val reversed: Boolean,
+) {
+    /** The same chevron (id, colour, distance) at its road position, with the road's bearing. */
+    fun moved(chevron: ClimbChevronSpec): ClimbChevronSpec {
+        // The window of placementAt, read along the road. positionAt clamps to the line's ends.
+        val halfM = if (windowHalfM > 0.0) windowHalfM else DEFAULT_BEARING_HALF_M
+        val here = road.positionAt(chevron.distanceM, reversed)
+        val back = road.positionAt(chevron.distanceM - halfM, reversed)
+        val ahead = road.positionAt(chevron.distanceM + halfM, reversed)
+        return chevron.copy(
+            lat = here.lat,
+            lng = here.lng,
+            bearingDeg = if (back == ahead) 0f else bearingDeg(back, ahead),
+        )
+    }
+}
+
+/**
  * Blended placement intensity in `[0, 1]`. [gradePct] and [changePctPerM] are normalised against
  * their "full" values and mixed by [alpha]: 0 follows grade magnitude alone, 1 follows the rate of
  * grade change alone. Colour already carries grade, so pushing [alpha] up makes the cadence carry

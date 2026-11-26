@@ -682,6 +682,9 @@ data class GradeMapConfig(
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
     val chevronBlend: Double = 0.5, // grade↔change cadence blend; ChevronEmphasis.nearest maps it
     val width: GradeMapWidth = GradeMapWidth.MEDIUM,
+    // Draw the band along the road, from the Karoo's offline maps, where the handed-over line
+    // cuts corners. Off by default: it needs storage access, asked for when it is turned on.
+    val followRoad: Boolean = false,
 ) {
     /**
      * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,
