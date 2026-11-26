@@ -1,0 +1,112 @@
+package com.jpweytjens.barberfish.datatype.shared
+
+/**
+ * The most line length, in metres, that may lack a road before the first or after the last anchor.
+ */
+internal const val MAX_UNSUPPORTED_END_M = 30.0
+
+/** The most line length, in metres, that may lack a road in one run between two anchors. */
+internal const val MAX_UNSUPPORTED_STRETCH_M = 60.0
+
+/** The most share of the line's length that may lack a road, all runs together. */
+internal const val MAX_UNSUPPORTED_SHARE = 0.10
+
+/** The rejoin [line] with the road's [heights] on its own distance axis. */
+internal class LineHeights(val line: MatchedRoadLine, val heights: List<Pair<Float, Float>>)
+
+// The height of the profile at [arcM]: held flat beyond its ends. The segment interpolated over
+// starts below [arcM] and ends at or above it, so its run is positive even where distances repeat.
+private fun List<Pair<Float, Float>>.heightAtArc(arcM: Double): Double {
+    val after = indexOfFirst { it.first >= arcM }
+    return when {
+        after < 0 -> last().second.toDouble()
+        after == 0 -> first().second.toDouble()
+        else -> {
+            val (d0, h0) = this[after - 1]
+            val (d1, h1) = this[after]
+            h0 + (h1 - h0) * (arcM - d0) / (d1 - d0)
+        }
+    }
+}
+
+// Whether the chords leave little enough of the line without a road, measured between [anchors].
+private fun isSupportedEnough(
+    cumDist: DoubleArray,
+    chords: List<ChordRoad?>,
+    anchors: List<Int>,
+): Boolean {
+    if (anchors.isEmpty()) return false
+    val totalM = cumDist.last()
+    val endM = cumDist[anchors.first()] + (totalM - cumDist[anchors.last()])
+    val runs = anchors.zipWithNext { a, b ->
+        (a until b).sumOf { j -> if (chords[j] == null) cumDist[j + 1] - cumDist[j] else 0.0 }
+    }
+    return cumDist[anchors.first()] <= MAX_UNSUPPORTED_END_M &&
+        totalM - cumDist[anchors.last()] <= MAX_UNSUPPORTED_END_M &&
+        runs.all { it <= MAX_UNSUPPORTED_STRETCH_M } &&
+        endM + runs.sum() <= MAX_UNSUPPORTED_SHARE * totalM
+}
+
+// The profile vertices: both ends and every road sample strictly inside each following chord.
+private fun profileOnLine(
+    cumDist: DoubleArray,
+    alignment: RoadAlignment,
+    anchors: List<Int>,
+    roadHeights: List<Pair<Float, Float>>,
+): List<Pair<Float, Float>> {
+    val arcs = alignment.arcs
+    // Distances strictly increase as floats, the profile's own type.
+    val profile = mutableListOf<Pair<Float, Float>>()
+    fun add(distanceM: Double, height: Double) {
+        if (profile.isEmpty() || distanceM.toFloat() > profile.last().first) {
+            profile += distanceM.toFloat() to height.toFloat()
+        }
+    }
+    add(0.0, roadHeights.heightAtArc(arcs[anchors.first()]))
+    for ((j, chord) in alignment.chords.withIndex()) {
+        if (chord == null) continue
+        val startM = cumDist[j]
+        val chordM = cumDist[j + 1] - startM
+        val arcRun = arcs[j + 1] - arcs[j]
+        add(startM, roadHeights.heightAtArc(arcs[j]))
+        for ((sampleArc, sampleHeight) in roadHeights) {
+            if (sampleArc > arcs[j] && sampleArc < arcs[j + 1]) {
+                add(startM + (sampleArc - arcs[j]) / arcRun * chordM, sampleHeight.toDouble())
+            }
+        }
+        add(cumDist[j + 1], roadHeights.heightAtArc(arcs[j + 1]))
+    }
+    add(cumDist.last(), roadHeights.heightAtArc(arcs[anchors.last()]))
+    return profile
+}
+
+/**
+ * The road's heights on the distance axis of the line [points] with distances [cumDist]. An anchor
+ * is a point on the road that belongs to a chord following it. Heights between two anchors follow
+ * the road within each following chord and are bridged straight across the rest; before the first
+ * anchor and after the last they are held flat. Null when the road has no heights, or when too much
+ * of the line lacks a road: more than [MAX_UNSUPPORTED_END_M] before the first anchor or after the
+ * last, a run over [MAX_UNSUPPORTED_STRETCH_M] between two anchors, or more than
+ * [MAX_UNSUPPORTED_SHARE] of the line's length in all.
+ */
+internal fun heightsOnLine(
+    points: List<LatLng>,
+    cumDist: DoubleArray,
+    road: MatchedRoad,
+): LineHeights? {
+    val roadHeights = road.heights
+    if (roadHeights.isNullOrEmpty() || points.size < 2 || cumDist.last() <= 0.0) return null
+    val alignment = alignToRoad(points, cumDist, points.indices, road)
+    val chords = alignment.chords
+    val anchors =
+        points.indices.filter { i ->
+            !alignment.arcs[i].isNaN() &&
+                (chords.getOrNull(i) != null || chords.getOrNull(i - 1) != null)
+        }
+    return if (isSupportedEnough(cumDist, chords, anchors)) {
+        val line = MatchedRoadLine(points, cumDist).with(0, chords)
+        LineHeights(line, profileOnLine(cumDist, alignment, anchors, roadHeights))
+    } else {
+        null
+    }
+}
