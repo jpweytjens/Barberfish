@@ -70,8 +70,6 @@ internal data class GradeMapSpecs(
     val chevrons: List<ClimbChevronSpec>,
     val segmentIdSpan: Int = 0,
     val chevronIdSpan: Int = 0,
-    /** Set when the band follows a matched road: moves a drawn chevron onto it. */
-    val chevronRoad: ChevronRoad? = null,
 )
 
 /** Axis-aligned viewport bounding box in lat/lng. */
@@ -443,6 +441,9 @@ internal fun buildGradeMapSpecs(
                 spacingMinM = chevronSpacingMinM,
                 collisionRadiusM = chevronMinSpacingM,
                 windowHalfM = chevronWindowHalfM,
+                // With a matched road the marks sit on it, as the band does.
+                positionAt =
+                    road?.let { line -> { distanceM -> line.positionAt(distanceM, reversed) } },
             )
         } else {
             emptyList()
@@ -479,6 +480,5 @@ internal fun buildGradeMapSpecs(
         chevrons = filteredChevrons,
         segmentIdSpan = pieces.size,
         chevronIdSpan = chevronPlacements.size,
-        chevronRoad = road?.let { ChevronRoad(it, chevronWindowHalfM, reversed) },
     )
 }

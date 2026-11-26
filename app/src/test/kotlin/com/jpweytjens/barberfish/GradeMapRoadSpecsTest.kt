@@ -2,28 +2,29 @@ package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.RouteFixtures.M_PER_DEG
 import com.jpweytjens.barberfish.RouteFixtures.point
-import com.jpweytjens.barberfish.datatype.shared.ChevronRoad
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
+import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.alignChords
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
+import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.latLngDistanceM
+import com.jpweytjens.barberfish.datatype.shared.placeChevronsByCadence
+import com.jpweytjens.barberfish.datatype.shared.selectChevrons
 import com.jpweytjens.barberfish.extension.ElevationSimplification
 import com.jpweytjens.barberfish.extension.GradePalette
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** [buildGradeMapSpecs] with a matched road: the band moves onto it, nothing else changes. */
+/** [buildGradeMapSpecs] with a matched road: the band and its chevrons move onto it. */
 class GradeMapRoadSpecsTest {
     // 2 km east along y = 0, as the Karoo hands it over (rounded to the polyline grid).
     private val routePolyline = encodeGpsPolyline(RouteFixtures.straight(2000.0, 50.0))
@@ -97,7 +98,6 @@ class GradeMapRoadSpecsTest {
             onRoad(decodeGpsPolyline(encodeGpsPolyline(RouteFixtures.straight(1900.0, 50.0))))
         val specs = specsFor(other)
         assertEquals(specsFor(null), specs)
-        assertNull(specs.chevronRoad)
     }
 
     @Test
@@ -117,35 +117,35 @@ class GradeMapRoadSpecsTest {
     }
 
     @Test
-    fun the_candidate_chevrons_do_not_move() {
-        assertEquals(specsFor(null).chevrons, specsFor(onRoad(saved)).chevrons)
-    }
-
-    @Test
-    fun a_moved_chevron_sits_on_the_road_and_is_otherwise_the_same() {
-        val specs = specsFor(onRoad(saved))
-        val road = specs.chevronRoad
-        assertNotNull(road)
-        specs.chevrons.forEach { candidate ->
-            val moved = road!!.moved(candidate)
-            assertEquals(
-                3.0,
-                latLngDistanceM(
-                    LatLng(candidate.lat, candidate.lng),
-                    LatLng(moved.lat, moved.lng),
-                ),
-                0.05,
-            )
-            assertEquals(3.0, (moved.lat - candidate.lat) * M_PER_DEG, 0.05)
-            assertEquals(candidate.id, moved.id)
-            assertEquals(candidate.colorArgb, moved.colorArgb)
-            assertEquals(candidate.distanceM, moved.distanceM, 0.0)
-            assertTrue(abs(candidate.bearingDeg - moved.bearingDeg) < 1f)
+    fun the_candidate_chevrons_sit_on_the_road_and_are_otherwise_the_same() {
+        val plain = specsFor(null).chevrons
+        val road = specsFor(onRoad(saved)).chevrons
+        assertEquals(plain.size, road.size)
+        road.zip(plain).forEach { (onRoad, onLine) ->
+            assertEquals(3.0, (onRoad.lat - onLine.lat) * M_PER_DEG, 0.05)
+            assertEquals(onLine.lng, onRoad.lng, 1e-9)
+            assertTrue(abs(onLine.bearingDeg - onRoad.bearingDeg) < 1f)
+            assertEquals(onLine.copy(lat = onRoad.lat, bearingDeg = onRoad.bearingDeg), onRoad)
         }
     }
 
     @Test
-    fun a_moved_chevron_takes_the_roads_bearing() {
+    fun selection_measures_to_the_road_position() {
+        val gps = decodeGpsPolyline(routePolyline)
+        val index = buildRouteIndex(gps, cumulativeDistancesM(gps))
+        val plain = specsFor(null).chevrons
+        val road = specsFor(onRoad(saved)).chevrons
+        // 100 m north of the first mark on the line, so 97 m from where the road puts it.
+        val first = plain.first()
+        val rider = LatLng(first.lat + 100.0 / M_PER_DEG, first.lng)
+        fun selected(candidates: List<ClimbChevronSpec>) =
+            selectChevrons(candidates, RideVisibility(index), 0.0, rider, 98.5, 1e6)
+        assertTrue(selected(plain).isEmpty())
+        assertEquals(listOf(road.first()), selected(road))
+    }
+
+    @Test
+    fun a_chevron_takes_the_roads_bearing() {
         // The handed-over line cuts a bend that the road takes through (150, 30).
         val line = (0..3).map { point(it * 100.0, 0.0) }
         val bend =
@@ -158,17 +158,31 @@ class GradeMapRoadSpecsTest {
             )
         val cum = cumulativeDistancesM(line)
         val road = MatchedRoadLine(line, cum).with(0, alignChords(line, cum, line.indices, bend))
-        val at = point(125.0, 0.0)
-        val moved =
-            ChevronRoad(road, windowHalfM = 10.0, reversed = false)
-                .moved(ClimbChevronSpec("c", at.lat, at.lng, 90f, 7, 125.0))
-        assertTrue(latLngDistanceM(point(125.0, 15.0), LatLng(moved.lat, moved.lng)) < 0.01)
+        // One mark, half of [spacingM] in.
+        fun onlyMark(spacingM: Double, reversed: Boolean) =
+            placeChevronsByCadence(
+                    gps = if (reversed) line.asReversed() else line,
+                    cumDist = cum,
+                    gradeAtM = { 0.0 },
+                    changeAtM = { 0.0 },
+                    alpha = 0.0,
+                    gradeFullPct = 15.0,
+                    changeFullPctPerM = 0.2,
+                    spacingMaxM = spacingM,
+                    spacingMinM = spacingM,
+                    collisionRadiusM = 0.0,
+                    windowHalfM = 10.0,
+                    positionAt = { road.positionAt(it, reversed) },
+                )
+                .single()
+        val mark = onlyMark(250.0, reversed = false)
+        assertEquals(125.0, mark.distanceM, 0.0)
+        assertTrue(latLngDistanceM(point(125.0, 15.0), LatLng(mark.lat, mark.lng)) < 0.01)
         // Up the first leg of the bend: 50 m east for 30 m north.
-        assertEquals(59.0, moved.bearingDeg.toDouble(), 1.0)
+        assertEquals(59.0, mark.bearingDeg.toDouble(), 1.0)
         // Ridden the other way the same spot is 175 m in, and the mark points back down the leg.
-        val back =
-            ChevronRoad(road, windowHalfM = 10.0, reversed = true)
-                .moved(ClimbChevronSpec("c", at.lat, at.lng, 270f, 7, 175.0))
+        val back = onlyMark(350.0, reversed = true)
+        assertEquals(175.0, back.distanceM, 0.0)
         assertTrue(latLngDistanceM(point(125.0, 15.0), LatLng(back.lat, back.lng)) < 0.01)
         assertEquals(239.0, back.bearingDeg.toDouble(), 1.0)
     }
@@ -194,9 +208,9 @@ class GradeMapRoadSpecsTest {
             decodeGpsPolyline(road.polylines.first().encoded).first().lng * M_PER_DEG,
             1.2,
         )
-        val candidate = road.chevrons.first()
-        val moved = road.chevronRoad!!.moved(candidate)
-        assertEquals(3.0, (moved.lat - candidate.lat) * M_PER_DEG, 0.05)
-        assertEquals(candidate.lng, moved.lng, 1e-9)
+        val onLine = plain.chevrons.first()
+        val onRoad = road.chevrons.first()
+        assertEquals(3.0, (onRoad.lat - onLine.lat) * M_PER_DEG, 0.05)
+        assertEquals(onLine.lng, onRoad.lng, 1e-9)
     }
 }

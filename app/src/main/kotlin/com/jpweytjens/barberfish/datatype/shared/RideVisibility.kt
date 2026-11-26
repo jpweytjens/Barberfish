@@ -66,8 +66,7 @@ internal class RideVisibility(private val index: RouteIndex) {
  * on the ground, such as the return side of a loop, from showing its marks early. Collision is
  * decided here, at draw time, so a candidate suppressed by a mark that later hides is reconsidered
  * on the next update. The window keeps the symbol count near what fits on screen whatever the route
- * length; the band itself is drawn whole. With a [road], the marks chosen are returned at their
- * road positions.
+ * length; the band itself is drawn whole.
  */
 // Suppressed: each window bound is an independent input, and bundling them would invent a type
 // that means nothing outside this call.
@@ -79,7 +78,6 @@ internal fun selectChevrons(
     rider: LatLng,
     viewRadiusM: Double,
     lookaheadM: Double,
-    road: ChevronRoad? = null,
 ): List<ClimbChevronSpec> {
     val kept = mutableListOf<ClimbChevronSpec>()
     val inWindow = candidates.filter { candidate ->
@@ -94,7 +92,5 @@ internal fun selectChevrons(
                 kept.any { latLngDistanceM(LatLng(it.lat, it.lng), here) < collisionRadiusM }
         if (!collides) kept += candidate
     }
-    // Moved only now: the window and the collision test above read the candidates' own
-    // positions, so a road changes where a drawn mark sits and never which marks are drawn.
-    return if (road == null) kept else kept.map { road.moved(it) }
+    return kept
 }

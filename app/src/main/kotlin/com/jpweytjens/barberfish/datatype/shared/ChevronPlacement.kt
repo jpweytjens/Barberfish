@@ -23,13 +23,12 @@ private const val DEFAULT_BEARING_HALF_M = 10.0
 
 private fun collides(
     placed: List<ChevronPlacement>,
-    gps: List<LatLng>,
-    cumDist: DoubleArray,
+    positionAt: (Double) -> LatLng,
     candidateM: Double,
     radiusM: Double,
 ): Boolean {
     if (radiusM <= 0.0 || placed.isEmpty()) return false
-    val here = interpolateAt(gps, cumDist, candidateM)
+    val here = positionAt(candidateM)
     // Checked against every placed chevron, not just the previous one: where the route
     // switchbacks or loops, two positions far apart in route distance can sit on top of
     // each other on screen.
@@ -37,16 +36,15 @@ private fun collides(
 }
 
 private fun placementAt(
-    gps: List<LatLng>,
-    cumDist: DoubleArray,
+    positionAt: (Double) -> LatLng,
+    totalM: Double,
     distanceM: Double,
     windowHalfM: Double,
 ): ChevronPlacement {
-    val totalM = cumDist.last()
     val halfM = if (windowHalfM > 0.0) windowHalfM else DEFAULT_BEARING_HALF_M
-    val here = interpolateAt(gps, cumDist, distanceM)
-    val back = interpolateAt(gps, cumDist, (distanceM - halfM).coerceAtLeast(0.0))
-    val ahead = interpolateAt(gps, cumDist, (distanceM + halfM).coerceAtMost(totalM))
+    val here = positionAt(distanceM)
+    val back = positionAt((distanceM - halfM).coerceAtLeast(0.0))
+    val ahead = positionAt((distanceM + halfM).coerceAtMost(totalM))
     // Chord across the window rather than a short forward tangent, so the rotation follows
     // the road through a bend instead of whichever vertex happens to be next.
     val bearing = if (back == ahead) 0f else bearingDeg(back, ahead)
@@ -70,31 +68,6 @@ private fun bearingDeg(from: LatLng, to: LatLng): Float {
     val x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
     val deg = atan2(y, x) * 180.0 / PI
     return ((deg + 360.0) % 360.0).toFloat()
-}
-
-/**
- * What moving a chevron onto the road needs, kept together from the build to the draw. Chevrons are
- * placed and chosen on the handed-over line; only one that is drawn is moved, so the road changes
- * where a mark sits and never which marks there are.
- */
-internal class ChevronRoad(
-    private val road: MatchedRoadLine,
-    private val windowHalfM: Double,
-    private val reversed: Boolean,
-) {
-    /** The same chevron (id, colour, distance) at its road position, with the road's bearing. */
-    fun moved(chevron: ClimbChevronSpec): ClimbChevronSpec {
-        // The window of placementAt, read along the road. positionAt clamps to the line's ends.
-        val halfM = if (windowHalfM > 0.0) windowHalfM else DEFAULT_BEARING_HALF_M
-        val here = road.positionAt(chevron.distanceM, reversed)
-        val back = road.positionAt(chevron.distanceM - halfM, reversed)
-        val ahead = road.positionAt(chevron.distanceM + halfM, reversed)
-        return chevron.copy(
-            lat = here.lat,
-            lng = here.lng,
-            bearingDeg = if (back == ahead) 0f else bearingDeg(back, ahead),
-        )
-    }
 }
 
 /**
@@ -127,6 +100,10 @@ internal fun chevronSpacingM(intensity: Double, spacingMaxM: Double, spacingMinM
  * candidate within [collisionRadiusM] of a placed mark is skipped (the cursor still advances), so
  * switchbacks never stack marks. Placement knows nothing about grade runs — callers colour and
  * filter the result.
+ *
+ * [positionAt] gives the position a route distance is drawn at. Null reads it off [gps]; a caller
+ * whose band follows a matched road passes the road's, so a mark sits and points where the band
+ * runs.
  */
 internal fun placeChevronsByCadence(
     gps: List<LatLng>,
@@ -140,10 +117,12 @@ internal fun placeChevronsByCadence(
     spacingMinM: Double,
     collisionRadiusM: Double,
     windowHalfM: Double,
+    positionAt: ((Double) -> LatLng)? = null,
 ): List<ChevronPlacement> {
     if (gps.size < 2 || cumDist.size != gps.size) return emptyList()
     val totalM = cumDist.last()
     if (totalM <= 0.0 || spacingMinM <= 0.0) return emptyList()
+    val drawnAt = positionAt ?: { interpolateAt(gps, cumDist, it) }
     fun spacingAt(d: Double): Double =
         chevronSpacingM(
             chevronIntensity(gradeAtM(d), changeAtM(d), alpha, gradeFullPct, changeFullPctPerM),
@@ -154,8 +133,8 @@ internal fun placeChevronsByCadence(
     // Start half a (local) spacing in, so the first mark is not pinned to the route origin.
     var cursorM = spacingAt(0.0) * 0.5
     while (cursorM < totalM) {
-        if (!collides(placed, gps, cumDist, cursorM, collisionRadiusM)) {
-            placed += placementAt(gps, cumDist, cursorM, windowHalfM)
+        if (!collides(placed, drawnAt, cursorM, collisionRadiusM)) {
+            placed += placementAt(drawnAt, totalM, cursorM, windowHalfM)
         }
         cursorM += spacingAt(cursorM)
     }

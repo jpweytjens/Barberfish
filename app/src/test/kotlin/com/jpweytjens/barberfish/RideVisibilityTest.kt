@@ -1,18 +1,13 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.RouteFixtures.point
-import com.jpweytjens.barberfish.datatype.shared.ChevronRoad
-import com.jpweytjens.barberfish.datatype.shared.ChordRoad
 import com.jpweytjens.barberfish.datatype.shared.ClimbChevronSpec
 import com.jpweytjens.barberfish.datatype.shared.LatLng
-import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
-import com.jpweytjens.barberfish.datatype.shared.alignChords
 import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.interpolateAt
-import com.jpweytjens.barberfish.datatype.shared.latLngDistanceM
 import com.jpweytjens.barberfish.datatype.shared.placeChevronsByCadence
 import com.jpweytjens.barberfish.datatype.shared.selectChevrons
 import org.junit.Assert.assertEquals
@@ -227,133 +222,5 @@ class RideVisibilityTest {
             listOf(last),
             selectChevrons(listOf(first, last), visibility, 20.0, start, 1e6, 1000.0),
         )
-    }
-
-    // --- with a matched road: chosen on the handed-over line, then moved -------------------
-
-    // P0..P3 along y = 0 at x = 0, 100, 200, 300.
-    private val line4 = (0..3).map { point(it * 100.0, 0.0) }
-    private val cum4 = cumulativeDistancesM(line4)
-
-    private fun road(vararg xy: Pair<Double, Double>): ChordRoad {
-        val points = xy.map { point(it.first, it.second) }
-        return ChordRoad(points, cumulativeDistancesM(points))
-    }
-
-    // Chords 0 and 1 on a road that meets at x = [joinX] where the saved line has P1 at 100.
-    // Built by hand: nothing limits how far such a road may sit from the line.
-    private fun roadJoiningAt(joinX: Double) =
-        ChevronRoad(
-            MatchedRoadLine(line4, cum4)
-                .with(0, listOf(road(0.0 to 0.0, joinX to 0.0), road(joinX to 0.0, 200.0 to 0.0))),
-            windowHalfM = 10.0,
-            reversed = false,
-        )
-
-    private fun assertAt(xM: Double, chevron: ClimbChevronSpec) =
-        assertEquals(xM, chevron.lng * RouteFixtures.M_PER_DEG, 0.01)
-
-    @Test
-    fun marks_the_road_pulls_together_are_both_still_drawn() {
-        val index = index(line4)
-        // 25 m apart on the line; on the road they sit at 110 and 132.5, 22.5 m apart.
-        val candidates = listOf(chevron(index, cum4[1]), chevron(index, 125.0))
-        val drawn =
-            selectChevrons(
-                candidates,
-                RideVisibility(index),
-                24.0,
-                line4.first(),
-                1e6,
-                1e6,
-                roadJoiningAt(110.0),
-            )
-        assertEquals(candidates.map { it.id }, drawn.map { it.id })
-        assertAt(110.0, drawn[0])
-        assertAt(132.5, drawn[1])
-    }
-
-    @Test
-    fun a_mark_the_road_pushes_clear_is_still_dropped() {
-        val index = index(line4)
-        // 15 m apart on the line; on the road they would sit at 90 and 106.5, 16.5 m apart.
-        val candidates = listOf(chevron(index, cum4[1]), chevron(index, 115.0))
-        val drawn =
-            selectChevrons(
-                candidates,
-                RideVisibility(index),
-                16.0,
-                line4.first(),
-                1e6,
-                1e6,
-                roadJoiningAt(90.0),
-            )
-        assertEquals(listOf(candidates[0].id), drawn.map { it.id })
-        assertAt(90.0, drawn[0])
-    }
-
-    @Test
-    fun the_view_radius_is_measured_to_the_candidate_not_the_road() {
-        val index = index(line4)
-        val candidates = listOf(chevron(index, cum4[1]))
-        val visibility = RideVisibility(index)
-        // 195 m from the candidate, 205 m from where the road puts it.
-        val near =
-            selectChevrons(
-                candidates,
-                visibility,
-                20.0,
-                point(-95.0, 0.0),
-                200.0,
-                1e6,
-                roadJoiningAt(110.0),
-            )
-        assertEquals(1, near.size)
-        assertAt(110.0, near[0])
-        // 205 m from the candidate, 195 m from where the road would put it.
-        val far =
-            selectChevrons(
-                candidates,
-                visibility,
-                20.0,
-                point(-105.0, 0.0),
-                200.0,
-                1e6,
-                roadJoiningAt(90.0),
-            )
-        assertTrue(far.isEmpty())
-    }
-
-    @Test
-    fun the_same_ids_are_selected_with_and_without_a_road() {
-        // Two legs 30 m apart, so marks on one leg collide with marks on the other.
-        val route = RouteFixtures.switchback(500.0, 30.0, 50.0)
-        val index = index(route)
-        val cum = cumulativeDistancesM(route)
-        val north = route.map { it.copy(lat = it.lat + 3.0 / RouteFixtures.M_PER_DEG) }
-        val line =
-            MatchedRoadLine(route, cum).with(0, alignChords(route, cum, route.indices, north))
-        assertEquals(route.size - 1, line.followingChords)
-        val candidates = (25..1005 step 35).map { chevron(index, it.toDouble()) }
-        val visibility = RideVisibility(index)
-        val plain = selectChevrons(candidates, visibility, 40.0, route.first(), 1e6, 1e6)
-        val onRoad =
-            selectChevrons(
-                candidates,
-                visibility,
-                40.0,
-                route.first(),
-                1e6,
-                1e6,
-                ChevronRoad(line, windowHalfM = 10.0, reversed = false),
-            )
-        assertTrue(plain.size < candidates.size)
-        assertEquals(plain.map { it.id }, onRoad.map { it.id })
-        // Every mark moved, none further than the 5 m a road may sit from the line. (At the
-        // turn the road's corner is cut, so not every mark moves by the full 3 m.)
-        onRoad.zip(plain).forEach { (moved, kept) ->
-            val movedM = latLngDistanceM(LatLng(moved.lat, moved.lng), LatLng(kept.lat, kept.lng))
-            assertTrue("moved $movedM m", movedM > 0.5 && movedM <= 5.0)
-        }
     }
 }
