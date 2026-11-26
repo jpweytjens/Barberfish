@@ -259,6 +259,9 @@ internal fun renderElevationSparkline(
     poiDistances: List<Float> = emptyList(),
     showPois: Boolean = false,
     windowOverride: Pair<Float, Float>? = null,
+    // False keeps an override's margins outside the profile, so the dot at either end of the
+    // profile still sits a pad inside the strip (see [rejoinWindow]).
+    clampWindowOverride: Boolean = true,
 ): ElevationSparklineResult {
     if (elevationPoints.isEmpty()) return ElevationSparklineResult(null, displayedRange)
 
@@ -270,8 +273,12 @@ internal fun renderElevationSparkline(
     if (windowOverride != null) {
         // Climb-only mode: pin the frame to the climb (foot → top) and map linearly —
         // warp centred on the rider is meaningless while approaching from outside the window.
-        windowStart = windowOverride.first.coerceAtLeast(firstDist)
-        windowEnd = windowOverride.second.coerceAtMost(lastDist)
+        windowStart =
+            if (clampWindowOverride) windowOverride.first.coerceAtLeast(firstDist)
+            else windowOverride.first
+        windowEnd =
+            if (clampWindowOverride) windowOverride.second.coerceAtMost(lastDist)
+            else windowOverride.second
         effWarpK = 0f
     } else {
         val window =
@@ -664,6 +671,20 @@ internal fun sparklineWindow(
             .coerceAtLeast(positionM + edgeMarginM)
     val start = (end - lookaheadM).coerceAtLeast(firstDist).coerceAtMost(positionM - edgeMarginM)
     return start to end
+}
+
+/**
+ * Window that fits a line [lengthM] long to a strip [widthPx] wide, whatever the lookahead or warp:
+ * the line starts one pad (plus the rounding pixel [markerEdgeMarginM] also asks for) in from the
+ * left edge and ends as far from the right. With `p` that share of the strip, a margin `m` on each
+ * side gives `p = m / (L + 2m)`, so `m = p * L / (1 - 2p)`. Pass it as `windowOverride` with
+ * `clampWindowOverride = false`, which maps it linearly. A strip too narrow for two pads caps `p`
+ * at a quarter, which keeps the window finite.
+ */
+internal fun rejoinWindow(lengthM: Float, widthPx: Int): Pair<Float, Float> {
+    val padFraction = ((MARKER_PAD_PX + 1f) / widthPx.coerceAtLeast(1)).coerceAtMost(0.25f)
+    val marginM = padFraction * lengthM / (1f - 2f * padFraction)
+    return -marginM to lengthM + marginM
 }
 
 /**

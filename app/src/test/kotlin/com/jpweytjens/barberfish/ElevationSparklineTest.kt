@@ -1,18 +1,26 @@
 package com.jpweytjens.barberfish
 
+import android.graphics.Bitmap
 import com.jpweytjens.barberfish.datatype.shared.MARKER_PAD_PX
 import com.jpweytjens.barberfish.datatype.shared.buildWarpedXMapper
 import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.gradeFillRuns
+import com.jpweytjens.barberfish.datatype.shared.rejoinWindow
+import com.jpweytjens.barberfish.datatype.shared.renderElevationSparkline
 import com.jpweytjens.barberfish.datatype.shared.rvvElevationFixture
 import com.jpweytjens.barberfish.datatype.shared.sparklineWindow
 import com.jpweytjens.barberfish.datatype.shared.visvalingamWhyatt
 import com.jpweytjens.barberfish.extension.ElevationSimplification
+import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.SparklineWarp
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 class ElevationStripTest {
 
@@ -263,6 +271,123 @@ class ElevationStripTest {
                         positionM += routeLengthM / 20f
                     }
                 }
+            }
+        }
+    }
+
+    // --- rejoinWindow ---
+
+    // Fixture of the present behaviour: the window is lookahead wide whatever the route holds, so
+    // a 100 m line shrinks to a sliver of a window that is 5 km wide.
+    @Test
+    fun the_existing_window_does_not_fit_a_short_line() {
+        val (start, end) =
+            sparklineWindow(
+                firstDist = 0f,
+                lastDist = 100f,
+                positionM = 0f,
+                lookaheadM = 5_000f,
+                positionFraction = SparklineWarp.NONE.positionFraction,
+                widthPx = 256,
+                logWarpK = SparklineWarp.NONE.k,
+            )
+        assertEquals(-182f, start, 5f)
+        assertEquals(182f, end, 5f)
+    }
+
+    // Strip widths are known only at runtime (a Profile cell's width, and the HUD strip's, which
+    // is the screen width), so this reuses the cell widths the other window tests use.
+    @Test
+    fun a_fitted_line_starts_one_pad_in_and_lands_one_pad_from_the_right() {
+        for (lineM in listOf(100f, 900f, 4_900f)) {
+            for (widthPx in cellWidthsPx) {
+                val window = rejoinWindow(lineM, widthPx)
+                for (lookaheadKm in lookaheadKmOptions) {
+                    for (positionM in listOf(0f, lineM / 2f, lineM)) {
+                        val toX =
+                            buildWarpedXMapper(
+                                window.first,
+                                window.second,
+                                positionM,
+                                lookaheadKm * 1000f,
+                                widthPx,
+                                0f,
+                            )
+                        val case = "${lineM}m ${widthPx}px ${lookaheadKm}km at ${positionM}m"
+                        assertEquals(case, MARKER_PAD_PX + 1f, toX(0f), 0.5f)
+                        assertEquals(case, widthPx - MARKER_PAD_PX - 1f, toX(lineM), 0.5f)
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun a_strip_narrower_than_four_pads_still_gets_a_finite_window() {
+        val (start, end) = rejoinWindow(900f, 20)
+        assertTrue(start.isFinite() && end.isFinite())
+        assertTrue(start < 0f)
+        assertTrue(end > 900f)
+    }
+}
+
+/** The renderer's use of [rejoinWindow]: the override reaches the canvas, margins and all. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class RejoinWindowRenderTest {
+    private val dotColor = 0xFFFF00FF.toInt()
+    private val widthPx = 240
+    private val lineM = 900f
+    private val line = listOf(0f to 100f, lineM / 2f to 110f, lineM to 105f)
+
+    private fun render(
+        positionM: Float,
+        clampWindowOverride: Boolean,
+        warp: SparklineWarp = SparklineWarp.NONE,
+    ): Bitmap =
+        renderElevationSparkline(
+                elevationPoints = line,
+                positionM = positionM,
+                widthPx = widthPx,
+                heightPx = 48,
+                density = 1f,
+                palette = GradePalette.KAROO,
+                readable = false,
+                lookaheadM = 10_000f,
+                dotColor = dotColor,
+                logWarpK = warp.k,
+                positionFraction = warp.positionFraction,
+                windowOverride = rejoinWindow(lineM, widthPx),
+                clampWindowOverride = clampWindowOverride,
+            )
+            .bitmap!!
+
+    private fun Bitmap.columnHasDot(x: Int) = (0 until height).any { getPixel(x, it) == dotColor }
+
+    @Test
+    fun an_unclamped_override_keeps_the_dot_inside_at_both_ends() {
+        for (positionM in listOf(0f, lineM)) {
+            val bitmap = render(positionM, clampWindowOverride = false)
+            assertTrue((1 until widthPx - 1).any { bitmap.columnHasDot(it) })
+            assertTrue("column 0 at $positionM", !bitmap.columnHasDot(0))
+            assertTrue("last column at $positionM", !bitmap.columnHasDot(widthPx - 1))
+        }
+    }
+
+    @Test
+    fun a_clamped_override_puts_the_dot_on_the_edge() {
+        assertTrue(render(0f, clampWindowOverride = true).columnHasDot(0))
+        assertTrue(render(lineM, clampWindowOverride = true).columnHasDot(widthPx - 1))
+    }
+
+    @Test
+    fun the_fitted_window_does_not_depend_on_the_warp_setting() {
+        for (positionM in listOf(0f, lineM / 2f, lineM)) {
+            val off = render(positionM, clampWindowOverride = false)
+            for (warp in SparklineWarp.entries) {
+                val other = render(positionM, clampWindowOverride = false, warp = warp)
+                assertTrue("${warp.label} at $positionM", off.sameAs(other))
             }
         }
     }
