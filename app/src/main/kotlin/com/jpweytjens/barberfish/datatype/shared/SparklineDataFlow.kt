@@ -5,9 +5,11 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.extension.ElevationSimplification
+import com.jpweytjens.barberfish.extension.RejoinRoad
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.rejoinRoad
 import com.jpweytjens.barberfish.extension.streamDataFlow
 import com.jpweytjens.barberfish.extension.streamGlobalPOIs
 import com.jpweytjens.barberfish.extension.streamNavigationState
@@ -16,6 +18,7 @@ import io.hammerhead.karooext.KarooSystemService
 import io.hammerhead.karooext.models.DataType
 import io.hammerhead.karooext.models.OnGlobalPOIs
 import io.hammerhead.karooext.models.StreamState
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -29,6 +32,10 @@ import timber.log.Timber
 // Max cross-track distance (metres) for a saved/global POI to count as "on this route". Matches
 // karoo-routegraph's poiDistanceToRouteMaxMeters default (issue #22).
 private const val POI_ROUTE_CORRIDOR_M = 500.0
+
+// How many times the saved-POI projection has run, process-wide. Tests read it to see the cache
+// hold across a detour.
+internal val globalPoiProjections = AtomicInteger()
 
 internal data class SparklineFrame(
     val bitmap: Bitmap?,
@@ -62,6 +69,7 @@ internal fun sparklineBitmapFlow(
     widthPx: Int,
     heightPx: Int,
     isPreview: Boolean,
+    rejoin: Flow<RejoinRoad?> = rejoinRoad,
 ): Flow<SparklineFrame> {
     var ratchetRange = 0f
     var lastPositionM = 0f
@@ -74,6 +82,10 @@ internal fun sparklineBitmapFlow(
     // snapping over a dense polyline every emission would be wasteful.
     var cachedGlobalPoiKey: Triple<String, Boolean, List<String>>? = null
     var cachedGlobalPoiDistances: List<Float> = emptyList()
+    // The rejoin view's own simplified profile and height range, beside the route's.
+    var cachedRejoinKey: Pair<String, ElevationSimplification>? = null
+    var cachedRejoinPoints: List<Pair<Float, Float>> = emptyList()
+    var rejoinRange = 0f
 
     val distFlow: Flow<StreamState> =
         if (isPreview)
@@ -109,6 +121,7 @@ internal fun sparklineBitmapFlow(
             context.streamZoneConfig(),
             configFlow,
             globalPoisFlow,
+            rejoin,
         )
         .map { inputs ->
             val followed = inputs.followed
@@ -235,6 +248,7 @@ internal fun sparklineBitmapFlow(
                 val globalKey =
                     Triple(route.polyline, route.reversed, globalPois.pois.map { it.id })
                 if (globalKey != cachedGlobalPoiKey) {
+                    globalPoiProjections.incrementAndGet()
                     val decodedPts = decodeGpsPolyline(route.polyline)
                     val routePts = if (route.reversed) decodedPts.asReversed() else decodedPts
                     val routeCum = cumulativeDistancesM(routePts)
@@ -268,6 +282,77 @@ internal fun sparklineBitmapFlow(
                     else -> emptyList()
                 }
             val (climbEdge, descentEdge) = sparkCfg.gradeEdges(zoneConfig.gradePalette)
+            // Off the route, the rejoin line's terrain once its heights are in. No climbs and no
+            // POIs: theirs are distances along the route. It keeps its own profile and height
+            // range, so it reads and writes none of the route's cached state above, and the route
+            // returns as it was. Climbs mode keeps today's view off the route. Any failure falls
+            // through
+            // to that view.
+            val rejoin =
+                inputs.rejoin?.takeIf {
+                    isOffRoute &&
+                        sparkCfg.hudMode == SparklineMode.ON &&
+                        it.rejoinPolyline == route.rejoinPolyline
+                }
+            @Suppress("TooGenericExceptionCaught")
+            val rejoinResult =
+                try {
+                    rejoin?.let { road ->
+                        val rejoinKey = road.rejoinPolyline to sparkCfg.simplification
+                        if (rejoinKey != cachedRejoinKey) {
+                            // Each rejoin line starts its height range fresh.
+                            if (road.rejoinPolyline != cachedRejoinKey?.first) rejoinRange = 0f
+                            cachedRejoinPoints =
+                                visvalingamWhyatt(road.heights, sparkCfg.simplification.minAreaM2)
+                            cachedRejoinKey = rejoinKey
+                        }
+                        val lookaheadM = sparkCfg.lookaheadKm * 1000f
+                        val view =
+                            rejoinView(
+                                road.lengthM.toFloat(),
+                                route?.rejoinDistanceM,
+                                lookaheadM,
+                                widthPx,
+                            )
+                        renderElevationSparkline(
+                            elevationPoints = cachedRejoinPoints,
+                            positionM = view.positionM,
+                            widthPx = widthPx,
+                            heightPx = heightPx,
+                            density = context.resources.displayMetrics.density,
+                            palette = zoneConfig.gradePalette,
+                            readable = false,
+                            lookaheadM = lookaheadM,
+                            climbEdge = climbEdge,
+                            descentEdge = descentEdge,
+                            displayedRange = rejoinRange,
+                            distanceDeltaM = distanceDeltaM,
+                            dotColor = dotColor,
+                            isNightMode = isNightMode,
+                            minElevRangeM = sparkCfg.yZoom.minRangeM,
+                            logWarpK = sparkCfg.warp.k,
+                            positionFraction = sparkCfg.warp.positionFraction,
+                            climbRanges = emptyList(),
+                            showClimbs = sparkCfg.showClimbs,
+                            poiDistances = emptyList(),
+                            showPois = sparkCfg.showPois,
+                            windowOverride = view.windowOverride,
+                            clampWindowOverride = false,
+                        )
+                    }
+                } catch (e: RuntimeException) {
+                    Timber.w(e, "could not draw the rejoin line")
+                    null
+                }
+            if (rejoinResult?.bitmap != null) {
+                rejoinRange = rejoinResult.displayedRange
+                return@map SparklineFrame(
+                    bitmap = rejoinResult.bitmap,
+                    displayedRange = rejoinRange,
+                    lookaheadKm = sparkCfg.lookaheadKm,
+                    hudEnabled = showArea,
+                )
+            }
             val (bitmap, updatedRange) =
                 if (showArea && reveal.counterText == null) {
                     renderElevationSparkline(
@@ -317,6 +402,7 @@ internal data class SparklineInputs(
     val zoneConfig: ZoneConfig,
     val sparkCfg: SparklineConfig,
     val globalPois: OnGlobalPOIs,
+    val rejoin: RejoinRoad?,
 )
 
 /**
@@ -329,8 +415,42 @@ internal fun sparklineInputs(
     zoneConfig: Flow<ZoneConfig>,
     sparkCfg: Flow<SparklineConfig>,
     globalPois: Flow<OnGlobalPOIs>,
+    rejoin: Flow<RejoinRoad?>,
 ): Flow<SparklineInputs> =
-    combine(followed, distState, zoneConfig, sparkCfg, globalPois) { nav, dist, zone, cfg, pois ->
-            SparklineInputs(nav, dist, zone, cfg, pois)
+    combine(
+            combine(followed, distState, zoneConfig, sparkCfg, globalPois) {
+                nav,
+                dist,
+                zone,
+                cfg,
+                pois ->
+                SparklineInputs(nav, dist, zone, cfg, pois, rejoin = null)
+            },
+            rejoin,
+        ) { inputs, road ->
+            inputs.copy(rejoin = road)
         }
         .onRenderTick()
+
+/**
+ * Where the Profile puts a rejoin line [lengthM] long: the rider at [positionM] on the line's own
+ * axis, and the fitted [windowOverride] for a line shorter than the lookahead, null for one that
+ * scrolls like the route.
+ */
+internal data class RejoinView(val positionM: Float, val windowOverride: Pair<Float, Float>?)
+
+/**
+ * The rejoin view of a line [lengthM] long with [rejoinDistanceM] of it still to ride: the rider
+ * that far before its end, kept on the line, and at its start while the distance is unknown. A line
+ * shorter than [lookaheadM] is fitted to a strip [widthPx] wide (see [rejoinWindow]).
+ */
+internal fun rejoinView(
+    lengthM: Float,
+    rejoinDistanceM: Double?,
+    lookaheadM: Float,
+    widthPx: Int,
+): RejoinView =
+    RejoinView(
+        positionM = rejoinDistanceM?.let { (lengthM - it.toFloat()).coerceIn(0f, lengthM) } ?: 0f,
+        windowOverride = if (lengthM < lookaheadM) rejoinWindow(lengthM, widthPx) else null,
+    )
