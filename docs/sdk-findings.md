@@ -27,24 +27,29 @@ different case: the stream is `Streaming` but a specific `DataPoint.values` key 
 
 ## Time field semantics: ELAPSED_TIME vs RIDE_TIME
 
-The SDK's own descriptions in `DataType.kt` ([karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext)) call `ELAPSED_TIME` "Ride Time" and `RIDE_TIME` "Total Time", so the stream names and their labels cross. Barberfish uses one word per quantity, and "elapsed" and "ride time" appear only as stream names:
+Confirmed from `DataType.kt` in [karoo-ext on GitHub](https://github.com/hammerheadnav/karoo-ext).
 
-| Our word       | What it counts                                                   | Karoo stream   |
-| -------------- | ---------------------------------------------------------------- | -------------- |
-| Total time     | everything since Start                                           | `RIDE_TIME`    |
-| Recording time | while the ride records                                           | `ELAPSED_TIME` |
-| Paused time    | while paused                                                     | `PAUSED_TIME`  |
-| Moving time    | recording time during which the Karoo measured speed or distance | ours           |
+| Type constant                | SDK description                                                  | Meaning                                                |
+| ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| `DataType.Type.ELAPSED_TIME` | "Ride Time — Time spent recording this ride"                     | Moving time, excluding paused time                     |
+| `DataType.Type.RIDE_TIME`    | "Total Time — Time since this ride began, including paused time" | Wall-clock time from ride start, including paused time |
+| `DataType.Type.PAUSED_TIME`  | "Paused Time — Time spent paused this ride"                      | Cumulative pause duration                              |
 
-Observed on a Karoo 3 on 2026-11-22:
+The relationship is `RIDE_TIME = ELAPSED_TIME + PAUSED_TIME`.
 
-- `ELAPSED_TIME` runs whenever the ride records, also without a speed signal. Auto-pause did not engage without a speed reading, so the timer ran for 100 s before the first GPS speed reading, and for 85 s inside a shop while the distance stood still.
-- `RIDE_TIME` counts the time the Karoo is switched off and `PAUSED_TIME` does not, so `RIDE_TIME = ELAPSED_TIME + PAUSED_TIME` holds only until the first power-off.
-- After a power-off, time and distance resume from the same earlier moment, up to 3 s back.
-- For about 20 s after boot the streams carry no values.
-- A restored ride comes back paused.
+"Recording" in the ELAPSED_TIME description means the timer advances only while the
+ride is recording, not while paused. The bug that confirmed it: computing
+`movingSeconds = ELAPSED_TIME - PAUSED_TIME` gives a value that shrinks while paused
+(ELAPSED holds, PAUSED grows), so moving average speed climbs during a stop.
 
-In [#41](https://github.com/jpweytjens/Barberfish/issues/41) a Karoo 3 back from a power-off showed 0.66 mi at an average of 2386.1 mph, which is that distance over about one second. Five power cycles on 2026-11-22 did not reproduce it. Moving time is therefore counted by Barberfish itself, in [`MovingTimeAndDistance.kt`](../app/src/main/kotlin/com/jpweytjens/barberfish/datatype/shared/MovingTimeAndDistance.kt); [Moving time and distance](architecture.md#moving-time-and-distance) describes how.
+Correct formulas:
+
+| Metric                  | Formula                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- |
+| Moving time             | `ELAPSED_TIME` directly                                                 |
+| Total (wall-clock) time | `RIDE_TIME`, or `ELAPSED_TIME + PAUSED_TIME`                            |
+| Avg speed (moving)      | `DISTANCE / ELAPSED_TIME`                                               |
+| Avg speed (total)       | `DISTANCE / RIDE_TIME` (or native `AVERAGE_SPEED` field if it is total) |
 
 ---
 
