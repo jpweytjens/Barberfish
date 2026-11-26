@@ -1,6 +1,7 @@
 package com.jpweytjens.barberfish.karoo
 
 import android.app.Application
+import android.content.pm.PackageManager
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
@@ -68,6 +69,20 @@ class ValhallaRoadMatcherTest {
         assertFalse(app.hasRoadDataAccess())
         grantStorage()
         assertTrue(app.hasRoadDataAccess())
+    }
+
+    // The manifest and the list the config screen requests are two copies of one fact. A
+    // permission requested but not declared is refused without a dialog, for good.
+    @Test
+    fun the_permissions_requested_are_the_ones_the_manifest_declares() {
+        val declared =
+            app.packageManager
+                .getPackageInfo(app.packageName, PackageManager.GET_PERMISSIONS)
+                .requestedPermissions
+                .orEmpty()
+                .filter { it.endsWith("_EXTERNAL_STORAGE") }
+                .toSet()
+        assertEquals(ROAD_DATA_PERMISSIONS.toSet(), declared)
     }
 
     @Test
