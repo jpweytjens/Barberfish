@@ -1,5 +1,7 @@
 package com.jpweytjens.barberfish.datatype.shared
 
+import kotlin.math.abs
+
 /**
  * The most line length, in metres, that may lack a road before the first or after the last anchor.
  */
@@ -109,4 +111,33 @@ internal fun heightsOnLine(
     } else {
         null
     }
+}
+
+/** The farthest, in metres, the rejoin line's landing may lie from the route. */
+internal const val MAX_LANDING_OFFSET_M = 30.0
+
+/** The most, in metres, the line's last height may differ from the route's profile there. */
+internal const val MAX_LANDING_HEIGHT_DIFF_M = 30.0
+
+/**
+ * Whether the last of the rejoin line's [heights] is within [MAX_LANDING_HEIGHT_DIFF_M] of the
+ * route's own profile where the line lands at [landing]. False when the landing is farther than
+ * [MAX_LANDING_OFFSET_M] from the route or the route has no profile. [heights] is not empty.
+ * [routePoints] and [routeElevation] are both in ride order.
+ */
+internal fun landingHeightAgrees(
+    heights: List<Pair<Float, Float>>,
+    landing: LatLng,
+    routePoints: List<LatLng>,
+    routeElevation: List<Pair<Float, Float>>,
+): Boolean {
+    val cumDist = cumulativeDistancesM(routePoints)
+    val landingM = projectPoiAlongRoute(landing, routePoints, cumDist, MAX_LANDING_OFFSET_M)
+    if (landingM == null || routeElevation.isEmpty()) return false
+    // The profile's axis is put onto the GPS axis as buildGradeMapSpecs does, guard band included.
+    val elevSpanM = routeElevation.last().first.toDouble()
+    val ratio = if (elevSpanM > 0.0) cumDist.last() / elevSpanM else 1.0
+    val elevToGps = if (ratio in 0.9..1.1) ratio else 1.0
+    val routeHeightM = elevationAtM(routeElevation, landingM / elevToGps)
+    return abs(heights.last().second - routeHeightM) <= MAX_LANDING_HEIGHT_DIFF_M
 }
