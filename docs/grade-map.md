@@ -54,7 +54,7 @@ The route line the Karoo hands to an extension has a point every 40 m or so, joi
 
 The road comes from the offline maps on the Karoo, the same ones it navigates with, and is looked up on the device. The band starts on the straight lines and moves onto the road a few seconds later, first around you and then along the rest of the route. Where no offline map is downloaded, or the route leaves the roads the map knows, the band keeps its straight lines for that stretch. Colors, grades and distances are the same either way.
 
-The switch is in the Karoo files card under Map, and it is off by default. Turning it on makes Android ask for access to photos and media. That is the name Android gives to the shared storage where the Karoo keeps its offline maps; Barberfish reads the maps there and nothing else. If you decline, the switch goes back to off.
+The switch is in the Karoo files card under Map, and it is off by default. Turning it on makes Android ask for access to photos and media. That is the name Android gives to the shared storage where the Karoo keeps its offline maps; Barberfish reads the maps there and nothing else. If you decline, the switch goes back to off. If you decline for good, it stays on and the card says where to allow access in the Karoo's app settings.
 
 ## The way back to the route
 
