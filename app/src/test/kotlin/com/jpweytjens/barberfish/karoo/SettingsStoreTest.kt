@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.extension.GradeMapDrawnIdSpans
 import com.jpweytjens.barberfish.extension.GradeMapWidth
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDScope
@@ -22,6 +23,7 @@ import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
 import com.jpweytjens.barberfish.extension.streamGradeMapConfig
+import com.jpweytjens.barberfish.extension.streamGradeMapDrawnIdSpans
 import com.jpweytjens.barberfish.extension.streamKarooFilesConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import com.jpweytjens.barberfish.extension.updateHUDConfig
@@ -119,5 +121,20 @@ class SettingsStoreTest {
         }
         assertEquals(GradeMapWidth.NARROW, runBlocking { app.streamGradeMapConfig().first() }.width)
         assertFalse(runBlocking { app.streamKarooFilesConfig().first() }.enabled)
+    }
+
+    // No build that wrote a record without the field drew coloured rejoin pieces.
+    @Test
+    fun a_stored_span_record_without_rejoin_segments_reads_none() {
+        val app = karoo.app
+        runBlocking {
+            app.dataStore.edit {
+                it[stringPreferencesKey("grade_map_drawn_id_spans")] =
+                    """{"segments":4,"chevrons":2,"rejoinChevrons":1}"""
+            }
+        }
+        val spans = runBlocking { app.streamGradeMapDrawnIdSpans().first() }
+        assertEquals(GradeMapDrawnIdSpans(segments = 4, chevrons = 2, rejoinChevrons = 1), spans)
+        assertEquals(0, spans.rejoinSegments)
     }
 }

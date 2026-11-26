@@ -191,6 +191,41 @@ class GradeMapControllerTest {
     }
 
     @Test
+    fun the_casing_takes_the_colour_it_is_given_and_is_black_by_default() {
+        val specs = listOf(GradeMapPolylineSpec("a", "xyz", green))
+        val coloured = FakeEmitter()
+        runBlocking { controller().emit(coloured, route, specs, fillW, casingW, casingColor = red) }
+        val black = FakeEmitter()
+        controller().emit(black, specs)
+        fun FakeEmitter.casingColor() =
+            events.filterIsInstance<ShowPolyline>().single { it.id == casingId }.color
+        assertEquals(red, coloured.casingColor())
+        assertEquals(0xFF000000.toInt(), black.casingColor())
+    }
+
+    @Test
+    fun switching_between_one_fill_and_graded_pieces_hides_the_other_in_the_same_emit() {
+        val controller = GradeMapController(casingId = "barberfish-rejoin-casing", settleMs = 0)
+        val fake = FakeEmitter()
+        val solid = listOf(GradeMapPolylineSpec("barberfish-rejoin", "xyz", red))
+        val graded = (0..2).map { GradeMapPolylineSpec("barberfish-rejoin-seg-$it", "p$it", green) }
+        fun emit(specs: List<GradeMapPolylineSpec>) = runBlocking {
+            controller.emit(fake, route, specs, fillW, casingW, casingColor = red)
+        }
+        emit(solid)
+
+        fake.events.clear()
+        emit(graded)
+        assertEquals(listOf("barberfish-rejoin"), fake.hideIds())
+        assertEquals(listOf("barberfish-rejoin-casing") + graded.map { it.id }, fake.showIds())
+
+        fake.events.clear()
+        emit(solid)
+        assertEquals(graded.map { it.id }.toSet(), fake.hideIds().toSet())
+        assertEquals(listOf("barberfish-rejoin-casing", "barberfish-rejoin"), fake.showIds())
+    }
+
+    @Test
     fun casing_id_and_stale_ids_are_configurable() {
         val controller = GradeMapController(casingId = "other-casing", settleMs = 0)
         val fake = FakeEmitter()

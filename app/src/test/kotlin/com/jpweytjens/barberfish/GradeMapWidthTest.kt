@@ -38,4 +38,11 @@ class GradeMapWidthTest {
             assertTrue(it.name, it.casingDp > it.fillDp)
         }
     }
+
+    @Test
+    fun `the rejoin casing takes medium's margin at narrow and the width's own elsewhere`() {
+        assertEquals(10, GradeMapWidth.NARROW.rejoinCasingDp)
+        assertEquals(21, GradeMapWidth.MEDIUM.rejoinCasingDp)
+        assertEquals(28, GradeMapWidth.WIDE.rejoinCasingDp)
+    }
 }

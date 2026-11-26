@@ -37,13 +37,14 @@ internal class GradeMapController(
         specs: List<GradeMapPolylineSpec>,
         fillWidth: Int,
         casingWidth: Int,
+        casingColor: Int = CASING_COLOR,
     ) {
         val newIds = specs.mapTo(mutableSetOf()) { it.id }
         val casing =
             ShowPolyline(
                 id = casingId,
                 encodedPolyline = casingEncoded,
-                color = CASING_COLOR,
+                color = casingColor,
                 width = casingWidth,
             )
         if (casingWidth == 0) {

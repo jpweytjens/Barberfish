@@ -661,6 +661,13 @@ enum class GradeMapWidth(val label: String, val fillDp: Int, val casingDp: Int) 
     /** Grade chevrons are wider than the narrow band, so it draws none. */
     val drawsChevrons: Boolean
         get() = this != NARROW
+
+    /**
+     * The rejoin band's casing: the casing is all that marks the band as the way back, so it keeps
+     * one at Narrow, Medium's margin over the fill. A trial value, to settle on the device.
+     */
+    val rejoinCasingDp: Int
+        get() = if (this == NARROW) fillDp + (MEDIUM.casingDp - MEDIUM.fillDp) else casingDp
 }
 
 // --- GradeMapConfig ---
@@ -726,6 +733,7 @@ data class GradeMapDrawnIdSpans(
     val segments: Int = 0,
     val chevrons: Int = 0,
     val rejoinChevrons: Int = 0,
+    val rejoinSegments: Int = 0,
 )
 
 private val gradeMapDrawnIdSpansKey = stringPreferencesKey("grade_map_drawn_id_spans")
