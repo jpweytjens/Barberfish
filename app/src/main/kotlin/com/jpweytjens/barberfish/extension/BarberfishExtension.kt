@@ -203,16 +203,17 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
     }
 
     // The one statement of when a road is followed: the route being ridden, while the grade map
-    // is on and set to follow the road. The follower reads it in the service's own scope and
-    // stops when it names anything else, with a map page open or not.
+    // is on and Barberfish may read the Karoo's files. The follower reads it in the service's own
+    // scope and stops when it names anything else, with a map page open or not.
     private fun roadWanted(): Flow<RouteLine?> =
         combine(
             applicationContext.streamGradeMapConfig(),
+            applicationContext.streamKarooFilesConfig(),
             karooSystem.streamNavigationState(),
-        ) { config, nav ->
+        ) { config, files, nav ->
             nav.state
                 .followedRoute()
-                ?.takeIf { config.enabled && config.followRoad }
+                ?.takeIf { config.enabled && applicationContext.mayReadKarooFiles(files) }
                 ?.let { RouteLine(it.polyline, it.reversed) }
         }
 
@@ -263,14 +264,20 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 }
             }
             // Branch A: config + nav (changes rarely — route load, settings edit).
+            // Six flows: combine takes five with their types, so the Karoo files switch joins
+            // the grade map config first.
             val configNavFlow =
                 combine(
-                    applicationContext.streamGradeMapConfig(),
+                    combine(
+                        applicationContext.streamGradeMapConfig(),
+                        applicationContext.streamKarooFilesConfig(),
+                        ::Pair,
+                    ),
                     applicationContext.streamFieldSparklineConfig(),
                     applicationContext.streamZoneConfig(),
                     karooSystem.streamNavigationState(),
                     roadFollower.line,
-                ) { gradeMapCfg, sparklineCfg, zoneCfg, navEvent, road ->
+                ) { (gradeMapCfg, filesCfg), sparklineCfg, zoneCfg, navEvent, road ->
                     // Resolve sparkline-sync here so the signature() below hashes the
                     // effective tuning and a sparkline edit triggers a rebuild while synced.
                     val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
@@ -281,7 +288,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         palette = zoneCfg.gradePalette,
                         tuning = eff,
                         route = navEvent.state.followedRoute(),
-                        followRoad = gradeMapCfg.followRoad,
+                        followRoad = filesCfg.enabled,
                         road = road,
                     )
                 }
@@ -491,7 +498,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             // Without storage access every piece would come back empty and the
                             // route would end as "no offline map"; not starting leaves it to
                             // the first redraw after access is granted.
-                            if (inputs.followRoad && applicationContext.hasRoadDataAccess()) {
+                            if (
+                                applicationContext.mayReadKarooFiles(
+                                    KarooFilesConfig(enabled = inputs.followRoad)
+                                )
+                            ) {
                                 roadFollower.follow(
                                     route.polyline,
                                     route.reversed,

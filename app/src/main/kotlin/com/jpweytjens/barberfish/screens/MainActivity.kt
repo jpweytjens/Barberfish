@@ -160,6 +160,7 @@ import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDOverride
 import com.jpweytjens.barberfish.extension.HUDScope
 import com.jpweytjens.barberfish.extension.HUDSlots
+import com.jpweytjens.barberfish.extension.KarooFilesConfig
 import com.jpweytjens.barberfish.extension.LabelSize
 import com.jpweytjens.barberfish.extension.LapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.MaxHRFieldConfig
@@ -198,6 +199,7 @@ import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import com.jpweytjens.barberfish.extension.saveHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRMaxPercentFieldConfig
 import com.jpweytjens.barberfish.extension.saveHRZoneFieldConfig
+import com.jpweytjens.barberfish.extension.saveKarooFilesConfig
 import com.jpweytjens.barberfish.extension.saveLapPowerFieldConfig
 import com.jpweytjens.barberfish.extension.saveMaxHRFieldConfig
 import com.jpweytjens.barberfish.extension.saveMaxPowerFieldConfig
@@ -267,6 +269,7 @@ class MainActivity : ComponentActivity() {
         val pendingHUDWrites = remember { PendingHUDWrites() }
         var fieldSparklineConfig by remember { mutableStateOf(SparklineConfig()) }
         var gradeMapConfig by remember { mutableStateOf(GradeMapConfig()) }
+        var karooFilesConfig by remember { mutableStateOf(KarooFilesConfig()) }
         var powerFieldConfig by remember { mutableStateOf(PowerFieldConfig()) }
         var hrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
         var avgHrFieldConfig by remember { mutableStateOf(HRFieldConfig()) }
@@ -330,6 +333,7 @@ class MainActivity : ComponentActivity() {
                     }
                     fieldSparklineConfig = snapshot.fieldSparkline
                     gradeMapConfig = snapshot.gradeMap
+                    karooFilesConfig = snapshot.karooFiles
                     powerFieldConfig = snapshot.powerField
                     hrFieldConfig = snapshot.hrField
                     avgHrFieldConfig = snapshot.avgHrField
@@ -1229,9 +1233,19 @@ class MainActivity : ComponentActivity() {
                                 gradeMapConfig = updated
                                 lifecycleScope.launch { saveGradeMapConfig(updated) }
                             },
+                        )
+                        var karooFilesExpanded by remember { mutableStateOf(false) }
+                        KarooFilesCard(
+                            config = karooFilesConfig,
+                            selected = karooFilesExpanded,
+                            onSelect = { karooFilesExpanded = !karooFilesExpanded },
+                            onUpdate = { updated ->
+                                karooFilesConfig = updated
+                                lifecycleScope.launch { saveKarooFilesConfig(updated) }
+                            },
                             save = { updated ->
-                                gradeMapConfig = updated
-                                saveGradeMapConfig(updated)
+                                karooFilesConfig = updated
+                                saveKarooFilesConfig(updated)
                             },
                         )
                     } // end Map
@@ -1322,8 +1336,6 @@ internal fun GradeMapCard(
     selected: Boolean,
     onSelect: () -> Unit,
     onUpdate: (GradeMapConfig) -> Unit,
-    // Stores a config and returns once it is on disk, where [onUpdate] only starts the save.
-    save: suspend (GradeMapConfig) -> Unit,
 ) {
     ExpandableCard(
         title = "GRADE MAP",
@@ -1423,8 +1435,6 @@ internal fun GradeMapCard(
                     help = "Bunch chevrons on the steepest ramps, or where the gradient shifts.",
                 )
             }
-
-            FollowRoadRow(config = config, onUpdate = onUpdate, save = save)
         }
     }
 }

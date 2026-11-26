@@ -326,7 +326,6 @@ class ConfigShotsRenderTest {
                 selected = true,
                 onSelect = {},
                 onUpdate = { gradeMapConfig = it },
-                save = { gradeMapConfig = it },
             )
         }
         captureTall("grade_map_config", scrollState)

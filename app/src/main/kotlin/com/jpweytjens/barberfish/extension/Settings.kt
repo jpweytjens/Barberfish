@@ -682,9 +682,6 @@ data class GradeMapConfig(
     val simplification: ElevationSimplification = ElevationSimplification.HEAVY,
     val chevronBlend: Double = 0.5, // grade↔change cadence blend; ChevronEmphasis.nearest maps it
     val width: GradeMapWidth = GradeMapWidth.MEDIUM,
-    // Draw the band along the road, from the Karoo's offline maps, where the handed-over line
-    // cuts corners. Off by default: it needs storage access, asked for when it is turned on.
-    val followRoad: Boolean = false,
 ) {
     /**
      * The resolved (climb, descent) edges of *this* config: the stored thresholds when set,
@@ -738,6 +735,21 @@ fun Context.streamGradeMapDrawnIdSpans(): Flow<GradeMapDrawnIdSpans> =
 
 suspend fun Context.saveGradeMapDrawnIdSpans(spans: GradeMapDrawnIdSpans) =
     saveConfig(gradeMapDrawnIdSpansKey, spans)
+
+// --- KarooFilesConfig ---
+
+// Whether the rider lets Barberfish read the Karoo's offline maps. Off by default: it needs
+// storage access, asked for when it is turned on. Read it through `mayReadKarooFiles`, never
+// on its own.
+@Serializable data class KarooFilesConfig(val enabled: Boolean = false)
+
+private val karooFilesConfigKey = stringPreferencesKey("karoo_files_config")
+
+fun Context.streamKarooFilesConfig(): Flow<KarooFilesConfig> =
+    streamConfig(karooFilesConfigKey, KarooFilesConfig())
+
+suspend fun Context.saveKarooFilesConfig(config: KarooFilesConfig) =
+    saveConfig(karooFilesConfigKey, config)
 
 // --- CadenceFieldConfig ---
 
@@ -978,6 +990,7 @@ data class ConfigSnapshot(
     val hudSparkline: SparklineConfig,
     val fieldSparkline: SparklineConfig,
     val gradeMap: GradeMapConfig,
+    val karooFiles: KarooFilesConfig,
     val powerField: PowerFieldConfig,
     val hrField: HRFieldConfig,
     val avgHrField: HRFieldConfig,
@@ -1016,6 +1029,7 @@ fun Context.streamConfigSnapshot(): Flow<ConfigSnapshot> =
                 hudSparkline = prefs.hudSparklineConfig(),
                 fieldSparkline = prefs.fieldSparklineConfig(),
                 gradeMap = prefs.config(gradeMapConfigKey, GradeMapConfig()),
+                karooFiles = prefs.config(karooFilesConfigKey, KarooFilesConfig()),
                 powerField = prefs.config(powerFieldConfigKey, PowerFieldConfig()),
                 hrField = prefs.config(HRFieldKind.HR.key, HRFieldConfig()),
                 avgHrField = prefs.config(HRFieldKind.AVG.key, HRFieldConfig()),
