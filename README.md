@@ -58,7 +58,7 @@ Tested back to firmware 1.618.2377.20 on Karoo 3 and 1.613.2351.12 on Karoo 2. N
 
 Theme, units, and zones follow your Karoo automatically; Karoo's Data Field Design settings do not. [Match Barberfish to your Karoo](docs/matching-karoo.md) shows how to mirror them.
 
-Barberfish asks for one permission, and only if you set the grade map's [Follow the road](docs/grade-map.md#following-the-road) to Closely: access to photos and media, which is where the Karoo stores its offline maps.
+Barberfish asks for one permission, and only if you turn on Offline maps in the Karoo files card: access to photos and media, which is where the Karoo stores its offline maps. Barberfish reads the maps there to [follow the road](docs/grade-map.md#following-the-road) through bends and, off the route, to grade the [way back](docs/grade-map.md#the-way-back-to-the-route) on the grade map and show its terrain on the [Profile](docs/elevation-profile.md#rerouting).
 
 ## Installation
 

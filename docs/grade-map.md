@@ -33,7 +33,7 @@ Karoo's Climber marks a detected climb in blue whichever way you ride it. The gr
 
 ## How it is drawn
 
-An extension can only draw on top of the Karoo's route line, never in its place, so the band has to cover it. The Width setting chooses whether the band only matches the line or also covers the Karoo's arrows. When you leave the route, the Karoo's path back gets a band too, in the map's rerouting red, and it clears once you rejoin. The map adds the band piece by piece, so when a route starts, and after a zoom on a long one, the Karoo's line can show through for a second or two.
+An extension can only draw on top of the Karoo's route line, never in its place, so the band has to cover it. The Width setting chooses whether the band only matches the line or also covers the Karoo's arrows. When you leave the route, the Karoo's path back gets a band too ([the way back](#the-way-back-to-the-route)). The map adds the band piece by piece, so when a route starts, and after a zoom on a long one, the Karoo's line can show through for a second or two.
 
 ## Settings
 
@@ -45,12 +45,19 @@ An extension can only draw on top of the Karoo's route line, never in its place,
 | Simplification | Off / Mild / Medium / Max | Floor on the smallest bump the band keeps ([Simplification](algorithms.md#simplification)). |
 | Width | Narrow / Medium / Wide | Narrow is as thin as the Karoo's route line and draws no chevrons: just ahead of you, the Karoo's arrows stick out on both sides. Medium draws its own chevrons and covers most of the Karoo's arrows. Wide covers them fully, at the cost of a wider band. |
 | Chevron spacing | Gradient / Balanced / Changes | Bunch chevrons on the steepest road, where the gradient shifts, or in between. |
-| Follow the road | Loosely / Closely | Closely draws the band along the road through bends, where the Karoo has offline maps ([Following the road](#following-the-road)). |
+
+Following the road is not set here but with the Offline maps switch in the Karoo files card, also under Map ([Following the road](#following-the-road)).
 
 ## Following the road
 
-The route line the Karoo hands to an extension has a point every 40 m or so, joined by straight lines. In a hairpin those straight lines cut the corner, so the band leaves the road the map shows and, at the Narrow width, leaves the Karoo's own line with it. With Follow the road set to Closely, the band is drawn along the road itself, and its chevrons sit on it.
+The route line the Karoo hands to an extension has a point every 40 m or so, joined by straight lines. In a hairpin those straight lines cut the corner, so the band leaves the road the map shows and, at the Narrow width, leaves the Karoo's own line with it. With the Offline maps switch on, the band is drawn along the road itself, and its chevrons sit on it.
 
 The road comes from the offline maps on the Karoo, the same ones it navigates with, and is looked up on the device. The band starts on the straight lines and moves onto the road a few seconds later, first around you and then along the rest of the route. Where no offline map is downloaded, or the route leaves the roads the map knows, the band keeps its straight lines for that stretch. Colors, grades and distances are the same either way.
 
-Choosing Closely makes Android ask for access to photos and media. That is the name Android gives to the shared storage where the Karoo keeps its offline maps; Barberfish reads the maps there and nothing else. If you decline, the setting stays on Loosely, which is the default.
+The switch is in the Karoo files card under Map, and it is off by default. Turning it on makes Android ask for access to photos and media. That is the name Android gives to the shared storage where the Karoo keeps its offline maps; Barberfish reads the maps there and nothing else. If you decline, the switch goes back to off.
+
+## The way back to the route
+
+Off the route, the Karoo hands over a line back to it, and the grade map draws a band on that line too, in the map's rerouting red. With the Offline maps switch on and an offline map downloaded for the area, that band is colored by grade like the route, drawn along the road, and edged in red at every width, Narrow included. The grade map itself can be off for this: the [Profile](elevation-profile.md#rerouting) shows the same line.
+
+The heights come from the offline maps in steps of 2 m, so on a short line the colors can change coarsely. Without a downloaded map the band stays solid red. It does too when the switch is off, access is not granted, the line cannot be matched to the road, or the Karoo does not support the switch. The band clears when you rejoin.
