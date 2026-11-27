@@ -137,6 +137,9 @@ class RejoinBandTest {
         assertTrue(specs.chevrons.isNotEmpty())
         assertTrue(specs.chevrons.all { it.id.startsWith("barberfish-rejoin-chev-") })
         assertTrue(specs.chevrons.all { it.lat * RouteFixtures.M_PER_DEG in 2.9..3.1 })
+        // The span, not the count, bounds the ids a later startMap must hide.
+        val chevronIds = (0 until specs.chevronIdSpan).map { "barberfish-rejoin-chev-$it" }
+        assertTrue(specs.chevrons.all { it.id in chevronIds })
     }
 
     @Test
@@ -144,5 +147,7 @@ class RejoinBandTest {
         val specs = buildRejoinSpecs(path, red, chevronSpacingM = 200.0, chevronMinSpacingM = 20.0)
         assertEquals(0xFF000000.toInt(), specs.casingColorArgb)
         assertEquals(0, specs.segmentIdSpan)
+        assertTrue(specs.chevrons.isNotEmpty())
+        assertEquals(specs.chevrons.size, specs.chevronIdSpan)
     }
 }

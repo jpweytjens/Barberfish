@@ -21,13 +21,14 @@ internal fun gradeMapRejoinSegmentId(index: Int): String = "barberfish-rejoin-se
  * What the reroute band draws: its fills along the rejoin path, the casing geometry beneath them in
  * [casingColorArgb], and its chevrons. [fills] is empty when the path is too short to draw.
  * [segmentIdSpan] bounds the positional fill ids, 0 for the solid band, whose one fill has a fixed
- * id.
+ * id. [chevronIdSpan] bounds the positional chevron ids; for the solid band it is their count.
  */
 internal data class RejoinSpecs(
     val fills: List<GradeMapPolylineSpec>,
     val casing: String,
     val chevrons: List<ClimbChevronSpec>,
     val segmentIdSpan: Int = 0,
+    val chevronIdSpan: Int = 0,
     val casingColorArgb: Int = CASING_COLOR,
 )
 
@@ -92,6 +93,7 @@ internal fun buildGradedRejoinSpecs(
             ),
         chevrons = specs.chevrons.map { specs.chevronRoad?.moved(it) ?: it },
         segmentIdSpan = specs.segmentIdSpan,
+        chevronIdSpan = specs.chevronIdSpan,
         casingColorArgb = RerouteRed.toArgb(),
     )
 }
@@ -165,5 +167,6 @@ internal fun buildRejoinSpecs(
         fills = listOfNotNull(fill),
         casing = if (casingPoints.size >= 2) encodeGpsPolyline(casingPoints) else rejoinPolyline,
         chevrons = chevrons,
+        chevronIdSpan = chevrons.size,
     )
 }

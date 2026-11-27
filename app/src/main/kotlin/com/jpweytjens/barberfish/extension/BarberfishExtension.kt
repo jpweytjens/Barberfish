@@ -736,7 +736,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                 GradeMapDrawnIdSpans(
                                     segments = specs.segmentIdSpan,
                                     chevrons = specs.chevronIdSpan,
-                                    rejoinChevrons = rejoinSpecs?.chevrons?.size ?: 0,
+                                    rejoinChevrons = rejoinSpecs?.chevronIdSpan ?: 0,
                                     rejoinSegments = rejoinSpecs?.segmentIdSpan ?: 0,
                                 )
                             persistDrawnIdSpans(
