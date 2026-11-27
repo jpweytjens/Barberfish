@@ -679,8 +679,7 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             // the road when the rejoin line matched is this very line; old terrain
                             // is never drawn on a new line.
                             val gradedRejoinSpecs =
-                                inputs.rejoinRoad
-                                    ?.takeIf { it.rejoinPolyline == route.rejoinPolyline }
+                                inputs.currentRejoinRoad
                                     ?.let { road ->
                                         gradedRejoinBandOrNull {
                                             buildGradedRejoinSpecs(
@@ -867,14 +866,19 @@ internal data class GradeMapConfigInputs(
     // current one.
     val rejoinRoad: RejoinRoad? = null,
 ) {
+    /** [rejoinRoad] when it is for the current rejoin line, the one the rebuild draws. */
+    val currentRejoinRoad: RejoinRoad?
+        get() = rejoinRoad?.takeIf { it.rejoinPolyline == route?.rejoinPolyline }
+
     internal fun signature(): GradeMapConfigSignature =
         GradeMapConfigSignature(
             followRoad = followRoad,
             // Compared by identity: each matched piece gives a new snapshot, and that is what
             // has to redraw the band.
             road = road.takeIf { followRoad },
-            // By identity too: a result arriving or withdrawn redraws the rejoin band.
-            rejoinRoad = rejoinRoad,
+            // By identity too: a result arriving or withdrawn redraws the rejoin band. Only a
+            // result for the current line counts, as only that one is drawn.
+            rejoinRoad = currentRejoinRoad,
             enabled = enabled,
             chevronBlend = chevronBlend,
             width = width,
