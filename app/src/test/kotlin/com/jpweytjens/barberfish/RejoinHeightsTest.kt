@@ -81,6 +81,18 @@ class RejoinHeightsTest {
     }
 
     @Test
+    fun a_20_m_suffix_is_held_flat_at_the_roads_last_height() {
+        val line = lineAt(*(0..1000 step 100).map { it.toDouble() }.toDoubleArray(), 1020.0)
+        val heights = heightsOn(line, straightRoad(0.0, 1000.0))!!.heights
+        assertEquals(100.0 + 0.05 * 500.0, heights.heightAt(500.0), 0.01)
+        assertEquals(150.0, heights.heightAt(1000.0), 0.01)
+        assertEquals(150.0, heights.heightAt(1010.0), 0.01)
+        // The landing check reads this one value.
+        assertEquals(150f, heights.last().second, 0.01f)
+        assertEquals(cumulativeDistancesM(line).last().toFloat(), heights.last().first, 0.01f)
+    }
+
+    @Test
     fun a_missing_80_m_suffix_is_refused() {
         val line =
             lineAt(0.0, *(100..900 step 100).map { it.toDouble() }.toDoubleArray(), 920.0, 1000.0)
