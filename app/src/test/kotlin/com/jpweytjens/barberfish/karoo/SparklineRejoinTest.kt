@@ -36,8 +36,6 @@ import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.rejoinRoad
-import com.jpweytjens.barberfish.extension.saveGradeMapConfig
-import com.jpweytjens.barberfish.extension.saveKarooFilesConfig
 import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.FakeKarooSystem
@@ -420,12 +418,6 @@ class SparklineRejoinTest {
 
     // --- the Karoo files switch, end to end ---
 
-    private fun save(config: GradeMapConfig) = runBlocking { karoo.app.saveGradeMapConfig(config) }
-
-    private fun save(config: KarooFilesConfig) = runBlocking {
-        karoo.app.saveKarooFilesConfig(config)
-    }
-
     // The rejoin view of the line as the service matched it, once it has.
     private fun matchedStrip(rejoinDistance: Double): Bitmap =
         rejoinStrip(karoo.awaitValue { rejoinRoad.value }, rejoinDistance)
@@ -442,8 +434,8 @@ class SparklineRejoinTest {
 
     @Test
     fun with_the_grade_map_off_and_the_switch_on_the_profile_is_the_rejoin_lines() {
-        save(GradeMapConfig(enabled = false))
-        save(KarooFilesConfig(true))
+        karoo.save(GradeMapConfig(enabled = false))
+        karoo.save(KarooFilesConfig(true))
         val field = openField()
 
         offRoute(line, rejoinDistance = lineM)
@@ -455,14 +447,14 @@ class SparklineRejoinTest {
 
     @Test
     fun turning_the_switch_off_returns_the_profile_to_the_frozen_view() {
-        save(GradeMapConfig(enabled = false))
-        save(KarooFilesConfig(true))
+        karoo.save(GradeMapConfig(enabled = false))
+        karoo.save(KarooFilesConfig(true))
         val field = openField()
         offRoute(line, rejoinDistance = lineM)
         field.awaitFieldStrip(matchedStrip(lineM))
 
         RobolectricPump.advanceBy(1.seconds)
-        save(KarooFilesConfig(false))
+        karoo.save(KarooFilesConfig(false))
 
         field.awaitFieldStrip(frozenStrip())
     }
@@ -470,8 +462,8 @@ class SparklineRejoinTest {
     @Test
     fun without_storage_access_the_profile_is_frozen() {
         shadowOf(karoo.app).denyPermissions(*ROAD_DATA_PERMISSIONS)
-        save(GradeMapConfig(enabled = false))
-        save(KarooFilesConfig(true))
+        karoo.save(GradeMapConfig(enabled = false))
+        karoo.save(KarooFilesConfig(true))
         val field = openField()
         val onRoute = karoo.awaitValue { field.fieldStrip() }
         val framesBefore = field.frames.size
@@ -485,8 +477,8 @@ class SparklineRejoinTest {
     @Test
     fun on_an_unsupported_device_the_profile_is_frozen() {
         ShadowBuild.setSupportedAbis(arrayOf("x86_64"))
-        save(GradeMapConfig(enabled = false))
-        save(KarooFilesConfig(true))
+        karoo.save(GradeMapConfig(enabled = false))
+        karoo.save(KarooFilesConfig(true))
         val field = openField()
         val onRoute = karoo.awaitValue { field.fieldStrip() }
         val framesBefore = field.frames.size

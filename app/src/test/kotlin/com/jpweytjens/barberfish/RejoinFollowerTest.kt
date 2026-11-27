@@ -69,36 +69,8 @@ class RejoinFollowerTest {
         return MatchedRoad(points, listOf(0f to landingHeightM - 20f, lengthM to landingHeightM))
     }
 
-    // Records what it is asked; [answer] gets the call's number (from 0) and its points.
-    private inner class FakeMatcher(
-        val answer: (call: Int, points: List<LatLng>) -> MatchedRoad? = { _, points ->
-            echo(points)
-        }
-    ) : RoadMatcher {
-        val calls = mutableListOf<List<LatLng>>()
-
-        override fun match(points: List<LatLng>): MatchedRoad? {
-            calls += points
-            return answer(calls.size - 1, points)
-        }
-    }
-
-    // A road whose points run [action] the first time one is read, after the match has returned.
-    private class TripwireList(private val points: List<LatLng>, private val action: () -> Unit) :
-        AbstractList<LatLng>() {
-        private var tripped = false
-
-        override val size: Int
-            get() = points.size
-
-        override fun get(index: Int): LatLng {
-            if (!tripped) {
-                tripped = true
-                action()
-            }
-            return points[index]
-        }
-    }
+    // A matcher that answers every call with [echo] of its points.
+    private fun echoingMatcher() = FakeMatcher { _, points -> echo(points) }
 
     private fun TestScope.follower(matcher: RoadMatcher) =
         RejoinFollower(matcher, backgroundScope, Mutex(), published)
@@ -116,7 +88,7 @@ class RejoinFollowerTest {
 
     @Test
     fun a_matched_line_with_agreeing_heights_is_published() = runTest {
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         follower(matcher).follow(targetA)
         runCurrent()
         val road = checkNotNull(published.value)
@@ -133,7 +105,7 @@ class RejoinFollowerTest {
 
     @Test
     fun a_new_target_withdraws_the_old_result_at_once() = runTest {
-        val follower = follower(FakeMatcher())
+        val follower = follower(echoingMatcher())
         follower.follow(targetA)
         runCurrent()
         assertEquals(lineA, published.value?.rejoinPolyline)
@@ -166,7 +138,7 @@ class RejoinFollowerTest {
     @Test
     fun a_line_replaced_while_it_waits_for_the_engine_is_not_matched() = runTest {
         val oneMatch = Mutex()
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         val follower = RejoinFollower(matcher, backgroundScope, oneMatch, published)
         // A route piece holds the engine while A, B and C arrive.
         oneMatch.lock()
@@ -201,7 +173,7 @@ class RejoinFollowerTest {
 
     @Test
     fun a_null_target_stops_and_withdraws() = runTest {
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         val follower = follower(matcher)
         follower.follow(targetA)
         runCurrent()
@@ -214,7 +186,7 @@ class RejoinFollowerTest {
 
     @Test
     fun a_line_that_comes_back_is_matched_again() = runTest {
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         val follower = follower(matcher)
         follower.follow(targetA)
         runCurrent()
@@ -228,7 +200,7 @@ class RejoinFollowerTest {
 
     @Test
     fun the_same_target_again_matches_nothing_new() = runTest {
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         val follower = follower(matcher)
         follower.follow(targetA)
         runCurrent()
@@ -241,7 +213,7 @@ class RejoinFollowerTest {
 
     @Test
     fun stop_withdraws_and_a_later_target_is_matched() = runTest {
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         val follower = follower(matcher)
         follower.follow(targetA)
         runCurrent()
@@ -255,7 +227,7 @@ class RejoinFollowerTest {
 
     @Test
     fun a_line_longer_than_one_route_piece_is_not_matched() = runTest {
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         val long = encodeGpsPolyline(RouteFixtures.straight(26_000.0, 1000.0, yM = 1000.0))
         follower(matcher).follow(target(long))
         runCurrent()
@@ -289,7 +261,7 @@ class RejoinFollowerTest {
 
     @Test
     fun a_route_without_a_profile_publishes_nothing() = runTest {
-        val follower = follower(FakeMatcher())
+        val follower = follower(echoingMatcher())
         follower.follow(target(lineA, elevation = null))
         runCurrent()
         assertNull(published.value)
@@ -303,7 +275,7 @@ class RejoinFollowerTest {
         // Saved west to east reversed, ridden east to west: the same ground as [route], profile
         // in ride order. Landing at x = 1500 is 1500 m into the ride.
         val reversed = RouteLine(encodeGpsPolyline(routePoints.asReversed()), reversed = true)
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         follower(matcher).follow(target(lineB, route = reversed))
         runCurrent()
         assertEquals(lineB, published.value?.rejoinPolyline)
@@ -311,7 +283,7 @@ class RejoinFollowerTest {
 
     @Test
     fun a_line_of_one_point_is_not_matched() = runTest {
-        val matcher = FakeMatcher()
+        val matcher = echoingMatcher()
         val follower = follower(matcher)
         follower.follow(target(encodeGpsPolyline(listOf(point(2000.0, 0.0)))))
         runCurrent()

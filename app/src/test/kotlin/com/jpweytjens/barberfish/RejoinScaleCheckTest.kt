@@ -1,13 +1,11 @@
 package com.jpweytjens.barberfish
 
 import com.jpweytjens.barberfish.RouteFixtures.point
-import com.jpweytjens.barberfish.datatype.shared.KAROO_HEIGHT_STEP_M
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.MAX_ROAD_HEIGHT_SLOPE
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.ROAD_HEIGHT_FLOOR_M
 import com.jpweytjens.barberfish.datatype.shared.ROAD_HEIGHT_INTERVAL_M
-import com.jpweytjens.barberfish.datatype.shared.STOCK_HEIGHT_STEP_M
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.heightsOnLine
 import com.jpweytjens.barberfish.datatype.shared.landingHeightAgrees
@@ -65,11 +63,7 @@ class RejoinScaleCheckTest {
                         ROAD_HEIGHT_FLOOR_M + 8 * (it - ROAD_HEIGHT_FLOOR_M)
                     },
                 // (c) left unconverted: the inverse of karooHeightM
-                "unconverted" to
-                    trueHeights.mapHeights {
-                        ROAD_HEIGHT_FLOOR_M +
-                            (it - ROAD_HEIGHT_FLOOR_M) * (STOCK_HEIGHT_STEP_M / KAROO_HEIGHT_STEP_M)
-                    },
+                "unconverted" to trueHeights.mapHeights(::reported),
                 // (d) correct shape, 300 m too high
                 "too high" to trueHeights.mapHeights { it + 300.0 },
             )

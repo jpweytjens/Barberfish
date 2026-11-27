@@ -23,8 +23,6 @@ import com.jpweytjens.barberfish.extension.RoadFollowStatus
 import com.jpweytjens.barberfish.extension.ZoneConfig
 import com.jpweytjens.barberfish.extension.rejoinRoad
 import com.jpweytjens.barberfish.extension.roadFollowStatus
-import com.jpweytjens.barberfish.extension.saveGradeMapConfig
-import com.jpweytjens.barberfish.extension.saveKarooFilesConfig
 import com.jpweytjens.barberfish.extension.streamGradeMapDrawnIdSpans
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.MapRecorder
@@ -96,16 +94,6 @@ class RejoinBandOverlayTest {
         BarberfishExtension.roadMatcherFactory = realFactory
         rejoinRoad.value = null
         roadFollowStatus.value = RoadFollowStatus.IDLE
-    }
-
-    private fun save(config: GradeMapConfig) = runBlocking { karoo.app.saveGradeMapConfig(config) }
-
-    private fun save(config: KarooFilesConfig) = runBlocking {
-        karoo.app.saveKarooFilesConfig(config)
-    }
-
-    private fun awaitTrue(condition: () -> Boolean) = karoo.awaitValue {
-        true.takeIf { condition() }
     }
 
     // --- fixtures ---
@@ -191,7 +179,7 @@ class RejoinBandOverlayTest {
 
     @Test
     fun with_heights_the_rejoin_band_is_graded_on_the_road_with_a_red_casing() {
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
         val map = host.startMap()
         map.awaitGraded()
@@ -221,8 +209,8 @@ class RejoinBandOverlayTest {
 
     @Test
     fun at_narrow_the_graded_rejoin_band_keeps_a_casing() {
-        save(GradeMapConfig(width = GradeMapWidth.NARROW))
-        save(KarooFilesConfig(true))
+        karoo.save(GradeMapConfig(width = GradeMapWidth.NARROW))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
         val map = host.startMap()
         map.awaitGraded()
@@ -237,15 +225,15 @@ class RejoinBandOverlayTest {
     @Test
     fun without_heights_the_band_is_todays() {
         withHeights = false
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
         val map = host.startMap()
-        awaitTrue { rejoinAsked.get() }
+        karoo.awaitTrue { rejoinAsked.get() }
         map.awaitSolid()
         val withoutHeights = map.rejoinLayers()
         assertTrue(map.rejoinPieces().isEmpty())
 
-        save(KarooFilesConfig(false))
+        karoo.save(KarooFilesConfig(false))
         Thread.sleep(500)
         map.awaitQuiet(quietMs = 1_500, timeoutMs = 15_000)
 
@@ -272,11 +260,11 @@ class RejoinBandOverlayTest {
 
     @Test
     fun the_rejoin_band_and_the_route_band_share_no_id() {
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
         val map = host.startMap()
         map.awaitGraded()
-        awaitTrue { roadFollowStatus.value == RoadFollowStatus.FOLLOWING }
+        karoo.awaitTrue { roadFollowStatus.value == RoadFollowStatus.FOLLOWING }
         map.awaitQuiet(quietMs = 1_500, timeoutMs = 15_000)
 
         val route = Regex("barberfish-(seg-\\d+(-casing)?|chev-\\d+|casing)")
@@ -307,7 +295,7 @@ class RejoinBandOverlayTest {
 
         rejoinRoad.value = matched(longLine, steps(2_000.0))
 
-        awaitTrue {
+        karoo.awaitTrue {
             map.rejoinPieces().isNotEmpty() && "barberfish-rejoin" !in map.visiblePolylines()
         }
     }
@@ -334,20 +322,20 @@ class RejoinBandOverlayTest {
 
     @Test
     fun turning_the_switch_off_returns_the_band_to_solid_red() {
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
         val map = host.startMap()
         map.awaitGraded()
 
-        save(KarooFilesConfig(false))
+        karoo.save(KarooFilesConfig(false))
 
-        awaitTrue { map.showsTheSolidBand() }
+        karoo.awaitTrue { map.showsTheSolidBand() }
     }
 
     @Test
     fun without_storage_access_the_band_is_solid_red() {
         shadowOf(karoo.app).denyPermissions(*ROAD_DATA_PERMISSIONS)
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
         val map = host.startMap()
 
@@ -358,7 +346,7 @@ class RejoinBandOverlayTest {
     @Test
     fun on_an_unsupported_device_the_band_is_solid_red() {
         ShadowBuild.setSupportedAbis(arrayOf("x86_64"))
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(offRoute(rejoinPoints(500.0, 1_000.0)))
         val map = host.startMap()
 
@@ -463,7 +451,7 @@ class RejoinBandOverlayTest {
             }
         // The service the host started stays idle: this one draws into the gate.
         val service = Robolectric.buildService(BarberfishExtension::class.java).create()
-        awaitTrue {
+        karoo.awaitTrue {
             karoo.system.consumerParams.count { it is ActiveRideProfile.Params } >= 2
         }
         fun paintedPieces() = synchronized(painted) { painted.count(::isRejoinPiece) }
@@ -472,21 +460,21 @@ class RejoinBandOverlayTest {
 
         karoo.system.setNavigation(offRoute(longLine))
         service.get().startMap(gate)
-        awaitTrue { paintedSolid() }
+        karoo.awaitTrue { paintedSolid() }
         quiet()
         // Solid to many pieces: the span is raised before the first piece is shown.
         rejoinRoad.value = matched(longLine, steps(2_000.0))
-        awaitTrue { paintedPieces() > 4 }
+        karoo.awaitTrue { paintedPieces() > 4 }
         quiet()
         val many = paintedPieces()
         // Many to few: the span stays up until the surplus is hidden.
         rejoinRoad.value = matched(shortLine, climbToTheRoute(600.0))
         karoo.system.setNavigation(offRoute(shortLine))
-        awaitTrue { paintedPieces() in 1 until many }
+        karoo.awaitTrue { paintedPieces() in 1 until many }
         quiet()
         // Few to the solid band.
         rejoinRoad.value = null
-        awaitTrue { paintedPieces() == 0 && paintedSolid() }
+        karoo.awaitTrue { paintedPieces() == 0 && paintedSolid() }
         quiet()
         gate.stop()
         service.destroy()

@@ -13,8 +13,6 @@ import com.jpweytjens.barberfish.extension.ROAD_DATA_PERMISSIONS
 import com.jpweytjens.barberfish.extension.RoadFollowStatus
 import com.jpweytjens.barberfish.extension.rejoinRoad
 import com.jpweytjens.barberfish.extension.roadFollowStatus
-import com.jpweytjens.barberfish.extension.saveGradeMapConfig
-import com.jpweytjens.barberfish.extension.saveKarooFilesConfig
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import io.hammerhead.karooext.models.OnNavigationState
@@ -22,7 +20,6 @@ import io.hammerhead.karooext.models.Symbol
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -95,16 +92,6 @@ class RejoinRoadTest {
         roadFollowStatus.value = RoadFollowStatus.IDLE
     }
 
-    private fun save(config: GradeMapConfig) = runBlocking { karoo.app.saveGradeMapConfig(config) }
-
-    private fun save(config: KarooFilesConfig) = runBlocking {
-        karoo.app.saveKarooFilesConfig(config)
-    }
-
-    private fun awaitTrue(condition: () -> Boolean) = karoo.awaitValue {
-        true.takeIf { condition() }
-    }
-
     private fun offRoute() = climbRoute().navigating(rejoin, rejoinDistance = 300.0)
 
     // Long enough for a config read and a match the fake answers at once.
@@ -112,13 +99,13 @@ class RejoinRoadTest {
 
     @Test
     fun with_the_grade_map_off_a_rejoin_line_is_still_matched() {
-        save(GradeMapConfig(enabled = false))
-        save(KarooFilesConfig(true))
+        karoo.save(GradeMapConfig(enabled = false))
+        karoo.save(KarooFilesConfig(true))
         host = karoo.startBarberfish()
 
         karoo.system.setNavigation(offRoute())
 
-        awaitTrue { rejoinRoad.value != null }
+        karoo.awaitTrue { rejoinRoad.value != null }
         assertEquals(rejoin, rejoinRoad.value!!.rejoinPolyline)
         assertEquals(1, calls.get())
     }
@@ -137,7 +124,7 @@ class RejoinRoadTest {
     @Test
     fun without_storage_access_the_matcher_is_never_asked() {
         shadowOf(karoo.app).denyPermissions(*ROAD_DATA_PERMISSIONS)
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         host = karoo.startBarberfish()
 
         karoo.system.setNavigation(offRoute())
@@ -149,31 +136,31 @@ class RejoinRoadTest {
 
     @Test
     fun the_line_going_away_withdraws_the_result() {
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         host = karoo.startBarberfish()
         karoo.system.setNavigation(offRoute())
-        awaitTrue { rejoinRoad.value != null }
+        karoo.awaitTrue { rejoinRoad.value != null }
 
         karoo.system.setNavigation(climbRoute().navigating())
 
-        awaitTrue { rejoinRoad.value == null }
+        karoo.awaitTrue { rejoinRoad.value == null }
     }
 
     @Test
     fun turning_the_switch_off_withdraws_the_result() {
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         host = karoo.startBarberfish()
         karoo.system.setNavigation(offRoute())
-        awaitTrue { rejoinRoad.value != null }
+        karoo.awaitTrue { rejoinRoad.value != null }
 
-        save(KarooFilesConfig(false))
+        karoo.save(KarooFilesConfig(false))
 
-        awaitTrue { rejoinRoad.value == null }
+        karoo.awaitTrue { rejoinRoad.value == null }
     }
 
     @Test
     fun navigation_to_a_pin_is_not_followed() {
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         host = karoo.startBarberfish()
 
         karoo.system.setNavigation(
@@ -200,28 +187,28 @@ class RejoinRoadTest {
         assertTrue(karoo.system.consumerParams.none { it is OnNavigationState.Params })
 
         // The consumer comes with the switch and goes with it.
-        save(KarooFilesConfig(true))
-        awaitTrue { karoo.system.consumerParams.any { it is OnNavigationState.Params } }
-        save(KarooFilesConfig(false))
-        awaitTrue { karoo.system.consumerCount == started }
+        karoo.save(KarooFilesConfig(true))
+        karoo.awaitTrue { karoo.system.consumerParams.any { it is OnNavigationState.Params } }
+        karoo.save(KarooFilesConfig(false))
+        karoo.awaitTrue { karoo.system.consumerCount == started }
     }
 
     @Test
     fun the_rejoin_line_waits_for_a_running_route_match() {
         gate = CountDownLatch(1)
-        save(KarooFilesConfig(true))
+        karoo.save(KarooFilesConfig(true))
         host = karoo.startBarberfish()
         karoo.system.setNavigation(climbRoute().navigating())
         host.startMap()
         // The route's first piece holds the engine.
-        awaitTrue { calls.get() == 1 }
+        karoo.awaitTrue { calls.get() == 1 }
 
         karoo.system.setNavigation(offRoute())
         settle()
 
         assertEquals(1, calls.get())
         gate.countDown()
-        awaitTrue { rejoinRoad.value != null }
+        karoo.awaitTrue { rejoinRoad.value != null }
         assertEquals(1, mostInFlight.get())
     }
 }

@@ -52,38 +52,6 @@ class RoadFollowerTest {
 
     private val status = MutableStateFlow(RoadFollowStatus.IDLE)
 
-    // Records what it is asked; [answer] gets the call's number (from 0) and its points.
-    private class FakeMatcher(
-        val answer: (call: Int, points: List<LatLng>) -> MatchedRoad? = { _, points ->
-            MatchedRoad(points)
-        }
-    ) : RoadMatcher {
-        val calls = mutableListOf<List<LatLng>>()
-
-        override fun match(points: List<LatLng>): MatchedRoad? {
-            calls += points
-            return answer(calls.size - 1, points)
-        }
-    }
-
-    // A road whose points run [action] the first time one is read. The follower reads them
-    // only after the match has returned, when it lays the chords onto the road.
-    private class TripwireList(private val points: List<LatLng>, private val action: () -> Unit) :
-        AbstractList<LatLng>() {
-        private var tripped = false
-
-        override val size: Int
-            get() = points.size
-
-        override fun get(index: Int): LatLng {
-            if (!tripped) {
-                tripped = true
-                action()
-            }
-            return points[index]
-        }
-    }
-
     private fun TestScope.follower(matcher: RoadMatcher, wanted: Flow<RouteLine?> = emptyFlow()) =
         RoadFollower(matcher, backgroundScope, wanted, status)
 

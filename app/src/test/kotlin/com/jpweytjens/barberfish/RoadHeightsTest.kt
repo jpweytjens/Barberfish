@@ -12,13 +12,13 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class RoadHeightsTest {
-    // The engine's value that karooHeightM turns into [heightM], so the tests go through the
-    // conversion.
-    private fun reported(heightM: Double): Double =
-        ROAD_HEIGHT_FLOOR_M +
-            (heightM - ROAD_HEIGHT_FLOOR_M) * (STOCK_HEIGHT_STEP_M / KAROO_HEIGHT_STEP_M)
+// The engine's value that karooHeightM turns into [heightM], so the tests go through the
+// conversion.
+internal fun reported(heightM: Double): Double =
+    ROAD_HEIGHT_FLOOR_M +
+        (heightM - ROAD_HEIGHT_FLOOR_M) * (STOCK_HEIGHT_STEP_M / KAROO_HEIGHT_STEP_M)
 
+class RoadHeightsTest {
     private fun heightsOf(vararg heightsM: Double) = heightsM.map(::reported)
 
     @Test
