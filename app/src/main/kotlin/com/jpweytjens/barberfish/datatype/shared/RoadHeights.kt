@@ -15,6 +15,12 @@ internal const val KAROO_HEIGHT_STEP_M = 2.0
 /** Distance between height samples along the road, in metres. */
 internal const val ROAD_HEIGHT_INTERVAL_M = 30
 
+/**
+ * The most, in metres, that the samples' span at [ROAD_HEIGHT_INTERVAL_M] may differ from the
+ * road's length.
+ */
+internal const val MAX_ROAD_HEIGHT_SPAN_DIFF_M = 2 * ROAD_HEIGHT_INTERVAL_M
+
 /** The steepest step between two samples, in metres per metre, that is believed to be a road. */
 internal const val MAX_ROAD_HEIGHT_SLOPE = 0.5
 
@@ -30,13 +36,17 @@ internal fun karooHeightM(reported: Double): Double =
         (reported - ROAD_HEIGHT_FLOOR_M) * (KAROO_HEIGHT_STEP_M / STOCK_HEIGHT_STEP_M)
 
 /**
- * (distance m, height m) samples for the [reported] values of a road [roadLengthM] long, one every
- * [ROAD_HEIGHT_INTERVAL_M] and the last at the road's end. A bad junction shows as a step steeper
- * than [MAX_ROAD_HEIGHT_SLOPE]: both samples of every such step are dropped, and what is left is
- * returned as it is, for whoever interpolates the profile to bridge. Null when fewer than two
- * samples are left or more than a quarter were dropped.
+ * (distance m, height m) samples for the [reported] values of a road [roadLengthM] long. The values
+ * are assumed to come one every [ROAD_HEIGHT_INTERVAL_M], the last at the road's end. That spacing
+ * is not measured, so the count is checked against the road: null when the samples, spaced so, span
+ * a length more than [MAX_ROAD_HEIGHT_SPAN_DIFF_M] from the road's. A bad junction shows as a step
+ * steeper than [MAX_ROAD_HEIGHT_SLOPE]: both samples of every such step are dropped, and what is
+ * left is returned as it is, for whoever interpolates the profile to bridge. Null when fewer than
+ * two samples are left or more than a quarter were dropped.
  */
 internal fun roadHeights(reported: List<Double>, roadLengthM: Double): List<Pair<Float, Float>>? {
+    val spanM = (reported.size - 1) * ROAD_HEIGHT_INTERVAL_M.toDouble()
+    val fitsTheRoad = abs(spanM - roadLengthM) <= MAX_ROAD_HEIGHT_SPAN_DIFF_M
     val samples = reported.mapIndexed { i, value ->
         min(i * ROAD_HEIGHT_INTERVAL_M.toDouble(), roadLengthM) to karooHeightM(value)
     }
@@ -50,6 +60,7 @@ internal fun roadHeights(reported: List<Double>, roadLengthM: Double): List<Pair
         }
     }
     val kept = samples.filterIndexed { i, _ -> !dropped[i] }
-    if (kept.size < 2 || dropped.count { it } > samples.size * MAX_DROPPED_SHARE) return null
+    if (!fitsTheRoad || kept.size < 2 || dropped.count { it } > samples.size * MAX_DROPPED_SHARE)
+        return null
     return kept.map { (distance, height) -> distance.toFloat() to height.toFloat() }
 }

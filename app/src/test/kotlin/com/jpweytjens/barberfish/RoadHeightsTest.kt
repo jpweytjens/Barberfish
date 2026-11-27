@@ -38,6 +38,31 @@ class RoadHeightsTest {
     }
 
     @Test
+    fun a_count_with_a_sample_at_the_roads_end_fits() {
+        // 0, 30, 60 and the end at 80: three intervals span 90 m
+        assertNotNull(roadHeights(heightsOf(100.0, 101.0, 102.0, 103.0), 80.0))
+    }
+
+    @Test
+    fun a_count_without_a_sample_at_the_roads_end_fits() {
+        // 0, 30, 60, 90 on a 100 m road
+        val heights = roadHeights(heightsOf(100.0, 101.0, 102.0, 103.0), 100.0)!!
+        assertEquals(listOf(0f, 30f, 60f, 90f), heights.map { it.first })
+    }
+
+    @Test
+    fun far_too_few_samples_for_the_road_are_no_heights() {
+        // Three samples span 60 m of a 300 m road
+        assertNull(roadHeights(heightsOf(100.0, 101.0, 102.0), 300.0))
+    }
+
+    @Test
+    fun far_too_many_samples_for_the_road_are_no_heights() {
+        // Ten samples span 270 m of a 60 m road
+        assertNull(roadHeights(List(10) { reported(100.0) }, 60.0))
+    }
+
+    @Test
     fun one_wild_junction_is_dropped_with_the_ramp_to_it() {
         // True heights 100 m flat, one sample at 8200 m with a triangle ramp of two samples each
         // side.
