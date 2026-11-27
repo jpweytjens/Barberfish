@@ -6,6 +6,7 @@ import com.jpweytjens.barberfish.datatype.shared.MAX_UNSUPPORTED_END_M
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.alignToRoad
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
+import com.jpweytjens.barberfish.datatype.shared.elevationAtM
 import com.jpweytjens.barberfish.datatype.shared.heightsOnLine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -34,13 +35,8 @@ class RejoinHeightsTest {
     private fun heightsOn(line: List<LatLng>, road: MatchedRoad) =
         heightsOnLine(line, cumulativeDistancesM(line), road)
 
-    private fun List<Pair<Float, Float>>.heightAt(distanceM: Double): Double {
-        val after = indexOfFirst { it.first >= distanceM }
-        if (after <= 0) return first().second.toDouble()
-        val (d0, h0) = this[after - 1]
-        val (d1, h1) = this[after]
-        return h0 + (h1 - h0) * (distanceM - d0) / (d1 - d0)
-    }
+    private fun List<Pair<Float, Float>>.heightAt(distanceM: Double): Double =
+        elevationAtM(this, distanceM)
 
     // The line a road with a hole in it leaves: the road runs out to [at], takes a detour more than
     // twice as long as the chord [at]..[at] + [chordM], and comes back.

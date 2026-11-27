@@ -16,21 +16,6 @@ internal const val MAX_UNSUPPORTED_SHARE = 0.10
 /** The rejoin [line] with the road's [heights] on its own distance axis. */
 internal class LineHeights(val line: MatchedRoadLine, val heights: List<Pair<Float, Float>>)
 
-// The height of the profile at [arcM]: held flat beyond its ends. The segment interpolated over
-// starts below [arcM] and ends at or above it, so its run is positive even where distances repeat.
-private fun List<Pair<Float, Float>>.heightAtArc(arcM: Double): Double {
-    val after = indexOfFirst { it.first >= arcM }
-    return when {
-        after < 0 -> last().second.toDouble()
-        after == 0 -> first().second.toDouble()
-        else -> {
-            val (d0, h0) = this[after - 1]
-            val (d1, h1) = this[after]
-            h0 + (h1 - h0) * (arcM - d0) / (d1 - d0)
-        }
-    }
-}
-
 // Whether the chords leave little enough of the line without a road, measured between [anchors].
 private fun isSupportedEnough(
     cumDist: DoubleArray,
@@ -64,21 +49,21 @@ private fun profileOnLine(
             profile += distanceM.toFloat() to height.toFloat()
         }
     }
-    add(0.0, roadHeights.heightAtArc(arcs[anchors.first()]))
+    add(0.0, elevationAtM(roadHeights, arcs[anchors.first()]))
     for ((j, chord) in alignment.chords.withIndex()) {
         if (chord == null) continue
         val startM = cumDist[j]
         val chordM = cumDist[j + 1] - startM
         val arcRun = arcs[j + 1] - arcs[j]
-        add(startM, roadHeights.heightAtArc(arcs[j]))
+        add(startM, elevationAtM(roadHeights, arcs[j]))
         for ((sampleArc, sampleHeight) in roadHeights) {
             if (sampleArc > arcs[j] && sampleArc < arcs[j + 1]) {
                 add(startM + (sampleArc - arcs[j]) / arcRun * chordM, sampleHeight.toDouble())
             }
         }
-        add(cumDist[j + 1], roadHeights.heightAtArc(arcs[j + 1]))
+        add(cumDist[j + 1], elevationAtM(roadHeights, arcs[j + 1]))
     }
-    add(cumDist.last(), roadHeights.heightAtArc(arcs[anchors.last()]))
+    add(cumDist.last(), elevationAtM(roadHeights, arcs[anchors.last()]))
     return profile
 }
 
