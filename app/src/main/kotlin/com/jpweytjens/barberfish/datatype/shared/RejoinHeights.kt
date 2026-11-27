@@ -134,10 +134,7 @@ internal fun landingHeightAgrees(
     val cumDist = cumulativeDistancesM(routePoints)
     val landingM = projectPoiAlongRoute(landing, routePoints, cumDist, MAX_LANDING_OFFSET_M)
     if (landingM == null || routeElevation.isEmpty()) return false
-    // The profile's axis is put onto the GPS axis as buildGradeMapSpecs does, guard band included.
-    val elevSpanM = routeElevation.last().first.toDouble()
-    val ratio = if (elevSpanM > 0.0) cumDist.last() / elevSpanM else 1.0
-    val elevToGps = if (ratio in 0.9..1.1) ratio else 1.0
+    val elevToGps = profileToGpsScale(cumDist.last(), routeElevation.last().first.toDouble())
     val routeHeightM = elevationAtM(routeElevation, landingM / elevToGps)
     return abs(heights.last().second - routeHeightM) <= MAX_LANDING_HEIGHT_DIFF_M
 }

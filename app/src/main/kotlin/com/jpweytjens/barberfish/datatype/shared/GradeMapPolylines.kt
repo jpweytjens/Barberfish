@@ -271,6 +271,17 @@ internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): 
 }
 
 /**
+ * The factor that puts a distance on the route's elevation profile, [profileSpanM] long, onto its
+ * GPS line, [gpsLengthM] long: multiply a profile distance by it, divide a GPS distance by it. It
+ * is the ratio of the two lengths, and 1 when that ratio falls outside 0.9..1.1, where the two do
+ * not span the same extent.
+ */
+internal fun profileToGpsScale(gpsLengthM: Double, profileSpanM: Double): Double {
+    val ratio = if (profileSpanM > 0.0) gpsLengthM / profileSpanM else 1.0
+    return if (ratio in 0.9..1.1) ratio else 1.0
+}
+
+/**
  * Builds gradient polyline specs and chevron symbol specs along a route's elevation profile,
  * mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is intentionally not used — the
  * rider's mental model of "where it gets coloured" must match the sparkline, and the sparkline is
@@ -358,9 +369,7 @@ internal fun buildGradeMapSpecs(
     // together. Chord shortfall stays well within a percent; a ratio outside the guard band
     // means the two polylines do not span the same extent (an elevation profile covering
     // only part of the route), where scaling would misplace every run, so it stays off.
-    val elevSpanM = elevPoints.last().first.toDouble()
-    val ratio = if (elevSpanM > 0.0) cumDist.last() / elevSpanM else 1.0
-    val elevToGps = if (ratio in 0.9..1.1) ratio else 1.0
+    val elevToGps = profileToGpsScale(cumDist.last(), elevPoints.last().first.toDouble())
 
     // The runs have one derivation: the profile is resampled into cells and each takes the
     // band of its mean grade, so the vertex spacing decides nothing about where a colour may

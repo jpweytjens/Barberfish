@@ -115,6 +115,16 @@ class RejoinScaleCheckTest {
         assertTrue(agrees(endingAt(200f), atX1000, route, climbing))
     }
 
+    @Test
+    fun a_profile_axis_longer_than_the_route_is_read_on_the_gps_axis() {
+        // A 20% climb on an axis 5% longer than the 4 km route: the landing, 2 km along the route,
+        // is 2100 m along the profile and reads 520 m. Read at 2 km it would be 500 m, and with
+        // the ratio applied the wrong way, 1905 m along and 481 m.
+        val longer = listOf(0f to 100f, 4200f to 940f)
+        assertTrue(agrees(endingAt(545f), routeElevation = longer))
+        assertFalse(agrees(endingAt(465f), routeElevation = longer))
+    }
+
     // Kept on purpose, see the design's known risk: the check compares one height, the landing's,
     // so gradients doubled about that height still agree with the route there. It guards the
     // scale of the heights, not their shape.
