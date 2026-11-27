@@ -3,12 +3,11 @@ package com.jpweytjens.barberfish
 import android.app.Application
 import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
-import com.jpweytjens.barberfish.extension.GradeMapConfig
-import com.jpweytjens.barberfish.extension.GradeMapWidth
+import com.jpweytjens.barberfish.extension.KarooFilesConfig
 import com.jpweytjens.barberfish.extension.dataStore
-import com.jpweytjens.barberfish.extension.saveGradeMapConfig
-import com.jpweytjens.barberfish.extension.streamGradeMapConfig
-import com.jpweytjens.barberfish.screens.turnFollowRoadOn
+import com.jpweytjens.barberfish.extension.saveKarooFilesConfig
+import com.jpweytjens.barberfish.extension.streamKarooFilesConfig
+import com.jpweytjens.barberfish.screens.turnKarooFilesOn
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,27 +27,25 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Turning FOLLOW THE ROAD on: the setting is stored before the permission dialog opens. Android
+ * Turning KAROO FILES on: the setting is stored before the permission dialog opens. Android
  * restarts the app's process when the rider grants storage access, so a save still under way when
  * the dialog opens could be lost, and the toggle would come back off.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
-class FollowRoadOrderTest {
+class KarooFilesOrderTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
-    private val config = GradeMapConfig(width = GradeMapWidth.NARROW)
 
     @Before fun clean() = runBlocking<Unit> { app.dataStore.edit { it.clear() } }
 
     @Test
     fun the_dialog_waits_for_the_save() = runTest {
         val saving = CompletableDeferred<Unit>()
-        val saved = mutableListOf<GradeMapConfig>()
+        val saved = mutableListOf<KarooFilesConfig>()
         var asked = 0
         launch {
-            turnFollowRoadOn(
-                config,
+            turnKarooFilesOn(
                 storageGranted = false,
                 save = {
                     saved += it
@@ -58,7 +55,7 @@ class FollowRoadOrderTest {
             )
         }
         runCurrent()
-        assertEquals(listOf(config.copy(followRoad = true)), saved)
+        assertEquals(listOf(KarooFilesConfig(enabled = true)), saved)
         assertEquals(0, asked)
 
         saving.complete(Unit)
@@ -68,25 +65,23 @@ class FollowRoadOrderTest {
 
     @Test
     fun the_setting_is_readable_from_the_store_when_the_dialog_opens() = runBlocking {
-        assertFalse(app.streamGradeMapConfig().first().followRoad)
-        var storedWhenAsked: GradeMapConfig? = null
-        turnFollowRoadOn(
-            config,
+        assertFalse(app.streamKarooFilesConfig().first().enabled)
+        var storedWhenAsked: KarooFilesConfig? = null
+        turnKarooFilesOn(
             storageGranted = false,
-            save = { app.saveGradeMapConfig(it) },
+            save = { app.saveKarooFilesConfig(it) },
             requestStorage = {
-                storedWhenAsked = runBlocking { app.streamGradeMapConfig().first() }
+                storedWhenAsked = runBlocking { app.streamKarooFilesConfig().first() }
             },
         )
-        assertEquals(config.copy(followRoad = true), storedWhenAsked)
+        assertEquals(KarooFilesConfig(enabled = true), storedWhenAsked)
     }
 
     @Test
     fun a_failed_save_opens_no_dialog() = runTest {
         var asked = 0
         try {
-            turnFollowRoadOn(
-                config,
+            turnKarooFilesOn(
                 storageGranted = false,
                 save = { throw IOException("disk full") },
                 requestStorage = { asked++ },
@@ -98,10 +93,10 @@ class FollowRoadOrderTest {
 
     @Test
     fun with_access_already_granted_it_saves_and_asks_nothing() = runTest {
-        val saved = mutableListOf<GradeMapConfig>()
+        val saved = mutableListOf<KarooFilesConfig>()
         var asked = 0
-        turnFollowRoadOn(config, storageGranted = true, save = { saved += it }) { asked++ }
-        assertTrue(saved.single().followRoad)
+        turnKarooFilesOn(storageGranted = true, save = { saved += it }) { asked++ }
+        assertTrue(saved.single().enabled)
         assertEquals(0, asked)
     }
 }

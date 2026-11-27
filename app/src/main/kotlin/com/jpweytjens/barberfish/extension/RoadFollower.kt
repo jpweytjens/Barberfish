@@ -48,6 +48,9 @@ internal class RoadFollower(
     private val scope: CoroutineScope,
     private val wanted: Flow<RouteLine?>,
     private val status: MutableStateFlow<RoadFollowStatus> = roadFollowStatus,
+    // One match at a time, whichever line it is for: the engine is heavy, and a match that is
+    // running cannot be interrupted. Shared with every other follower that asks the engine.
+    private val oneMatch: Mutex = Mutex(),
 ) {
     private val _line = MutableStateFlow<MatchedRoadLine?>(null)
 
@@ -62,10 +65,6 @@ internal class RoadFollower(
     private var current: Any? = null
     private var followed: RouteLine? = null
     private var job: Job? = null
-
-    // One match at a time, whichever route it is for: the engine is heavy, and a match that is
-    // running cannot be interrupted.
-    private val oneMatch = Mutex()
 
     /** Starts matching [routePolyline]; a no-op when it is already the route being followed. */
     fun follow(routePolyline: String, reversed: Boolean, riderM: Double) {

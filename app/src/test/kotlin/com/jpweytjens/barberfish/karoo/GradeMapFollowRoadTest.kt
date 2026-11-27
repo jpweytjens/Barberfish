@@ -8,10 +8,10 @@ import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.extension.BarberfishExtension
 import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.KarooFilesConfig
 import com.jpweytjens.barberfish.extension.ROAD_DATA_PERMISSIONS
 import com.jpweytjens.barberfish.extension.RoadFollowStatus
 import com.jpweytjens.barberfish.extension.roadFollowStatus
-import com.jpweytjens.barberfish.extension.saveGradeMapConfig
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.MapRecorder
 import fi.nikosavola.karooext.testing.decodePolyline
@@ -26,7 +26,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,10 +37,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowBuild
 
 /**
- * The band on the map with "Follow the road" on, against a fake matcher that puts the road 3 m
- * north of whatever line it is given.
+ * The band on the map with KAROO FILES on, against a fake matcher that puts the road 3 m north of
+ * whatever line it is given.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -79,12 +79,6 @@ class GradeMapFollowRoadTest {
         roadFollowStatus.value = RoadFollowStatus.IDLE
     }
 
-    private fun save(config: GradeMapConfig) = runBlocking { karoo.app.saveGradeMapConfig(config) }
-
-    private fun <T : Any> await(value: () -> T?): T = karoo.awaitValue { value() }
-
-    private fun awaitTrue(condition: () -> Boolean) = await { true.takeIf { condition() } }
-
     // How far north of the line y = [lineM] every point of the visible band lies, in metres.
     private fun MapRecorder.bandNorthM(lineM: Double = 0.0): List<Double> =
         visibleFills().values.flatMap { fill ->
@@ -100,23 +94,23 @@ class GradeMapFollowRoadTest {
 
     /** Setting on, the climb route followed, the band on the road, then the map page closed. */
     private fun followedThenClosed(): MapRecorder {
-        save(GradeMapConfig(followRoad = true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(climbRoute().navigating())
         val map = host.startMap()
-        awaitTrue { map.onRoad() && roadFollowStatus.value == RoadFollowStatus.FOLLOWING }
+        karoo.awaitTrue { map.onRoad() && roadFollowStatus.value == RoadFollowStatus.FOLLOWING }
         host.stopMap(map)
         return map
     }
 
     @Test
     fun with_the_setting_on_the_band_moves_onto_the_road() {
-        save(GradeMapConfig(followRoad = true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(climbRoute().navigating())
         val map = host.startMap()
         map.awaitDrawn(karoo)
 
-        awaitTrue { map.onRoad() }
-        awaitTrue {
+        karoo.awaitTrue { map.onRoad() }
+        karoo.awaitTrue {
             val chevrons = map.visibleChevrons()
             chevrons.isNotEmpty() && chevrons.all { it.lat * M_PER_DEG in 2.9..3.1 }
         }
@@ -135,9 +129,22 @@ class GradeMapFollowRoadTest {
     }
 
     @Test
+    fun on_an_unsupported_device_the_matcher_is_never_asked() {
+        ShadowBuild.setSupportedAbis(arrayOf("x86_64"))
+        karoo.save(KarooFilesConfig(true))
+        karoo.system.setNavigation(climbRoute().navigating())
+        val map = host.startMap()
+        map.awaitDrawn(karoo)
+
+        assertEquals(0, calls.get())
+        assertTrue(map.onChords())
+        assertEquals(RoadFollowStatus.IDLE, roadFollowStatus.value)
+    }
+
+    @Test
     fun without_storage_access_nothing_is_matched_until_it_is_granted() {
         shadowOf(karoo.app).denyPermissions(*ROAD_DATA_PERMISSIONS)
-        save(GradeMapConfig(followRoad = true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(climbRoute().navigating())
         val map = host.startMap()
         map.awaitDrawn(karoo)
@@ -151,7 +158,7 @@ class GradeMapFollowRoadTest {
         shadowOf(karoo.app).grantPermissions(*ROAD_DATA_PERMISSIONS)
         karoo.system.setMapZoom(18.0)
 
-        awaitTrue { map.onRoad() }
+        karoo.awaitTrue { map.onRoad() }
     }
 
     @Test
@@ -162,30 +169,30 @@ class GradeMapFollowRoadTest {
         map.awaitDrawn(karoo)
         val today = map.visibleFills().mapValues { it.value.encodedPolyline }
 
-        save(GradeMapConfig(followRoad = true))
+        karoo.save(KarooFilesConfig(true))
 
-        awaitTrue { roadFollowStatus.value == RoadFollowStatus.NO_MAP }
+        karoo.awaitTrue { roadFollowStatus.value == RoadFollowStatus.NO_MAP }
         map.awaitQuiet(quietMs = 800, timeoutMs = 15_000)
         assertEquals(today, map.visibleFills().mapValues { it.value.encodedPolyline })
     }
 
     @Test
     fun turning_the_setting_off_puts_the_band_back_on_the_chords() {
-        save(GradeMapConfig(followRoad = true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(climbRoute().navigating())
         val map = host.startMap()
-        awaitTrue { map.onRoad() }
+        karoo.awaitTrue { map.onRoad() }
 
-        save(GradeMapConfig(followRoad = false))
+        karoo.save(KarooFilesConfig(false))
 
-        awaitTrue { map.onChords() }
-        awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
+        karoo.awaitTrue { map.onChords() }
+        karoo.awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
     }
 
     @Test
     fun the_road_shape_arrives_without_blanking_the_band() {
         gate = CountDownLatch(1)
-        save(GradeMapConfig(followRoad = true))
+        karoo.save(KarooFilesConfig(true))
         karoo.system.setNavigation(climbRoute().navigating())
         val map = host.startMap()
         // The match is still running, so the band is on the map on its chords first.
@@ -195,7 +202,7 @@ class GradeMapFollowRoadTest {
 
         gate.countDown()
 
-        awaitTrue { map.onRoad() }
+        karoo.awaitTrue { map.onRoad() }
         // Every rebuild withdraws the rejoin line when there is none to draw; that is not the
         // band. No piece of the band or its casing may go.
         val hidden =
@@ -217,7 +224,7 @@ class GradeMapFollowRoadTest {
 
         val reopened = host.startMap()
 
-        awaitTrue { reopened.onRoad() }
+        karoo.awaitTrue { reopened.onRoad() }
         assertEquals(asked, calls.get())
     }
 
@@ -226,9 +233,9 @@ class GradeMapFollowRoadTest {
         followedThenClosed()
         val asked = calls.get()
 
-        save(GradeMapConfig(followRoad = false))
+        karoo.save(KarooFilesConfig(false))
 
-        awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
+        karoo.awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
         val reopened = host.startMap()
         reopened.awaitDrawn(karoo)
         assertTrue(reopened.onChords())
@@ -239,9 +246,9 @@ class GradeMapFollowRoadTest {
     fun the_grade_map_disabled_with_the_map_closed_drops_the_road() {
         followedThenClosed()
 
-        save(GradeMapConfig(enabled = false, followRoad = true))
+        karoo.save(GradeMapConfig(enabled = false))
 
-        awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
+        karoo.awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
     }
 
     @Test
@@ -250,7 +257,7 @@ class GradeMapFollowRoadTest {
 
         karoo.system.setNavigation(OnNavigationState.NavigationState.Idle)
 
-        awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
+        karoo.awaitTrue { roadFollowStatus.value == RoadFollowStatus.IDLE }
     }
 
     @Test
@@ -258,14 +265,16 @@ class GradeMapFollowRoadTest {
         val seen = CopyOnWriteArrayList<RoadFollowStatus>()
         val watching = CoroutineScope(Dispatchers.Unconfined)
         watching.launch { roadFollowStatus.collect { seen += it } }
-        val before = karoo.system.consumerCount
         gate = CountDownLatch(1)
-        save(GradeMapConfig(followRoad = true))
+        karoo.save(KarooFilesConfig(true))
+        // With the switch on the service reads navigation for the rejoin line, map page or not.
+        karoo.awaitTrue { karoo.system.consumerParams.any { it is OnNavigationState.Params } }
+        val before = karoo.system.consumerCount
         karoo.system.setNavigation(climbRoute().navigating())
         val map = host.startMap()
         // The old route's match is still running when the map page closes.
         map.awaitDrawn(karoo)
-        awaitTrue { calls.get() == 1 }
+        karoo.awaitTrue { calls.get() == 1 }
         host.stopMap(map)
 
         val north = 500.0
@@ -277,7 +286,7 @@ class GradeMapFollowRoadTest {
             )
         karoo.system.setNavigation(other.navigating())
         // The follower has let go of the navigation state: it has stopped following.
-        awaitTrue { karoo.system.consumerCount == before }
+        karoo.awaitTrue { karoo.system.consumerCount == before }
         gate.countDown()
 
         // The old match now returns into a follower that no longer wants it.
@@ -287,7 +296,7 @@ class GradeMapFollowRoadTest {
         assertEquals(RoadFollowStatus.IDLE, roadFollowStatus.value)
 
         val reopened = host.startMap()
-        awaitTrue { reopened.onRoad(lineM = north) }
+        karoo.awaitTrue { reopened.onRoad(lineM = north) }
         watching.cancel()
     }
 
@@ -297,8 +306,8 @@ class GradeMapFollowRoadTest {
         followedThenClosed()
         assertTrue(karoo.system.consumerCount > before)
 
-        save(GradeMapConfig(followRoad = false))
+        karoo.save(KarooFilesConfig(false))
 
-        awaitTrue { karoo.system.consumerCount == before }
+        karoo.awaitTrue { karoo.system.consumerCount == before }
     }
 }

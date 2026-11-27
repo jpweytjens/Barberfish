@@ -3,9 +3,11 @@ package com.jpweytjens.barberfish
 import com.jpweytjens.barberfish.RouteFixtures.point
 import com.jpweytjens.barberfish.datatype.shared.ChordRoad
 import com.jpweytjens.barberfish.datatype.shared.LatLng
+import com.jpweytjens.barberfish.datatype.shared.MAX_ROAD_OFFSET_M
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoad
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
 import com.jpweytjens.barberfish.datatype.shared.alignChords
+import com.jpweytjens.barberfish.datatype.shared.alignToRoad
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.extractSubPolyline
 import com.jpweytjens.barberfish.datatype.shared.latLngDistanceM
@@ -277,5 +279,41 @@ class MatchedRoadLineTest {
         assertEquals(line4, before.pointsBetween(0.0, 300.0))
         // A null entry leaves a chord that already follows the road as it is.
         assertEquals(3, after.with(1, listOf(null)).followingChords)
+    }
+
+    @Test
+    fun alignToRoad_gives_the_chords_of_alignChords() {
+        val cum = cumulativeDistancesM(line4)
+        val expected = alignChords(line4, cum, line4.indices, MatchedRoad(bend))
+        val actual = alignToRoad(line4, cum, line4.indices, MatchedRoad(bend)).chords
+        assertEquals(expected.size, actual.size)
+        expected.zip(actual).forEach { (e, a) ->
+            assertEquals(e == null, a == null)
+            if (e != null && a != null) {
+                assertEquals(e.points, a.points)
+                assertTrue(e.cumDist.contentEquals(a.cumDist))
+            }
+        }
+    }
+
+    @Test
+    fun arcs_are_NaN_exactly_where_a_point_is_off_the_road() {
+        val offRoad = MAX_ROAD_OFFSET_M + 3.0
+        val points =
+            listOf(
+                point(0.0, 0.0),
+                point(100.0, MAX_ROAD_OFFSET_M - 1.0),
+                point(200.0, offRoad),
+                point(300.0, 0.0),
+            )
+        val road = listOf(point(0.0, 0.0), point(300.0, 0.0))
+        val arcs =
+            alignToRoad(points, cumulativeDistancesM(points), points.indices, MatchedRoad(road))
+                .arcs
+        assertEquals(4, arcs.size)
+        assertEquals(0.0, arcs[0], 0.01)
+        assertEquals(100.0, arcs[1], 0.01)
+        assertTrue(arcs[2].isNaN())
+        assertEquals(300.0, arcs[3], 0.01)
     }
 }

@@ -270,8 +270,8 @@ internal fun renderElevationSparkline(
     if (windowOverride != null) {
         // Climb-only mode: pin the frame to the climb (foot → top) and map linearly —
         // warp centred on the rider is meaningless while approaching from outside the window.
-        windowStart = windowOverride.first.coerceAtLeast(firstDist)
-        windowEnd = windowOverride.second.coerceAtMost(lastDist)
+        windowStart = windowOverride.first
+        windowEnd = windowOverride.second
         effWarpK = 0f
     } else {
         val window =
@@ -628,9 +628,12 @@ internal fun resolveClimbReveal(
                     // tail keeps the summit off the right.
                     val f = active.value
                     val windowStart = minOf(positionM, f.foot) - f.leadM
+                    // Clamped to the profile, so the frame never reaches past the route's ends.
                     ClimbReveal(
                         visible = true,
-                        windowOverride = windowStart to (f.summit + f.tailM),
+                        windowOverride =
+                            windowStart.coerceAtLeast(elevationPoints.first().first) to
+                                (f.summit + f.tailM).coerceAtMost(elevationPoints.last().first),
                     )
                 }
             }
@@ -667,6 +670,20 @@ internal fun sparklineWindow(
 }
 
 /**
+ * Window that fits a line [lengthM] long to a strip [widthPx] wide, whatever the lookahead or warp:
+ * the line starts one pad (plus the rounding pixel [markerEdgeMarginM] also asks for) in from the
+ * left edge and ends as far from the right. With `p` that share of the strip, a margin `m` on each
+ * side gives `p = m / (L + 2m)`, so `m = p * L / (1 - 2p)`. Pass it as `windowOverride`, which the
+ * renderer maps linearly as given. A strip too narrow for two pads caps `p` at a quarter, which
+ * keeps the window finite.
+ */
+internal fun rejoinWindow(lengthM: Float, widthPx: Int): Pair<Float, Float> {
+    val padFraction = markerPadFraction(widthPx).coerceAtMost(0.25f)
+    val marginM = padFraction * lengthM / (1f - 2f * padFraction)
+    return -marginM to lengthM + marginM
+}
+
+/**
  * Route distance that spans [MARKER_PAD_PX] pixels right at the rider, where [buildWarpedXMapper]
  * packs the most pixels per metre.
  *
@@ -681,10 +698,13 @@ internal fun sparklineWindow(
  * `position_dot_clears_the_marker_pad_at_both_route_ends`.
  */
 private fun markerEdgeMarginM(lookaheadM: Float, widthPx: Int, logWarpK: Float): Float {
-    val padFraction = ((MARKER_PAD_PX + 1f) / widthPx.coerceAtLeast(1)).coerceAtMost(0.5f)
+    val padFraction = markerPadFraction(widthPx).coerceAtMost(0.5f)
     val oneSidedBudget = lookaheadM * (1f + 2f * (1f - kotlin.math.exp(-logWarpK / 2f)))
     return padFraction * oneSidedBudget / ((1f + logWarpK) * (1f - padFraction))
 }
+
+// The uncapped share of a strip [widthPx] wide that a marker pad and its rounding pixel take.
+private fun markerPadFraction(widthPx: Int): Float = (MARKER_PAD_PX + 1f) / widthPx.coerceAtLeast(1)
 
 /**
  * Builds a monotonic function mapping a route distance in metres to a screen x-coordinate in

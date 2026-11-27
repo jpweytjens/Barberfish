@@ -41,11 +41,13 @@ import com.jpweytjens.barberfish.datatype.shared.GradeMapProgress
 import com.jpweytjens.barberfish.datatype.shared.GradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
+import com.jpweytjens.barberfish.datatype.shared.RejoinSpecs
 import com.jpweytjens.barberfish.datatype.shared.RerouteRed
 import com.jpweytjens.barberfish.datatype.shared.RideVisibility
 import com.jpweytjens.barberfish.datatype.shared.RoadMatcher
 import com.jpweytjens.barberfish.datatype.shared.RouteIndex
 import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
+import com.jpweytjens.barberfish.datatype.shared.buildGradedRejoinSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRejoinSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
 import com.jpweytjens.barberfish.datatype.shared.chevronIconLengthM
@@ -55,6 +57,7 @@ import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.followedRoute
 import com.jpweytjens.barberfish.datatype.shared.gradeChevronDrawable
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinChevronId
+import com.jpweytjens.barberfish.datatype.shared.gradeMapRejoinSegmentId
 import com.jpweytjens.barberfish.datatype.shared.gradeMapRouteKey
 import com.jpweytjens.barberfish.datatype.shared.lineCapTrimM
 import com.jpweytjens.barberfish.datatype.shared.metresPerPixel
@@ -74,6 +77,7 @@ import io.hammerhead.karooext.models.StreamState
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -81,10 +85,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import timber.log.Timber
 
 // Chevron cadence: on-device-tunable placeholders driving placeChevronsByCadence's
@@ -191,6 +198,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                     }
                 }
             }
+            if (rejoinJob?.isActive != true) {
+                rejoinJob = roadScope.launch {
+                    rejoinWanted().distinctUntilChanged().collect { rejoinFollower.follow(it) }
+                }
+            }
         }
     }
 
@@ -198,26 +210,70 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
     // so a map page reopened on the same route keeps the road already matched (a piece takes
     // seconds), and matching carries on while the map page is closed.
     private val roadScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // One engine at a time: both followers take this one lock around every match.
+    private val oneMatch = Mutex()
     private val roadFollower by lazy {
-        RoadFollower(roadMatcherFactory(applicationContext), roadScope, roadWanted())
+        RoadFollower(
+            roadMatcherFactory(applicationContext),
+            roadScope,
+            roadWanted(),
+            oneMatch = oneMatch,
+        )
     }
 
+    // The process's one writer of [rejoinRoad].
+    private val rejoinFollower by lazy {
+        RejoinFollower(roadMatcherFactory(applicationContext), roadScope, oneMatch)
+    }
+    private var rejoinJob: Job? = null
+
+    // The one statement of when the rejoin line is matched: while the rider is off a loaded route
+    // and Barberfish may read the Karoo's files, grade map on or off. Navigation is read only
+    // while files may be read, so with the switch off the service holds no consumer for it.
+    // The permissions are re-read only when the files config changes, which is enough: Android
+    // restarts the process when access is granted.
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun rejoinWanted(): Flow<RejoinTarget?> =
+        applicationContext.streamKarooFilesConfig().flatMapLatest { files ->
+            if (!applicationContext.mayReadKarooFiles(files)) {
+                flowOf(null)
+            } else {
+                karooSystem.streamNavigationState().map { nav ->
+                    nav.state
+                        .followedRoute()
+                        ?.takeIf { it.destination == null }
+                        ?.let { route ->
+                            route.rejoinPolyline?.let {
+                                RejoinTarget(
+                                    rejoinPolyline = it,
+                                    route = RouteLine(route.polyline, route.reversed),
+                                    routeElevationPolyline = route.elevationPolyline,
+                                )
+                            }
+                        }
+                }
+            }
+        }
+
     // The one statement of when a road is followed: the route being ridden, while the grade map
-    // is on and set to follow the road. The follower reads it in the service's own scope and
-    // stops when it names anything else, with a map page open or not.
+    // is on and Barberfish may read the Karoo's files. The follower reads it in the service's own
+    // scope and stops when it names anything else, with a map page open or not.
     private fun roadWanted(): Flow<RouteLine?> =
         combine(
             applicationContext.streamGradeMapConfig(),
+            applicationContext.streamKarooFilesConfig(),
             karooSystem.streamNavigationState(),
-        ) { config, nav ->
+        ) { config, files, nav ->
             nav.state
                 .followedRoute()
-                ?.takeIf { config.enabled && config.followRoad }
+                ?.takeIf { config.enabled && applicationContext.mayReadKarooFiles(files) }
                 ?.let { RouteLine(it.polyline, it.reversed) }
         }
 
     override fun onDestroy() {
         roadFollower.stop()
+        rejoinFollower.stop()
         roadScope.cancel()
         discoveryScope.cancel()
         karooSystem.disconnect()
@@ -250,8 +306,12 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
             var drawnIdSpans = applicationContext.streamGradeMapDrawnIdSpans().first()
             layerPlanner.assumeStale(drawnIdSpans.segments)
             chevronController.assumeStale(drawnIdSpans.chevrons)
-            // The rejoin fill has one fixed id; hiding it when nothing is painted is a no-op.
-            rejoinController.assumeStale(setOf(GRADE_MAP_REJOIN_ID))
+            // The solid rejoin fill has one fixed id; hiding it when nothing is painted is a
+            // no-op. The graded band's pieces are positional, bounded by their stored span.
+            rejoinController.assumeStale(
+                setOf(GRADE_MAP_REJOIN_ID) +
+                    (0 until drawnIdSpans.rejoinSegments).map(::gradeMapRejoinSegmentId)
+            )
             rejoinChevronController.assumeStale(drawnIdSpans.rejoinChevrons)
             // Invariant: the persisted spans always cover the painted ids, whatever instant
             // the process dies. Raised to the ceiling of old and new before a draw, settled
@@ -263,14 +323,20 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                 }
             }
             // Branch A: config + nav (changes rarely — route load, settings edit).
+            // Seven flows: combine takes five with their types, so the Karoo files switch joins
+            // the grade map config first, and the rejoin line's road joins the route's.
             val configNavFlow =
                 combine(
-                    applicationContext.streamGradeMapConfig(),
+                    combine(
+                        applicationContext.streamGradeMapConfig(),
+                        applicationContext.streamKarooFilesConfig(),
+                        ::Pair,
+                    ),
                     applicationContext.streamFieldSparklineConfig(),
                     applicationContext.streamZoneConfig(),
                     karooSystem.streamNavigationState(),
-                    roadFollower.line,
-                ) { gradeMapCfg, sparklineCfg, zoneCfg, navEvent, road ->
+                    combine(roadFollower.line, rejoinRoad, ::Pair),
+                ) { (gradeMapCfg, filesCfg), sparklineCfg, zoneCfg, navEvent, (road, rejoin) ->
                     // Resolve sparkline-sync here so the signature() below hashes the
                     // effective tuning and a sparkline edit triggers a rebuild while synced.
                     val eff = resolveGradeMapTuning(gradeMapCfg, sparklineCfg, zoneCfg.gradePalette)
@@ -281,8 +347,9 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                         palette = zoneCfg.gradePalette,
                         tuning = eff,
                         route = navEvent.state.followedRoute(),
-                        followRoad = gradeMapCfg.followRoad,
+                        followRoad = filesCfg.enabled,
                         road = road,
+                        rejoinRoad = rejoin,
                     )
                 }
             // Branch B: zoom + location (changes on every GPS tick / map interaction).
@@ -491,7 +558,11 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             // Without storage access every piece would come back empty and the
                             // route would end as "no offline map"; not starting leaves it to
                             // the first redraw after access is granted.
-                            if (inputs.followRoad && applicationContext.hasRoadDataAccess()) {
+                            if (
+                                applicationContext.mayReadKarooFiles(
+                                    KarooFilesConfig(enabled = inputs.followRoad)
+                                )
+                            ) {
                                 roadFollower.follow(
                                     route.polyline,
                                     route.reversed,
@@ -604,27 +675,70 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                     "grademap: segment lengths (m) min=${segLen.firstOrNull()?.toInt()} median=${segLen.getOrNull(segLen.size / 2)?.toInt()} max=${segLen.lastOrNull()?.toInt()} <collision=${segLen.count { it < chevronCollision }}"
                                 )
                             }
-                            // The reroute band: the path back to the route while off it, in the
-                            // rerouting red with chevrons at the route's sparse cadence.
+                            // The reroute band: the path back to the route while off it. Graded on
+                            // the road when the rejoin line matched is this very line; old terrain
+                            // is never drawn on a new line.
+                            val gradedRejoinSpecs =
+                                inputs.currentRejoinRoad
+                                    ?.let { road ->
+                                        gradedRejoinBandOrNull {
+                                            buildGradedRejoinSpecs(
+                                                road = road,
+                                                palette = inputs.palette,
+                                                readable = false,
+                                                tuning = inputs.tuning,
+                                                includeChevrons = inputs.width.drawsChevrons,
+                                                chevronBlend = inputs.chevronBlend,
+                                                chevronGradeFullPct = CHEVRON_GRADE_FULL_PCT,
+                                                chevronChangeWindowM = CHEVRON_CHANGE_WINDOW_M,
+                                                chevronChangeFullPctPerM =
+                                                    CHEVRON_CHANGE_FULL_PCT_PER_M,
+                                                chevronSpacingMaxM =
+                                                    CHEVRON_SPACING_MAX_PX *
+                                                        metresPerPixel(viewport.zoomLevel),
+                                                chevronSpacingMinM =
+                                                    CHEVRON_SPACING_MIN_PX *
+                                                        metresPerPixel(viewport.zoomLevel),
+                                                chevronWindowHalfM = chevronWindow,
+                                                // No draw-time selection follows for the rejoin
+                                                // band, so chevrons are spaced apart here.
+                                                chevronMinSpacingM = chevronCollision,
+                                                capTrimM = capTrimM,
+                                                casingCapTrimM =
+                                                    lineCapTrimM(
+                                                        inputs.width.rejoinCasingDp,
+                                                        density,
+                                                        routeLat,
+                                                        viewport.zoomLevel,
+                                                    ),
+                                                metresPerPixel = metresPerPixel(viewport.zoomLevel),
+                                            )
+                                        }
+                                    }
+                                    ?.takeIf { it.fills.isNotEmpty() }
+                            // Otherwise in the rerouting red with chevrons at the route's sparse
+                            // cadence.
                             val rejoinSpecs =
-                                route.rejoinPolyline?.let {
-                                    buildRejoinSpecs(
-                                        rejoinPolyline = it,
-                                        colorArgb = RerouteRed.toArgb(),
-                                        chevronSpacingM =
-                                            CHEVRON_SPACING_MAX_PX *
-                                                metresPerPixel(viewport.zoomLevel),
-                                        chevronMinSpacingM = chevronCollision,
-                                        capTrimM = capTrimM,
-                                        casingCapTrimM = casingCapTrimM,
-                                        includeChevrons = inputs.width.drawsChevrons,
-                                    )
-                                }
+                                gradedRejoinSpecs
+                                    ?: route.rejoinPolyline?.let {
+                                        buildRejoinSpecs(
+                                            rejoinPolyline = it,
+                                            colorArgb = RerouteRed.toArgb(),
+                                            chevronSpacingM =
+                                                CHEVRON_SPACING_MAX_PX *
+                                                    metresPerPixel(viewport.zoomLevel),
+                                            chevronMinSpacingM = chevronCollision,
+                                            capTrimM = capTrimM,
+                                            casingCapTrimM = casingCapTrimM,
+                                            includeChevrons = inputs.width.drawsChevrons,
+                                        )
+                                    }
                             val newSpans =
                                 GradeMapDrawnIdSpans(
                                     segments = specs.segmentIdSpan,
                                     chevrons = specs.chevronIdSpan,
-                                    rejoinChevrons = rejoinSpecs?.chevrons?.size ?: 0,
+                                    rejoinChevrons = rejoinSpecs?.chevronIdSpan ?: 0,
+                                    rejoinSegments = rejoinSpecs?.segmentIdSpan ?: 0,
                                 )
                             persistDrawnIdSpans(
                                 GradeMapDrawnIdSpans(
@@ -632,6 +746,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                                     chevrons = maxOf(drawnIdSpans.chevrons, newSpans.chevrons),
                                     rejoinChevrons =
                                         maxOf(drawnIdSpans.rejoinChevrons, newSpans.rejoinChevrons),
+                                    rejoinSegments =
+                                        maxOf(drawnIdSpans.rejoinSegments, newSpans.rejoinSegments),
                                 )
                             )
                             val current =
@@ -651,17 +767,25 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             drawing = current
                             drawRoute(current)
                             if (rejoinSpecs != null) {
+                                val graded = gradedRejoinSpecs != null
                                 rejoinController.emit(
                                     emitter,
                                     casingEncoded = rejoinSpecs.casing,
-                                    specs = listOfNotNull(rejoinSpecs.fill),
+                                    specs = rejoinSpecs.fills,
                                     fillWidth = inputs.width.fillDp,
-                                    casingWidth = inputs.width.casingDp,
+                                    casingWidth =
+                                        if (graded) inputs.width.rejoinCasingDp
+                                        else inputs.width.casingDp,
+                                    casingColor = if (graded) RerouteRed.toArgb() else CASING_COLOR,
                                 )
                                 rejoinChevronController.emit(
                                     emitter,
                                     rejoinSpecs.chevrons,
-                                    R.drawable.ic_climber_chevron_f80000,
+                                    if (graded) {
+                                        gradeChevronDrawable(inputs.palette)
+                                    } else {
+                                        R.drawable.ic_climber_chevron_f80000
+                                    },
                                 )
                             } else {
                                 rejoinController.clearAll(emitter)
@@ -738,13 +862,23 @@ internal data class GradeMapConfigInputs(
     val followRoad: Boolean = false,
     // The road matched so far for the followed route. A new snapshot per matched piece.
     val road: MatchedRoadLine? = null,
+    // The rejoin line as matched, for whichever line it was; the rebuild checks it is the
+    // current one.
+    val rejoinRoad: RejoinRoad? = null,
 ) {
+    /** [rejoinRoad] when it is for the current rejoin line, the one the rebuild draws. */
+    val currentRejoinRoad: RejoinRoad?
+        get() = rejoinRoad?.takeIf { it.rejoinPolyline == route?.rejoinPolyline }
+
     internal fun signature(): GradeMapConfigSignature =
         GradeMapConfigSignature(
             followRoad = followRoad,
             // Compared by identity: each matched piece gives a new snapshot, and that is what
             // has to redraw the band.
             road = road.takeIf { followRoad },
+            // By identity too: a result arriving or withdrawn redraws the rejoin band. Only a
+            // result for the current line counts, as only that one is drawn.
+            rejoinRoad = currentRejoinRoad,
             enabled = enabled,
             chevronBlend = chevronBlend,
             width = width,
@@ -786,7 +920,19 @@ internal data class GradeMapConfigSignature(
     val isDestination: Boolean,
     val followRoad: Boolean,
     val road: MatchedRoadLine?,
+    val rejoinRoad: RejoinRoad?,
 )
+
+// Suppressed: this runs in the service's process, which hosts every field. A graded rejoin band
+// that cannot be built, whatever the reason, leaves the solid band and costs nothing else.
+@Suppress("TooGenericExceptionCaught")
+private inline fun gradedRejoinBandOrNull(build: () -> RejoinSpecs): RejoinSpecs? =
+    try {
+        build()
+    } catch (e: RuntimeException) {
+        Timber.w(e, "could not grade the rejoin band")
+        null
+    }
 
 private data class ViewportInputs(
     val zoomLevel: Double,

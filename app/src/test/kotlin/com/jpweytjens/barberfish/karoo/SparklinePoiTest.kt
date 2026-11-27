@@ -4,8 +4,14 @@ import android.app.Application
 import android.graphics.Bitmap
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.RouteFixtures
+import com.jpweytjens.barberfish.datatype.shared.MatchedRoadLine
+import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
+import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
+import com.jpweytjens.barberfish.datatype.shared.globalPoiProjections
 import com.jpweytjens.barberfish.extension.BarberfishExtension
+import com.jpweytjens.barberfish.extension.RejoinRoad
 import com.jpweytjens.barberfish.extension.SparklineConfig
+import com.jpweytjens.barberfish.extension.rejoinRoad
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.ViewRecorder
@@ -15,6 +21,8 @@ import fi.nikosavola.karooext.testing.robolectric.RobolectricPump
 import io.hammerhead.karooext.models.Symbol
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -39,10 +47,16 @@ class SparklinePoiTest {
     fun startOnTheRoute() {
         val app = ApplicationProvider.getApplicationContext<Application>()
         clearBarberfishSettings(app)
+        rejoinRoad.value = null
         karoo.system.setNavigation(climbRoute().navigating())
         karoo.system.setDistanceRemaining(4_000.0)
         RobolectricPump.advanceBy(1.seconds)
         host = karoo.host<BarberfishExtension>()
+    }
+
+    @After
+    fun withdrawTheRejoinLine() {
+        rejoinRoad.value = null
     }
 
     private fun poiAt(id: String, metresEast: Double, metresNorth: Double) =
@@ -96,5 +110,77 @@ class SparklinePoiTest {
         }) {
             it.sameAs(bare)
         }
+    }
+
+    // --- off the route ---
+
+    private val routePoi =
+        RouteFixtures.point(400.0, 0.0).let {
+            Symbol.POI("route", it.lat, it.lng, distancesAlongRoute = listOf(400.0))
+        }
+
+    // 900 m due south onto the route, at the rider's distance along it, flat then 8% up.
+    private val rejoinLine =
+        RouteFixtures.encoded((9 downTo 0).map { RouteFixtures.point(0.0, it * 100.0) })
+
+    private val rejoin: RejoinRoad =
+        decodeGpsPolyline(rejoinLine).let { points ->
+            val cumDist = cumulativeDistancesM(points)
+            val lengthM = cumDist.last()
+            RejoinRoad(
+                rejoinLine,
+                MatchedRoadLine(points, cumDist),
+                listOf(0f to 64f, (lengthM / 2).toFloat() to 64f, lengthM.toFloat() to 100f),
+            )
+        }
+
+    private fun navigating(pois: List<Symbol.POI>, rejoinPolyline: String? = null) =
+        climbRoute()
+            .navigating(rejoinPolyline, rejoinDistance = rejoinPolyline?.let { 900.0 })
+            .copy(pois = pois)
+
+    private fun goOffRoute(pois: List<Symbol.POI>, road: RejoinRoad?) {
+        rejoinRoad.value = road
+        karoo.system.setNavigation(navigating(pois, rejoinLine))
+        karoo.system.setDistanceRemaining(4_000.0, onRoute = false)
+    }
+
+    private fun comeBack(pois: List<Symbol.POI>) {
+        rejoinRoad.value = null
+        karoo.system.setNavigation(navigating(pois))
+        karoo.system.setDistanceRemaining(4_000.0)
+    }
+
+    @Test
+    fun the_rejoin_view_draws_no_markers_and_the_route_keeps_them() {
+        val (view, bare) = openBareStrip()
+        // The rejoin view with no POIs anywhere.
+        val unmarkedRejoin =
+            view.stripAfter({ goOffRoute(emptyList(), rejoin) }) { !it.sameAs(bare) }
+        view.stripAfter({ comeBack(emptyList()) }) { it.sameAs(bare) }
+
+        // Both markers on the route: each one changes the strip.
+        val routeMarked =
+            view.stripAfter({ karoo.system.setNavigation(navigating(listOf(routePoi))) }) {
+                !it.sameAs(bare)
+            }
+        val marked =
+            view.stripAfter({ karoo.system.setGlobalPois(nearPoi) }) { !it.sameAs(routeMarked) }
+        val projections = globalPoiProjections.get()
+
+        // Off the route with heights, neither marker is drawn.
+        view.stripAfter({ goOffRoute(listOf(routePoi), rejoin) }) { it.sameAs(unmarkedRejoin) }
+
+        // Back on the route, the same frame, from the projection already made.
+        view.stripAfter({ comeBack(listOf(routePoi)) }) { it.sameAs(marked) }
+        assertEquals(projections, globalPoiProjections.get())
+    }
+
+    @Test
+    fun off_the_route_without_heights_the_frozen_view_keeps_its_markers() {
+        val (view, bare) = openBareStrip()
+        val frozenBare = view.stripAfter({ goOffRoute(emptyList(), null) }) { !it.sameAs(bare) }
+
+        view.stripAfter({ karoo.system.setGlobalPois(nearPoi) }) { !it.sameAs(frozenBare) }
     }
 }

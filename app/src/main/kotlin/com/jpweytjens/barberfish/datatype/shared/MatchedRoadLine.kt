@@ -72,6 +72,14 @@ private class Road(val points: List<LatLng>) {
 }
 
 /**
+ * Where the points of a line meet its road. [arcs] holds the distance along the road of each point
+ * of the range, NaN for a point not found on it within [MAX_ROAD_OFFSET_M], which includes a point
+ * the forward search window misses. [chords] has one entry per chord, null where the chord does not
+ * follow the road.
+ */
+internal class RoadAlignment(val arcs: DoubleArray, val chords: List<ChordRoad?>)
+
+/**
  * Lays the chords between the points of [pointRange] onto [road], the matched road for those
  * points. One entry per chord, null where the chord does not follow the road: an end further than
  * [MAX_ROAD_OFFSET_M] from it, or a stretch of road longer than [MAX_ROAD_STRETCH] chords.
@@ -82,9 +90,20 @@ internal fun alignChords(
     cumDist: DoubleArray,
     pointRange: IntRange,
     road: MatchedRoad,
-): List<ChordRoad?> {
+): List<ChordRoad?> = alignToRoad(points, cumDist, pointRange, road).chords
+
+/** [alignChords] with the arc position of each point of [pointRange] as well. */
+internal fun alignToRoad(
+    points: List<LatLng>,
+    cumDist: DoubleArray,
+    pointRange: IntRange,
+    road: MatchedRoad,
+): RoadAlignment {
     val chordCount = maxOf(pointRange.last - pointRange.first, 0)
-    if (chordCount == 0 || road.points.size < 2) return List(chordCount) { null }
+    if (chordCount == 0 || road.points.size < 2) {
+        val pointCount = maxOf(pointRange.last - pointRange.first + 1, 0)
+        return RoadAlignment(DoubleArray(pointCount) { Double.NaN }, List(chordCount) { null })
+    }
     val onRoad = Road(road.points)
     // Arc position on the road of each point that lies on it; NaN for one that does not.
     val arcs = DoubleArray(chordCount + 1) { Double.NaN }
@@ -99,17 +118,19 @@ internal fun alignChords(
             anchorM = cumDist[i]
         }
     }
-    return List(chordCount) { j ->
-        val chordM = cumDist[pointRange.first + j + 1] - cumDist[pointRange.first + j]
-        val stretchM = arcs[j + 1] - arcs[j]
-        // A NaN end fails both comparisons.
-        if (chordM > 0.0 && stretchM > 0.0 && stretchM <= MAX_ROAD_STRETCH * chordM) {
-            val stretch = extractSubPolyline(onRoad.points, onRoad.cum, arcs[j], arcs[j + 1])
-            ChordRoad(stretch, cumulativeDistancesM(stretch))
-        } else {
-            null
+    val chords =
+        List(chordCount) { j ->
+            val chordM = cumDist[pointRange.first + j + 1] - cumDist[pointRange.first + j]
+            val stretchM = arcs[j + 1] - arcs[j]
+            // A NaN end fails both comparisons.
+            if (chordM > 0.0 && stretchM > 0.0 && stretchM <= MAX_ROAD_STRETCH * chordM) {
+                val stretch = extractSubPolyline(onRoad.points, onRoad.cum, arcs[j], arcs[j + 1])
+                ChordRoad(stretch, cumulativeDistancesM(stretch))
+            } else {
+                null
+            }
         }
-    }
+    return RoadAlignment(arcs, chords)
 }
 
 /**
@@ -137,7 +158,7 @@ private constructor(
     /** How many chords follow the road. */
     val followingChords: Int = roads.count { it != null }
 
-    private val totalM = if (cumDist.isEmpty()) 0.0 else cumDist.last()
+    internal val totalM = if (cumDist.isEmpty()) 0.0 else cumDist.last()
 
     // A following chord's path, joints included; null for a straight chord.
     private val paths: Array<ChordRoad?> =

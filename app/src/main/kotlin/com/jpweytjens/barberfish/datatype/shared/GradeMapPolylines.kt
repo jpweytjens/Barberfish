@@ -45,9 +45,10 @@ internal data class ClimbChevronSpec(
 )
 
 /**
- * Positional symbol ids. Every id [buildGradeMapSpecs] mints comes from these two builders, so a
- * fresh `startMap` can clear whatever a dead predecessor painted by hiding `0 until span` of each
- * kind — the rideapp keeps drawn symbols across extension process death and startMap restarts.
+ * Positional symbol ids. Every id [buildGradeMapSpecs] mints for the route comes from these two
+ * builders (the rejoin band's from its own pair, see [GradeMapIds]), so a fresh `startMap` can
+ * clear whatever a dead predecessor painted by hiding `0 until span` of each kind — the rideapp
+ * keeps drawn symbols across extension process death and startMap restarts.
  */
 internal fun gradeMapSegmentId(index: Int): String = "barberfish-seg-$index"
 
@@ -58,6 +59,14 @@ internal const val GRADE_MAP_CASING_ID = "barberfish-casing"
 internal fun gradeMapPieceCasingId(fillId: String): String = "$fillId-casing"
 
 internal fun gradeMapChevronId(index: Int): String = "barberfish-chev-$index"
+
+/** The id family [buildGradeMapSpecs] mints from: the route band's, or the rejoin band's. */
+internal class GradeMapIds(val segment: (Int) -> String, val chevron: (Int) -> String) {
+    companion object {
+        val ROUTE = GradeMapIds(::gradeMapSegmentId, ::gradeMapChevronId)
+        val REJOIN = GradeMapIds(::gradeMapRejoinSegmentId, ::gradeMapRejoinChevronId)
+    }
+}
 
 /**
  * Specs produced by [buildGradeMapSpecs]. Ids are minted from `0 until span` per kind; filtering
@@ -262,6 +271,17 @@ internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): 
 }
 
 /**
+ * The factor that puts a distance on the route's elevation profile, [profileSpanM] long, onto its
+ * GPS line, [gpsLengthM] long: multiply a profile distance by it, divide a GPS distance by it. It
+ * is the ratio of the two lengths, and 1 when that ratio falls outside 0.9..1.1, where the two do
+ * not span the same extent.
+ */
+internal fun profileToGpsScale(gpsLengthM: Double, profileSpanM: Double): Double {
+    val ratio = if (profileSpanM > 0.0) gpsLengthM / profileSpanM else 1.0
+    return if (ratio in 0.9..1.1) ratio else 1.0
+}
+
+/**
  * Builds gradient polyline specs and chevron symbol specs along a route's elevation profile,
  * mirroring the HUD elevation sparkline. The Karoo SDK `Climb` list is intentionally not used — the
  * rider's mental model of "where it gets coloured" must match the sparkline, and the sparkline is
@@ -292,6 +312,9 @@ internal fun elevationAtM(points: List<Pair<Float, Float>>, distanceM: Double): 
  *    bounds. This keeps the emitted symbol count bounded regardless of route length — we only
  *    render what the rider can see.
  *
+ * [elevation], when given, is the profile already decoded and is used in place of
+ * [routeElevationPolyline]. [ids] names the id family every polyline and chevron takes.
+ *
  * Returns empty lists if either polyline is missing.
  */
 // Suppressed: the shape of this function is unchanged; taking one more input re-keyed the
@@ -319,8 +342,10 @@ internal fun buildGradeMapSpecs(
     metresPerPixel: Double = 0.0,
     routeIndex: RouteIndex? = null,
     matchedRoadLine: MatchedRoadLine? = null,
+    ids: GradeMapIds = GradeMapIds.ROUTE,
+    elevation: List<Pair<Float, Float>>? = null,
 ): GradeMapSpecs {
-    if (routePolyline.isBlank() || routeElevationPolyline.isNullOrBlank()) {
+    if (routePolyline.isBlank() || (elevation == null && routeElevationPolyline.isNullOrBlank())) {
         return GradeMapSpecs(emptyList(), emptyList())
     }
     val decoded = decodeGpsPolyline(routePolyline)
@@ -330,7 +355,7 @@ internal fun buildGradeMapSpecs(
     // A matched line belongs to one route line. One built for another route is dropped here,
     // where it would be used, so it can never move this route's band.
     val road = matchedRoadLine?.takeIf { it.points == decoded }
-    val rawElev = decodeElevationPolyline(routeElevationPolyline)
+    val rawElev = elevation ?: decodeElevationPolyline(routeElevationPolyline.orEmpty())
     if (rawElev.isEmpty()) return GradeMapSpecs(emptyList(), emptyList())
     val elevPoints =
         visvalingamWhyatt(rawElev, effectiveMinAreaM2(tuning.simplification, metresPerPixel))
@@ -344,9 +369,7 @@ internal fun buildGradeMapSpecs(
     // together. Chord shortfall stays well within a percent; a ratio outside the guard band
     // means the two polylines do not span the same extent (an elevation profile covering
     // only part of the route), where scaling would misplace every run, so it stays off.
-    val elevSpanM = elevPoints.last().first.toDouble()
-    val ratio = if (elevSpanM > 0.0) cumDist.last() / elevSpanM else 1.0
-    val elevToGps = if (ratio in 0.9..1.1) ratio else 1.0
+    val elevToGps = profileToGpsScale(cumDist.last(), elevPoints.last().first.toDouble())
 
     // The runs have one derivation: the profile is resampled into cells and each takes the
     // band of its mean grade, so the vertex spacing decides nothing about where a colour may
@@ -400,7 +423,7 @@ internal fun buildGradeMapSpecs(
         if (sub.size >= 2 && casingSub.size >= 2) {
             polylines +=
                 GradeMapPolylineSpec(
-                    id = gradeMapSegmentId(idx),
+                    id = ids.segment(idx),
                     encoded = encodeGpsPolyline(sub),
                     colorArgb = piece.colorArgb,
                     trimStart = atRouteStart,
@@ -460,7 +483,7 @@ internal fun buildGradeMapSpecs(
         ClimbChevronSpec(
             // Indexed over every placement on the route, so an id stays put when a
             // neighbouring run changes colour or the run list is re-cut.
-            id = gradeMapChevronId(idx),
+            id = ids.chevron(idx),
             lat = placement.lat,
             lng = placement.lng,
             bearingDeg = placement.bearingDeg,

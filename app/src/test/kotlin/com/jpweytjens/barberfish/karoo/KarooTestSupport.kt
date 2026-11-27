@@ -11,7 +11,11 @@ import com.jpweytjens.barberfish.R
 import com.jpweytjens.barberfish.RouteFixtures
 import com.jpweytjens.barberfish.datatype.shared.LatLng
 import com.jpweytjens.barberfish.extension.BarberfishExtension
+import com.jpweytjens.barberfish.extension.GradeMapConfig
+import com.jpweytjens.barberfish.extension.KarooFilesConfig
 import com.jpweytjens.barberfish.extension.dataStore
+import com.jpweytjens.barberfish.extension.saveGradeMapConfig
+import com.jpweytjens.barberfish.extension.saveKarooFilesConfig
 import fi.nikosavola.karooext.testing.FakeKarooHost
 import fi.nikosavola.karooext.testing.FakeKarooSystem
 import fi.nikosavola.karooext.testing.MapRecorder
@@ -100,6 +104,18 @@ internal fun FakeKarooRule.startBarberfish(): FakeKarooHost {
     val host = host<BarberfishExtension>()
     awaitValue { true.takeIf { system.consumerParams.any { it is ActiveRideProfile.Params } } }
     return host
+}
+
+internal fun FakeKarooRule.save(config: GradeMapConfig) = runBlocking {
+    app.saveGradeMapConfig(config)
+}
+
+internal fun FakeKarooRule.save(config: KarooFilesConfig) = runBlocking {
+    app.saveKarooFilesConfig(config)
+}
+
+internal fun FakeKarooRule.awaitTrue(condition: () -> Boolean) = awaitValue {
+    true.takeIf { condition() }
 }
 
 /** The extension keeps one process-wide DataStore, which Robolectric reuses across tests. */

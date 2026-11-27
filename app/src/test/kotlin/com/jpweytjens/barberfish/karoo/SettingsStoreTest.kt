@@ -1,26 +1,38 @@
 package com.jpweytjens.barberfish.karoo
 
 import android.app.Application
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import com.jpweytjens.barberfish.datatype.shared.ZonePalette
+import com.jpweytjens.barberfish.extension.GradeMapDrawnIdSpans
+import com.jpweytjens.barberfish.extension.GradeMapWidth
 import com.jpweytjens.barberfish.extension.HUDConfig
 import com.jpweytjens.barberfish.extension.HUDScope
 import com.jpweytjens.barberfish.extension.HUDSlotConfig
 import com.jpweytjens.barberfish.extension.HUDSlotField
 import com.jpweytjens.barberfish.extension.HUDSlots
+import com.jpweytjens.barberfish.extension.KarooFilesConfig
 import com.jpweytjens.barberfish.extension.SparklineConfig
 import com.jpweytjens.barberfish.extension.SparklineMode
 import com.jpweytjens.barberfish.extension.ZoneConfig
+import com.jpweytjens.barberfish.extension.dataStore
 import com.jpweytjens.barberfish.extension.saveFieldSparklineConfig
+import com.jpweytjens.barberfish.extension.saveKarooFilesConfig
 import com.jpweytjens.barberfish.extension.saveZoneConfig
 import com.jpweytjens.barberfish.extension.streamConfigSnapshot
 import com.jpweytjens.barberfish.extension.streamFieldSparklineConfig
+import com.jpweytjens.barberfish.extension.streamGradeMapConfig
+import com.jpweytjens.barberfish.extension.streamGradeMapDrawnIdSpans
+import com.jpweytjens.barberfish.extension.streamKarooFilesConfig
 import com.jpweytjens.barberfish.extension.streamZoneConfig
 import com.jpweytjens.barberfish.extension.updateHUDConfig
 import fi.nikosavola.karooext.testing.robolectric.FakeKarooRule
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -80,5 +92,49 @@ class SettingsStoreTest {
             ZonePalette.ZWIFT,
             runBlocking { app.streamConfigSnapshot().first() }.zone.powerPalette,
         )
+    }
+
+    @Test
+    fun the_karoo_files_switch_is_off_by_default() {
+        assertFalse(runBlocking { karoo.app.streamKarooFilesConfig().first() }.enabled)
+    }
+
+    @Test
+    fun the_karoo_files_switch_round_trips() {
+        val app = karoo.app
+        runBlocking { app.saveKarooFilesConfig(KarooFilesConfig(enabled = true)) }
+        assertTrue(runBlocking { app.streamKarooFilesConfig().first() }.enabled)
+        assertTrue(runBlocking { app.streamConfigSnapshot().first() }.karooFiles.enabled)
+        runBlocking { app.saveKarooFilesConfig(KarooFilesConfig(enabled = false)) }
+        assertFalse(runBlocking { app.streamKarooFilesConfig().first() }.enabled)
+    }
+
+    // The old FOLLOW THE ROAD choice lived in the grade map config. It is not carried over.
+    @Test
+    fun a_stored_follow_the_road_leaves_the_karoo_files_switch_off() {
+        val app = karoo.app
+        runBlocking {
+            app.dataStore.edit {
+                it[stringPreferencesKey("grade_map_config")] =
+                    """{"enabled":true,"width":"NARROW","followRoad":true}"""
+            }
+        }
+        assertEquals(GradeMapWidth.NARROW, runBlocking { app.streamGradeMapConfig().first() }.width)
+        assertFalse(runBlocking { app.streamKarooFilesConfig().first() }.enabled)
+    }
+
+    // No build that wrote a record without the field drew coloured rejoin pieces.
+    @Test
+    fun a_stored_span_record_without_rejoin_segments_reads_none() {
+        val app = karoo.app
+        runBlocking {
+            app.dataStore.edit {
+                it[stringPreferencesKey("grade_map_drawn_id_spans")] =
+                    """{"segments":4,"chevrons":2,"rejoinChevrons":1}"""
+            }
+        }
+        val spans = runBlocking { app.streamGradeMapDrawnIdSpans().first() }
+        assertEquals(GradeMapDrawnIdSpans(segments = 4, chevrons = 2, rejoinChevrons = 1), spans)
+        assertEquals(0, spans.rejoinSegments)
     }
 }

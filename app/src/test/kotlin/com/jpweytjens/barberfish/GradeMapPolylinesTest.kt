@@ -3,6 +3,7 @@ package com.jpweytjens.barberfish
 import androidx.compose.ui.graphics.toArgb
 import com.jpweytjens.barberfish.datatype.shared.EffectiveGradeMapTuning
 import com.jpweytjens.barberfish.datatype.shared.FlatGrey
+import com.jpweytjens.barberfish.datatype.shared.GradeMapIds
 import com.jpweytjens.barberfish.datatype.shared.GradeMapPolylineSpec
 import com.jpweytjens.barberfish.datatype.shared.GradeRun
 import com.jpweytjens.barberfish.datatype.shared.LatLng
@@ -10,6 +11,7 @@ import com.jpweytjens.barberfish.datatype.shared.buildGradeMapSpecs
 import com.jpweytjens.barberfish.datatype.shared.buildRouteIndex
 import com.jpweytjens.barberfish.datatype.shared.cumulativeDistancesM
 import com.jpweytjens.barberfish.datatype.shared.cutRunsByVisits
+import com.jpweytjens.barberfish.datatype.shared.decodeElevationPolyline
 import com.jpweytjens.barberfish.datatype.shared.decodeGpsPolyline
 import com.jpweytjens.barberfish.datatype.shared.drawnExtent
 import com.jpweytjens.barberfish.datatype.shared.encodeGpsPolyline
@@ -1025,6 +1027,69 @@ class GradeMapPolylinesTest {
         val (s, e) = drawnExtent(0.0, 10.0, trimStart = true, trimEnd = true, capTrimM = 20.0)
         assertEquals(4.5, s, 1e-9)
         assertEquals(5.5, e, 1e-9)
+    }
+
+    // A flat kilometre and then an 8% climb, on the straight 2 km route, with chevrons.
+    private fun flatThenClimb(
+        ids: GradeMapIds = GradeMapIds.ROUTE,
+        routeElevationPolyline: String? = flatThenClimbElevation,
+        elevation: List<Pair<Float, Float>>? = null,
+    ) =
+        buildGradeMapSpecs(
+            routePolyline = straightRoute2kmPolyline(),
+            routeElevationPolyline = routeElevationPolyline,
+            palette = GradePalette.KAROO,
+            readable = false,
+            tuning = fullyOnTuning(),
+            chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+            chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
+            elevation = elevation,
+            ids = ids,
+        )
+
+    private val flatThenClimbElevation =
+        encodeElevationManually(listOf(0f to 0f, 1000f to 0f, 2000f to 80f))
+
+    @Test
+    fun the_rejoin_ids_name_every_piece_and_chevron() {
+        val specs = flatThenClimb(ids = GradeMapIds.REJOIN)
+        assertTrue(specs.polylines.size > 1)
+        assertTrue(specs.chevrons.isNotEmpty())
+        assertTrue(specs.polylines.all { it.id.startsWith("barberfish-rejoin-seg-") })
+        assertTrue(specs.chevrons.all { it.id.startsWith("barberfish-rejoin-chev-") })
+    }
+
+    @Test
+    fun the_default_ids_are_the_routes() {
+        val specs =
+            buildGradeMapSpecs(
+                routePolyline = straightRoute2kmPolyline(),
+                routeElevationPolyline = flatThenClimbElevation,
+                palette = GradePalette.KAROO,
+                readable = false,
+                tuning = fullyOnTuning(),
+                chevronSpacingMaxM = FIXED_CHEVRON_SPACING_M,
+                chevronSpacingMinM = FIXED_CHEVRON_SPACING_M,
+            )
+        assertEquals(
+            specs.polylines.indices.map { "barberfish-seg-$it" },
+            specs.polylines.map { it.id },
+        )
+        assertTrue(specs.chevrons.isNotEmpty())
+        assertTrue(specs.chevrons.all { it.id.startsWith("barberfish-chev-") })
+        assertEquals(flatThenClimb(ids = GradeMapIds.ROUTE), specs)
+    }
+
+    @Test
+    fun a_decoded_profile_gives_the_specs_its_encoding_gives() {
+        val encoded = flatThenClimb()
+        val decoded =
+            flatThenClimb(
+                routeElevationPolyline = null,
+                elevation = decodeElevationPolyline(flatThenClimbElevation),
+            )
+        assertTrue(encoded.polylines.size > 1)
+        assertEquals(encoded, decoded)
     }
 
     // Straight 2 km route east along the equator, for chevron cadence tests that only care

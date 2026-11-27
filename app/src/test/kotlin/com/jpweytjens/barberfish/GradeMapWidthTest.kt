@@ -18,15 +18,6 @@ class GradeMapWidthTest {
     }
 
     @Test
-    fun `a stored config without follow road reads as off`() {
-        val stored = """{"enabled":true,"chevronBlend":1.0}"""
-        assertEquals(false, json.decodeFromString<GradeMapConfig>(stored).followRoad)
-        assertEquals(false, GradeMapConfig().followRoad)
-        val on = json.encodeToString(GradeMapConfig.serializer(), GradeMapConfig(followRoad = true))
-        assertEquals(true, json.decodeFromString<GradeMapConfig>(on).followRoad)
-    }
-
-    @Test
     fun `medium keeps the band as it was before the setting existed`() {
         assertEquals(18, GradeMapWidth.MEDIUM.fillDp)
         assertEquals(21, GradeMapWidth.MEDIUM.casingDp)
@@ -46,5 +37,12 @@ class GradeMapWidthTest {
         (GradeMapWidth.entries - GradeMapWidth.NARROW).forEach {
             assertTrue(it.name, it.casingDp > it.fillDp)
         }
+    }
+
+    @Test
+    fun `the rejoin casing takes medium's margin at narrow and the width's own elsewhere`() {
+        assertEquals(10, GradeMapWidth.NARROW.rejoinCasingDp)
+        assertEquals(21, GradeMapWidth.MEDIUM.rejoinCasingDp)
+        assertEquals(28, GradeMapWidth.WIDE.rejoinCasingDp)
     }
 }
