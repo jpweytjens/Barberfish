@@ -416,18 +416,13 @@ internal fun sparklineInputs(
     globalPois: Flow<OnGlobalPOIs>,
     rejoin: Flow<RejoinRoad?>,
 ): Flow<SparklineInputs> =
-    combine(
-            combine(followed, distState, zoneConfig, sparkCfg, globalPois) {
-                nav,
-                dist,
-                zone,
-                cfg,
-                pois ->
-                SparklineInputs(nav, dist, zone, cfg, pois, rejoin = null)
-            },
-            rejoin,
-        ) { inputs, road ->
-            inputs.copy(rejoin = road)
+    combine(followed, distState, zoneConfig, sparkCfg, combine(globalPois, rejoin, ::Pair)) {
+            nav,
+            dist,
+            zone,
+            cfg,
+            (pois, road) ->
+            SparklineInputs(nav, dist, zone, cfg, pois, road)
         }
         .onRenderTick()
 

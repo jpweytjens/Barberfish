@@ -682,7 +682,7 @@ internal fun sparklineWindow(
  * at a quarter, which keeps the window finite.
  */
 internal fun rejoinWindow(lengthM: Float, widthPx: Int): Pair<Float, Float> {
-    val padFraction = ((MARKER_PAD_PX + 1f) / widthPx.coerceAtLeast(1)).coerceAtMost(0.25f)
+    val padFraction = markerPadFraction(widthPx).coerceAtMost(0.25f)
     val marginM = padFraction * lengthM / (1f - 2f * padFraction)
     return -marginM to lengthM + marginM
 }
@@ -702,10 +702,13 @@ internal fun rejoinWindow(lengthM: Float, widthPx: Int): Pair<Float, Float> {
  * `position_dot_clears_the_marker_pad_at_both_route_ends`.
  */
 private fun markerEdgeMarginM(lookaheadM: Float, widthPx: Int, logWarpK: Float): Float {
-    val padFraction = ((MARKER_PAD_PX + 1f) / widthPx.coerceAtLeast(1)).coerceAtMost(0.5f)
+    val padFraction = markerPadFraction(widthPx).coerceAtMost(0.5f)
     val oneSidedBudget = lookaheadM * (1f + 2f * (1f - kotlin.math.exp(-logWarpK / 2f)))
     return padFraction * oneSidedBudget / ((1f + logWarpK) * (1f - padFraction))
 }
+
+// The uncapped share of a strip [widthPx] wide that a marker pad and its rounding pixel take.
+private fun markerPadFraction(widthPx: Int): Float = (MARKER_PAD_PX + 1f) / widthPx.coerceAtLeast(1)
 
 /**
  * Builds a monotonic function mapping a route distance in metres to a screen x-coordinate in

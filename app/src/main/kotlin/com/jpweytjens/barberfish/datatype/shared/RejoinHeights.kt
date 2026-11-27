@@ -24,14 +24,15 @@ private fun isSupportedEnough(
 ): Boolean {
     if (anchors.isEmpty()) return false
     val totalM = cumDist.last()
-    val endM = cumDist[anchors.first()] + (totalM - cumDist[anchors.last()])
+    val headM = cumDist[anchors.first()]
+    val tailM = totalM - cumDist[anchors.last()]
     val runs = anchors.zipWithNext { a, b ->
         (a until b).sumOf { j -> if (chords[j] == null) cumDist[j + 1] - cumDist[j] else 0.0 }
     }
-    return cumDist[anchors.first()] <= MAX_UNSUPPORTED_END_M &&
-        totalM - cumDist[anchors.last()] <= MAX_UNSUPPORTED_END_M &&
+    return headM <= MAX_UNSUPPORTED_END_M &&
+        tailM <= MAX_UNSUPPORTED_END_M &&
         runs.all { it <= MAX_UNSUPPORTED_STRETCH_M } &&
-        endM + runs.sum() <= MAX_UNSUPPORTED_SHARE * totalM
+        headM + tailM + runs.sum() <= MAX_UNSUPPORTED_SHARE * totalM
 }
 
 // The profile vertices: both ends and every road sample strictly inside each following chord.
