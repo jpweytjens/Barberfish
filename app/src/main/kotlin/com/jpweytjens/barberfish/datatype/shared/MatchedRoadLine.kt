@@ -73,8 +73,9 @@ private class Road(val points: List<LatLng>) {
 
 /**
  * Where the points of a line meet its road. [arcs] holds the distance along the road of each point
- * of the range, NaN for a point further than [MAX_ROAD_OFFSET_M] from it. [chords] has one entry
- * per chord, null where the chord does not follow the road.
+ * of the range, NaN for a point not found on it within [MAX_ROAD_OFFSET_M], which includes a point
+ * the forward search window misses. [chords] has one entry per chord, null where the chord does not
+ * follow the road.
  */
 internal class RoadAlignment(val arcs: DoubleArray, val chords: List<ChordRoad?>)
 

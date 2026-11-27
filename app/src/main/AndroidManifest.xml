@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- The Karoo keeps its offline road data in shared storage. The grade map reads it to draw
-         its band along the road; nothing is written. Asked for only when the rider turns
+         its band along the road, and the Profile reads it too, for the terrain of the line
+         back to the route; nothing is written. Asked for only when the rider turns
          the Karoo files "Offline maps" switch on. Lint's advice to use the media permissions
          does not apply: the road data is not media, and the Karoos run Android versions that
          still grant these. -->

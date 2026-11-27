@@ -67,7 +67,7 @@ Leaving the route turns the dot red. Karoo plots a rejoin line back to your rout
 
 With the Offline maps switch on in the Karoo files card and an offline map downloaded for the area, the profile shows the terrain of that line instead: from you to where it lands on the route, with the red dot at your position. A line shorter than the lookahead is fitted to the width of the strip. The view has no POI markers and no climb markers. This works on the HUD strip in On mode and on the Profile field, with or without the [grade map](grade-map.md#the-way-back-to-the-route), and the route's profile returns once you rejoin.
 
-The heights come from the offline maps in steps of 2 m, so a short line can show coarse changes in color. Without a downloaded map, or with the switch off, the profile holds your last on-route position as before, so the window stays put; once you rejoin, your position is recalculated and the window lands back where you actually are. The HUD strip's Climbs mode is unchanged off the route.
+The heights come from the offline maps in steps of 2 m, so a short line can show coarse changes in color. Without a downloaded map, with the switch off, or when the line cannot be matched to the road, the profile holds your last on-route position as before, so the window stays put; once you rejoin, your position is recalculated and the window lands back where you actually are. The HUD strip's Climbs mode is unchanged off the route.
 
 ## The Overview field
 

@@ -747,8 +747,8 @@ suspend fun Context.saveGradeMapDrawnIdSpans(spans: GradeMapDrawnIdSpans) =
 // --- KarooFilesConfig ---
 
 // Whether the rider lets Barberfish read the Karoo's offline maps. Off by default: it needs
-// storage access, asked for when it is turned on. Read it through `mayReadKarooFiles`, never
-// on its own.
+// storage access, asked for when it is turned on. Nothing starts reading the Karoo's files
+// except through `mayReadKarooFiles`.
 @Serializable data class KarooFilesConfig(val enabled: Boolean = false)
 
 private val karooFilesConfigKey = stringPreferencesKey("karoo_files_config")

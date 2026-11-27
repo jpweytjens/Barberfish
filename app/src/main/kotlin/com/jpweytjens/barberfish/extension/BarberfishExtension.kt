@@ -231,6 +231,8 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
     // The one statement of when the rejoin line is matched: while the rider is off a loaded route
     // and Barberfish may read the Karoo's files, grade map on or off. Navigation is read only
     // while files may be read, so with the switch off the service holds no consumer for it.
+    // The permissions are re-read only when the files config changes, which is enough: Android
+    // restarts the process when access is granted.
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun rejoinWanted(): Flow<RejoinTarget?> =
         applicationContext.streamKarooFilesConfig().flatMapLatest { files ->

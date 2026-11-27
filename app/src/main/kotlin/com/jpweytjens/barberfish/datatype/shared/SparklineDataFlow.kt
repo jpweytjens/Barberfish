@@ -286,8 +286,7 @@ internal fun sparklineBitmapFlow(
             // POIs: theirs are distances along the route. It keeps its own profile and height
             // range, so it reads and writes none of the route's cached state above, and the route
             // returns as it was. Climbs mode keeps today's view off the route. Any failure falls
-            // through
-            // to that view.
+            // through to that view.
             val rejoin =
                 inputs.rejoin?.takeIf {
                     isOffRoute &&
