@@ -768,20 +768,21 @@ class BarberfishExtension : KarooExtension("barberfish", BuildConfig.VERSION_NAM
                             drawing = current
                             drawRoute(current)
                             if (rejoinSpecs != null) {
+                                val graded = gradedRejoinSpecs != null
                                 rejoinController.emit(
                                     emitter,
                                     casingEncoded = rejoinSpecs.casing,
                                     specs = rejoinSpecs.fills,
                                     fillWidth = inputs.width.fillDp,
                                     casingWidth =
-                                        if (gradedRejoinSpecs != null) inputs.width.rejoinCasingDp
+                                        if (graded) inputs.width.rejoinCasingDp
                                         else inputs.width.casingDp,
-                                    casingColor = rejoinSpecs.casingColorArgb,
+                                    casingColor = if (graded) RerouteRed.toArgb() else CASING_COLOR,
                                 )
                                 rejoinChevronController.emit(
                                     emitter,
                                     rejoinSpecs.chevrons,
-                                    if (gradedRejoinSpecs != null) {
+                                    if (graded) {
                                         gradeChevronDrawable(inputs.palette)
                                     } else {
                                         R.drawable.ic_climber_chevron_f80000

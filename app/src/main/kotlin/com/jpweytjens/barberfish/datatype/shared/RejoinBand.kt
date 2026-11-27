@@ -1,7 +1,5 @@
 package com.jpweytjens.barberfish.datatype.shared
 
-import androidx.compose.ui.graphics.toArgb
-import com.jpweytjens.barberfish.extension.CASING_COLOR
 import com.jpweytjens.barberfish.extension.GradePalette
 import com.jpweytjens.barberfish.extension.RejoinRoad
 
@@ -18,10 +16,10 @@ internal fun gradeMapRejoinChevronId(index: Int): String = "barberfish-rejoin-ch
 internal fun gradeMapRejoinSegmentId(index: Int): String = "barberfish-rejoin-seg-$index"
 
 /**
- * What the reroute band draws: its fills along the rejoin path, the casing geometry beneath them in
- * [casingColorArgb], and its chevrons. [fills] is empty when the path is too short to draw.
- * [segmentIdSpan] bounds the positional fill ids, 0 for the solid band, whose one fill has a fixed
- * id. [chevronIdSpan] bounds the positional chevron ids; for the solid band it is their count.
+ * What the reroute band draws: its fills along the rejoin path, the casing geometry beneath them,
+ * and its chevrons. [fills] is empty when the path is too short to draw. [segmentIdSpan] bounds the
+ * positional fill ids, 0 for the solid band, whose one fill has a fixed id. [chevronIdSpan] bounds
+ * the positional chevron ids; for the solid band it is their count.
  */
 internal data class RejoinSpecs(
     val fills: List<GradeMapPolylineSpec>,
@@ -29,7 +27,6 @@ internal data class RejoinSpecs(
     val chevrons: List<ClimbChevronSpec>,
     val segmentIdSpan: Int = 0,
     val chevronIdSpan: Int = 0,
-    val casingColorArgb: Int = CASING_COLOR,
 )
 
 /**
@@ -94,7 +91,6 @@ internal fun buildGradedRejoinSpecs(
         chevrons = specs.chevrons.map { specs.chevronRoad?.moved(it) ?: it },
         segmentIdSpan = specs.segmentIdSpan,
         chevronIdSpan = specs.chevronIdSpan,
-        casingColorArgb = RerouteRed.toArgb(),
     )
 }
 

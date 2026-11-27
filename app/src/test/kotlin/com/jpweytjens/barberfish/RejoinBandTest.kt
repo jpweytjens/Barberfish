@@ -133,7 +133,6 @@ class RejoinBandTest {
         assertTrue(specs.fills.flatMap { northM(it.encoded) }.all { it in onRoad })
         assertTrue(northM(specs.casing).all { it in onRoad })
         assertEquals(2_000.0 - 24.0, lenM(specs.casing), 1.0)
-        assertEquals(red, specs.casingColorArgb)
         assertTrue(specs.chevrons.isNotEmpty())
         assertTrue(specs.chevrons.all { it.id.startsWith("barberfish-rejoin-chev-") })
         assertTrue(specs.chevrons.all { it.lat * RouteFixtures.M_PER_DEG in 2.9..3.1 })
@@ -145,7 +144,6 @@ class RejoinBandTest {
     @Test
     fun the_solid_band_keeps_the_black_casing() {
         val specs = buildRejoinSpecs(path, red, chevronSpacingM = 200.0, chevronMinSpacingM = 20.0)
-        assertEquals(0xFF000000.toInt(), specs.casingColorArgb)
         assertEquals(0, specs.segmentIdSpan)
         assertTrue(specs.chevrons.isNotEmpty())
         assertEquals(specs.chevrons.size, specs.chevronIdSpan)
