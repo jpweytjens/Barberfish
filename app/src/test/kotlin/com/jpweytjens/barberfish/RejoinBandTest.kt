@@ -120,10 +120,17 @@ class RejoinBandTest {
                         climbEdge = 2.0,
                         descentEdge = null,
                     ),
+                chevronBlend = 0.5,
+                chevronGradeFullPct = 15.0,
+                chevronChangeWindowM = 60.0,
+                chevronChangeFullPctPerM = 0.2,
                 chevronSpacingMaxM = 200.0,
                 chevronSpacingMinM = 200.0,
+                chevronWindowHalfM = 0.0,
+                chevronMinSpacingM = 0.0,
                 capTrimM = 10.0,
                 casingCapTrimM = 12.0,
+                metresPerPixel = 0.0,
             )
         assertTrue(specs.fills.map { it.colorArgb }.distinct().size > 1)
         assertTrue(specs.fills.all { it.id.startsWith("barberfish-rejoin-seg-") })
