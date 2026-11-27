@@ -131,7 +131,6 @@ class SparklinePoiTest {
                 rejoinLine,
                 MatchedRoadLine(points, cumDist),
                 listOf(0f to 64f, (lengthM / 2).toFloat() to 64f, lengthM.toFloat() to 100f),
-                lengthM,
             )
         }
 

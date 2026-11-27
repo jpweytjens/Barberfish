@@ -132,7 +132,7 @@ class RejoinBandOverlayTest {
         val cumDist = cumulativeDistancesM(points)
         val road = MatchedRoad(points.map { it.copy(lng = it.lng + 3.0 / M_PER_DEG) }, heights)
         val onLine = heightsOnLine(points, cumDist, road) ?: error("the fixture road has heights")
-        return RejoinRoad(encoded(points), onLine.line, onLine.heights, cumDist.last())
+        return RejoinRoad(encoded(points), onLine.line, onLine.heights)
     }
 
     // Alternately flat and 8% every 200 m: many colour pieces.

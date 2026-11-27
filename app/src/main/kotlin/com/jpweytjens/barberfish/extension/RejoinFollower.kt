@@ -33,8 +33,10 @@ internal class RejoinRoad(
     val rejoinPolyline: String,
     val line: MatchedRoadLine,
     val heights: List<Pair<Float, Float>>,
-    val lengthM: Double,
-)
+) {
+    val lengthM: Double
+        get() = line.totalM
+}
 
 /** The current rejoin line as matched, null until its match is in and when it fails. */
 internal val rejoinRoad = MutableStateFlow<RejoinRoad?>(null)
@@ -125,7 +127,7 @@ internal class RejoinFollower(
         val agrees =
             landingHeightAgrees(lineHeights.heights, points.last(), routePoints, routeElevation)
         return if (agrees) {
-            RejoinRoad(target.rejoinPolyline, lineHeights.line, lineHeights.heights, cumDist.last())
+            RejoinRoad(target.rejoinPolyline, lineHeights.line, lineHeights.heights)
         } else {
             null
         }

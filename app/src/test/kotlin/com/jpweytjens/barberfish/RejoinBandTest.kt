@@ -99,7 +99,7 @@ class RejoinBandTest {
                 listOf(0f to 100f, 500f to 100f, 1_500f to 180f, 2_000f to 180f),
             )
         val onLine = heightsOnLine(points, cumDist, road) ?: error("heights expected")
-        return RejoinRoad(encodeGpsPolyline(points), onLine.line, onLine.heights, cumDist.last())
+        return RejoinRoad(encodeGpsPolyline(points), onLine.line, onLine.heights)
     }
 
     // How far north of the line every point of [encoded] lies, in metres.

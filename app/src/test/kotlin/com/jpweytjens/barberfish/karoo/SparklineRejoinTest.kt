@@ -130,7 +130,6 @@ class SparklineRejoinTest {
             encoded,
             MatchedRoadLine(points, cumDist),
             heights.map { (fraction, height) -> (fraction * lengthM).toFloat() to height },
-            lengthM,
         )
     }
 

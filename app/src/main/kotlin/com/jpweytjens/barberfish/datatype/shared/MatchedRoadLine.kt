@@ -158,7 +158,7 @@ private constructor(
     /** How many chords follow the road. */
     val followingChords: Int = roads.count { it != null }
 
-    private val totalM = if (cumDist.isEmpty()) 0.0 else cumDist.last()
+    internal val totalM = if (cumDist.isEmpty()) 0.0 else cumDist.last()
 
     // A following chord's path, joints included; null for a straight chord.
     private val paths: Array<ChordRoad?> =
