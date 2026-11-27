@@ -247,7 +247,6 @@ class SparklineRejoinTest {
                 logWarpK = config.warp.k,
                 positionFraction = config.warp.positionFraction,
                 windowOverride = windowOverride,
-                clampWindowOverride = false,
             )
             .bitmap!!
     }

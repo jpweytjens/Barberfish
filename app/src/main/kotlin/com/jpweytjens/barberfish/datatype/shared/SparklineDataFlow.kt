@@ -336,7 +336,6 @@ internal fun sparklineBitmapFlow(
                             poiDistances = emptyList(),
                             showPois = sparkCfg.showPois,
                             windowOverride = view.windowOverride,
-                            clampWindowOverride = false,
                         )
                     }
                 } catch (e: RuntimeException) {

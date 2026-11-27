@@ -343,7 +343,6 @@ class RejoinWindowRenderTest {
 
     private fun render(
         positionM: Float,
-        clampWindowOverride: Boolean,
         warp: SparklineWarp = SparklineWarp.NONE,
     ): Bitmap =
         renderElevationSparkline(
@@ -359,7 +358,6 @@ class RejoinWindowRenderTest {
                 logWarpK = warp.k,
                 positionFraction = warp.positionFraction,
                 windowOverride = rejoinWindow(lineM, widthPx),
-                clampWindowOverride = clampWindowOverride,
             )
             .bitmap!!
 
@@ -368,7 +366,7 @@ class RejoinWindowRenderTest {
     @Test
     fun an_unclamped_override_keeps_the_dot_inside_at_both_ends() {
         for (positionM in listOf(0f, lineM)) {
-            val bitmap = render(positionM, clampWindowOverride = false)
+            val bitmap = render(positionM)
             assertTrue((1 until widthPx - 1).any { bitmap.columnHasDot(it) })
             assertTrue("column 0 at $positionM", !bitmap.columnHasDot(0))
             assertTrue("last column at $positionM", !bitmap.columnHasDot(widthPx - 1))
@@ -376,17 +374,11 @@ class RejoinWindowRenderTest {
     }
 
     @Test
-    fun a_clamped_override_puts_the_dot_on_the_edge() {
-        assertTrue(render(0f, clampWindowOverride = true).columnHasDot(0))
-        assertTrue(render(lineM, clampWindowOverride = true).columnHasDot(widthPx - 1))
-    }
-
-    @Test
     fun the_fitted_window_does_not_depend_on_the_warp_setting() {
         for (positionM in listOf(0f, lineM / 2f, lineM)) {
-            val off = render(positionM, clampWindowOverride = false)
+            val off = render(positionM)
             for (warp in SparklineWarp.entries) {
-                val other = render(positionM, clampWindowOverride = false, warp = warp)
+                val other = render(positionM, warp = warp)
                 assertTrue("${warp.label} at $positionM", off.sameAs(other))
             }
         }
